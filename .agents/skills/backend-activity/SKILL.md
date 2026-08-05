@@ -195,8 +195,10 @@ Preferred default behavior for `record(...)`:
 - `actor`: omitted means the event is system-originated by default
 - `visibility`: defaults to `ActivityVisibility::Timeline`
 - `importance`: defaults to `ActivityImportance::Normal`
+- `description`: omitted means the stable event key is used as the machine fallback
 - `old` / `attributes`: resolved automatically when a changed subject model is available
 - explicit `old` / `attributes`: reserved for domain-specific or multi-model flows
+- package-wide meanings use `Nvl\Activity\Enums\ActivityEvent`; domain-specific meanings use a module-owned string-backed enum
 
 Balanced target example:
 
@@ -204,7 +206,6 @@ Balanced target example:
 ActivityLog::record(
     subject: $voucher,
     event: VoucherActivityEvent::StatusChanged,
-    description: 'Voucher status changed',
     context: [
         'previous_status' => $previousStatus->value,
         'new_status' => $targetStatus->value,
@@ -256,7 +257,6 @@ final class BookingsActivity
         ActivityLog::record(
             subject: $booking,
             event: $event,
-            description: self::descriptionForEvent($event),
             context: $normalizedContext,
             attributes: [
                 'status' => $to->value,
@@ -325,7 +325,6 @@ final class BookingsActivity
         ActivityLog::record(
             subject: $booking,
             event: $event,
-            description: self::descriptionForEvent($event),
             context: $normalizedContext,
             attributes: $attributes !== [] ? $attributes : null,
             old: $old !== [] ? $old : null,
@@ -382,7 +381,6 @@ Rules:
 - do not return ad hoc activity payload arrays from services
 - let the module-local activity class own:
   - event choice
-  - description
   - `context`
   - explicit `attributes` / `old` only when needed
   - actor resolution
@@ -878,8 +876,7 @@ final class ProtocolsActivity
     ): void {
         ActivityLog::record(
             subject: $protocol,
-            event: 'revision_created',
-            description: 'Protocol revision created',
+            event: ProtocolActivityEvent::RevisionCreated,
             context: [
                 'revision_id' => $revision->id,
                 'revision_number' => $revision->revision_number,
@@ -1093,21 +1090,14 @@ Rules:
 - frontend rendering must happen behind Inertia's `Deferred` component
 - the `Deferred` boundary can be page-owned or shared-component-owned, but pages must not eagerly assume deferred props are present
 
-## Description Rule
+## Description Storage Rule
 
-Descriptions should be concrete and easy to translate.
+The description column is a compatibility and machine-fallback field, not the final operator sentence.
 
-Good:
-
-- `Voucher status changed`
-- `Protocol marked as paid`
-- `Voucher attached to booking`
-
-Bad:
-
-- `Something happened`
-- `Model updated`
-- `Operation completed successfully`
+- omit `description` for normal enum-backed writes; the recorder stores the stable event key
+- never store translated labels or finished timeline sentences in `description`
+- let package or module templates render the localized headline at read time
+- pass a custom description only when an external integration requires a separate stable, locale-neutral machine description
 
 ## Bilingual Message Composition
 
@@ -1245,8 +1235,7 @@ public function eventDisplayValue(string $event, array $properties): ?string
 ```php
 ActivityLog::record(
     subject: $vendor,
-    event: 'alias_synced',
-    description: 'Vendor alias synced with active business',
+    event: VendorActivityEvent::AliasSynced,
     context: ['source' => $business->name],
     attributes: ['alias' => $newAlias],
     old: ['alias' => $originalAlias],
@@ -1276,7 +1265,7 @@ Rules:
 | `ActivityLog::recordUser()` | Legacy thin wrapper — acceptable for simple events | Flat: `properties.old`, `properties.new`, `properties.*` |
 | `ActivityLog::record()` | **Preferred** — full structured payload with explicit actor | Structured: `properties.attributes`, `properties.old`, `properties.context` |
 
-For new semantic events, always use `ActivityLog::record()` with explicit `attributes`, `old`, `context`, `actor`, and `logName`. This gives the `HeadlineRenderer` and `ActivityMapping` the cleanest data to work with.
+For new semantic events, use `ActivityLog::record()` with a package or domain enum, structured `context`, the actor, and an explicit host `logName`. Let ordinary update/status events infer `attributes` and `old` from the saved subject. Supply those arrays explicitly only when a domain-specific or multi-model flow cannot be represented by the subject's Eloquent changes.
 
 ### Repairing an Existing Module's Activity
 

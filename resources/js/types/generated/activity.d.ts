@@ -111,6 +111,7 @@ causerId: number | string | null,
 }
 namespace Enums {
 export type ActivityDoctorSeverity = 'error' | 'warning';
+export type ActivityEvent = 'created' | 'updated' | 'deleted' | 'restored' | 'assigned' | 'details_updated' | 'status_changed' | 'status_transition' | 'status_override' | 'viewed' | 'activated' | 'deactivated' | 'enabled' | 'disabled' | 'archived' | 'unarchived' | 'triggered' | 'retried' | 'sent' | 'resent';
 export type ActivityImportance = 'low' | 'normal' | 'important';
 export type ActivityResponseCode = 'purge_queued' | 'purge_system_queued' | 'invalid_configuration' | 'invalid_mapping' | 'invalid_batch_identifier' | 'invalid_activity_metadata' | 'invalid_purge_criteria' | 'timeline_subject_not_found';
 export type ActivitySource = 'system' | 'user';
