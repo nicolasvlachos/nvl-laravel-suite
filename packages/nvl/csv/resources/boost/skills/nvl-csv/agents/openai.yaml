@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL CSV"
+  short_description: "Build reliable typed CSV workflows"
+  default_prompt: "Use $nvl-csv to implement or review CSV analysis, mapping, validation, import, export, streaming, and queued chunk processing."
