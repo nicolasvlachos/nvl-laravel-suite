@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Nvl\Data\Console\Commands;
+
+use Illuminate\Console\Command;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Str;
+use Nvl\Data\Services\GeneratedArtifactSet;
+use Nvl\Data\Services\GeneratedTypeFileCatalog;
+use Nvl\Data\Services\TypeScriptConfigurator;
+use Nvl\Data\Services\TypeScriptPathGuard;
+use RuntimeException;
+use Spatie\TypeScriptTransformer\Enums\RunnerMode;
+use Spatie\TypeScriptTransformer\Runners\Runner;
+use Spatie\TypeScriptTransformer\Support\Loggers\NullLogger;
+
+/**
+ * Verifies committed TypeScript declarations against an isolated fresh generation.
+ */
+final class CheckTypesCommand extends Command
+{
+    /**
+     * @var string
+     */
+    protected $signature = 'nvl:data:types:check';
+
+    /**
+     * @var string
+     */
+    protected $description = 'Fail when generated NVL TypeScript declarations are stale';
+
+    /**
+     * Compare current declarations with an isolated fresh transformation.
+     */
+    public function handle(
+        Repository $config,
+        Filesystem $files,
+        Runner $runner,
+        TypeScriptConfigurator $configurator,
+        TypeScriptPathGuard $pathGuard,
+        GeneratedArtifactSet $artifacts,
+        GeneratedTypeFileCatalog $catalog,
+    ): int {
+        $configuredOutput = $config->get('nvl-data.typescript.output_directory');
+
+        if (! is_string($configuredOutput) || trim($configuredOutput) === '') {
+            throw new RuntimeException('The generated-types output directory is invalid.');
+        }
+
+        $targetDirectory = $pathGuard->outputDirectory($configuredOutput);
+        $temporaryDirectory = storage_path('app/nvl-data/check-'.Str::uuid());
+        $files->ensureDirectoryExists($temporaryDirectory);
+
+        try {
+            $exitCode = $runner->run(
+                logger: new NullLogger,
+                config: $configurator->isolatedConfiguration($temporaryDirectory),
+                mode: RunnerMode::Direct,
+            );
+
+            if ($exitCode !== self::SUCCESS) {
+                return $exitCode;
+            }
+
+            $expected = $artifacts->hashes($temporaryDirectory);
+
+            try {
+                $actual = $artifacts->hashes($targetDirectory);
+            } catch (RuntimeException) {
+                return $this->stale();
+            }
+
+            if ($expected !== $actual) {
+                return $this->stale();
+            }
+
+            try {
+                if ($catalog->manifest() !== $catalog->freshManifest()) {
+                    return $this->stale();
+                }
+            } catch (RuntimeException) {
+                return $this->stale();
+            }
+
+            $this->components->info('Generated TypeScript declarations are current.');
+
+            return self::SUCCESS;
+        } finally {
+            $files->deleteDirectory($temporaryDirectory);
+        }
+    }
+
+    /**
+     * Report stale generated declarations and return the failure exit code.
+     */
+    private function stale(): int
+    {
+        $this->components->error(
+            'Generated TypeScript declarations or their integrity manifest are stale. '
+            .'Run nvl:data:types:generate.',
+        );
+
+        return self::FAILURE;
+    }
+}
