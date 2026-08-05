@@ -1,0 +1,3 @@
+<table {{ $attributes }}>
+    {{ $slot }}
+</table>

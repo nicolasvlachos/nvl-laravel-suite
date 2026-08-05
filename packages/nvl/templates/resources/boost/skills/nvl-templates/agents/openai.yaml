@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL Templates"
+  short_description: "Compose and render Blade, PDF, and stored templates"
+  default_prompt: "Use $nvl-templates to implement or review directly constructed templates, typed options, Blade/PDF rendering, stored versions, Content/Media composition, assignments, queues, responses, and diagnostics."
