@@ -20,6 +20,7 @@ use Nvl\Templates\Actions\UpdateTemplateVersionAction;
 use Nvl\Templates\Data\Mutations\AssignTemplateData;
 use Nvl\Templates\Data\Mutations\CreateTemplateData;
 use Nvl\Templates\Data\Mutations\CreateTemplateVersionData;
+use Nvl\Templates\Data\Mutations\ExpectedRevisionData;
 use Nvl\Templates\Data\Mutations\UpdateTemplateData;
 use Nvl\Templates\Data\Mutations\UpdateTemplateVersionData;
 use Nvl\Templates\Data\TemplateAssignmentData;
@@ -147,10 +148,10 @@ final class TemplatesController extends Controller
         PublishTemplateVersionAction $action,
         TemplateActorFactory $actors,
     ): JsonResponse {
-        $request->validate(['expected_revision' => ['required', 'integer', 'min:1']]);
+        $data = ExpectedRevisionData::validateAndCreate($request->all());
         $published = $action->execute(
             $version,
-            $request->integer('expected_revision'),
+            $data->expectedRevision,
             $actors->fromRequest($request),
         );
 
@@ -199,13 +200,13 @@ final class TemplatesController extends Controller
         TemplateActorFactory $actors,
         UnassignTemplateAction $action,
     ): JsonResponse {
-        $request->validate(['expected_revision' => ['required', 'integer', 'min:1']]);
+        $data = ExpectedRevisionData::validateAndCreate($request->all());
 
         return response()->json([
             'data' => [
                 'deleted' => $action->execute(
                     $assignment,
-                    $request->integer('expected_revision'),
+                    $data->expectedRevision,
                     $actors->fromRequest($request),
                 ),
             ],

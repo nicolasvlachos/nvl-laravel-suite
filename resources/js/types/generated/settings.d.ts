@@ -60,6 +60,11 @@ sourceFiles: string[],
 checksum: string | null,
 error: string | null,
 };
+namespace Mutations {
+export type ExpectedRevisionData = {
+expectedRevision: number,
+};
+}
 }
 namespace Enums {
 export type SettingAbility = 'status' | 'list' | 'view' | 'set' | 'reset';

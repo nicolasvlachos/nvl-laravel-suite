@@ -139,7 +139,7 @@ it('supports the complete opt-in management and render HTTP workflow', function 
     );
 
     $published = $this->postJson("/api/v1/templates/versions/{$versionId}/publish", [
-        'expected_revision' => $version['revision'],
+        'expectedRevision' => $version['revision'],
     ])->assertOk()->json('data');
 
     $assignment = $this->putJson("/api/v1/templates/{$templateId}/assignments", [
@@ -177,7 +177,7 @@ it('supports the complete opt-in management and render HTTP workflow', function 
         ->assertJsonPath('data.status', 'pending')
         ->assertJsonMissingPath('data.payload');
     $this->deleteJson('/api/v1/templates/assignments/'.$assignment['id'], [
-        'expected_revision' => $assignment['revision'],
+        'expectedRevision' => $assignment['revision'],
     ])->assertOk()->assertJsonPath('data.deleted', true);
 
     expect($updated['metadata'])->toBe(['channel' => 'email'])

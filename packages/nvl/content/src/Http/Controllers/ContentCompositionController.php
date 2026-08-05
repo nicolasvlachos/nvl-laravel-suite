@@ -7,6 +7,7 @@ namespace Nvl\Content\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Nvl\Content\Content;
+use Nvl\Content\Data\Queries\ContentLocaleQueryData;
 use Nvl\Content\Http\ContentResponseData;
 use Nvl\Content\Services\ContentLocalePolicy;
 use Nvl\Content\Services\ContentOwnerRegistry;
@@ -27,10 +28,8 @@ final class ContentCompositionController extends ContentController
         Content $content,
         ContentLocalePolicy $locales,
     ): JsonResponse {
-        $request->validate(['locale' => ['nullable', 'string', 'max:35']]);
-        $locale = $request->filled('locale')
-            ? $request->string('locale')->toString()
-            : $locales->current();
+        $data = ContentLocaleQueryData::validateAndCreate($request->all());
+        $locale = $data->locale ?? $locales->current();
         $owner = $this->content(fn () => $owners->resolve($ownerType, $ownerId));
         $composition = $this->content(
             fn () => $content->render(
@@ -55,10 +54,8 @@ final class ContentCompositionController extends ContentController
         Content $content,
         ContentLocalePolicy $locales,
     ): JsonResponse {
-        $request->validate(['locale' => ['nullable', 'string', 'max:35']]);
-        $locale = $request->filled('locale')
-            ? $request->string('locale')->toString()
-            : $locales->current();
+        $data = ContentLocaleQueryData::validateAndCreate($request->all());
+        $locale = $data->locale ?? $locales->current();
         $owner = $this->content(fn () => $owners->resolve($ownerType, $ownerId));
         $composition = $this->content(
             fn () => $content->render(

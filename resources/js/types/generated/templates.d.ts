@@ -160,6 +160,9 @@ translations: Record<string, Record<string, unknown>>,
 export type CreateTemplateVersionData = {
 metadata: Record<string, unknown>,
 };
+export type ExpectedRevisionData = {
+expectedRevision: number,
+};
 export type RenderTemplateData = {
 locale: string,
 payload: Record<string, unknown>,

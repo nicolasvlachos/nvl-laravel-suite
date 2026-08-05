@@ -13,6 +13,7 @@ use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Data\Mutations\UpdateContentBlockData;
 use Nvl\Content\Data\Mutations\UpdateContentPlacementData;
+use Nvl\Content\Data\Queries\ExpectedRevisionData;
 use Nvl\Content\Http\ContentResponseData;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
@@ -215,8 +216,8 @@ final class ContentBlocksController extends ContentController
         ContentActorFactory $actors,
         Content $content,
     ): JsonResponse {
-        $request->validate(['expectedRevision' => ['required', 'integer', 'min:1']]);
-        $expectedRevision = $request->integer('expectedRevision');
+        $data = ExpectedRevisionData::validateAndCreate($request->all());
+        $expectedRevision = $data->expectedRevision;
         $actor = $actors->fromRequest($request);
         $published = $this->content(
             fn () => $content->publishBlock($block, $expectedRevision, $actor),
@@ -233,8 +234,8 @@ final class ContentBlocksController extends ContentController
         ContentActorFactory $actors,
         Content $content,
     ): JsonResponse {
-        $request->validate(['expectedRevision' => ['required', 'integer', 'min:1']]);
-        $expectedRevision = $request->integer('expectedRevision');
+        $data = ExpectedRevisionData::validateAndCreate($request->all());
+        $expectedRevision = $data->expectedRevision;
         $actor = $actors->fromRequest($request);
         $archived = $this->content(
             fn () => $content->archiveBlock($block, $expectedRevision, $actor),
@@ -251,8 +252,8 @@ final class ContentBlocksController extends ContentController
         ContentActorFactory $actors,
         Content $content,
     ): JsonResponse {
-        $request->validate(['expectedRevision' => ['required', 'integer', 'min:1']]);
-        $expectedRevision = $request->integer('expectedRevision');
+        $data = ExpectedRevisionData::validateAndCreate($request->all());
+        $expectedRevision = $data->expectedRevision;
         $actor = $actors->fromRequest($request);
         $this->content(
             function () use ($actor, $block, $content, $expectedRevision): bool {
@@ -271,8 +272,8 @@ final class ContentBlocksController extends ContentController
         ContentActorFactory $actors,
         Content $content,
     ): JsonResponse {
-        $request->validate(['expectedRevision' => ['required', 'integer', 'min:1']]);
-        $expectedRevision = $request->integer('expectedRevision');
+        $data = ExpectedRevisionData::validateAndCreate($request->all());
+        $expectedRevision = $data->expectedRevision;
         $actor = $actors->fromRequest($request);
         $restored = $this->content(
             fn () => $content->restoreBlock($block, $expectedRevision, $actor),
@@ -328,8 +329,8 @@ final class ContentBlocksController extends ContentController
         ContentActorFactory $actors,
         Content $content,
     ): JsonResponse {
-        $request->validate(['expectedRevision' => ['required', 'integer', 'min:1']]);
-        $expectedRevision = $request->integer('expectedRevision');
+        $data = ExpectedRevisionData::validateAndCreate($request->all());
+        $expectedRevision = $data->expectedRevision;
         $actor = $actors->fromRequest($request);
         $this->content(
             function () use ($actor, $content, $expectedRevision, $placement): bool {

@@ -227,6 +227,9 @@ rules: string[],
 };
 }
 namespace Mutations {
+export type DuplicateFormData = {
+name: string | null,
+};
 export type MutateFormEntryPayload = {
 formId?: string,
 subject?: string | null,

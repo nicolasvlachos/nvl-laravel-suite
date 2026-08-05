@@ -50,6 +50,27 @@ it('keeps public transport endpoints disjoint from valid page paths', function (
     $this->getJson('/api/v1/pages/_navigation?locale=en')
         ->assertSuccessful()
         ->assertJsonCount(2, 'data.items');
+    $this->getJson('/api/v1/pages/_manage?site=default&perPage=1')
+        ->assertSuccessful()
+        ->assertJsonPath('meta.per_page', 1)
+        ->assertJsonCount(1, 'data');
+    $this->getJson('/api/v1/pages/_manage/preview/navigation?site=default&locale=en')
+        ->assertSuccessful()
+        ->assertJsonPath('data.page.path', 'navigation');
+});
+
+it('validates page management query boundaries with camel-case keys', function (): void {
+    $this->getJson('/api/v1/pages/_manage')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('site');
+
+    $this->getJson('/api/v1/pages/_manage?site=default&perPage=0')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('perPage');
+
+    $this->getJson('/api/v1/pages/_manage/preview/navigation?site=default')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('locale');
 });
 
 it('rejects management payloads that exceed portable persistence bounds', function (

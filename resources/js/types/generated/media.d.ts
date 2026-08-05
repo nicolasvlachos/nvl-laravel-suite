@@ -299,11 +299,20 @@ associableType: string,
 associableId: string,
 collection: string | null,
 };
+export type RenameMediaData = {
+filename: string,
+};
 export type ReorderMediaPayload = {
 mediaIds: string[],
 associableType: string,
 associableId: string,
 collection: string,
+};
+export type ReplaceMediaData = {
+file: File,
+};
+export type RequestMediaVariationsData = {
+variations: string[] | null,
 };
 export type StoreMediaPayload = {
 collection: string | null,

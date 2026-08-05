@@ -25,6 +25,7 @@ use Nvl\Forms\Data\FormSearchFilter;
 use Nvl\Forms\Data\FormSelectOption;
 use Nvl\Forms\Data\FormSuggestion;
 use Nvl\Forms\Data\FormSuggestions;
+use Nvl\Forms\Data\Mutations\DuplicateFormData;
 use Nvl\Forms\Data\Mutations\MutateFormPayload;
 use Nvl\Forms\Enums\FormResponseCode;
 use Nvl\Forms\Exceptions\FormException;
@@ -184,10 +185,8 @@ final class FormsApiController extends Controller
     {
         Gate::authorize('duplicate', $form);
 
-        $request->validate([
-            'name' => ['sometimes', 'nullable', 'string', 'max:255'],
-        ]);
-        $name = $request->input('name');
+        $data = DuplicateFormData::validateAndCreate($request->all());
+        $name = $data->name;
 
         $duplicatedForm = $action->execute(
             $form,

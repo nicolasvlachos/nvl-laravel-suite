@@ -7,7 +7,6 @@ namespace Nvl\Pages\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\Rule;
 use Nvl\Filterable\Http\QueryFilterSetFactory;
 use Nvl\Pages\Actions\CreatePageAction;
 use Nvl\Pages\Actions\DeletePageAction;
@@ -23,6 +22,8 @@ use Nvl\Pages\Data\Mutations\MovePageData;
 use Nvl\Pages\Data\Mutations\RestorePageData;
 use Nvl\Pages\Data\Mutations\UpdatePageData;
 use Nvl\Pages\Data\PageData;
+use Nvl\Pages\Data\Queries\PageIndexQueryData;
+use Nvl\Pages\Data\Queries\PagePreviewQueryData;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Services\PageFilterSchema;
 use Nvl\Pages\Support\PageActorFactory;
@@ -43,9 +44,7 @@ final class PagesManagementController extends Controller
         PageFilterSchema $filterSchema,
         ListPagesAction $action,
     ): JsonResponse {
-        $request->validate([
-            'site' => ['required', 'string', 'max:64', 'regex:/^[a-z0-9][a-z0-9._-]*$/'],
-        ]);
+        $data = PageIndexQueryData::validateAndCreate($request->query());
         $query = [];
 
         foreach ($request->query() as $key => $value) {
@@ -54,12 +53,12 @@ final class PagesManagementController extends Controller
             }
         }
 
-        unset($query['site'], $query['per_page']);
+        unset($query['site'], $query['perPage']);
         $pages = $action->execute(
             $filterFactory->fromHttpQuery($query, $filterSchema->make()),
-            $request->string('site')->toString(),
+            $data->site,
             $actors->fromRequest($request),
-            $request->integer('per_page', 25),
+            $data->perPage,
         );
 
         return response()->json([
@@ -192,17 +191,13 @@ final class PagesManagementController extends Controller
         PageActorFactory $actors,
         LocaleRegistry $locales,
     ): JsonResponse {
-        $request->validate([
-            'site' => ['required', 'string', 'max:64', 'regex:/^[a-z0-9][a-z0-9._-]*$/'],
-            'locale' => ['required', 'string', 'max:35', Rule::in($locales->supported())],
-        ]);
-        $site = $request->string('site')->toString();
-        $locale = $locales->assertSupported($request->string('locale')->toString());
+        $data = PagePreviewQueryData::validateAndCreate($request->query());
+        $locale = $locales->assertSupported($data->locale);
 
         return response()->json([
             'data' => $action->execute(
                 $path,
-                $site,
+                $data->site,
                 $locale,
                 $actors->fromRequest($request),
             )->toArray(),

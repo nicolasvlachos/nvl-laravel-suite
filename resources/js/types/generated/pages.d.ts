@@ -116,6 +116,16 @@ expiresAt: string | null,
 translations: Record<string, Record<string, unknown>>,
 };
 }
+namespace Queries {
+export type PageIndexQueryData = {
+site: string,
+perPage: number,
+};
+export type PagePreviewQueryData = {
+site: string,
+locale: string,
+};
+}
 }
 namespace Enums {
 export type PageAbility = 'list' | 'view' | 'view_navigation' | 'preview' | 'create' | 'update' | 'move' | 'publish' | 'archive' | 'delete' | 'restore';

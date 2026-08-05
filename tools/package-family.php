@@ -37,7 +37,7 @@ return [
     ],
     'internal_dependencies' => [
         'activity' => ['data', 'support'],
-        'auth' => [],
+        'auth' => ['data'],
         'comments' => ['data', 'filterable', 'media'],
         'content' => ['data', 'filterable', 'media', 'support', 'translatable'],
         'csv' => ['data'],

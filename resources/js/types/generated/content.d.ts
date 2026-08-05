@@ -261,6 +261,14 @@ isVisible: boolean,
 overrides?: Record<string, unknown>,
 };
 }
+namespace Queries {
+export type ContentLocaleQueryData = {
+locale: string | null,
+};
+export type ExpectedRevisionData = {
+expectedRevision: number,
+};
+}
 }
 namespace Enums {
 export type ContentAbility = 'list_definitions' | 'list_placements' | 'list' | 'view' | 'create' | 'update' | 'publish' | 'archive' | 'delete' | 'restore' | 'place' | 'unplace' | 'render' | 'sync_definitions' | 'migrate_definitions';
