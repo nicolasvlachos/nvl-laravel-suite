@@ -31,6 +31,27 @@ Package-specific installation and public APIs are documented in each package REA
 
 Each package is independently publishable, auto-discoverable, and supports Laravel 12 or 13 on PHP 8.3+. Package source/config must not reference a host `App\`/`Modules\` class or named host middleware. Packages that own translated Eloquent content declare `nvl/translatable:^1.0`; all other cross-package requirements are explicit and bounded.
 
+## Composer installation
+
+Tagged releases are published as individual package archives through the suite's
+static Composer repository. Register it once in a consumer application:
+
+```bash
+composer config repositories.nvl composer \
+    https://nicolasvlachos.github.io/nvl-laravel-suite/
+```
+
+Install only the required packages; Composer resolves their NVL dependencies
+from the same repository:
+
+```bash
+composer require nvl/auth:^1.0 --with-all-dependencies
+composer require nvl/media:^1.0 --with-all-dependencies
+```
+
+The monorepo remains the only source repository. A coordinated `vX.Y.Z` tag
+publishes the same version for every package without creating split repositories.
+
 ## Translation architecture
 
 `nvl/translatable` is the single runtime for model-backed content:
@@ -204,8 +225,13 @@ by configured middleware when enabled, and never generates during a request.
    the prior release ref/version and candidate version. It performs an
    archive-to-archive upgrade on SQLite, MySQL, and PostgreSQL and repeats the
    full post-upgrade validation.
-10. Tag dependency packages before packages that consume them, publish immutable
-   tags, and verify the final release metadata.
+10. Ensure GitHub Pages uses **GitHub Actions** as its publishing source, then
+    push one annotated coordinated tag such as `v1.0.0`.
+11. The tagged package-quality workflow waits for every quality, compatibility,
+    database, coverage, standalone-consumer, and archive job before creating the
+    GitHub Release and deploying the merged `packages.json` index to GitHub Pages.
+12. Verify the release assets, the Pages deployment, and a clean consumer
+    installation before announcing the release.
 
 Do not publish `dev-main` as a stable dependency. Stable packages depend on the `^1.0` line.
 Published NVL migrations retain their package timestamps so they have the same

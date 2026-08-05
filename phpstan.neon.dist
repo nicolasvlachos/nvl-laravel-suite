@@ -12,6 +12,7 @@ parameters:
         - app
         - tools/fixtures/activity-production-consumer/app
         - tools/build-archive-repository.php
+        - tools/build-public-composer-repository.php
         - tools/check-package-contracts.php
         - packages/nvl/activity/src
         - packages/nvl/activity/database/factories

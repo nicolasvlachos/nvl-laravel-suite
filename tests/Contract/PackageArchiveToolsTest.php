@@ -90,6 +90,106 @@ it('stamps versions so relocated archives install through a Composer artifact re
     }
 });
 
+it('builds immutable public Composer metadata and retains earlier releases', function (): void {
+    $root = dirname(__DIR__, 2);
+    $workspace = sys_get_temp_dir().'/nvl-public-repository-'.bin2hex(random_bytes(8));
+    $oldArchives = $workspace.'/old-archives';
+    $newArchives = $workspace.'/new-archives';
+    $publicDirectory = $workspace.'/public';
+    $oldRepository = $publicDirectory.'/old-packages.json';
+    $currentRepository = $publicDirectory.'/packages.json';
+    $filesystem = new Filesystem;
+    $filesystem->mkdir([$oldArchives, $newArchives, $publicDirectory]);
+
+    try {
+        foreach (['activity', 'data', 'support'] as $package) {
+            packageArchiveWriteZip(
+                $oldArchives."/nvl-{$package}-1.2.2.zip",
+                packageArchiveManifest($package),
+                packageArchiveEntries($package),
+            );
+            packageArchiveWriteZip(
+                $newArchives."/nvl-{$package}-1.2.3.zip",
+                packageArchiveManifest($package),
+                packageArchiveEntries($package),
+            );
+        }
+
+        foreach ([[$oldArchives, '1.2.2'], [$newArchives, '1.2.3']] as [$directory, $version]) {
+            $stamp = new Process([
+                PHP_BINARY,
+                $root.'/tools/build-archive-repository.php',
+                $directory,
+                $version,
+            ]);
+            $stamp->setTimeout(10);
+            $stamp->mustRun();
+        }
+
+        $oldBuild = new Process([
+            PHP_BINARY,
+            $root.'/tools/build-public-composer-repository.php',
+            $oldArchives,
+            '1.2.2',
+            'https://example.test/releases/download/v1.2.2',
+            $oldRepository,
+        ]);
+        $oldBuild->setTimeout(10);
+        $oldBuild->mustRun();
+
+        $activityArchive = $newArchives.'/nvl-activity-1.2.3.zip';
+        $archiveHashBeforeIndexing = hash_file('sha256', $activityArchive);
+        $currentBuild = new Process([
+            PHP_BINARY,
+            $root.'/tools/build-public-composer-repository.php',
+            $newArchives,
+            '1.2.3',
+            'https://example.test/releases/download/v1.2.3',
+            $currentRepository,
+            $oldRepository,
+        ]);
+        $currentBuild->setTimeout(10);
+        $currentBuild->mustRun();
+
+        $repositoryContents = file_get_contents($currentRepository);
+
+        expect($repositoryContents)->toBeString();
+
+        $repository = json_decode(
+            $repositoryContents,
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        $activityVersions = $repository['packages']['nvl/activity'] ?? null;
+        $currentActivity = is_array($activityVersions)
+            ? ($activityVersions['1.2.3'] ?? null)
+            : null;
+
+        expect($currentBuild->getExitCode())->toBe(0)
+            ->and(hash_file('sha256', $activityArchive))->toBe($archiveHashBeforeIndexing)
+            ->and($repository['available-packages'] ?? null)->toBe([
+                'nvl/activity',
+                'nvl/data',
+                'nvl/support',
+            ])
+            ->and($activityVersions)->toBeArray()
+            ->and(array_keys($activityVersions))->toBe(['1.2.3', '1.2.2'])
+            ->and($currentActivity)->toBeArray()
+            ->and($currentActivity['version'] ?? null)->toBe('1.2.3')
+            ->and($currentActivity['dist']['type'] ?? null)->toBe('zip')
+            ->and($currentActivity['dist']['url'] ?? null)->toBe(
+                'https://example.test/releases/download/v1.2.3/nvl-activity-1.2.3.zip',
+            )
+            ->and($currentActivity['dist']['shasum'] ?? null)->toBe(
+                hash_file('sha1', $activityArchive),
+            )
+            ->and($repositoryContents)->not->toContain('file://');
+    } finally {
+        $filesystem->remove($workspace);
+    }
+});
+
 it('accepts a complete Activity archive with exact root assets and autoload declarations', function (): void {
     $workspace = sys_get_temp_dir().'/nvl-activity-archive-'.bin2hex(random_bytes(8));
     $filesystem = new Filesystem;

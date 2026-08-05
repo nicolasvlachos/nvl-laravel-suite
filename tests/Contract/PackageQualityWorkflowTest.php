@@ -109,6 +109,75 @@ it('uses representative compatibility boundaries and event-scoped rich coverage'
         ->not->toContain('composer config repositories.nvl composer');
 });
 
+it('publishes tagged archives only after every release gate succeeds', function (): void {
+    $root = dirname(__DIR__, 2);
+    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+
+    expect($workflow)->toBeArray();
+
+    $publish = $workflow['jobs']['publish-release'] ?? null;
+    $deploy = $workflow['jobs']['deploy-composer-repository'] ?? null;
+    $metadataStep = is_array($publish)
+        ? collect($publish['steps'] ?? [])->firstWhere(
+            'name',
+            'Build public Composer repository metadata',
+        )
+        : null;
+    $releaseStep = is_array($publish)
+        ? collect($publish['steps'] ?? [])->firstWhere(
+            'name',
+            'Publish immutable GitHub release assets',
+        )
+        : null;
+    $pagesUpload = is_array($publish)
+        ? collect($publish['steps'] ?? [])->firstWhere(
+            'name',
+            'Upload Composer repository to GitHub Pages',
+        )
+        : null;
+    $metadataCommand = is_array($metadataStep) ? ($metadataStep['run'] ?? null) : null;
+    $releaseCommand = is_array($releaseStep) ? ($releaseStep['run'] ?? null) : null;
+
+    expect($publish)->toBeArray()
+        ->and($publish['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
+        ->and($publish['needs'] ?? null)->toBe([
+            'quality',
+            'package-matrix',
+            'database-matrix',
+            'auth-security-integration',
+            'mail-notifications-mariadb',
+            'comments-mariadb',
+            'line-coverage',
+            'branch-coverage',
+            'standalone-consumers',
+            'auth-consumer-profiles',
+            'archives',
+        ])
+        ->and($publish['permissions']['contents'] ?? null)->toBe('write')
+        ->and($publish['permissions']['pages'] ?? null)->toBe('write')
+        ->and($metadataCommand)->toBeString()->toContain(
+            'test "$archive_count" -eq 20',
+            'build-public-composer-repository.php',
+            'build/previous-packages.json',
+            'build/public/packages.json',
+            'Unable to fetch the existing Composer index',
+        )
+        ->and($releaseCommand)->toBeString()->toContain(
+            'gh release view',
+            'gh release download',
+            'gh release create',
+            'cmp -s',
+            '--verify-tag',
+            '--generate-notes',
+        )
+        ->and($pagesUpload)->toBeArray()
+        ->and($pagesUpload['uses'] ?? null)->toBe('actions/upload-pages-artifact@v4')
+        ->and($deploy)->toBeArray()
+        ->and($deploy['needs'] ?? null)->toBe('publish-release')
+        ->and($deploy['environment']['name'] ?? null)->toBe('github-pages')
+        ->and($deploy['steps'][0]['uses'] ?? null)->toBe('actions/deploy-pages@v4');
+});
+
 it('keeps every package-quality shell block syntactically valid', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
