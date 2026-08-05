@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL Primitives"
+  short_description: "Build and review exact application value objects"
+  default_prompt: "Use $nvl-primitives to implement or review value objects, casts, validation, money, currency conversion, and reference catalogs."
