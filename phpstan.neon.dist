@@ -1,0 +1,60 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/nesbot/carbon/extension.neon
+
+parameters:
+    excludePaths:
+        analyseAndScan:
+            - .temp/*
+            - packages/nvl/*/.temp/*
+
+    paths:
+        - app
+        - tools/fixtures/activity-production-consumer/app
+        - tools/build-archive-repository.php
+        - tools/check-package-contracts.php
+        - packages/nvl/activity/src
+        - packages/nvl/activity/database/factories
+        - packages/nvl/activity/database/seeders
+        - packages/nvl/activity/tests/Stubs/TestActivitySubjectWithHasModelActivity.php
+        - packages/nvl/activity/tests/Stubs/TestActivityTimelineHost.php
+        - packages/nvl/comments/src
+        - packages/nvl/comments/tests/Fixtures/TestCommentTarget.php
+        - packages/nvl/csv/src
+        - packages/nvl/data/src
+        - packages/nvl/data/tests/Fixtures/DataTransformFixture.php
+        - packages/nvl/filterable/src
+        - packages/nvl/filterable/tests/Fixtures/FilterableRecord.php
+        - packages/nvl/forms/src
+        - packages/nvl/forms/database/factories
+        - packages/nvl/forms/database/seeders
+        - packages/nvl/media/src
+        - packages/nvl/media/database/factories
+        - packages/nvl/media/database/seeders
+        - packages/nvl/media/tests/Stubs/TestMediaModel.php
+        - packages/nvl/metafields/src
+        - packages/nvl/metafields/database/factories
+        - packages/nvl/metafields/database/seeders
+        - packages/nvl/metafields/tests/Fixtures/TestMetafieldOwner.php
+        - packages/nvl/primitives/src
+        - packages/nvl/seo/src
+        - packages/nvl/seo/database/factories
+        - packages/nvl/seo/tests/Fixtures/TestSeoOwner.php
+        - packages/nvl/seo/tests/Fixtures/TestStructuredDataProvider.php
+        - packages/nvl/settings/src
+        - packages/nvl/settings/tests/Fixtures/UsesInteractsWithSettings.php
+        - packages/nvl/support/src
+        - packages/nvl/taxonomy/src
+        - packages/nvl/taxonomy/tests/Fixtures/Post.php
+        - packages/nvl/templates/src
+        - packages/nvl/translatable/src
+        - packages/nvl/translatable/tests/Support/TestTranslatableModel.php
+        - packages/nvl/translatable/tests/Support/TestSelfTranslatableModel.php
+        - packages/nvl/translatable/tests/Support/TestDomainManagedTranslatableModel.php
+        - packages/nvl/translations/src
+
+    level: max
+
+    checkModelProperties: true
+
+    tmpDir: storage/framework/cache/phpstan

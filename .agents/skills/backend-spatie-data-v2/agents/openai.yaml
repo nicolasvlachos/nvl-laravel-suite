@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Spatie Data V2"
+  short_description: "Future Spatie Data doctrine"
+  default_prompt: "Use $backend-spatie-data-v2 to review a future Spatie Data DTO contract."

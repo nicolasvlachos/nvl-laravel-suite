@@ -1,0 +1,11 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        "noEmit": true,
+        "skipLibCheck": false,
+        "strict": true
+    },
+    "files": [
+        "resources/js/types/generated.d.ts"
+    ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Media"
+  short_description: "Build secure localized media workflows"
+  default_prompt: "Use $backend-media to implement a secure media upload or metadata workflow."

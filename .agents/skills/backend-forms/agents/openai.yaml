@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Forms"
+  short_description: "Build secure localized form workflows"
+  default_prompt: "Use $backend-forms to implement a secure localized form workflow."

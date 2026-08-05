@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Translatable"
+  short_description: "Build deterministic Eloquent translations"
+  default_prompt: "Use $backend-translatable to design, implement, audit, and verify locale-safe Eloquent content translations."
