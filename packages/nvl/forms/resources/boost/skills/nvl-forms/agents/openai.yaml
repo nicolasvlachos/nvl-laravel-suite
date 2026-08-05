@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL Forms"
+  short_description: "Build secure localized form workflows"
+  default_prompt: "Use $nvl-forms to implement or review headless form definitions, secure idempotent submissions, privacy, and extensions."
