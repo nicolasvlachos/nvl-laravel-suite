@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Relations\StringMorphMany;
 
 /**
  * Adds the direct polymorphic Content relationship and owner lifecycle cleanup.
@@ -98,11 +99,13 @@ trait HasContent
      */
     public function contentPlacements(): MorphMany
     {
-        return $this->morphMany(
-            ContentPlacement::class,
-            'owner',
-            'owner_type',
-            'owner_id',
+        $related = new ContentPlacement;
+
+        return new StringMorphMany(
+            $related->newQuery(),
+            $this,
+            $related->qualifyColumn('owner_type'),
+            $related->qualifyColumn('owner_id'),
             $this->getKeyName(),
         );
     }

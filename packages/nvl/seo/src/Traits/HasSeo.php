@@ -7,6 +7,7 @@ namespace Nvl\Seo\Traits;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Nvl\Seo\Models\SeoProfile;
+use Nvl\Seo\Relations\StringMorphMany;
 use Nvl\Seo\Support\SeoScope;
 
 /**
@@ -23,7 +24,15 @@ trait HasSeo
      */
     public function seoProfiles(): MorphMany
     {
-        return $this->morphMany(SeoProfile::class, 'seoable');
+        $related = new SeoProfile;
+
+        return new StringMorphMany(
+            $related->newQuery(),
+            $this,
+            $related->qualifyColumn('seoable_type'),
+            $related->qualifyColumn('seoable_id'),
+            $this->getKeyName(),
+        );
     }
 
     /**

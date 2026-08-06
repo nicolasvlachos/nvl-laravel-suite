@@ -22,7 +22,7 @@ use Nvl\Taxonomy\Concerns\HasTaxonomies;
  *
  * @property int $id Persisted model identifier
  * @property string $name Display name
- * @property int|null $category_id Optional legacy category reference
+ * @property string|null $category_id Optional legacy category reference
  * @property Carbon|null $created_at Creation timestamp
  * @property Carbon|null $updated_at Last update timestamp
  */

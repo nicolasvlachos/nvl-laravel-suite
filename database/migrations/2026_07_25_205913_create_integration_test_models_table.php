@@ -19,7 +19,7 @@ return new class extends Migration
         Schema::create('integration_test_models', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('category_id')->nullable();
+            $table->uuid('category_id')->nullable();
             $table->timestamps();
         });
     }

@@ -17,6 +17,19 @@ it('keeps Composer update hooks independent of optional development tools', func
         ->not->toContain('@php artisan boost:update --ansi');
 });
 
+it('gives clean-runner integration tests a deterministic non-production application key', function (): void {
+    $configuration = simplexml_load_file(dirname(__DIR__, 2).'/phpunit.xml');
+
+    expect($configuration)->not->toBeFalse();
+
+    $matches = $configuration->xpath('/phpunit/php/env[@name="APP_KEY"]');
+    $testingKey = is_array($matches) ? ($matches[0] ?? null) : null;
+
+    expect($testingKey)->toBeInstanceOf(SimpleXMLElement::class)
+        ->and((string) $testingKey['value'])->toStartWith('base64:')
+        ->and((string) $testingKey['force'])->toBe('true');
+});
+
 it('keeps fast line coverage complete and its Auth infrastructure exclusion effective', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
@@ -161,7 +174,6 @@ it('publishes tagged archives only after every release gate succeeds', function 
             'quality',
             'package-matrix',
             'database-matrix',
-            'auth-security-integration',
             'mail-notifications-mariadb',
             'comments-mariadb',
             'line-coverage',
@@ -305,7 +317,6 @@ it('bounds routine CI fan-out while preserving the full release grid', function 
     foreach ([
         'package-matrix' => 20,
         'database-matrix' => 20,
-        'auth-security-integration' => 20,
         'line-coverage' => 15,
         'standalone-consumers' => 15,
     ] as $jobName => $timeout) {
@@ -317,4 +328,50 @@ it('bounds routine CI fan-out while preserving the full release grid', function 
 
     expect($jobs['quality']['timeout-minutes'] ?? null)->toBe(20)
         ->and($jobs['archives']['timeout-minutes'] ?? null)->toBe(30);
+});
+
+it('runs the real Auth suite on both stateful databases without fictional test paths', function (): void {
+    $root = dirname(__DIR__, 2);
+    $path = $root.'/.github/workflows/package-quality.yml';
+    $workflow = Yaml::parseFile($path);
+    $source = file_get_contents($path);
+
+    expect($workflow)->toBeArray()
+        ->and($source)->toBeString()
+        ->toContain('for package in activity auth comments content')
+        ->not->toContain(
+            'auth-security-integration',
+            'RealSecurityConcurrencyTest.php',
+            'RealDeliveryWorkerTest.php',
+            'RedisLifecycleMessageDispatcher',
+        );
+
+    $databaseMatrix = $workflow['jobs']['database-matrix']['strategy']['matrix']['include'] ?? [];
+
+    expect($databaseMatrix)->toBeArray()
+        ->and(array_column($databaseMatrix, 'database'))->toBe(['mysql', 'pgsql']);
+});
+
+it('keeps the dedicated Media workflow bounded and Laravel 12 installable', function (): void {
+    $root = dirname(__DIR__, 2);
+    $path = $root.'/.github/workflows/media-quality.yml';
+    $workflow = Yaml::parseFile($path);
+    $source = file_get_contents($path);
+
+    expect($workflow)->toBeArray()
+        ->and($source)->toBeString()
+        ->toContain(
+            '"laravel/tinker:^${{ matrix.laravel == \'12\' && \'2.10.1\' || \'3.0\' }}"',
+            '--test-directory=packages/nvl/media/tests',
+        );
+
+    expect($source)->not->toContain(
+        '--test-directory=packages/nvl/media/tests/Integration',
+    );
+
+    $jobs = $workflow['jobs'] ?? [];
+
+    expect($jobs['runtime-matrix']['strategy']['fail-fast'] ?? null)->toBeTrue()
+        ->and($jobs['runtime-matrix']['timeout-minutes'] ?? null)->toBe(15)
+        ->and($jobs['production-stack']['timeout-minutes'] ?? null)->toBe(20);
 });

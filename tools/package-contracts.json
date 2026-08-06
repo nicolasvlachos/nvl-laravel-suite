@@ -9099,6 +9099,25 @@
                     "public function register(): void",
                     "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Services\\ContentDefinitionLoader $loader, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $definitionMigrations, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentSchemaCompiler $schemaCompiler, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentReferenceRegistry $references): void"
                 ],
+                "Nvl\\Content\\Relations\\StringMorphMany": [
+                    "final class Nvl\\Content\\Relations\\StringMorphMany extends Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
+                    "@template TRelatedModel of Model",
+                    "@template TDeclaringModel of Model",
+                    "@extends MorphMany<TRelatedModel, TDeclaringModel>",
+                    "public function addConstraints(): void",
+                    "public function addEagerConstraints(array $models): void",
+                    "@param array<int, TDeclaringModel> $models",
+                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Illuminate\\Database\\Eloquent\\Builder",
+                    "@param array<int, string>|string $columns",
+                    "@return Builder<TRelatedModel>",
+                    "protected function setForeignAttributesForCreate(Illuminate\\Database\\Eloquent\\Model $model): void",
+                    "@param TRelatedModel $model"
+                ],
+                "Nvl\\Content\\Relations\\TextColumnComparison": [
+                    "final readonly class Nvl\\Content\\Relations\\TextColumnComparison implements Illuminate\\Contracts\\Database\\Query\\Expression",
+                    "public function __construct(string $left, string $right): mixed",
+                    "public function getValue(Illuminate\\Database\\Grammar $grammar): string"
+                ],
                 "Nvl\\Content\\Schema\\ContentDefinitionSource": [
                     "final readonly class Nvl\\Content\\Schema\\ContentDefinitionSource",
                     "public readonly string $key",
@@ -26144,6 +26163,25 @@
                     "final class Nvl\\Seo\\Providers\\SeoServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
                     "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Seo\\Services\\SitemapRegistry $sitemaps, Nvl\\Seo\\Services\\StructuredDataRegistry $structuredData): void"
+                ],
+                "Nvl\\Seo\\Relations\\StringMorphMany": [
+                    "final class Nvl\\Seo\\Relations\\StringMorphMany extends Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
+                    "@template TRelatedModel of Model",
+                    "@template TDeclaringModel of Model",
+                    "@extends MorphMany<TRelatedModel, TDeclaringModel>",
+                    "public function addConstraints(): void",
+                    "public function addEagerConstraints(array $models): void",
+                    "@param array<int, TDeclaringModel> $models",
+                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Illuminate\\Database\\Eloquent\\Builder",
+                    "@param array<int, string>|string $columns",
+                    "@return Builder<TRelatedModel>",
+                    "protected function setForeignAttributesForCreate(Illuminate\\Database\\Eloquent\\Model $model): void",
+                    "@param TRelatedModel $model"
+                ],
+                "Nvl\\Seo\\Relations\\TextColumnComparison": [
+                    "final readonly class Nvl\\Seo\\Relations\\TextColumnComparison implements Illuminate\\Contracts\\Database\\Query\\Expression",
+                    "public function __construct(string $left, string $right): mixed",
+                    "public function getValue(Illuminate\\Database\\Grammar $grammar): string"
                 ],
                 "Nvl\\Seo\\Rules\\CanonicalUrl": [
                     "final readonly class Nvl\\Seo\\Rules\\CanonicalUrl implements Illuminate\\Contracts\\Validation\\ValidationRule",
