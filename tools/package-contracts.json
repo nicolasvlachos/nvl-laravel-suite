@@ -4957,7 +4957,7 @@
                 "routes/public/social_identities.php": "c982c6a1ffdb5543ae5822a202e67bc7fbcb90ba898e820dc4fe98acd77a41f3"
             },
             "migrations": {
-                "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "4c47431aca5d541610ef90f7f5a710a050b882fea0b62a335b2420c9b59ebb28",
+                "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "52df515efcc7296066f50ff1894073580cca99b8617665ba213d812049a3efe7",
                 "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "2a20193ec5f1619ac64fcd37e2de65217f9b631fcf657ba93ddcd547b1ca1922"
             }
         },
@@ -17347,7 +17347,7 @@
             "migrations": {
                 "database/migrations/2026_07_28_000000_assert_mail_notification_schema_compatibility.php": "3cbcdfe53bbaa6cd9b63d2b2b40306c083a8ee3d804ae7e76f068f0817f5be51",
                 "database/migrations/2026_07_29_000000_create_mail_notification_tables.php": "875f02b9f4bf3d402079a8dae1f078660e69ed9c5af9682e0f9f79952aa0b112",
-                "database/migrations/2026_07_30_000100_create_scheduled_mail_messages_table.php": "2f0d58ca4e3b7d8942bd40a94dcd8524143312bb956d77d1f288983a8634f943"
+                "database/migrations/2026_07_30_000100_create_scheduled_mail_messages_table.php": "7d7745826478c6263c351e04191f9d1c34612d98dd13b04894f626b1cb8a1759"
             }
         },
         "media": {
@@ -23162,6 +23162,25 @@
                     "final class Nvl\\Metafields\\Providers\\RouteServiceProvider extends Illuminate\\Foundation\\Support\\Providers\\RouteServiceProvider",
                     "protected string $name=\"Metafields\"",
                     "public function map(): void"
+                ],
+                "Nvl\\Metafields\\Relations\\StringMorphMany": [
+                    "final class Nvl\\Metafields\\Relations\\StringMorphMany extends Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
+                    "@template TRelatedModel of Model",
+                    "@template TDeclaringModel of Model",
+                    "@extends MorphMany<TRelatedModel, TDeclaringModel>",
+                    "public function addConstraints(): void",
+                    "public function addEagerConstraints(array $models): void",
+                    "@param array<int, TDeclaringModel> $models",
+                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Illuminate\\Database\\Eloquent\\Builder",
+                    "@param array<int, string>|string $columns",
+                    "@return Builder<TRelatedModel>",
+                    "protected function setForeignAttributesForCreate(Illuminate\\Database\\Eloquent\\Model $model): void",
+                    "@param TRelatedModel $model"
+                ],
+                "Nvl\\Metafields\\Relations\\TextColumnComparison": [
+                    "final readonly class Nvl\\Metafields\\Relations\\TextColumnComparison implements Illuminate\\Contracts\\Database\\Query\\Expression",
+                    "public function __construct(string $left, string $right): mixed",
+                    "public function getValue(Illuminate\\Database\\Grammar $grammar): string"
                 ],
                 "Nvl\\Metafields\\Services\\ConfiguredMetafieldAuthorization": [
                     "final class Nvl\\Metafields\\Services\\ConfiguredMetafieldAuthorization implements Nvl\\Metafields\\Contracts\\MetafieldAuthorization",

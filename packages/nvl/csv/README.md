@@ -281,7 +281,7 @@ composer dependencies:check
 composer packages:validate
 ```
 
-The package is held to maximum PHPStan strictness and the monorepo’s per-package line and branch coverage thresholds.
+The package is held to maximum PHPStan strictness, the monorepo's measured line-coverage baseline, and its 90% changed-line coverage requirement.
 
 ## License
 

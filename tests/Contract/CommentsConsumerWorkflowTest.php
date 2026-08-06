@@ -226,6 +226,11 @@ it('keeps the Comments production consumer fixture representative', function ():
     $typescript = commentsWorkflowFileContents(
         $fixtureRoot.'/typescript/comments-consumer.ts',
     );
+    $typescriptConfig = json_decode(
+        commentsWorkflowFileContents($fixtureRoot.'/typescript/tsconfig.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
 
     expect($provider)->toContain(
         'CommentAuthorization::class',
@@ -266,7 +271,11 @@ it('keeps the Comments production consumer fixture representative', function ():
             'satisfies Nvl.Comments.Data.Mutations.UpdateCommentData',
             'Nvl.Comments.Data.PublicCommentData',
             'Nvl.Comments.Data.CommentManagementData',
-        );
+        )
+        ->and($typescriptConfig['compilerOptions']['lib'] ?? null)->toBe([
+            'ES2022',
+            'DOM',
+        ]);
 });
 
 /**

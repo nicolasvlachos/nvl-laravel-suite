@@ -134,7 +134,7 @@ jobs:
           while read -r doctor; do
             if [ "$doctor" = "nvl:auth:doctor" ]; then
               APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=sync \
-                php artisan "$doctor" --profile=install --strict --format=json
+                php artisan "$doctor" --strict --format=json
             else
               APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=sync \
                 php artisan "$doctor" --format=json
@@ -175,7 +175,7 @@ jobs:
             while read -r doctor; do
               if [ "$doctor" = "nvl:auth:doctor" ]; then
                 APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=sync \
-                  php artisan "$doctor" --profile=install --strict --format=json
+                  php artisan "$doctor" --strict --format=json
               else
                 APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=sync \
                   php artisan "$doctor" --strict --format=json

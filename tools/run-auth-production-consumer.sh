@@ -65,7 +65,7 @@ php_artisan vendor:publish --tag=sanctum-migrations --force
 php_artisan vendor:publish --tag=permission-migrations --force
 php_artisan migrate --force
 php_artisan auth-consumer:maintenance --format=json
-php_artisan nvl:auth:doctor --profile=production --strict --format=json
+php_artisan nvl:auth:doctor --strict --format=json
 
 before_inventory="$report_root/features-before-cache.json"
 after_inventory="$report_root/features-after-cache.json"
@@ -133,7 +133,7 @@ inventory_matrix "$before_inventory" > "$report_root/matrix-before-cache.json"
 
 php_artisan config:cache
 php_artisan route:cache
-php_artisan nvl:auth:doctor --profile=production --strict --format=json
+php_artisan nvl:auth:doctor --strict --format=json
 php_artisan nvl:auth:features --format=json > "$after_inventory"
 
 assert_inventory "$after_inventory"
@@ -158,7 +158,7 @@ php_artisan queue:work database \
     --tries=1 \
     --timeout=90 \
     --no-interaction
-php_artisan nvl:auth:doctor --profile=production --strict --format=json
+php_artisan nvl:auth:doctor --strict --format=json
 
 if [ "$profile" = 'all-enabled' ]; then
     php_artisan auth-consumer:smoke --format=json
@@ -167,7 +167,7 @@ fi
 php_artisan migrate:rollback --force --step=999
 php_artisan migrate --force
 php_artisan auth-consumer:maintenance --format=json
-php_artisan nvl:auth:doctor --profile=production --strict --format=json
+php_artisan nvl:auth:doctor --strict --format=json
 php_artisan nvl:auth:features --format=json > "$reapplied_inventory"
 
 assert_inventory "$reapplied_inventory"

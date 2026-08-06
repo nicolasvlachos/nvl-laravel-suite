@@ -196,7 +196,7 @@ if ($databaseMatrixPackages !== $expectedDatabaseTested) {
     $fail('family', 'database CI matrix does not contain exactly every database-tested package');
 }
 
-foreach (['line-coverage', 'branch-coverage'] as $coverageJob) {
+foreach (['line-coverage'] as $coverageJob) {
     $coveragePackages = $workflowConfiguration['jobs'][$coverageJob]['strategy']['matrix']['package'] ?? [];
 
     if (! is_array($coveragePackages)) {

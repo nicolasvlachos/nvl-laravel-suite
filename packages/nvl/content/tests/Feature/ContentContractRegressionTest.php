@@ -1302,21 +1302,28 @@ it('validates definition synchronization lock configuration', function (string $
 ]);
 
 it('rejects required database columns with incompatible semantics', function (string $semantic): void {
-    Schema::table(ContentConfiguration::table('blocks'), function (Blueprint $table) use ($semantic): void {
-        if ($semantic === 'type') {
-            $table->integer('key')->change();
+    if ($semantic === 'type' && DB::getDriverName() === 'pgsql') {
+        $grammar = DB::getQueryGrammar();
+        $table = $grammar->wrapTable(ContentConfiguration::table('blocks'));
+        $column = $grammar->wrap('key');
+        DB::statement("alter table {$table} alter column {$column} type integer using 0");
+    } else {
+        Schema::table(ContentConfiguration::table('blocks'), function (Blueprint $table) use ($semantic): void {
+            if ($semantic === 'type') {
+                $table->integer('key')->change();
 
-            return;
-        }
+                return;
+            }
 
-        if ($semantic === 'nullability') {
-            $table->string('key', 191)->nullable()->change();
+            if ($semantic === 'nullability') {
+                $table->string('key', 191)->nullable()->change();
 
-            return;
-        }
+                return;
+            }
 
-        $table->string('status', 30)->default('published')->change();
-    });
+            $table->string('status', 30)->default('published')->change();
+        });
+    }
 
     $this->artisan('nvl:content:doctor', ['--strict' => true, '--format' => 'json'])
         ->assertFailed()

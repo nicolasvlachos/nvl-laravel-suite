@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Templates\Actions;
 
+use Illuminate\Support\Str;
 use Nvl\Templates\Contracts\TemplateAuthorization;
 use Nvl\Templates\Data\Mutations\RenderTemplateData;
 use Nvl\Templates\Data\RenderedTemplateData;
@@ -37,8 +38,13 @@ final readonly class RenderStoredTemplateAction
         $model = $template instanceof StoredTemplate
             ? $template
             : StoredTemplate::query()
-                ->where('id', $template)
-                ->orWhere('key', $template)
+                ->when(
+                    Str::isUuid($template),
+                    static fn ($query) => $query
+                        ->where('id', $template)
+                        ->orWhere('key', $template),
+                    static fn ($query) => $query->where('key', $template),
+                )
                 ->firstOrFail();
         $this->authorization->authorize(
             TemplateAbility::Render,

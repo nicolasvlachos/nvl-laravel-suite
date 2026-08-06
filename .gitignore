@@ -1,4 +1,9 @@
 *.log
+*.dump
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
 .DS_Store
 .env
 .env.*
@@ -13,7 +18,8 @@
 **/.temp/
 /.vscode
 /.zed
-/auth.json
+auth.json
+credentials.json
 /build/
 /coverage/
 /extracted_prompts.txt

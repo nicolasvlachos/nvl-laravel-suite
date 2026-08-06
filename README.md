@@ -86,6 +86,9 @@ Laravel Herd serves this workspace automatically; do not start a separate PHP de
 - Keep Controllers as HTTP adapters, Actions as transaction owners, Services as focused collaborators, Models lean, and DTOs explicit.
 - Add a migration instead of editing a migration that may already be deployed.
 - Add or update Pest coverage for every behavior change.
+- CI holds each package at its measured coverage baseline, requires 90% line
+  coverage for newly changed source lines on pull requests and branch pushes,
+  and ratchets package baselines upward as tests improve.
 - Keep package dependencies declared directly and bounded.
 - Keep the v1 API free of pre-release aliases; document breaking upgrades explicitly.
 - Use package Actions and Services from consumers; do not reach into persistence internals.

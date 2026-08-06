@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
-it('keeps both coverage matrices complete and their Auth infrastructure exclusion effective', function (): void {
+it('keeps fast line coverage complete and its Auth infrastructure exclusion effective', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
     $catalog = require $root.'/tools/package-family.php';
@@ -15,56 +15,59 @@ it('keeps both coverage matrices complete and their Auth infrastructure exclusio
 
     sort($expectedPackages);
 
-    foreach (['line-coverage', 'branch-coverage'] as $jobName) {
-        $job = $workflow['jobs'][$jobName] ?? null;
+    $job = $workflow['jobs']['line-coverage'] ?? null;
 
-        expect($job)->toBeArray();
+    expect($job)->toBeArray();
 
-        $packages = $job['strategy']['matrix']['package'] ?? [];
-        $coverageStep = collect($job['steps'] ?? [])->firstWhere(
-            'name',
-            $jobName === 'line-coverage'
-                ? 'Enforce line threshold'
-                : 'Enforce line and branch thresholds',
-        );
+    $packages = $job['strategy']['matrix']['package'] ?? [];
+    $setupStep = collect($job['steps'] ?? [])->firstWhere(
+        'uses',
+        'shivammathur/setup-php@v2',
+    );
+    $coverageStep = collect($job['steps'] ?? [])->firstWhere(
+        'name',
+        'Enforce line threshold',
+    );
 
-        expect($packages)->toBeArray();
+    expect($packages)->toBeArray();
 
-        sort($packages);
+    sort($packages);
 
-        expect($packages)->toBe($expectedPackages)
-            ->and($coverageStep)->toBeArray();
+    expect($packages)->toBe($expectedPackages)
+        ->and($coverageStep)->toBeArray();
 
-        $command = $coverageStep['run'] ?? null;
-        $lines = is_string($command)
-            ? array_map('trim', explode("\n", $command))
-            : [];
+    $command = $coverageStep['run'] ?? null;
+    $lines = is_string($command)
+        ? array_map('trim', explode("\n", $command))
+        : [];
 
-        expect($command)->toBeString()
-            ->toContain(
-                '--exclude-testsuite=infrastructure',
-                '--test-directory="packages/nvl/${{ matrix.package }}/tests"',
-                '"${coverage_arguments[@]}"',
-            )
-            ->and($lines)->not->toContain(
-                '"packages/nvl/${{ matrix.package }}/tests"',
-            );
-
-        if ($jobName === 'line-coverage') {
-            expect($command)->toContain(
-                'check-changed-clover-coverage.php',
-                'PULL_REQUEST_BASE_SHA',
-            );
-        } else {
-            expect($command)->toContain(
-                '--path-coverage',
-                '--coverage-html=',
-            );
-        }
-    }
+    expect($command)->toBeString()
+        ->toContain(
+            '--exclude-testsuite=infrastructure',
+            '--test-directory="packages/nvl/${{ matrix.package }}/tests"',
+            '"${coverage_arguments[@]}"',
+            'check-changed-clover-coverage.php',
+            'COVERAGE_BASE_SHA',
+            '0000000000000000000000000000000000000000',
+            'minimum_line=90',
+            '"$minimum_line" 0',
+        )
+        ->and($lines)->not->toContain(
+            '"packages/nvl/${{ matrix.package }}/tests"',
+        )
+        ->and($setupStep)->toBeArray()
+        ->and($setupStep['with']['coverage'] ?? null)->toBe('pcov')
+        ->and($setupStep['with']['ini-values'] ?? null)->toBe(
+            'pcov.directory=${{ github.workspace }}/packages/nvl/${{ matrix.package }}/src',
+        )
+        ->and($coverageStep['env']['COVERAGE_BASE_SHA'] ?? null)->toContain(
+            'github.event.pull_request.base.sha',
+            'github.event.before',
+        )
+        ->and($workflow['jobs'])->not->toHaveKey('branch-coverage');
 });
 
-it('uses representative compatibility boundaries and event-scoped rich coverage', function (): void {
+it('uses representative compatibility boundaries and push-scoped line coverage', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
 
@@ -72,8 +75,12 @@ it('uses representative compatibility boundaries and event-scoped rich coverage'
 
     $jobs = $workflow['jobs'] ?? [];
     $compatibility = $jobs['package-matrix']['strategy']['matrix']['include'] ?? null;
+    $frameworkStep = collect($jobs['package-matrix']['steps'] ?? [])->firstWhere(
+        'name',
+        'Select framework line',
+    );
+    $frameworkCommand = is_array($frameworkStep) ? ($frameworkStep['run'] ?? null) : null;
     $lineCoverage = $jobs['line-coverage'] ?? null;
-    $branchCoverage = $jobs['branch-coverage'] ?? null;
     $archives = $jobs['archives'] ?? null;
     $archiveExercise = is_array($archives)
         ? collect($archives['steps'] ?? [])->firstWhere('name', 'Install and exercise built archives')
@@ -86,15 +93,13 @@ it('uses representative compatibility boundaries and event-scoped rich coverage'
         ['php' => '8.4', 'laravel' => '13', 'dependencies' => 'lowest'],
         ['php' => '8.5', 'laravel' => '13', 'dependencies' => 'highest'],
     ])
+        ->and($frameworkCommand)->toBeString()->toContain(
+            '"laravel/tinker:^${{ matrix.laravel == \'12\' && \'2.10.1\' || \'3.0\' }}"',
+        )
         ->and($lineCoverage)->toBeArray()
         ->and($lineCoverage['if'] ?? null)->toContain(
             "github.event_name == 'pull_request'",
             "github.event_name == 'push'",
-        )
-        ->and($branchCoverage)->toBeArray()
-        ->and($branchCoverage['if'] ?? null)->toContain(
-            "github.event_name == 'schedule'",
-            "startsWith(github.ref, 'refs/tags/v')",
         )
         ->and($archives)->toBeArray()
         ->and($archives['if'] ?? null)->toBeNull()
@@ -148,7 +153,6 @@ it('publishes tagged archives only after every release gate succeeds', function 
             'mail-notifications-mariadb',
             'comments-mariadb',
             'line-coverage',
-            'branch-coverage',
             'standalone-consumers',
             'auth-consumer-profiles',
             'archives',
@@ -247,12 +251,15 @@ it('keeps the Auth clean-consumer profile and production proofs complete', funct
             'tools/fixtures/auth-production-consumer/app/.',
             'tools/fixtures/auth-production-consumer/database/.',
             'tools/fixtures/auth-production-consumer/routes/.',
-            'nvl:auth:doctor --profile=production --strict --format=json',
+            'nvl:auth:doctor --strict --format=json',
             'php artisan auth-consumer:maintenance --format=json',
             'php artisan config:cache',
             'php artisan route:cache',
             'php artisan auth-consumer:smoke --format=json',
             'php artisan migrate:rollback --force --step=999',
+            'php artisan migrate:fresh --force',
+            'vendor:publish --tag=taxonomy-config --force',
+            '$config["owners"] = ["users" => App\Models\User::class];',
         );
 
     expect($profileJob)->toBeArray()
@@ -287,7 +294,8 @@ it('keeps the Auth clean-consumer profile and production proofs complete', funct
     );
     $firstProductionDoctor = strpos(
         $command,
-        'php artisan nvl:auth:doctor --profile=production --strict --format=json',
+        'php artisan nvl:auth:doctor --strict --format=json',
+        $firstMaintenance,
     );
     $rollback = strpos(
         $command,
@@ -307,7 +315,7 @@ it('keeps the Auth clean-consumer profile and production proofs complete', funct
     );
     $postRollbackDoctor = strpos(
         $command,
-        'php artisan nvl:auth:doctor --profile=production --strict --format=json',
+        'php artisan nvl:auth:doctor --strict --format=json',
         $rollback,
     );
 
@@ -488,7 +496,7 @@ it('keeps the Auth clean-consumer profile and production proofs complete', funct
             'php_artisan schedule:list',
             'php_artisan schedule:run --no-interaction',
             'php_artisan queue:work database',
-            'php_artisan nvl:auth:doctor --profile=production --strict --format=json',
+            'php_artisan nvl:auth:doctor --strict --format=json',
             'php_artisan nvl:auth:features --format=json',
             'php_artisan auth-consumer:smoke --format=json',
             'registered_route_count',

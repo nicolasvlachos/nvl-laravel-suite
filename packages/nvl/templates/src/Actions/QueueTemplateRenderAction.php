@@ -6,6 +6,7 @@ namespace Nvl\Templates\Actions;
 
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Nvl\Templates\Contracts\TemplateAuthorization;
 use Nvl\Templates\Data\Mutations\RenderTemplateData;
 use Nvl\Templates\Data\TemplateActorData;
@@ -39,7 +40,15 @@ final readonly class QueueTemplateRenderAction
     ): TemplateRender {
         $model = $template instanceof Template
             ? $template
-            : Template::query()->where('id', $template)->orWhere('key', $template)->firstOrFail();
+            : Template::query()
+                ->when(
+                    Str::isUuid($template),
+                    static fn ($query) => $query
+                        ->where('id', $template)
+                        ->orWhere('key', $template),
+                    static fn ($query) => $query->where('key', $template),
+                )
+                ->firstOrFail();
         $this->authorization->authorize(
             TemplateAbility::Render,
             $actor,
