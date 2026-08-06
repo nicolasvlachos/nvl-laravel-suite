@@ -5,6 +5,18 @@ declare(strict_types=1);
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
+it('keeps Composer update hooks independent of optional development tools', function (): void {
+    $manifest = json_decode(
+        file_get_contents(dirname(__DIR__, 2).'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+
+    expect($manifest['scripts']['post-update-cmd'] ?? null)
+        ->toBeArray()
+        ->not->toContain('@php artisan boost:update --ansi');
+});
+
 it('keeps fast line coverage complete and its Auth infrastructure exclusion effective', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
@@ -154,7 +166,6 @@ it('publishes tagged archives only after every release gate succeeds', function 
             'comments-mariadb',
             'line-coverage',
             'standalone-consumers',
-            'auth-consumer-profiles',
             'archives',
         ])
         ->and($publish['permissions']['contents'] ?? null)->toBe('write')
@@ -221,285 +232,89 @@ it('keeps every package-quality shell block syntactically valid', function (): v
     }
 });
 
-it('keeps the Auth clean-consumer profile and production proofs complete', function (): void {
+it('keeps the Auth clean-consumer proof on current package-owned surfaces', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
-    $job = $workflow['jobs']['standalone-consumers'] ?? null;
-    $profileJob = $workflow['jobs']['auth-consumer-profiles'] ?? null;
-    $step = collect($job['steps'] ?? [])->firstWhere(
-        'name',
-        'Create clean consumer',
-    );
-    $profileStep = collect($profileJob['steps'] ?? [])->firstWhere(
-        'name',
-        'Create and exercise clean Auth profile consumers',
-    );
+    $jobs = $workflow['jobs'] ?? [];
+    $job = $jobs['standalone-consumers'] ?? null;
+    $step = collect($job['steps'] ?? [])->firstWhere('name', 'Create clean consumer');
     $command = is_array($step) ? ($step['run'] ?? null) : null;
-    $profileCommand = is_array($profileStep) ? ($profileStep['run'] ?? null) : null;
+    $packages = $job['strategy']['matrix']['package'] ?? [];
 
     expect($job)->toBeArray()
+        ->and($packages)->toContain('auth')
         ->and($step)->toBeArray()
         ->and($command)->toBeString()
         ->toContain(
             '--no-dev',
-            "'laravel/sanctum:^4.3'",
-            'vendor:publish --tag=sanctum-migrations --force',
-            'vendor:publish --tag=permission-migrations --force',
-            'tools/fixtures/auth-production-consumer/app/.',
-            'tools/fixtures/auth-production-consumer/database/.',
-            'tools/fixtures/auth-production-consumer/routes/.',
-            'nvl:auth:doctor --strict --format=json',
-            'php artisan auth-consumer:maintenance --format=json',
+            '--prefer-lowest',
+            '"nvl/${{ matrix.package }}:@dev"',
+            'php artisan package:discover',
             'php artisan config:cache',
             'php artisan route:cache',
-            'php artisan auth-consumer:smoke --format=json',
+            'php artisan migrate --force',
+            'select(endswith(":doctor"))',
+            'php artisan "$doctor" --strict --format=json',
             'php artisan migrate:rollback --force --step=999',
-            'php artisan migrate:fresh --force',
-            'vendor:publish --tag=taxonomy-config --force',
-            '$config["owners"] = ["users" => App\Models\User::class];',
-        );
-
-    expect($profileJob)->toBeArray()
-        ->and($profileJob['strategy']['matrix']['laravel'] ?? null)->toBe(['12', '13'])
-        ->and($profileStep)->toBeArray()
-        ->and($profileCommand)->toBeString()
-        ->toContain(
-            '--no-dev',
-            '--prefer-lowest',
-            "'nvl/auth:@dev'",
-            "'laravel/sanctum:^4.3'",
-            'browser-baseline',
-            'selective-feature',
-            'all-enabled',
-            'ingress-disabled',
+        )
+        ->not->toContain(
+            'tools/fixtures/auth-production-consumer',
             'tools/run-auth-production-consumer.sh',
+            'auth-consumer:maintenance',
+            'auth-consumer:smoke',
+            'AuthMaintenanceTask',
+            'SynchronizePermissionCatalogAction',
+            'boost:update',
+        )
+        ->and($jobs)->not->toHaveKey('auth-consumer-profiles');
+
+    expect(substr_count(
+        $command,
+        'php artisan "$doctor" --strict --format=json',
+    ))->toBe(2)
+        ->and(is_dir($root.'/tools/fixtures/auth-production-consumer'))->toBeFalse()
+        ->and(is_file($root.'/tools/run-auth-production-consumer.sh'))->toBeFalse();
+});
+
+it('bounds routine CI fan-out while preserving the full release grid', function (): void {
+    $root = dirname(__DIR__, 2);
+    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+
+    expect($workflow)->toBeArray();
+
+    $jobs = $workflow['jobs'] ?? [];
+    $standalone = $jobs['standalone-consumers'] ?? null;
+    $laravelMatrix = is_array($standalone)
+        ? ($standalone['strategy']['matrix']['laravel'] ?? null)
+        : null;
+
+    expect($workflow['concurrency']['cancel-in-progress'] ?? null)
+        ->toBe('${{ !startsWith(github.ref, \'refs/tags/v\') }}')
+        ->and($laravelMatrix)->toBeString()
+        ->toContain(
+            "startsWith(github.ref, 'refs/tags/v')",
+            "github.event_name == 'schedule'",
+            "github.event_name == 'workflow_dispatch'",
+            '["12", "13"]',
+            '["13"]',
         );
-
-    expect(substr_count(
-        $command,
-        'php artisan auth-consumer:smoke --format=json',
-    ))->toBeGreaterThanOrEqual(3);
-
-    expect(substr_count(
-        $command,
-        'php artisan auth-consumer:maintenance --format=json',
-    ))->toBe(2);
-
-    $firstMaintenance = strpos(
-        $command,
-        'php artisan auth-consumer:maintenance --format=json',
-    );
-    $firstProductionDoctor = strpos(
-        $command,
-        'php artisan nvl:auth:doctor --strict --format=json',
-        $firstMaintenance,
-    );
-    $rollback = strpos(
-        $command,
-        'php artisan migrate:rollback --force --step=999',
-    );
-
-    expect($firstMaintenance)->toBeInt()
-        ->and($firstProductionDoctor)->toBeInt()
-        ->and($rollback)->toBeInt()
-        ->and($firstMaintenance)->toBeLessThan($firstProductionDoctor)
-        ->and($firstProductionDoctor)->toBeLessThan($rollback);
-
-    $postRollbackMaintenance = strpos(
-        $command,
-        'php artisan auth-consumer:maintenance --format=json',
-        $rollback,
-    );
-    $postRollbackDoctor = strpos(
-        $command,
-        'php artisan nvl:auth:doctor --strict --format=json',
-        $rollback,
-    );
-
-    expect($postRollbackMaintenance)->toBeInt()
-        ->and($postRollbackDoctor)->toBeInt()
-        ->and($rollback)->toBeLessThan($postRollbackMaintenance)
-        ->and($postRollbackMaintenance)->toBeLessThan($postRollbackDoctor);
 
     foreach ([
-        'app/Auth/ApiTokens/ApiTokenApiProbe.php',
-        'app/Auth/ApiTokens/ApplicationApiTokenAbilityProvider.php',
-        'app/Auth/ApiTokens/ApplicationApiTokenEligibility.php',
-        'app/Auth/ApiTokens/OwnProfileResult.php',
-        'app/Auth/Clients/ApplicationAuthClientManagementAccess.php',
-        'app/Auth/Clients/AuthClientApiProbe.php',
-        'app/Auth/Credentials/ApplicationPasswordUpdater.php',
-        'app/Auth/Flows/AuthenticationApiProbe.php',
-        'app/Auth/Invitations/InvitationWorkflowProbe.php',
-        'app/Auth/Management/ManagementApiProbe.php',
-        'app/Auth/Session/AuthenticateConsumerCredentialsAction.php',
-        'app/Console/Commands/AuthConsumerMaintenanceCommand.php',
-        'app/Http/Controllers/ApiProfileController.php',
-        'app/Http/Controllers/AuthConsumerSessionController.php',
-        'app/Http/Controllers/CsrfTokenController.php',
-        'app/Http/Requests/AuthConsumerSessionRequest.php',
-        'app/Providers/AuthProductionServiceProvider.php',
-        'config/auth-consumer.php',
-        'database/migrations/2026_08_01_000001_create_auth_consumer_password_operations_table.php',
-        'routes/auth-management.php',
-    ] as $path) {
-        expect($root.'/tools/fixtures/auth-production-consumer/'.$path)
-            ->toBeFile();
+        'package-matrix' => 20,
+        'database-matrix' => 20,
+        'auth-security-integration' => 20,
+        'line-coverage' => 15,
+        'standalone-consumers' => 15,
+    ] as $jobName => $timeout) {
+        expect($jobs[$jobName]['strategy']['fail-fast'] ?? null)
+            ->toBeTrue()
+            ->and($jobs[$jobName]['timeout-minutes'] ?? null)
+            ->toBe($timeout);
     }
 
-    $fixtureRoot = $root.'/tools/fixtures/auth-production-consumer';
-    $provider = file_get_contents($fixtureRoot.'/app/Providers/AuthProductionServiceProvider.php');
-    $maintenance = file_get_contents(
-        $fixtureRoot.'/app/Console/Commands/AuthConsumerMaintenanceCommand.php',
-    );
-    $user = file_get_contents($fixtureRoot.'/app/Models/User.php');
-    $routes = file_get_contents($fixtureRoot.'/routes/auth-management.php');
-    $smoke = file_get_contents($fixtureRoot.'/app/Console/Commands/AuthConsumerSmokeCommand.php');
-    $http = file_get_contents($fixtureRoot.'/app/Auth/Http/SyntheticHttpProbe.php');
-    $apiTokens = file_get_contents($fixtureRoot.'/app/Auth/ApiTokens/ApiTokenApiProbe.php');
-    $clients = file_get_contents($fixtureRoot.'/app/Auth/Clients/AuthClientApiProbe.php');
-    $profileConfig = file_get_contents($fixtureRoot.'/config/auth-consumer.php');
-    $profileRunner = file_get_contents($root.'/tools/run-auth-production-consumer.sh');
-
-    expect($provider)->toBeString();
-
-    $featureBlockMatched = preg_match(
-        '/FEATURE_HANDLES\s*=\s*\[(?<features>.*?)\];/s',
-        $provider,
-        $featureBlock,
-    );
-    $featureHandlesMatched = preg_match_all(
-        "/^\\s+'([a-z_]+)',\\s*$/m",
-        is_string($featureBlock['features'] ?? null)
-            ? $featureBlock['features']
-            : '',
-        $featureHandleMatches,
-    );
-
-    expect($featureBlockMatched)->toBe(1)
-        ->and($featureHandlesMatched)->toBe(20)
-        ->and($featureHandleMatches[1] ?? null)->toBe([
-            'authentication',
-            'password',
-            'magic_links',
-            'security_codes',
-            'contacts',
-            'invitations',
-            'totp',
-            'passkeys',
-            'recovery_codes',
-            'account_recovery',
-            'social_identities',
-            'devices',
-            'cross_device',
-            'sessions',
-            'clients',
-            'api_tokens',
-            'rbac',
-            'security_notifications',
-            'principal_management',
-            'security_event_management',
-        ]);
-
-    expect($provider)->toContain(
-        'AuthClientManagementAccess::class',
-        'ApiTokenAbilityProvider::class',
-        'ApiTokenEligibility::class',
-        'SanctumApiTokenDriver::class',
-        'singleton(SyntheticHttpProbe::class)',
-        "RateLimiter::for('api'",
-        "Config::set('nvl-auth.enabled', \$profile !== 'ingress-disabled')",
-        'AuthConsumerMaintenanceCommand::class',
-        'in_array($feature, $enabledFeatures, true)',
-        'Config::set("nvl-auth.features.{$feature}.mode", \'enabled\')',
-        '"nvl-auth.features.{$feature}.routes.{$surface}.enabled"',
-        'nvl-auth.features.authentication.services.principal_resolver',
-        'nvl-auth.features.password.services.verifier',
-        'nvl-auth.features.sessions.services.driver',
-        'nvl-auth.features.api_tokens.services.driver',
-        'nvl-auth.features.social_identities.services.acquirer',
-        'nvl-auth.features.passkeys.services.ceremony',
-        'nvl-auth.features.invitations.settings.purpose_handlers',
-        'nvl-auth.features.rbac.settings.permission_catalog_providers',
-        "'browser-baseline'",
-        "'selective-feature'",
-        "'all-enabled'",
-        "'ingress-disabled'",
-        "'clients'",
-        "'api_tokens'",
-    )->not->toContain(
-        "array_keys((array) Config::get('nvl-auth.features'",
-        'nvl-auth.feature_routes',
-    )
-        ->and($maintenance)->toBeString()->toContain(
-            'AuthMaintenanceTask::cases()',
-            '$this->maintenance->run($task)',
-        )
-        ->and($user)->toBeString()->toContain(
-            'use HasApiTokens;',
-            'protected $fillable',
-            "'name'",
-            "'email'",
-            "'password'",
-            'protected $hidden',
-            "'remember_token'",
-        )->not->toContain(
-            '#[Fillable',
-            '#[Hidden',
-        )
-        ->and($routes)->toBeString()->toContain(
-            'CsrfTokenController::class',
-            "'auth:sanctum'",
-            "'throttle:api'",
-            'ValidateManagedAccessToken::class',
-            "CheckAbilities::class.':profile:read'",
-            "'auth:sanctum',\n        'throttle:api',\n        ValidateManagedAccessToken::class,\n        CheckAbilities::class.':profile:read'",
-            "->middleware(['web', 'throttle:api'])",
-            "'can:manage-authentication',\n        'throttle:nvl-auth-management'",
-        )
-        ->and($smoke)->toBeString()->toContain(
-            "'ready' => \$packageRoutes === 89",
-            'count($authTables) === 34 && $installedTables === 34',
-            "'registered_clients'",
-            "'api_tokens'",
-        )
-        ->and($http)->toBeString()->toContain(
-            'public function useBrowser(',
-            'public function dispatchStateless(',
-            "\$this->config->set('sanctum.guard', []);",
-            '$this->captureCookies($response);',
-        )
-        ->and($apiTokens)->toBeString()->toContain(
-            'whereKey($authentication->sessionId)',
-            "'/rotate'",
-            "'/api/v1/auth/api-tokens'",
-            'dispatchStateless(',
-        )
-        ->and($clients)->toBeString()->toContain(
-            "'/api/v1/auth/management/clients?surfaceKey='",
-            "'/status'",
-            'public function cleanup(',
-            "'clients.destroy'",
-        )
-        ->and($profileConfig)->toBeString()->toContain(
-            "env('AUTH_CONSUMER_PROFILE', 'all-enabled')",
-        )
-        ->and($profileRunner)->toBeString()->toContain(
-            'expected_features=\'["authentication","password","magic_links","security_codes","contacts","totp","devices","sessions","security_notifications"]\'',
-            'php -d error_reporting=8191 artisan "$@"',
-            'php_artisan config:cache',
-            'php_artisan route:cache',
-            'php_artisan migrate:rollback --force --step=999',
-            'php_artisan schedule:list',
-            'php_artisan schedule:run --no-interaction',
-            'php_artisan queue:work database',
-            'php_artisan nvl:auth:doctor --strict --format=json',
-            'php_artisan nvl:auth:features --format=json',
-            'php_artisan auth-consumer:smoke --format=json',
-            'registered_route_count',
-            'effective_route_count',
-        );
+    expect($jobs['quality']['timeout-minutes'] ?? null)->toBe(20)
+        ->and($jobs['archives']['timeout-minutes'] ?? null)->toBe(30);
 });

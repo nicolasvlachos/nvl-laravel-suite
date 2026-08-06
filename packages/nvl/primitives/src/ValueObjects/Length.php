@@ -11,6 +11,7 @@ use Nvl\Primitives\Concerns\CastsAsArray;
 use Nvl\Primitives\Contracts\ArrayPrimitive;
 use Nvl\Primitives\Contracts\Primitive;
 use Nvl\Primitives\Exceptions\InvalidPrimitive;
+use Nvl\Primitives\Support\BrickMathCompatibility;
 
 /**
  * Exact non-negative length normalized through metres.
@@ -47,7 +48,9 @@ final readonly class Length implements ArrayPrimitive
         }
 
         try {
-            $metres = BigDecimal::of($value)->multipliedBy($factor)->strippedOfTrailingZeros();
+            $metres = BrickMathCompatibility::stripTrailingZeros(
+                BigDecimal::of($value)->multipliedBy($factor),
+            );
         } catch (MathException $exception) {
             throw InvalidPrimitive::for('length', $exception->getMessage(), $exception);
         }

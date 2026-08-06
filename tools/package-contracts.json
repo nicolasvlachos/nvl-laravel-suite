@@ -1124,6 +1124,8 @@
                     "public const string DEFAULT_TABLE=\"activity_log\"",
                     "protected mixed $keyType=\"string\"",
                     "public mixed $incrementing=false",
+                    "protected function attributeChanges(): Illuminate\\Database\\Eloquent\\Casts\\Attribute",
+                    "@return Attribute<Collection<int|string, mixed>|null, never>",
                     "public function getTable(): string",
                     "public function getConnectionName(): ?string",
                     "public function newEloquentBuilder(mixed $query): Nvl\\Activity\\Builders\\ActivityLogBuilder",
@@ -24811,6 +24813,18 @@
                     "public function banks(?string $search=null, int $limit=50): array",
                     "@return list<ReferenceOption>"
                 ],
+                "Nvl\\Primitives\\Support\\BrickMathCompatibility": [
+                    "final class Nvl\\Primitives\\Support\\BrickMathCompatibility",
+                    "public static function unnecessary(): Brick\\Math\\RoundingMode",
+                    "public static function halfUp(): Brick\\Math\\RoundingMode",
+                    "public static function stripTrailingZeros(Brick\\Math\\BigDecimal $value): Brick\\Math\\BigDecimal"
+                ],
+                "Nvl\\Primitives\\Support\\BrickMoneyCompatibility": [
+                    "final class Nvl\\Primitives\\Support\\BrickMoneyCompatibility",
+                    "public static function allocate(object $money, array $ratios, ?bool $modernApi=null): mixed",
+                    "@param list<string|int> $ratios",
+                    "public static function split(object $money, int $parts, ?bool $modernApi=null): mixed"
+                ],
                 "Nvl\\Primitives\\ValueObjects\\Coordinates": [
                     "final readonly class Nvl\\Primitives\\ValueObjects\\Coordinates implements Illuminate\\Contracts\\Database\\Eloquent\\Castable, JsonSerializable, Nvl\\Primitives\\Contracts\\ArrayPrimitive, Nvl\\Primitives\\Contracts\\Primitive, Stringable",
                     "public static function from(string|int|float $latitude, string|int|float $longitude): self",
@@ -24954,7 +24968,7 @@
                 ],
                 "Nvl\\Primitives\\ValueObjects\\Money": [
                     "final readonly class Nvl\\Primitives\\ValueObjects\\Money implements Illuminate\\Contracts\\Database\\Eloquent\\Castable, JsonSerializable, Nvl\\Primitives\\Contracts\\ArrayPrimitive, Nvl\\Primitives\\Contracts\\Primitive, Stringable",
-                    "public static function of(string|int $amount, Nvl\\Primitives\\ValueObjects\\CurrencyCode|string $currency, Brick\\Math\\RoundingMode $roundingMode=Brick\\Math\\RoundingMode::Unnecessary): self",
+                    "public static function of(string|int $amount, Nvl\\Primitives\\ValueObjects\\CurrencyCode|string $currency, ?Brick\\Math\\RoundingMode $roundingMode=null): self",
                     "public static function minor(string|int $minorAmount, Nvl\\Primitives\\ValueObjects\\CurrencyCode|string $currency): self",
                     "public static function zero(Nvl\\Primitives\\ValueObjects\\CurrencyCode|string $currency): self",
                     "public static function fromArray(array $value): static",
@@ -24967,8 +24981,8 @@
                     "public function currency(): Nvl\\Primitives\\ValueObjects\\CurrencyCode",
                     "public function add(self $other): self",
                     "public function subtract(self $other): self",
-                    "public function multiply(string|int $multiplier, Brick\\Math\\RoundingMode $roundingMode=Brick\\Math\\RoundingMode::Unnecessary): self",
-                    "public function divide(string|int $divisor, Brick\\Math\\RoundingMode $roundingMode=Brick\\Math\\RoundingMode::Unnecessary): self",
+                    "public function multiply(string|int $multiplier, ?Brick\\Math\\RoundingMode $roundingMode=null): self",
+                    "public function divide(string|int $divisor, ?Brick\\Math\\RoundingMode $roundingMode=null): self",
                     "public function convert(Nvl\\Primitives\\ValueObjects\\CurrencyCode|string $currency, string $rate, Brick\\Math\\RoundingMode $roundingMode): self",
                     "public function isZero(): bool",
                     "public function isPositive(): bool",
@@ -24976,10 +24990,10 @@
                     "public function absolute(): self",
                     "public function negate(): self",
                     "public function compare(self $other): int",
-                    "public function allocate(array $ratios, Brick\\Money\\AllocationMode $mode=Brick\\Money\\AllocationMode::FloorToLargestRemainder): array",
+                    "public function allocate(array $ratios): array",
                     "@param list<string|int> $ratios",
                     "@return list<self>",
-                    "public function split(int $parts, Brick\\Money\\SplitMode $mode=Brick\\Money\\SplitMode::ToFirst): array",
+                    "public function split(int $parts): array",
                     "@return list<self>",
                     "public function toBrick(): Brick\\Money\\Money",
                     "public function toArray(): array",

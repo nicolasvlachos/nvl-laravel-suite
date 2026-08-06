@@ -11,6 +11,7 @@ use Nvl\Primitives\Concerns\CastsAsScalar;
 use Nvl\Primitives\Contracts\Primitive;
 use Nvl\Primitives\Contracts\ScalarPrimitive;
 use Nvl\Primitives\Exceptions\InvalidPrimitive;
+use Nvl\Primitives\Support\BrickMathCompatibility;
 
 /**
  * Exact percentage stored as a decimal ratio where 1 represents 100%.
@@ -37,7 +38,7 @@ final readonly class Percentage implements ScalarPrimitive
     public static function fromDecimal(string|int $value): self
     {
         try {
-            return new self(BigDecimal::of($value)->strippedOfTrailingZeros());
+            return new self(BrickMathCompatibility::stripTrailingZeros(BigDecimal::of($value)));
         } catch (MathException $exception) {
             throw InvalidPrimitive::for('percentage', $exception->getMessage(), $exception);
         }
@@ -49,11 +50,9 @@ final readonly class Percentage implements ScalarPrimitive
     public static function fromPercent(string|int $value): self
     {
         try {
-            return new self(
-                BigDecimal::of($value)
-                    ->multipliedBy('0.01')
-                    ->strippedOfTrailingZeros(),
-            );
+            return new self(BrickMathCompatibility::stripTrailingZeros(
+                BigDecimal::of($value)->multipliedBy('0.01'),
+            ));
         } catch (MathException $exception) {
             throw InvalidPrimitive::for('percentage', $exception->getMessage(), $exception);
         }
@@ -88,7 +87,9 @@ final readonly class Percentage implements ScalarPrimitive
      */
     public function percent(): string
     {
-        return (string) $this->decimal->multipliedBy(100)->strippedOfTrailingZeros();
+        return (string) BrickMathCompatibility::stripTrailingZeros(
+            $this->decimal->multipliedBy(100),
+        );
     }
 
     /**
@@ -107,9 +108,9 @@ final readonly class Percentage implements ScalarPrimitive
     public function of(string|int $amount): string
     {
         try {
-            return (string) BigDecimal::of($amount)
-                ->multipliedBy($this->decimal)
-                ->strippedOfTrailingZeros();
+            return (string) BrickMathCompatibility::stripTrailingZeros(
+                BigDecimal::of($amount)->multipliedBy($this->decimal),
+            );
         } catch (MathException $exception) {
             throw InvalidPrimitive::for('percentage calculation', $exception->getMessage(), $exception);
         }

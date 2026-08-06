@@ -6,11 +6,11 @@ namespace Nvl\Primitives\ValueObjects;
 
 use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
-use Brick\Math\RoundingMode;
 use Nvl\Primitives\Concerns\CastsAsScalar;
 use Nvl\Primitives\Contracts\Primitive;
 use Nvl\Primitives\Contracts\ScalarPrimitive;
 use Nvl\Primitives\Exceptions\InvalidPrimitive;
+use Nvl\Primitives\Support\BrickMathCompatibility;
 
 /**
  * Exact non-negative mass stored canonically in grams.
@@ -70,7 +70,7 @@ final readonly class Weight implements ScalarPrimitive
     {
         $this->assertScale($scale);
 
-        return (string) $this->grams->toScale($scale, RoundingMode::HalfUp);
+        return (string) $this->grams->toScale($scale, BrickMathCompatibility::halfUp());
     }
 
     /**
@@ -80,7 +80,7 @@ final readonly class Weight implements ScalarPrimitive
     {
         $this->assertScale($scale);
 
-        return (string) $this->grams->dividedBy(1000, $scale, RoundingMode::HalfUp);
+        return (string) $this->grams->dividedBy(1000, $scale, BrickMathCompatibility::halfUp());
     }
 
     /**
@@ -90,7 +90,11 @@ final readonly class Weight implements ScalarPrimitive
     {
         $this->assertScale($scale);
 
-        return (string) $this->grams->dividedBy('453.59237', $scale, RoundingMode::HalfUp);
+        return (string) $this->grams->dividedBy(
+            '453.59237',
+            $scale,
+            BrickMathCompatibility::halfUp(),
+        );
     }
 
     /**
@@ -100,7 +104,11 @@ final readonly class Weight implements ScalarPrimitive
     {
         $this->assertScale($scale);
 
-        return (string) $this->grams->dividedBy('28.349523125', $scale, RoundingMode::HalfUp);
+        return (string) $this->grams->dividedBy(
+            '28.349523125',
+            $scale,
+            BrickMathCompatibility::halfUp(),
+        );
     }
 
     /**
@@ -160,7 +168,9 @@ final readonly class Weight implements ScalarPrimitive
     private static function fromUnit(string|int $value, string $factor): self
     {
         try {
-            $grams = BigDecimal::of($value)->multipliedBy($factor)->strippedOfTrailingZeros();
+            $grams = BrickMathCompatibility::stripTrailingZeros(
+                BigDecimal::of($value)->multipliedBy($factor),
+            );
         } catch (MathException $exception) {
             throw InvalidPrimitive::for('weight', $exception->getMessage(), $exception);
         }

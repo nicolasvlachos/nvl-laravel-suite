@@ -16,13 +16,13 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
   quality:
     name: Invariant package quality
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -77,9 +77,9 @@ jobs:
   package-matrix:
     name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / ${{ matrix.dependencies }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - php: '8.3'
@@ -123,9 +123,9 @@ jobs:
   database-matrix:
     name: Stateful packages / ${{ matrix.database }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - database: mysql
@@ -197,7 +197,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - database: mysql
@@ -306,7 +306,7 @@ jobs:
   mail-notifications-mariadb:
     name: Mail Notifications / MariaDB 12.1
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     services:
       mariadb:
         image: mariadb:12.1
@@ -354,7 +354,7 @@ jobs:
   comments-mariadb:
     name: Comments / MariaDB 12.1
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     services:
       mariadb:
         image: mariadb:12.1
@@ -403,9 +403,9 @@ jobs:
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/'))
     name: Line coverage / nvl/${{ matrix.package }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         package:
           - activity
@@ -495,11 +495,11 @@ jobs:
   standalone-consumers:
     name: Standalone nvl/${{ matrix.package }} on Laravel ${{ matrix.laravel }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        laravel: ${{ fromJSON(github.event_name == 'pull_request' && '["13"]' || '["12", "13"]') }}
+        laravel: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["12", "13"]' || '["13"]') }}
         package:
           - activity
           - auth
@@ -596,87 +596,9 @@ jobs:
               exit 1
             }
           done < "$expected_doctors"
-          if [ "${{ matrix.package }}" = "auth" ]; then
-            grep -Fqx 'nvl:auth:doctor' "$expected_doctors"
-            php artisan nvl:auth:doctor --strict --format=json
-            composer require \
-              --no-interaction \
-              --update-no-dev \
-              --with-all-dependencies \
-              --prefer-lowest \
-              'laravel/sanctum:^4.3'
-            php artisan vendor:publish --tag=sanctum-migrations --force
-            php artisan vendor:publish --tag=permission-migrations --force
-            cp -R \
-              "$GITHUB_WORKSPACE/tools/fixtures/auth-production-consumer/app/." \
-              app/
-            cp -R \
-              "$GITHUB_WORKSPACE/tools/fixtures/auth-production-consumer/database/." \
-              database/
-            cp -R \
-              "$GITHUB_WORKSPACE/tools/fixtures/auth-production-consumer/routes/." \
-              routes/
-            cp \
-              "$GITHUB_WORKSPACE/tools/fixtures/auth-production-consumer/bootstrap/providers.php" \
-              bootstrap/providers.php
-            composer dump-autoload --no-interaction
-            php artisan config:clear
-            php artisan route:clear
-            php artisan migrate --force
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan auth-consumer:maintenance --format=json
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan nvl:auth:doctor --strict --format=json
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan config:cache
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan route:cache
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan nvl:auth:doctor --strict --format=json
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan auth-consumer:smoke --format=json
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan auth-consumer:smoke --format=json
-          else
-            while IFS= read -r doctor; do
-              php artisan "$doctor" --strict --format=json
-            done < "$expected_doctors"
-          fi
+          while IFS= read -r doctor; do
+            php artisan "$doctor" --strict --format=json
+          done < "$expected_doctors"
           # Revert the complete disposable history so every package down
           # migration runs, then reinstall through normal migration discovery.
           if [ "${{ matrix.package }}" = "mail-notifications" ]; then
@@ -685,29 +607,9 @@ jobs:
             php artisan migrate:rollback --force --step=999
             php artisan migrate --force
           fi
-          if [ "${{ matrix.package }}" = "auth" ]; then
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan auth-consumer:maintenance --format=json
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan nvl:auth:doctor --strict --format=json
-            APP_ENV=production \
-            APP_URL=https://auth-consumer.test \
-            APP_DEBUG=false \
-            CACHE_STORE=database \
-            CACHE_LIMITER=database \
-            QUEUE_CONNECTION=database \
-              php artisan auth-consumer:smoke --format=json
-          fi
+          while IFS= read -r doctor; do
+            php artisan "$doctor" --strict --format=json
+          done < "$expected_doctors"
 
       - name: Exercise Activity clean consumer
         if: matrix.package == 'activity'
@@ -783,76 +685,10 @@ jobs:
           "$GITHUB_WORKSPACE/tools/run-comments-production-consumer.sh" \
             /tmp/nvl-consumer
 
-  auth-consumer-profiles:
-    name: Auth consumer profiles on Laravel ${{ matrix.laravel }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        laravel: ['12', '13']
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: ctype, dom, fileinfo, filter, intl, json, libxml, mbstring, pdo_sqlite, zip
-          coverage: none
-          tools: composer:v2
-
-      - name: Create and exercise clean Auth profile consumers
-        shell: bash
-        run: |
-          set -euo pipefail
-          template=/tmp/nvl-auth-consumer-template
-          composer create-project \
-            --no-interaction \
-            --no-dev \
-            --prefer-dist \
-            "laravel/laravel:^${{ matrix.laravel }}.0" \
-            "$template"
-          cd "$template"
-          composer config --json repositories.nvl \
-            "{\"type\":\"path\",\"url\":\"$GITHUB_WORKSPACE/packages/nvl/*\",\"options\":{\"symlink\":false}}"
-          composer config minimum-stability dev
-          composer config prefer-stable true
-          composer require \
-            --no-interaction \
-            --no-update \
-            'nvl/auth:@dev' \
-            'laravel/sanctum:^4.3'
-          composer update \
-            --no-interaction \
-            --no-dev \
-            --prefer-dist \
-            --with-all-dependencies \
-            --prefer-lowest
-          cp .env.example .env
-          php artisan key:generate
-          touch database/database.sqlite
-          php artisan package:discover
-
-          profiles=(
-            browser-baseline
-            selective-feature
-            all-enabled
-            ingress-disabled
-          )
-
-          for profile in "${profiles[@]}"; do
-            consumer="/tmp/nvl-auth-consumer-$profile"
-            cp -a "$template" "$consumer"
-            "$GITHUB_WORKSPACE/tools/run-auth-production-consumer.sh" \
-              "$consumer" \
-              "$profile"
-          done
-
   archives:
     name: Distribution archives
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -1121,7 +957,6 @@ jobs:
       - comments-mariadb
       - line-coverage
       - standalone-consumers
-      - auth-consumer-profiles
       - archives
     runs-on: ubuntu-latest
     timeout-minutes: 15

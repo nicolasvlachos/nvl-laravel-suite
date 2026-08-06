@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Nvl\Primitives\ValueObjects;
 
+use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
-use Brick\Money\AllocationMode;
 use Brick\Money\Exception\MoneyException;
 use Brick\Money\Money as BrickMoney;
-use Brick\Money\SplitMode;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Nvl\Primitives\Casts\MoneyCast;
 use Nvl\Primitives\Contracts\ArrayPrimitive;
 use Nvl\Primitives\Contracts\Primitive;
 use Nvl\Primitives\Exceptions\InvalidPrimitive;
+use Nvl\Primitives\Support\BrickMathCompatibility;
+use Nvl\Primitives\Support\BrickMoneyCompatibility;
 
 /**
  * Immutable, exact monetary amount backed by Brick Money.
@@ -31,9 +32,10 @@ final readonly class Money implements ArrayPrimitive
     public static function of(
         string|int $amount,
         CurrencyCode|string $currency,
-        RoundingMode $roundingMode = RoundingMode::Unnecessary,
+        ?RoundingMode $roundingMode = null,
     ): self {
         $code = $currency instanceof CurrencyCode ? (string) $currency : $currency;
+        $roundingMode ??= BrickMathCompatibility::unnecessary();
 
         try {
             return new self(BrickMoney::of($amount, $code, roundingMode: $roundingMode));
@@ -183,8 +185,10 @@ final readonly class Money implements ArrayPrimitive
      */
     public function multiply(
         string|int $multiplier,
-        RoundingMode $roundingMode = RoundingMode::Unnecessary,
+        ?RoundingMode $roundingMode = null,
     ): self {
+        $roundingMode ??= BrickMathCompatibility::unnecessary();
+
         try {
             return new self($this->money->multipliedBy($multiplier, $roundingMode));
         } catch (MoneyException|MathException $exception) {
@@ -197,8 +201,10 @@ final readonly class Money implements ArrayPrimitive
      */
     public function divide(
         string|int $divisor,
-        RoundingMode $roundingMode = RoundingMode::Unnecessary,
+        ?RoundingMode $roundingMode = null,
     ): self {
+        $roundingMode ??= BrickMathCompatibility::unnecessary();
+
         try {
             return new self($this->money->dividedBy($divisor, $roundingMode));
         } catch (MoneyException|MathException $exception) {
@@ -217,6 +223,10 @@ final readonly class Money implements ArrayPrimitive
         $code = $currency instanceof CurrencyCode ? (string) $currency : $currency;
 
         try {
+            if (! BigDecimal::of($rate)->isPositive()) {
+                throw InvalidPrimitive::for('money conversion', 'the exchange rate must be positive.');
+            }
+
             return new self($this->money->convertedTo(
                 $code,
                 $rate,
@@ -285,16 +295,13 @@ final readonly class Money implements ArrayPrimitive
      * @param  list<string|int>  $ratios
      * @return list<self>
      */
-    public function allocate(
-        array $ratios,
-        AllocationMode $mode = AllocationMode::FloorToLargestRemainder,
-    ): array {
+    public function allocate(array $ratios): array
+    {
         try {
-            return array_map(
-                static fn (BrickMoney $money): self => new self($money),
-                $this->money->allocate($ratios, $mode),
+            return $this->wrapMoneyList(
+                BrickMoneyCompatibility::allocate($this->money, $ratios),
             );
-        } catch (MoneyException|MathException $exception) {
+        } catch (MoneyException|MathException|\InvalidArgumentException $exception) {
             throw InvalidPrimitive::for('money allocation', $exception->getMessage(), $exception);
         }
     }
@@ -304,18 +311,17 @@ final readonly class Money implements ArrayPrimitive
      *
      * @return list<self>
      */
-    public function split(int $parts, SplitMode $mode = SplitMode::ToFirst): array
+    public function split(int $parts): array
     {
         if ($parts < 1) {
             throw InvalidPrimitive::for('money split', 'the number of parts must be positive.');
         }
 
         try {
-            return array_map(
-                static fn (BrickMoney $money): self => new self($money),
-                $this->money->split($parts, $mode),
+            return $this->wrapMoneyList(
+                BrickMoneyCompatibility::split($this->money, $parts),
             );
-        } catch (MoneyException|MathException $exception) {
+        } catch (MoneyException|MathException|\InvalidArgumentException $exception) {
             throw InvalidPrimitive::for('money split', $exception->getMessage(), $exception);
         }
     }
@@ -326,6 +332,28 @@ final readonly class Money implements ArrayPrimitive
     public function toBrick(): BrickMoney
     {
         return $this->money;
+    }
+
+    /**
+     * @return list<self>
+     */
+    private function wrapMoneyList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            throw InvalidPrimitive::for('money allocation', 'Brick Money returned an invalid allocation result.');
+        }
+
+        $wrapped = [];
+
+        foreach ($values as $value) {
+            if (! $value instanceof BrickMoney) {
+                throw InvalidPrimitive::for('money allocation', 'Brick Money returned an invalid allocation value.');
+            }
+
+            $wrapped[] = new self($value);
+        }
+
+        return $wrapped;
     }
 
     /**

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Brick\Math\RoundingMode;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\Facades\Validator;
 use Nvl\Primitives\Contracts\ExchangeRateProvider;
@@ -16,6 +15,7 @@ use Nvl\Primitives\Services\ConfiguredExchangeRateProvider;
 use Nvl\Primitives\Services\CurrencyConverter;
 use Nvl\Primitives\Services\MoneyFormatter;
 use Nvl\Primitives\Services\ReferenceCatalog;
+use Nvl\Primitives\Support\BrickMathCompatibility;
 use Nvl\Primitives\ValueObjects\CurrencyCode;
 use Nvl\Primitives\ValueObjects\EmailAddress;
 use Nvl\Primitives\ValueObjects\Money;
@@ -71,7 +71,7 @@ it('requires callers to choose conversion rounding', function (): void {
     expect(app(CurrencyConverter::class)->convert(
         Money::of('1.00', 'EUR'),
         'USD',
-        RoundingMode::HalfUp,
+        BrickMathCompatibility::halfUp(),
     )->amount())->toBe('1.01');
 });
 
@@ -182,7 +182,7 @@ it('covers converter and formatter configuration boundaries', function (): void 
     expect($converter->convert(
         Money::of('1.00', 'EUR'),
         CurrencyCode::from('USD'),
-        RoundingMode::HalfUp,
+        BrickMathCompatibility::halfUp(),
     )->amount())->toBe('1.10');
 
     if (extension_loaded('intl')) {

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Brick\Math\RoundingMode;
 use Illuminate\Support\Facades\Validator;
 use Nvl\Primitives\Data\LengthData;
 use Nvl\Primitives\Data\MoneyData;
@@ -12,6 +11,7 @@ use Nvl\Primitives\Rules\ValidPhoneNumber;
 use Nvl\Primitives\Rules\ValidPrimitive;
 use Nvl\Primitives\Services\CurrencyConverter;
 use Nvl\Primitives\Services\ReferenceCatalog;
+use Nvl\Primitives\Support\BrickMathCompatibility;
 use Nvl\Primitives\Tests\Fixtures\PrimitiveTestModel;
 use Nvl\Primitives\ValueObjects\Coordinates;
 use Nvl\Primitives\ValueObjects\CountryCode;
@@ -65,7 +65,7 @@ it('performs exact money arithmetic and configured conversion', function (): voi
     $converted = app(CurrencyConverter::class)->convert(
         $price->add($tax),
         'USD',
-        RoundingMode::HalfUp,
+        BrickMathCompatibility::halfUp(),
     );
 
     expect($price->minorAmount())->toBe('1999')
@@ -80,7 +80,7 @@ it('performs exact money arithmetic and configured conversion', function (): voi
         ]);
 
     expect(fn () => Money::of('1.005', 'EUR'))->toThrow(InvalidPrimitive::class)
-        ->and(Money::of('1.005', 'EUR', RoundingMode::HalfUp)->amount())->toBe('1.01');
+        ->and(Money::of('1.005', 'EUR', BrickMathCompatibility::halfUp())->amount())->toBe('1.01');
 });
 
 it('allocates, splits, compares, and negates exact money safely', function (): void {
@@ -116,7 +116,7 @@ it('provides exact measurement and structured primitives', function (): void {
     );
 
     expect($sofia->distanceTo($plovdiv))->toBeBetween(125.0, 140.0)
-        ->and(Percentage::fromPercent(20)->ofRounded('125.00', 2, RoundingMode::HalfUp))
+        ->and(Percentage::fromPercent(20)->ofRounded('125.00', 2, BrickMathCompatibility::halfUp()))
         ->toBe('25.00')
         ->and(Weight::kilograms('1.5')->inGrams())->toBe('1500.000')
         ->and(Weight::ounces('16')->inPounds())->toBe('1.000')
@@ -140,7 +140,7 @@ it('normalizes timezone, opaque identifier, address, and exact length measuremen
         ->and((string) Identifier::from('01ARZ3NDEKTSV4RRFFQ69G5FAV'))
         ->toBe('01ARZ3NDEKTSV4RRFFQ69G5FAV')
         ->and((string) Identifier::from(42))->toBe('42')
-        ->and($length->in('cm', 2, RoundingMode::Unnecessary))->toBe('30.48')
+        ->and($length->in('cm', 2, BrickMathCompatibility::unnecessary()))->toBe('30.48')
         ->and(LengthData::fromLength($length)->toArray())
         ->toBe(['value' => '0.3048', 'unit' => 'm'])
         ->and($address->line1)->toBe('1 Main Street')
@@ -162,7 +162,7 @@ it('fails deterministically for explicitly stale configured exchange rates', fun
     expect(fn () => app(CurrencyConverter::class)->convert(
         Money::of('1.00', 'EUR'),
         'USD',
-        RoundingMode::HalfUp,
+        BrickMathCompatibility::halfUp(),
         new DateTimeImmutable('2026-01-02T00:00:00Z'),
     ))->toThrow(ExchangeRateStale::class);
 });

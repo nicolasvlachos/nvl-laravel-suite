@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use Brick\Math\RoundingMode;
 use Nvl\Primitives\Data\CoordinatesData;
 use Nvl\Primitives\Data\LengthData;
 use Nvl\Primitives\Data\PostalAddressData;
 use Nvl\Primitives\Exceptions\InvalidPrimitive;
+use Nvl\Primitives\Support\BrickMathCompatibility;
+use Nvl\Primitives\Support\BrickMoneyCompatibility;
 use Nvl\Primitives\ValueObjects\Coordinates;
 use Nvl\Primitives\ValueObjects\CountryCode;
 use Nvl\Primitives\ValueObjects\CurrencyCode;
@@ -109,7 +110,7 @@ it('requires explicit currencies and conversion rounding in public contracts', f
 it('normalizes arithmetic failures to the primitive exception', function (): void {
     expect(fn () => Money::of('1.00', 'EUR')->divide(3))
         ->toThrow(InvalidPrimitive::class)
-        ->and(fn () => Money::of('1.00', 'EUR')->convert('USD', '1.005', RoundingMode::Unnecessary))
+        ->and(fn () => Money::of('1.00', 'EUR')->convert('USD', '1.005', BrickMathCompatibility::unnecessary()))
         ->toThrow(InvalidPrimitive::class);
 });
 
@@ -119,14 +120,14 @@ it('keeps percentage construction and arithmetic exact', function (): void {
     expect($percentage->decimal())->toBe('0.012345678901234')
         ->and($percentage->percent())->toBe('1.2345678901234')
         ->and(Percentage::fromPercent('10')->of('3'))->toBe('0.3')
-        ->and(Percentage::fromPercent('20')->ofRounded('125.00', 2, RoundingMode::HalfUp))
+        ->and(Percentage::fromPercent('20')->ofRounded('125.00', 2, BrickMathCompatibility::halfUp()))
         ->toBe('25.00');
 });
 
 it('names length explicitly and requires explicit conversion precision', function (): void {
     $length = Length::from('12', 'in');
 
-    expect($length->in('cm', 2, RoundingMode::Unnecessary))->toBe('30.48')
+    expect($length->in('cm', 2, BrickMathCompatibility::unnecessary()))->toBe('30.48')
         ->and(LengthData::fromLength($length)->toArray())->toBe([
             'value' => '0.3048',
             'unit' => 'm',
@@ -309,7 +310,7 @@ it('exposes complete length weight and percentage contracts', function (): void 
         ->and($weight->equals(Weight::ounces('32')))->toBeTrue()
         ->and($percentage->decimal())->toBe('0.2')
         ->and($percentage->percent())->toBe('20')
-        ->and($percentage->percentRounded(2, RoundingMode::Unnecessary))->toBe('20.00')
+        ->and($percentage->percentRounded(2, BrickMathCompatibility::unnecessary()))->toBe('20.00')
         ->and($percentage->add(Percentage::fromPercent(5))->percent())->toBe('25')
         ->and($percentage->subtract(Percentage::fromPercent(5))->percent())->toBe('15')
         ->and($percentage->isNormalized())->toBeTrue()
@@ -327,9 +328,9 @@ it('rejects malformed measurement operations', function (): void {
         ->toThrow(InvalidPrimitive::class)
         ->and(fn () => Length::from('1', 'invalid'))->toThrow(InvalidPrimitive::class)
         ->and(fn () => Length::from('invalid'))->toThrow(InvalidPrimitive::class)
-        ->and(fn () => Length::from('1')->in('m', -1, RoundingMode::Unnecessary))
+        ->and(fn () => Length::from('1')->in('m', -1, BrickMathCompatibility::unnecessary()))
         ->toThrow(InvalidPrimitive::class)
-        ->and(fn () => Length::from('1')->in('invalid', 2, RoundingMode::Unnecessary))
+        ->and(fn () => Length::from('1')->in('invalid', 2, BrickMathCompatibility::unnecessary()))
         ->toThrow(InvalidPrimitive::class)
         ->and(fn () => Weight::grams('invalid'))->toThrow(InvalidPrimitive::class)
         ->and(fn () => Weight::grams('-1'))->toThrow(InvalidPrimitive::class)
@@ -338,7 +339,7 @@ it('rejects malformed measurement operations', function (): void {
         ->and(fn () => Weight::grams(1)->inGrams(-1))->toThrow(InvalidPrimitive::class)
         ->and(fn () => Percentage::fromDecimal('invalid'))->toThrow(InvalidPrimitive::class)
         ->and(fn () => Percentage::fromPercent('invalid'))->toThrow(InvalidPrimitive::class)
-        ->and(fn () => Percentage::full()->percentRounded(-1, RoundingMode::HalfUp))
+        ->and(fn () => Percentage::full()->percentRounded(-1, BrickMathCompatibility::halfUp()))
         ->toThrow(InvalidPrimitive::class);
 });
 
@@ -359,6 +360,34 @@ it('exposes complete money operations and normalizes their failures', function (
         ->and(fn () => $money->compare(Money::of('1.00', 'USD')))
         ->toThrow(InvalidPrimitive::class)
         ->and(fn () => $money->allocate([]))->toThrow(InvalidPrimitive::class)
-        ->and(fn () => $money->convert('USD', '0', RoundingMode::HalfUp))
+        ->and(fn () => $money->convert('USD', '0', BrickMathCompatibility::halfUp()))
         ->toThrow(InvalidPrimitive::class);
+});
+
+it('bridges the legacy Brick Money allocation signatures', function (): void {
+    $legacyMoney = new class
+    {
+        /**
+         * @return list<int>
+         */
+        public function allocate(int ...$ratios): array
+        {
+            return $ratios;
+        }
+
+        /**
+         * @return list<int>
+         */
+        public function split(int $parts): array
+        {
+            return array_fill(0, $parts, 1);
+        }
+    };
+
+    expect(BrickMoneyCompatibility::allocate($legacyMoney, [1, '2', 3], false))
+        ->toBe([1, 2, 3])
+        ->and(BrickMoneyCompatibility::split($legacyMoney, 3, false))
+        ->toBe([1, 1, 1])
+        ->and(fn () => BrickMoneyCompatibility::allocate($legacyMoney, ['1.5'], false))
+        ->toThrow(InvalidArgumentException::class);
 });

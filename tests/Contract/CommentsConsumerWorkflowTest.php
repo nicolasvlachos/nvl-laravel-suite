@@ -15,7 +15,7 @@ it('keeps the Comments source consumer proof on both supported Laravel majors', 
     $command = commentsWorkflowString($step, 'run');
 
     expect(commentsWorkflowString($matrix, 'laravel'))->toBe(
-        '${{ fromJSON(github.event_name == \'pull_request\' && \'["13"]\' || \'["12", "13"]\') }}',
+        '${{ fromJSON((startsWith(github.ref, \'refs/tags/v\') || github.event_name == \'schedule\' || github.event_name == \'workflow_dispatch\') && \'["12", "13"]\' || \'["13"]\') }}',
     )
         ->and(commentsWorkflowStringList($matrix, 'package'))->toContain('comments')
         ->and(commentsWorkflowArrayList($matrix, 'include'))->toContain([

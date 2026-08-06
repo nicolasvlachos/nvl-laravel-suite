@@ -6,11 +6,11 @@ namespace Nvl\Primitives\ValueObjects;
 
 use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
-use Brick\Math\RoundingMode;
 use Nvl\Primitives\Concerns\CastsAsArray;
 use Nvl\Primitives\Contracts\ArrayPrimitive;
 use Nvl\Primitives\Contracts\Primitive;
 use Nvl\Primitives\Exceptions\InvalidPrimitive;
+use Nvl\Primitives\Support\BrickMathCompatibility;
 
 /**
  * Immutable WGS84 latitude/longitude pair.
@@ -44,8 +44,8 @@ final readonly class Coordinates implements ArrayPrimitive
         }
 
         return new self(
-            $latitude->toScale(7, RoundingMode::HalfUp),
-            $longitude->toScale(7, RoundingMode::HalfUp),
+            $latitude->toScale(7, BrickMathCompatibility::halfUp()),
+            $longitude->toScale(7, BrickMathCompatibility::halfUp()),
         );
     }
 
