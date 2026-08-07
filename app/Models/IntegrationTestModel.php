@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace Nvl\Workbench\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;

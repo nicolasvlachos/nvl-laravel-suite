@@ -62,7 +62,7 @@ templates
 ## Installation
 
 ```bash
-composer require nvl/templates
+composer require nvl/laravel-suite:^1.0
 php artisan migrate
 php artisan nvl:content:definitions:sync
 php artisan nvl:templates:sync

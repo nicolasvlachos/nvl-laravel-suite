@@ -24,7 +24,7 @@ final readonly class ApplicationCommentAuthorization implements CommentAuthoriza
     public const string IDENTITY_AUDITOR = 'identity-auditor@comments-consumer.test';
 
     /**
-     * Create the consumer policy around the standalone package defaults.
+     * Create the consumer policy around the suite module defaults.
      */
     public function __construct(
         private ConfiguredCommentAuthorization $defaults,

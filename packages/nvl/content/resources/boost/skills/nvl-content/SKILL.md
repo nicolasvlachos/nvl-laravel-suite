@@ -141,7 +141,7 @@ composition snapshots.
   middleware must fail closed.
 - Run `nvl:content:doctor --strict --format=json`, definition dry runs, Pest,
   Pint, PHPStan at maximum strictness, `nvl:data:types:check`, database
-  matrices, and standalone Laravel 12/13 consumer tests.
+  matrices, and clean `nvl/laravel-suite` consumer tests on Laravel 12/13.
 - Treat pending block versions or missing migration paths as deployment
   failures. Require the doctor to verify semantic columns, indexes, and
   foreign keys. Migration plans/events must never contain content values.

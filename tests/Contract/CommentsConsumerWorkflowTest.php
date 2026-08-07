@@ -24,19 +24,18 @@ it('keeps the Comments sealed artifact proof on version tags', function (): void
     $root = dirname(__DIR__, 2);
     $workflow = commentsWorkflowDefinition($root, 'package-release.yml');
     $jobs = commentsWorkflowArray($workflow, 'jobs');
-    $job = commentsWorkflowArray($jobs, 'archives');
-    $buildStep = commentsWorkflowStep($job, 'Build and inspect all package archives');
-    $allArchivesStep = commentsWorkflowStep($job, 'Install and exercise built archives');
+    $job = commentsWorkflowArray($jobs, 'archive');
+    $buildStep = commentsWorkflowStep($job, 'Build and inspect the suite archive');
+    $allArchivesStep = commentsWorkflowStep($job, 'Install and exercise the suite archive');
     $buildCommand = commentsWorkflowString($buildStep, 'run');
 
-    expect($job)->not->toHaveKey('if')
-        ->and($buildCommand)->toContain(
-            'for directory in packages/nvl/*; do',
-            'php tools/inspect-package-archive.php "$archive" "$package"',
-        )
+    expect($buildCommand)->toContain(
+        'COMPOSER_ROOT_VERSION="$package_version" composer archive',
+        '.name == "nvl/laravel-suite"',
+    )
         ->and(commentsWorkflowString($allArchivesStep, 'run'))->toContain(
-            'composer config repositories.nvl artifact',
-            'packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")',
+            'composer config repositories.nvl "$repository_config"',
+            '"nvl/laravel-suite:$PACKAGE_VERSION"',
         );
 });
 
@@ -71,45 +70,21 @@ it('runs the complete Comments suite against PostgreSQL', function (): void {
         ->and($command)->toContain('for package in activity auth comments content');
 });
 
-it('exercises the Comments production consumer after a release candidate upgrade', function (): void {
+it('does not retain the multi-package release rehearsal', function (): void {
     $root = dirname(__DIR__, 2);
-    $workflow = commentsWorkflowDefinition($root, 'release-rehearsal.yml');
-    $jobs = commentsWorkflowArray($workflow, 'jobs');
-    $job = commentsWorkflowArray($jobs, 'upgrade-rehearsal');
-    $strategy = commentsWorkflowArray($job, 'strategy');
-    $matrix = commentsWorkflowArray($strategy, 'matrix');
-    $step = commentsWorkflowStep($job, 'Upgrade to candidate and validate');
-    $command = commentsWorkflowString($step, 'run');
 
-    expect(commentsWorkflowStringList($matrix, 'database'))->toBe([
-        'sqlite',
-        'mysql',
-        'pgsql',
-    ])
-        ->and($command)->toContain(
-            'composer config repositories.nvl composer "file://$GITHUB_WORKSPACE/build/rehearsal/candidate"',
-            '"$GITHUB_WORKSPACE/tools/run-comments-production-consumer.sh"',
-            '/tmp/nvl-upgrade-consumer',
-            'composer audit --locked --no-interaction',
-        )
-        ->and(substr_count(
-            $command,
-            'tools/run-comments-production-consumer.sh',
-        ))->toBe(1);
+    expect($root.'/.github/workflows/release-rehearsal.yml')->not->toBeFile();
 });
 
-it('keeps the Comments artifact and production runners isolated and complete', function (): void {
+it('keeps the Comments production runner isolated and complete', function (): void {
     $root = dirname(__DIR__, 2);
     $productionRunnerPath = $root.'/tools/run-comments-production-consumer.sh';
-    $artifactRunnerPath = $root.'/tools/run-comments-artifact-consumer.sh';
 
     expect($productionRunnerPath)->toBeFile()
         ->and(is_executable($productionRunnerPath))->toBeTrue()
-        ->and($artifactRunnerPath)->toBeFile()
-        ->and(is_executable($artifactRunnerPath))->toBeTrue();
+        ->and($root.'/tools/run-comments-artifact-consumer.sh')->not->toBeFile();
 
     $productionRunner = commentsWorkflowFileContents($productionRunnerPath);
-    $artifactRunner = commentsWorkflowFileContents($artifactRunnerPath);
 
     expect($productionRunner)->toContain(
         'set -euo pipefail',
@@ -131,37 +106,6 @@ it('keeps the Comments artifact and production runners isolated and complete', f
             $productionRunner,
             'comments_artisan comments-consumer:smoke --format=json',
         ))->toBe(3);
-
-    expect($artifactRunner)->toContain(
-        'set -euo pipefail',
-        'if [[ $# -ne 4 ]]; then',
-        '12 | 13)',
-        'nvl-{comments,data,filterable,media,support,translatable}-*.zip',
-        'if [[ ${#archives[@]} -ne 6 ]]; then',
-        'for package in comments data filterable media support translatable; do',
-        'test ! -e "$artifact_root/packages.json"',
-        '"laravel/laravel:^$laravel_major.0"',
-        'composer config repositories.nvl artifact "$artifact_root"',
-        '"nvl/comments:$package_version"',
-        '"nvl/comments"',
-        '"nvl/data"',
-        '"nvl/filterable"',
-        '"nvl/media"',
-        '"nvl/support"',
-        '"nvl/translatable"',
-        '($package["dist"]["type"] ?? null) !== "zip"',
-        'str_starts_with($url, $artifactRoot."/")',
-        'str_contains($url, $workspace)',
-        '$archivePath = realpath($url)',
-        '($manifest["require"]["nvl/comments"] ?? null) !== $expectedVersion',
-        'isset($manifest["require"][$transitive])',
-        'tools/run-comments-production-consumer.sh',
-        'composer audit --locked --no-interaction',
-    )
-        ->not()->toContain(
-            'composer config repositories.nvl composer',
-            'cp "$archive_directory/packages.json"',
-        );
 });
 
 it('keeps the Comments production consumer fixture representative', function (): void {

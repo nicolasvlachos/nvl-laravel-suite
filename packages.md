@@ -1,6 +1,6 @@
 # NVL Packages
 
-The NVL Laravel Suite contains 20 independently publishable Laravel packages. They support PHP 8.3–8.5 and Laravel 12–13. Each package is headless by default, declares its NVL dependencies explicitly, and includes its own installation, configuration, API, operational, and testing documentation.
+The `nvl/laravel-suite` Composer package contains 20 internal Laravel modules. They support PHP 8.3–8.5 and Laravel 12–13, are headless by default, retain explicit dependency boundaries, and include module-specific configuration, API, operational, and testing documentation.
 
 ## `nvl/activity`
 

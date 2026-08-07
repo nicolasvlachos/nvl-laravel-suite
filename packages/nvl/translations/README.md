@@ -1,6 +1,6 @@
 # NVL Translations
 
-A standalone Laravel 12–13 file-catalog manager for reading, scanning, editing, synchronizing, and resaving PHP-array and JSON translation files.
+The suite's Laravel 12–13 file-catalog module for reading, scanning, editing, synchronizing, and resaving PHP-array and JSON translation files.
 
 Use `nvl/translatable` for locale-specific Eloquent content. This package only manages Laravel language files.
 
@@ -22,7 +22,7 @@ The database is an editing and synchronization workspace. It is not installed as
 - `nvl/data`, `nvl/filterable`, and `nvl/support`
 
 ```bash
-composer require nvl/translations
+composer require nvl/laravel-suite:^1.0
 php artisan migrate
 php artisan vendor:publish --tag=translations-config
 php artisan vendor:publish --tag=translations-migrations

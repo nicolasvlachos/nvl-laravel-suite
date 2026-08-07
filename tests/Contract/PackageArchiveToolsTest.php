@@ -4,501 +4,222 @@ declare(strict_types=1);
 
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Yaml\Yaml;
 
-it('stamps versions so relocated archives install through a Composer artifact repository', function (): void {
+it('declares the repository root as the only installable package', function (): void {
+    $manifest = suiteArchiveManifest();
+
+    expect($manifest['name'] ?? null)->toBe('nvl/laravel-suite')
+        ->and($manifest['type'] ?? null)->toBe('library')
+        ->and($manifest)->not->toHaveKey('repositories');
+});
+
+it('replaces every former package with the suite version', function (): void {
     $root = dirname(__DIR__, 2);
-    $workspace = sys_get_temp_dir().'/nvl-archive-repository-'.bin2hex(random_bytes(8));
-    $repository = $workspace.'/repository';
-    $relocatedRepository = $workspace.'/relocated';
-    $consumer = $workspace.'/consumer';
-    $filesystem = new Filesystem;
-    $filesystem->mkdir([$repository, $consumer]);
-
-    try {
-        foreach (['activity', 'data', 'support'] as $package) {
-            packageArchiveWriteZip(
-                $repository."/nvl-{$package}-1.2.3.zip",
-                packageArchiveManifest($package),
-                packageArchiveEntries($package),
-            );
-        }
-
-        $process = new Process([
-            PHP_BINARY,
-            $root.'/tools/build-archive-repository.php',
-            $repository,
-            '1.2.3',
-        ]);
-        $process->setTimeout(10);
-        $process->run();
-
-        expect($process->getExitCode())->toBe(0);
-
-        $filesystem->rename($repository, $relocatedRepository);
-        $filesystem->dumpFile($consumer.'/composer.json', json_encode([
-            'name' => 'nvl/archive-consumer',
-            'require' => new stdClass,
-        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-
-        $configureRepository = packageArchiveComposer($consumer, $workspace, [
-            'config',
-            'repositories.nvl',
-            'artifact',
-            $relocatedRepository,
-        ]);
-        $disablePackagist = packageArchiveComposer($consumer, $workspace, [
-            'config',
-            'repo.packagist',
-            'false',
-        ]);
-        $install = packageArchiveComposer($consumer, $workspace, [
-            'require',
-            '--no-audit',
-            '--no-interaction',
-            '--no-plugins',
-            '--no-progress',
-            '--no-scripts',
-            '--prefer-dist',
-            'nvl/activity:1.2.3',
-        ]);
-
-        expect($configureRepository->getExitCode())->toBe(0)
-            ->and($disablePackagist->getExitCode())->toBe(0)
-            ->and($install->getExitCode())->toBe(0, $install->getErrorOutput())
-            ->and($consumer.'/vendor/nvl/activity/composer.json')->toBeFile()
-            ->and($consumer.'/vendor/nvl/data/composer.json')->toBeFile()
-            ->and($consumer.'/vendor/nvl/support/composer.json')->toBeFile();
-
-        $installedManifestContents = file_get_contents(
-            $consumer.'/vendor/nvl/activity/composer.json',
-        );
-
-        expect($installedManifestContents)->toBeString();
-
-        $installedManifest = json_decode(
-            $installedManifestContents,
-            true,
-            512,
-            JSON_THROW_ON_ERROR,
-        );
-
-        expect($installedManifest['name'] ?? null)->toBe('nvl/activity')
-            ->and($installedManifest['version'] ?? null)->toBe('1.2.3')
-            ->and($consumer.'/vendor/nvl/activity/src/Example.php')->toBeFile();
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-it('builds immutable public Composer metadata and retains earlier releases', function (): void {
-    $root = dirname(__DIR__, 2);
-    $workspace = sys_get_temp_dir().'/nvl-public-repository-'.bin2hex(random_bytes(8));
-    $oldArchives = $workspace.'/old-archives';
-    $newArchives = $workspace.'/new-archives';
-    $publicDirectory = $workspace.'/public';
-    $oldRepository = $publicDirectory.'/old-packages.json';
-    $currentRepository = $publicDirectory.'/packages.json';
-    $filesystem = new Filesystem;
-    $filesystem->mkdir([$oldArchives, $newArchives, $publicDirectory]);
-
-    try {
-        foreach (['activity', 'data', 'support'] as $package) {
-            packageArchiveWriteZip(
-                $oldArchives."/nvl-{$package}-1.2.2.zip",
-                packageArchiveManifest($package),
-                packageArchiveEntries($package),
-            );
-            packageArchiveWriteZip(
-                $newArchives."/nvl-{$package}-1.2.3.zip",
-                packageArchiveManifest($package),
-                packageArchiveEntries($package),
-            );
-        }
-
-        foreach ([[$oldArchives, '1.2.2'], [$newArchives, '1.2.3']] as [$directory, $version]) {
-            $stamp = new Process([
-                PHP_BINARY,
-                $root.'/tools/build-archive-repository.php',
-                $directory,
-                $version,
-            ]);
-            $stamp->setTimeout(10);
-            $stamp->mustRun();
-        }
-
-        $oldBuild = new Process([
-            PHP_BINARY,
-            $root.'/tools/build-public-composer-repository.php',
-            $oldArchives,
-            '1.2.2',
-            'https://example.test/releases/download/v1.2.2',
-            $oldRepository,
-        ]);
-        $oldBuild->setTimeout(10);
-        $oldBuild->mustRun();
-
-        $activityArchive = $newArchives.'/nvl-activity-1.2.3.zip';
-        $archiveHashBeforeIndexing = hash_file('sha256', $activityArchive);
-        $currentBuild = new Process([
-            PHP_BINARY,
-            $root.'/tools/build-public-composer-repository.php',
-            $newArchives,
-            '1.2.3',
-            'https://example.test/releases/download/v1.2.3',
-            $currentRepository,
-            $oldRepository,
-        ]);
-        $currentBuild->setTimeout(10);
-        $currentBuild->mustRun();
-
-        $repositoryContents = file_get_contents($currentRepository);
-
-        expect($repositoryContents)->toBeString();
-
-        $repository = json_decode(
-            $repositoryContents,
-            true,
-            512,
-            JSON_THROW_ON_ERROR,
-        );
-        $activityVersions = $repository['packages']['nvl/activity'] ?? null;
-        $currentActivity = is_array($activityVersions)
-            ? ($activityVersions['1.2.3'] ?? null)
-            : null;
-
-        expect($currentBuild->getExitCode())->toBe(0)
-            ->and(hash_file('sha256', $activityArchive))->toBe($archiveHashBeforeIndexing)
-            ->and($repository['available-packages'] ?? null)->toBe([
-                'nvl/activity',
-                'nvl/data',
-                'nvl/support',
-            ])
-            ->and($activityVersions)->toBeArray()
-            ->and(array_keys($activityVersions))->toBe(['1.2.3', '1.2.2'])
-            ->and($currentActivity)->toBeArray()
-            ->and($currentActivity['version'] ?? null)->toBe('1.2.3')
-            ->and($currentActivity['dist']['type'] ?? null)->toBe('zip')
-            ->and($currentActivity['dist']['url'] ?? null)->toBe(
-                'https://example.test/releases/download/v1.2.3/nvl-activity-1.2.3.zip',
-            )
-            ->and($currentActivity['dist']['shasum'] ?? null)->toBe(
-                hash_file('sha1', $activityArchive),
-            )
-            ->and($repositoryContents)->not->toContain('file://');
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-it('accepts a complete Activity archive with exact root assets and autoload declarations', function (): void {
-    $workspace = sys_get_temp_dir().'/nvl-activity-archive-'.bin2hex(random_bytes(8));
-    $filesystem = new Filesystem;
-    $filesystem->mkdir($workspace);
-    $archive = $workspace.'/nvl-activity-1.0.0.zip';
-
-    try {
-        packageArchiveWriteZip(
-            $archive,
-            packageArchiveManifest('activity'),
-            packageArchiveEntries('activity'),
-        );
-
-        $process = packageArchiveInspect($archive, 'activity');
-
-        expect($process->getExitCode())->toBe(0)
-            ->and($process->getOutput())->toContain(
-                'Archive for nvl/activity contains all required assets.',
-            );
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-it('does not accept nested paths as archive-root package assets', function (): void {
-    $workspace = sys_get_temp_dir().'/nvl-nested-archive-'.bin2hex(random_bytes(8));
-    $filesystem = new Filesystem;
-    $filesystem->mkdir($workspace);
-    $archive = $workspace.'/nvl-support-1.0.0.zip';
-    $entries = packageArchiveEntries('support');
-    unset($entries['src/Example.php']);
-    $entries['nested/src/Example.php'] = '<?php';
-
-    try {
-        packageArchiveWriteZip($archive, packageArchiveManifest('support'), $entries);
-
-        $process = packageArchiveInspect($archive, 'support');
-
-        expect($process->getExitCode())->toBe(1)
-            ->and($process->getErrorOutput())->toContain('Archive is missing: src');
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-it('requires the archive manifest to declare the expected NVL package', function (): void {
-    $workspace = sys_get_temp_dir().'/nvl-package-name-archive-'.bin2hex(random_bytes(8));
-    $filesystem = new Filesystem;
-    $filesystem->mkdir($workspace);
-    $archive = $workspace.'/nvl-activity-1.0.0.zip';
-    $manifest = packageArchiveManifest('activity');
-    $manifest['name'] = 'nvl/support';
-
-    try {
-        packageArchiveWriteZip($archive, $manifest, packageArchiveEntries('activity'));
-
-        $process = packageArchiveInspect($archive, 'activity');
-
-        expect($process->getExitCode())->toBe(1)
-            ->and($process->getErrorOutput())
-            ->toContain('composer.json must declare package [nvl/activity]');
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-it('rejects development and repository files from package archives', function (): void {
-    $workspace = sys_get_temp_dir().'/nvl-development-files-archive-'.bin2hex(random_bytes(8));
-    $filesystem = new Filesystem;
-    $filesystem->mkdir($workspace);
-    $archive = $workspace.'/nvl-support-1.0.0.zip';
-    $entries = [
-        ...packageArchiveEntries('support'),
-        '.gitattributes' => '/tests export-ignore',
-        '.gitignore' => '/vendor',
-        'composer.lock' => '{}',
-        'phpstan.neon.dist' => 'parameters: {}',
-        'phpunit.xml.dist' => '<phpunit/>',
-        'tests/Feature/SupportPackageTest.php' => '<?php',
-        'vendor/autoload.php' => '<?php',
-    ];
-
-    try {
-        packageArchiveWriteZip($archive, packageArchiveManifest('support'), $entries);
-
-        $process = packageArchiveInspect($archive, 'support');
-
-        expect($process->getExitCode())->toBe(1)
-            ->and($process->getErrorOutput())->toContain(
-                '.gitattributes',
-                '.gitignore',
-                'composer.lock',
-                'phpstan.neon.dist',
-                'phpunit.xml.dist',
-                'tests/Feature/SupportPackageTest.php',
-                'vendor/autoload.php',
-            );
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-it('validates canonical and file-based autoload declarations', function (): void {
-    $workspace = sys_get_temp_dir().'/nvl-autoload-archive-'.bin2hex(random_bytes(8));
-    $filesystem = new Filesystem;
-    $filesystem->mkdir($workspace);
-    $archive = $workspace.'/nvl-support-1.0.0.zip';
-    $manifest = packageArchiveManifest('support');
-    $manifest['autoload'] = [
-        'files' => ['src/Support/missing.php'],
-        'psr-4' => [
-            'Nvl\\Unexpected\\' => 'src/',
-        ],
-    ];
-
-    try {
-        packageArchiveWriteZip($archive, $manifest, packageArchiveEntries('support'));
-
-        $process = packageArchiveInspect($archive, 'support');
-        $errors = $process->getErrorOutput();
-
-        expect($process->getExitCode())->toBe(1)
-            ->and($errors)->toContain(
-                'autoload.psr-4 must map [Nvl\Support\] to [src/]',
-                'autoload.files path [src/Support/missing.php] is missing from the archive root',
-            );
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-it('requires every Activity runtime asset at the archive root', function (): void {
-    $workspace = sys_get_temp_dir().'/nvl-activity-assets-'.bin2hex(random_bytes(8));
-    $filesystem = new Filesystem;
-    $filesystem->mkdir($workspace);
-    $archive = $workspace.'/nvl-activity-1.0.0.zip';
-    $entries = packageArchiveEntries('activity');
-
-    foreach ([
-        'config/activity.php',
-        'lang/en/activity/general.php',
-        'lang/bg/activity/general.php',
-        'routes/api.php',
-        'src/Support/activitylog_compatibility.php',
-    ] as $runtimeAsset) {
-        unset($entries[$runtimeAsset]);
-    }
-
-    try {
-        packageArchiveWriteZip($archive, packageArchiveManifest('activity'), $entries);
-
-        $process = packageArchiveInspect($archive, 'activity');
-
-        expect($process->getExitCode())->toBe(1)
-            ->and($process->getErrorOutput())->toContain(
-                'config/activity.php',
-                'lang/en/activity/general.php',
-                'lang/bg/activity/general.php',
-                'routes/api.php',
-                'src/Support/activitylog_compatibility.php',
-            );
-    } finally {
-        $filesystem->remove($workspace);
-    }
-});
-
-/**
- * Build the package metadata used by isolated archive fixtures.
- *
- * @return array{
- *     name: string,
- *     require?: array<string, string>,
- *     autoload: array{psr-4: array<string, string>, files?: list<string>}
- * }
- */
-function packageArchiveManifest(string $package): array
-{
-    $namespace = implode('', array_map(
-        static fn (string $segment): string => ucfirst($segment),
-        explode('-', $package),
-    ));
-    $autoload = [
-        'psr-4' => [
-            "Nvl\\{$namespace}\\" => 'src/',
-        ],
-    ];
-
-    if ($package === 'activity') {
-        $autoload['files'] = ['src/Support/activitylog_compatibility.php'];
-    }
-
-    $manifest = [
-        'name' => "nvl/{$package}",
-        'autoload' => $autoload,
-    ];
-
-    if ($package === 'activity') {
-        $manifest['require'] = [
-            'nvl/data' => '^1.0',
-            'nvl/support' => '^1.0',
-        ];
-    }
-
-    return $manifest;
-}
-
-/**
- * Build the exact root file inventory used by isolated archive fixtures.
- *
- * @return array<string, string>
- */
-function packageArchiveEntries(string $package): array
-{
-    $entries = [
-        'README.md' => '# Package',
-        'LICENSE' => 'MIT',
-        'CHANGELOG.md' => '# Changelog',
-        'UPGRADING.md' => '# Upgrading',
-        'SECURITY.md' => '# Security',
-        'CONTRIBUTING.md' => '# Contributing',
-        'src/Example.php' => '<?php',
-        "resources/boost/skills/nvl-{$package}/SKILL.md" => '# Skill',
-        "resources/boost/skills/nvl-{$package}/agents/openai.yaml" => 'name: package',
-    ];
-
-    if ($package === 'activity') {
-        $entries = [
-            ...$entries,
-            'config/activity.php' => '<?php return [];',
-            'database/migrations/2026_01_01_000000_create_activity_log_table.php' => '<?php',
-            'lang/en/activity/general.php' => '<?php return [];',
-            'lang/bg/activity/general.php' => '<?php return [];',
-            'routes/api.php' => '<?php',
-            'src/Support/activitylog_compatibility.php' => '<?php',
-        ];
-    }
-
-    return $entries;
-}
-
-/**
- * Write one deterministic package ZIP fixture.
- *
- * @param  array<string, mixed>  $manifest
- * @param  array<string, string>  $entries
- */
-function packageArchiveWriteZip(string $archive, array $manifest, array $entries): void
-{
-    $zip = new ZipArchive;
-    $result = $zip->open($archive, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
-    if ($result !== true) {
-        throw new RuntimeException("Unable to create archive fixture [{$archive}].");
-    }
-
-    $manifestContents = json_encode(
-        $manifest,
-        JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES,
+    $manifest = suiteArchiveManifest();
+    $catalog = require $root.'/tools/package-family.php';
+    $expected = array_fill_keys(
+        array_map(static fn (string $package): string => 'nvl/'.$package, $catalog['packages']),
+        'self.version',
     );
+    ksort($expected);
 
-    if (! $zip->addFromString('composer.json', $manifestContents)) {
-        throw new RuntimeException('Unable to add composer.json to the archive fixture.');
+    expect($manifest['replace'] ?? null)->toBe($expected);
+});
+
+it('autoloads every internal module from the suite archive layout', function (): void {
+    $root = dirname(__DIR__, 2);
+    $manifest = suiteArchiveManifest();
+    $catalog = require $root.'/tools/package-family.php';
+
+    foreach ($catalog['packages'] as $package) {
+        $namespace = str_replace(' ', '', ucwords(str_replace('-', ' ', $package)));
+
+        expect($manifest['autoload']['psr-4']['Nvl\\'.$namespace.'\\'] ?? null)
+            ->toBe('packages/nvl/'.$package.'/src/');
     }
+});
 
-    foreach ($entries as $path => $contents) {
-        if (! $zip->addFromString($path, $contents)) {
-            throw new RuntimeException("Unable to add [{$path}] to the archive fixture.");
-        }
-    }
+it('discovers one suite provider instead of twenty package providers', function (): void {
+    $manifest = suiteArchiveManifest();
 
-    if (! $zip->close()) {
-        throw new RuntimeException("Unable to close archive fixture [{$archive}].");
-    }
-}
-
-/**
- * Run the package archive inspector against one isolated fixture.
- */
-function packageArchiveInspect(string $archive, string $package): Process
-{
-    $process = new Process([
-        PHP_BINARY,
-        dirname(__DIR__, 2).'/tools/inspect-package-archive.php',
-        $archive,
-        $package,
+    expect($manifest['extra']['laravel']['providers'] ?? null)->toBe([
+        'Nvl\\Suite\\SuiteServiceProvider',
     ]);
-    $process->setTimeout(10);
-    $process->run();
+});
 
-    return $process;
+it('builds exactly one versioned Composer archive', function (): void {
+    [$workspace, $archive] = suiteArchiveBuild();
+
+    try {
+        expect(basename($archive))->toBe('nvl-laravel-suite-1.2.3.zip');
+
+        $manifest = suiteArchiveReadManifest($archive);
+
+        expect($manifest['name'] ?? null)->toBe('nvl/laravel-suite')
+            ->and($manifest['version'] ?? null)->toBeNull();
+    } finally {
+        expect($workspace)->toBeDirectory();
+    }
+});
+
+it('ships every module and the central provider in the archive', function (): void {
+    [$workspace, $archive] = suiteArchiveBuild();
+
+    try {
+        $entries = suiteArchiveEntries($archive);
+        $catalog = require dirname(__DIR__, 2).'/tools/package-family.php';
+
+        expect($entries)->toContain('src/SuiteServiceProvider.php');
+
+        foreach ($catalog['packages'] as $package) {
+            expect(array_filter(
+                $entries,
+                static fn (string $entry): bool => str_starts_with(
+                    $entry,
+                    'packages/nvl/'.$package.'/src/',
+                ),
+            ))->not->toBe([]);
+        }
+    } finally {
+        expect($workspace)->toBeDirectory();
+    }
+});
+
+it('rejects development-only content from the suite archive', function (): void {
+    [$workspace, $archive] = suiteArchiveBuild();
+
+    try {
+        $entries = suiteArchiveEntries($archive);
+        $developmentEntries = array_values(array_filter(
+            $entries,
+            static fn (string $entry): bool => preg_match(
+                '#(^|/)(vendor|node_modules|tests|\\.temp)(/|$)#',
+                $entry,
+            ) === 1,
+        ));
+        $nestedManifests = array_values(array_filter(
+            $entries,
+            static fn (string $entry): bool => preg_match(
+                '#^packages/nvl/[^/]+/composer\\.json$#',
+                $entry,
+            ) === 1,
+        ));
+
+        expect($developmentEntries)->toBe([])
+            ->and($nestedManifests)->toBe([]);
+    } finally {
+        expect($workspace)->toBeDirectory();
+    }
+});
+
+it('keeps release automation free of the retired package repository tools', function (): void {
+    $root = dirname(__DIR__, 2);
+    $workflow = Yaml::parseFile($root.'/.github/workflows/package-release.yml');
+    $serializedWorkflow = json_encode($workflow, JSON_THROW_ON_ERROR);
+
+    expect($serializedWorkflow)->not->toContain(
+        'build-archive-repository.php',
+        'build-public-composer-repository.php',
+        'inspect-package-archive.php',
+        'deploy-pages',
+        'upload-pages-artifact',
+    )
+        ->and($root.'/tools/build-archive-repository.php')->not->toBeFile()
+        ->and($root.'/tools/build-public-composer-repository.php')->not->toBeFile()
+        ->and($root.'/tools/inspect-package-archive.php')->not->toBeFile();
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function suiteArchiveManifest(): array
+{
+    return json_decode(
+        file_get_contents(dirname(__DIR__, 2).'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
 }
 
 /**
- * Run one isolated Composer command for the relocated archive consumer.
- *
- * @param  list<string>  $arguments
+ * @return array{string, string}
  */
-function packageArchiveComposer(string $consumer, string $workspace, array $arguments): Process
+function suiteArchiveBuild(): array
 {
+    static $archiveFixture;
+
+    if (is_array($archiveFixture)) {
+        return $archiveFixture;
+    }
+
+    $root = dirname(__DIR__, 2);
+    $workspace = sys_get_temp_dir().'/nvl-suite-archive-'.bin2hex(random_bytes(8));
+    (new Filesystem)->mkdir($workspace);
+
     $process = new Process(
-        ['composer', ...$arguments],
-        $consumer,
-        [
-            'COMPOSER_HOME' => $workspace.'/composer-home',
-            'COMPOSER_NO_AUDIT' => '1',
-        ],
+        ['composer', 'archive', '--format=zip', '--dir='.$workspace, '--no-interaction'],
+        $root,
+        ['COMPOSER_ROOT_VERSION' => '1.2.3'],
     );
     $process->setTimeout(30);
     $process->run();
 
-    return $process;
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $archives = glob($workspace.'/nvl-laravel-suite-*.zip');
+
+    expect($archives)->toBeArray()->toHaveCount(1);
+
+    register_shutdown_function(static function () use ($workspace): void {
+        (new Filesystem)->remove($workspace);
+    });
+
+    $archiveFixture = [$workspace, $archives[0]];
+
+    return $archiveFixture;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function suiteArchiveReadManifest(string $archive): array
+{
+    $zip = new ZipArchive;
+    expect($zip->open($archive))->toBeTrue();
+
+    try {
+        $contents = $zip->getFromName('composer.json');
+
+        expect($contents)->toBeString();
+
+        return json_decode($contents, true, flags: JSON_THROW_ON_ERROR);
+    } finally {
+        $zip->close();
+    }
+}
+
+/**
+ * @return list<string>
+ */
+function suiteArchiveEntries(string $archive): array
+{
+    $zip = new ZipArchive;
+    expect($zip->open($archive))->toBeTrue();
+
+    try {
+        $entries = [];
+
+        for ($index = 0; $index < $zip->numFiles; $index++) {
+            $name = $zip->getNameIndex($index);
+
+            if (is_string($name)) {
+                $entries[] = $name;
+            }
+        }
+
+        return $entries;
+    } finally {
+        $zip->close();
+    }
 }

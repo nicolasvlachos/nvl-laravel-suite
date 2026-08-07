@@ -131,18 +131,39 @@ if ($contractPackages !== $expectedPackages) {
 
 $rootManifest = json_decode((string) file_get_contents("{$root}/composer.json"), true);
 $rootRequirements = is_array($rootManifest['require'] ?? null) ? $rootManifest['require'] : [];
+$rootReplacements = is_array($rootManifest['replace'] ?? null) ? $rootManifest['replace'] : [];
 $rootPackages = array_map(
     static fn (string $dependency): string => substr($dependency, 4),
     array_values(array_filter(
-        array_keys($rootRequirements),
+        array_keys($rootReplacements),
         static fn (mixed $dependency): bool => is_string($dependency)
             && str_starts_with($dependency, 'nvl/'),
     )),
 );
 sort($rootPackages);
 
-if ($rootPackages !== $expectedPackages) {
-    $fail('family', 'root Composer requirements do not contain exactly the canonical package catalog');
+if (($rootManifest['name'] ?? null) !== 'nvl/laravel-suite'
+    || ($rootManifest['type'] ?? null) !== 'library') {
+    $fail('family', 'root Composer manifest must define the installable nvl/laravel-suite library');
+}
+
+if (array_filter(
+    array_keys($rootRequirements),
+    static fn (mixed $dependency): bool => is_string($dependency)
+        && str_starts_with($dependency, 'nvl/'),
+) !== []) {
+    $fail('family', 'suite runtime requirements must not install internal NVL modules as packages');
+}
+
+if ($rootPackages !== $expectedPackages
+    || array_filter(
+        $rootReplacements,
+        static fn (mixed $version, mixed $dependency): bool => is_string($dependency)
+            && str_starts_with($dependency, 'nvl/')
+            && $version !== 'self.version',
+        ARRAY_FILTER_USE_BOTH,
+    ) !== []) {
+    $fail('family', 'suite replacements do not contain exactly the canonical module catalog at self.version');
 }
 
 $rootReadme = (string) file_get_contents("{$root}/README.md");

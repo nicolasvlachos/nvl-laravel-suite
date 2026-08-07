@@ -18,7 +18,7 @@ The public namespace is `Nvl\Csv`. Its fluent import/export surface is compatibl
 Install with Composer:
 
 ```bash
-composer require nvl/csv
+composer require nvl/laravel-suite:^1.0
 ```
 
 Laravel discovers `Nvl\Csv\Providers\CsvServiceProvider` automatically. There is no package configuration or migration to publish for synchronous analysis, import, or export.

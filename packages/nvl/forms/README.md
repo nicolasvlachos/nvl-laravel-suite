@@ -9,7 +9,7 @@ Forms depends on `nvl/data`, `nvl/filterable`, `nvl/support`, and `nvl/translata
 ## Requirements and installation
 
 ```bash
-composer require nvl/forms:^1.0
+composer require nvl/laravel-suite:^1.0
 php artisan migrate
 ```
 

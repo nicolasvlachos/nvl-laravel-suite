@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1d2a1a747627878c8afada55b1ef4c78",
+    "content-hash": "b2d325893bf22f2a48890bd516957185",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -1961,86 +1961,17 @@
             "time": "2026-07-21T16:49:22+00:00"
         },
         {
-            "name": "laravel/tinker",
-            "version": "v3.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/tinker.git",
-                "reference": "4faba77764bd33411735936acdf30446d058c78b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/tinker/zipball/4faba77764bd33411735936acdf30446d058c78b",
-                "reference": "4faba77764bd33411735936acdf30446d058c78b",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/console": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
-                "illuminate/contracts": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
-                "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
-                "php": "^8.1",
-                "psy/psysh": "^0.12.0",
-                "symfony/var-dumper": "^5.4|^6.0|^7.0|^8.0"
-            },
-            "require-dev": {
-                "mockery/mockery": "~1.3.3|^1.4.2",
-                "phpstan/phpstan": "^1.10",
-                "phpunit/phpunit": "^10.5|^11.5"
-            },
-            "suggest": {
-                "illuminate/database": "The Illuminate Database package (^8.0|^9.0|^10.0|^11.0|^12.0|^13.0)."
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Laravel\\Tinker\\TinkerServiceProvider"
-                    ]
-                },
-                "branch-alias": {
-                    "dev-master": "3.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Tinker\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                }
-            ],
-            "description": "Powerful REPL for the Laravel framework.",
-            "keywords": [
-                "REPL",
-                "Tinker",
-                "laravel",
-                "psysh"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/tinker/issues",
-                "source": "https://github.com/laravel/tinker/tree/v3.0.2"
-            },
-            "time": "2026-03-17T14:54:13+00:00"
-        },
-        {
             "name": "league/commonmark",
-            "version": "2.8.3",
+            "version": "2.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/commonmark.git",
-                "reference": "1902f60f984235023acbe03db6ad614a37b3c3e7"
+                "reference": "5703d83ba3da3b2e356a5fedc848ed6d8ffb6529"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/1902f60f984235023acbe03db6ad614a37b3c3e7",
-                "reference": "1902f60f984235023acbe03db6ad614a37b3c3e7",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/5703d83ba3da3b2e356a5fedc848ed6d8ffb6529",
+                "reference": "5703d83ba3da3b2e356a5fedc848ed6d8ffb6529",
                 "shasum": ""
             },
             "require": {
@@ -2077,7 +2008,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-main": "2.9-dev"
+                    "dev-main": "2.10-dev"
                 }
             },
             "autoload": {
@@ -2134,7 +2065,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-12T15:29:16+00:00"
+            "time": "2026-08-03T13:42:31+00:00"
         },
         {
             "name": "league/config",
@@ -3454,1994 +3385,6 @@
             "time": "2026-02-16T23:10:27+00:00"
         },
         {
-            "name": "nvl/activity",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/activity",
-                "reference": "68e81ff2ffde2501b935e59b0a8be4680fd1a47c"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "nvl/support": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-activitylog": "^4.0 || ^5.0",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.2 || ^8.0"
-            },
-            "require-dev": {
-                "ext-pdo": "*",
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Activity\\Providers\\ActivityServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/Support/activitylog_compatibility.php"
-                ],
-                "psr-4": {
-                    "Nvl\\Activity\\": "src/",
-                    "Nvl\\Activity\\Database\\Factories\\": "database/factories/",
-                    "Nvl\\Activity\\Database\\Seeders\\": "database/seeders/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Activity\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Activity capture and merged timelines for Laravel models",
-            "keywords": [
-                "activity",
-                "audit-log",
-                "laravel",
-                "timeline"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/auth",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/auth",
-                "reference": "98ebf6ef2c41e64bbed67145c902401e33fccfcf"
-            },
-            "require": {
-                "ext-ctype": "*",
-                "ext-filter": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "laravel/sanctum": "^4.3",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "paragonie/constant_time_encoding": "^2.6 || ^3.0",
-                "php": "^8.3",
-                "pragmarx/google2fa": "^9.0",
-                "spatie/laravel-data": "^4.23",
-                "spatie/laravel-permission": "^8.0",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.2 || ^8.0",
-                "symfony/serializer": "^7.2 || ^8.0",
-                "symfony/uid": "^7.2 || ^8.0",
-                "web-auth/webauthn-lib": "5.3.*"
-            },
-            "require-dev": {
-                "ext-openssl": "*",
-                "ext-pcntl": "*",
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "laravel/socialite": "^5.29",
-                "mockery/mockery": "^1.6",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0",
-                "spomky-labs/cbor-php": "^3.0",
-                "web-auth/cose-lib": "^4.2.3"
-            },
-            "suggest": {
-                "bacon/bacon-qr-code": "Renders server-side QR codes for TOTP provisioning when a headless URI is not sufficient.",
-                "laravel/socialite": "Enables the optional OAuth identity adapter.",
-                "nvl/activity": "Can consume the package's after-commit audit and authentication events.",
-                "nvl/mail-notifications": "Can consume AuthDeliveryRequested events and deliver the typed payloads."
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Auth\\Providers\\AuthServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Auth\\": "src/",
-                    "Nvl\\Auth\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Auth\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.path-coverage.xml",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test:parallel"
-                ],
-                "test": [
-                    "pest --compact"
-                ],
-                "test:feature": [
-                    "pest --compact --testsuite=feature"
-                ],
-                "test:unit": [
-                    "pest --compact --testsuite=unit"
-                ],
-                "test:parallel": [
-                    "pest --compact --parallel --processes=4"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Configurable, extensible authentication features for Laravel",
-            "keywords": [
-                "authentication",
-                "authorization",
-                "invitations",
-                "laravel",
-                "magic-links",
-                "passkeys",
-                "totp"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/comments",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/comments",
-                "reference": "fa9dd7af011f597f0f85305a89d684f64d463ecd"
-            },
-            "require": {
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nvl/data": "^1.0",
-                "nvl/filterable": "^1.0",
-                "nvl/media": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.2 || ^8.0"
-            },
-            "require-dev": {
-                "ext-pcntl": "*",
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "nvl/translatable": "^1.0",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Comments\\Providers\\CommentsServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Comments\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Comments\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Polymorphic threaded comments, reactions, moderation, reports, revisions, and media attachments for Laravel",
-            "keywords": [
-                "comments",
-                "laravel",
-                "moderation",
-                "reactions",
-                "threads"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/content",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/content",
-                "reference": "19523175e38c8ffdb95499c7bb6c6486a2c18e6c"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nvl/data": "^1.0",
-                "nvl/filterable": "^1.0",
-                "nvl/media": "^1.0",
-                "nvl/support": "^1.0",
-                "nvl/translatable": "^1.0",
-                "opis/json-schema": "^2.6",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/html-sanitizer": "^7.4 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Content\\Providers\\ContentServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Content\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Content\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Schema-driven, translatable content blocks, placements, media references, and headless rendering for Laravel",
-            "keywords": [
-                "blocks",
-                "cms",
-                "content",
-                "headless",
-                "laravel",
-                "media",
-                "translations"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/csv",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/csv",
-                "reference": "add88aa5b34eb11ed0996622c55e1e8b22146028"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-iconv": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "laravel/serializable-closure": "^2.0.10",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Csv\\Providers\\CsvServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Csv\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Csv\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Typed, memory-conscious CSV analysis, validation, transformation, import, export, and queued processing for Laravel",
-            "keywords": [
-                "csv",
-                "export",
-                "import",
-                "laravel",
-                "queue",
-                "validation"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/data",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/data",
-                "reference": "5d6d58836ee0b7ae06a76de217c6ebe1ae355a6d"
-            },
-            "require": {
-                "composer-runtime-api": "^2.2",
-                "laravel/framework": "^12.0 || ^13.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/laravel-typescript-transformer": "^3.3",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "suggest": {
-                "ext-zip": "Enables downloadable archives for the generated TypeScript declaration API."
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Data\\Providers\\DataServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Data\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Data\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Standalone package for Spatie Data transformations",
-            "keywords": [
-                "data-transfer-object",
-                "laravel",
-                "spatie-data",
-                "typescript"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/filterable",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/filterable",
-                "reference": "57c5c2e3890c81278876b6804865039f0ee913d2"
-            },
-            "require": {
-                "ext-filter": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Filterable\\Providers\\FilterableServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Filterable\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Filterable\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Validated, reusable Eloquent filtering and sorting for Laravel",
-            "keywords": [
-                "eloquent",
-                "filtering",
-                "laravel",
-                "sorting"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/forms",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/forms",
-                "reference": "4c3d9c2bbd7e59b0ee4f616d69c9dba5a3013525"
-            },
-            "require": {
-                "ext-ctype": "*",
-                "ext-filter": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "nvl/filterable": "^1.0",
-                "nvl/support": "^1.0",
-                "nvl/translatable": "^1.0",
-                "php": "^8.3",
-                "ramsey/uuid": "^4.7",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.0 || ^8.0",
-                "symfony/http-kernel": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "mockery/mockery": "^1.6",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "suggest": {
-                "nvl/activity": "Can consume the package's after-commit events in an application-owned audit integration"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Forms\\Providers\\FormsServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Forms\\": "src/",
-                    "Nvl\\Forms\\Database\\Factories\\": "database/factories/",
-                    "Nvl\\Forms\\Database\\Seeders\\": "database/seeders/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Forms\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Secure dynamic Laravel forms with localized content and submission workflows",
-            "keywords": [
-                "forms",
-                "laravel",
-                "spam-protection",
-                "translation",
-                "validation"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/mail-notifications",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/mail-notifications",
-                "reference": "f84bb5fae6a2165366ee7b298cd1dcc9367fd4f1"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "php": "^8.3",
-                "symfony/mailer": "^7.0 || ^8.0",
-                "symfony/mime": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\MailNotifications\\Providers\\MailNotificationsServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\MailNotifications\\": "src/",
-                    "Nvl\\MailNotifications\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\MailNotifications\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Provider-neutral Laravel mail tracking, scheduling, MailerSend integration, and tokenized presentation",
-            "keywords": [
-                "email",
-                "laravel",
-                "mail",
-                "mailersend",
-                "notifications",
-                "scheduling",
-                "tracking"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/media",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/media",
-                "reference": "074eea4de646cb66277a9de48a44653d9b029f4c"
-            },
-            "require": {
-                "aws/aws-sdk-php": "^3.322.9",
-                "ext-ctype": "*",
-                "ext-curl": "*",
-                "ext-dom": "*",
-                "ext-fileinfo": "*",
-                "ext-filter": "*",
-                "ext-libxml": "*",
-                "ext-mbstring": "*",
-                "guzzlehttp/guzzle": "^7.8.2 || ^8.0",
-                "guzzlehttp/psr7": "^2.7",
-                "laravel/framework": "^12.0 || ^13.0",
-                "league/flysystem": "^3.25",
-                "league/flysystem-aws-s3-v3": "^3.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "nvl/filterable": "^1.0",
-                "nvl/support": "^1.0",
-                "nvl/translatable": "^1.0",
-                "php": "^8.3",
-                "spatie/image": "^3.0",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.0 || ^8.0",
-                "symfony/http-kernel": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "ext-gd": "*",
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "mockery/mockery": "^1.6",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0",
-                "shipmonk/composer-dependency-analyser": "^1.8"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Media\\Providers\\MediaServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Media\\": "src/",
-                    "Nvl\\Media\\Database\\Factories\\": "database/factories/",
-                    "Nvl\\Media\\Database\\Seeders\\": "database/seeders/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Media\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "dependencies": [
-                    "composer-dependency-analyser --config composer-dependency-analyser.php"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "manifest:validate": [
-                    "@composer validate --strict"
-                ],
-                "quality": [
-                    "@manifest:validate",
-                    "@format:test",
-                    "@analyse",
-                    "@dependencies",
-                    "@security:audit",
-                    "@test"
-                ],
-                "security:audit": [
-                    "@composer audit --no-interaction"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Laravel media uploads, associations, variations and localized metadata",
-            "keywords": [
-                "images",
-                "laravel",
-                "media",
-                "translation",
-                "uploads"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/metafields",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/metafields",
-                "reference": "eb8266d54518d5094bd484921d9d77a24088f5a4"
-            },
-            "require": {
-                "ext-filter": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nvl/data": "^1.0",
-                "nvl/support": "^1.0",
-                "nvl/translatable": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Metafields\\Providers\\MetafieldsServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Metafields\\": "src/",
-                    "Nvl\\Metafields\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Metafields\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Typed, polymorphic and translatable metafields for Laravel",
-            "keywords": [
-                "custom-fields",
-                "laravel",
-                "metafields",
-                "translation"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/pages",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/pages",
-                "reference": "3557db9d0b17fe7712e5b43bfc75c6e848c492f7"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^3.8",
-                "nvl/content": "^1.0",
-                "nvl/data": "^1.0",
-                "nvl/filterable": "^1.0",
-                "nvl/metafields": "^1.0",
-                "nvl/seo": "^1.0",
-                "nvl/translatable": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-kernel": "^7.2 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "nvl/media": "^1.0",
-                "nvl/support": "^1.0",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Pages\\Providers\\PagesServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Pages\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Pages\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Hierarchical, translatable, content-composed pages and dynamic page resources for Laravel",
-            "keywords": [
-                "cms",
-                "content",
-                "laravel",
-                "pages",
-                "seo",
-                "sitemap",
-                "translations"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/primitives",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/primitives",
-                "reference": "0ce70d6995a3dec002a643a3079c30516ec14ac0"
-            },
-            "require": {
-                "brick/math": "^0.14 || ^0.15 || ^0.16 || ^0.17 || ^0.18",
-                "brick/money": "^0.11 || ^0.14",
-                "ext-ctype": "*",
-                "ext-filter": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "giggsey/libphonenumber-for-php": "^9.0",
-                "jschaedl/iban-validation": "^2.7",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/intl": "^7.0 || ^8.0",
-                "symfony/polyfill-intl-icu": "^1.33"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "suggest": {
-                "ext-intl": "Enables locale-aware monetary formatting through Brick Money."
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Primitives\\Providers\\PrimitivesServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Primitives\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Primitives\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Immutable application value objects, exact money, validation, and ISO reference catalogs for Laravel",
-            "keywords": [
-                "currency",
-                "iban",
-                "laravel",
-                "locale",
-                "money",
-                "phone",
-                "value-object"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/seo",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/seo",
-                "reference": "99e86635c2135e2b790b9ad47df9cc7939a0baba"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-json": "*",
-                "ext-libxml": "*",
-                "ext-mbstring": "*",
-                "ext-xmlwriter": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "nvl/translatable": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-kernel": "^7.2 || ^8.0"
-            },
-            "require-dev": {
-                "ext-pdo": "*",
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Seo\\Providers\\SeoServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Seo\\": "src/",
-                    "Nvl\\Seo\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Seo\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Localized SEO metadata, canonical URLs, social previews, structured data, robots, and sitemaps for Laravel",
-            "keywords": [
-                "json-ld",
-                "laravel",
-                "opengraph",
-                "robots",
-                "seo",
-                "sitemap",
-                "translation"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/settings",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/settings",
-                "reference": "16aa001d6919d0c8be5ab7fc6a81f7fde7e68004"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-json": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/finder": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Settings\\Providers\\SettingsServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Settings\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Settings\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Standalone settings package",
-            "keywords": [
-                "configuration",
-                "laravel",
-                "settings"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/support",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/support",
-                "reference": "b28c12882fd2d46592e4e830f6ca52acf522a131"
-            },
-            "require": {
-                "laravel/framework": "^12.0 || ^13.0",
-                "php": "^8.3"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Support\\Providers\\SupportServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Support\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Support\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Transport-neutral business exceptions and stable response codes for Laravel",
-            "keywords": [
-                "exceptions",
-                "laravel",
-                "response-codes"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/taxonomy",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/taxonomy",
-                "reference": "676c626c03bd6dc73655985f65f29905a3d0db8e"
-            },
-            "require": {
-                "ext-ctype": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nvl/data": "^1.0",
-                "nvl/translatable": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Taxonomy\\Providers\\TaxonomyServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Taxonomy\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Taxonomy\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Hierarchical, attachable and translatable taxonomies for Laravel",
-            "keywords": [
-                "categories",
-                "laravel",
-                "tags",
-                "taxonomy",
-                "translation"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/templates",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/templates",
-                "reference": "cc58482b43e510ee7c54bcf2af89a0f10fca7a23"
-            },
-            "require": {
-                "ext-fileinfo": "*",
-                "ext-filter": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "mpdf/mpdf": "^8.2.5",
-                "nvl/content": "^1.0",
-                "nvl/data": "^1.0",
-                "nvl/filterable": "^1.0",
-                "nvl/media": "^1.0",
-                "nvl/translatable": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Templates\\Providers\\TemplatesServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Templates\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Templates\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Composable Blade and PDF template abstractions and renderers for Laravel",
-            "keywords": [
-                "documents",
-                "laravel",
-                "localization",
-                "media",
-                "rendering",
-                "templates"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/translatable",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/translatable",
-                "reference": "1875fcacd05bd18025a9ce6ecf55fa8fb2ecd78a"
-            },
-            "require": {
-                "ext-ctype": "*",
-                "ext-mbstring": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nvl/data": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3",
-                "symfony/http-foundation": "^7.0 || ^8.0"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Translatable\\Providers\\TranslatableServiceProvider"
-                    ],
-                    "aliases": []
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Translatable\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Translatable\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --compact"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Typed related-row and grouped self-row translations for Laravel Eloquent models",
-            "keywords": [
-                "eloquent",
-                "i18n",
-                "laravel",
-                "localization",
-                "translation"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
-            "name": "nvl/translations",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "packages/nvl/translations",
-                "reference": "7ae52ce149103ff1be1249dd340c651a884dc998"
-            },
-            "require": {
-                "ext-filter": "*",
-                "ext-mbstring": "*",
-                "ext-tokenizer": "*",
-                "laravel/framework": "^12.0 || ^13.0",
-                "nesbot/carbon": "^2.72 || ^3.0",
-                "nvl/data": "^1.0",
-                "nvl/filterable": "^1.0",
-                "nvl/support": "^1.0",
-                "php": "^8.3",
-                "spatie/laravel-data": "^4.23",
-                "spatie/typescript-transformer": "^3.3"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.10",
-                "laravel/pint": "^1.27",
-                "orchestra/testbench": "^10.0 || ^11.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.x-dev"
-                },
-                "laravel": {
-                    "providers": [
-                        "Nvl\\Translations\\Providers\\TranslationsServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nvl\\Translations\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Nvl\\Translations\\Tests\\": "tests/"
-                }
-            },
-            "archive": {
-                "exclude": [
-                    "/.temp",
-                    "/build",
-                    "/coverage",
-                    "/.phpunit.cache",
-                    "/.phpunit.result.cache",
-                    "/phpstan.neon.dist",
-                    "/phpunit.xml.dist",
-                    "/tests"
-                ]
-            },
-            "scripts": {
-                "analyse": [
-                    "phpstan analyse --memory-limit=2G"
-                ],
-                "format": [
-                    "pint --parallel --format agent"
-                ],
-                "format:test": [
-                    "pint --parallel --test --format agent"
-                ],
-                "quality": [
-                    "@format:test",
-                    "@analyse",
-                    "@test"
-                ],
-                "test": [
-                    "pest --configuration=phpunit.xml.dist --test-directory=tests --bootstrap=tests/Pest.php --compact tests"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "Translation catalog scanning, editing, import, and export for Laravel",
-            "keywords": [
-                "i18n",
-                "laravel",
-                "localization",
-                "translations"
-            ],
-            "transport-options": {
-                "relative": true
-            }
-        },
-        {
             "name": "opis/json-schema",
             "version": "2.6.0",
             "source": {
@@ -6511,85 +4454,6 @@
                 "source": "https://github.com/php-fig/simple-cache/tree/3.0.0"
             },
             "time": "2021-10-29T13:26:27+00:00"
-        },
-        {
-            "name": "psy/psysh",
-            "version": "v0.12.24",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/bobthecow/psysh.git",
-                "reference": "ca0fdcf8a7617afa3adfdf1b5fef573dffb69ca1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/ca0fdcf8a7617afa3adfdf1b5fef573dffb69ca1",
-                "reference": "ca0fdcf8a7617afa3adfdf1b5fef573dffb69ca1",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "ext-tokenizer": "*",
-                "nikic/php-parser": "^5.0 || ^4.0",
-                "php": "^8.0 || ^7.4",
-                "symfony/console": "^8.0 || ^7.0 || ^6.0 || ^5.0 || ^4.0 || ^3.4",
-                "symfony/var-dumper": "^8.0 || ^7.0 || ^6.0 || ^5.0 || ^4.0 || ^3.4"
-            },
-            "conflict": {
-                "symfony/console": "4.4.37 || 5.3.14 || 5.3.15 || 5.4.3 || 5.4.4 || 6.0.3 || 6.0.4"
-            },
-            "require-dev": {
-                "bamarni/composer-bin-plugin": "^1.2",
-                "composer/class-map-generator": "^1.6"
-            },
-            "suggest": {
-                "composer/class-map-generator": "Improved tab completion performance with better class discovery.",
-                "ext-pcntl": "Enabling the PCNTL extension makes PsySH a lot happier :)",
-                "ext-posix": "If you have PCNTL, you'll want the POSIX extension as well."
-            },
-            "bin": [
-                "bin/psysh"
-            ],
-            "type": "library",
-            "extra": {
-                "bamarni-bin": {
-                    "bin-links": false,
-                    "forward-command": false
-                },
-                "branch-alias": {
-                    "dev-main": "0.12.x-dev"
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/functions.php"
-                ],
-                "psr-4": {
-                    "Psy\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Justin Hileman",
-                    "email": "justin@justinhileman.info"
-                }
-            ],
-            "description": "An interactive shell for modern PHP.",
-            "homepage": "https://psysh.org",
-            "keywords": [
-                "REPL",
-                "console",
-                "interactive",
-                "shell"
-            ],
-            "support": {
-                "issues": "https://github.com/bobthecow/psysh/issues",
-                "source": "https://github.com/bobthecow/psysh/tree/v0.12.24"
-            },
-            "time": "2026-06-29T15:41:09+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
@@ -12951,6 +10815,75 @@
             "time": "2026-07-01T13:50:23+00:00"
         },
         {
+            "name": "laravel/tinker",
+            "version": "v3.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/tinker.git",
+                "reference": "4faba77764bd33411735936acdf30446d058c78b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/tinker/zipball/4faba77764bd33411735936acdf30446d058c78b",
+                "reference": "4faba77764bd33411735936acdf30446d058c78b",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/contracts": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "php": "^8.1",
+                "psy/psysh": "^0.12.0",
+                "symfony/var-dumper": "^5.4|^6.0|^7.0|^8.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "~1.3.3|^1.4.2",
+                "phpstan/phpstan": "^1.10",
+                "phpunit/phpunit": "^10.5|^11.5"
+            },
+            "suggest": {
+                "illuminate/database": "The Illuminate Database package (^8.0|^9.0|^10.0|^11.0|^12.0|^13.0)."
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Laravel\\Tinker\\TinkerServiceProvider"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-master": "3.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\Tinker\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                }
+            ],
+            "description": "Powerful REPL for the Laravel framework.",
+            "keywords": [
+                "REPL",
+                "Tinker",
+                "laravel",
+                "psysh"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/tinker/issues",
+                "source": "https://github.com/laravel/tinker/tree/v3.0.2"
+            },
+            "time": "2026-03-17T14:54:13+00:00"
+        },
+        {
             "name": "league/oauth1-client",
             "version": "v1.11.0",
             "source": {
@@ -14808,6 +12741,85 @@
             "time": "2026-06-15T13:12:30+00:00"
         },
         {
+            "name": "psy/psysh",
+            "version": "v0.12.24",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/bobthecow/psysh.git",
+                "reference": "ca0fdcf8a7617afa3adfdf1b5fef573dffb69ca1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/ca0fdcf8a7617afa3adfdf1b5fef573dffb69ca1",
+                "reference": "ca0fdcf8a7617afa3adfdf1b5fef573dffb69ca1",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-tokenizer": "*",
+                "nikic/php-parser": "^5.0 || ^4.0",
+                "php": "^8.0 || ^7.4",
+                "symfony/console": "^8.0 || ^7.0 || ^6.0 || ^5.0 || ^4.0 || ^3.4",
+                "symfony/var-dumper": "^8.0 || ^7.0 || ^6.0 || ^5.0 || ^4.0 || ^3.4"
+            },
+            "conflict": {
+                "symfony/console": "4.4.37 || 5.3.14 || 5.3.15 || 5.4.3 || 5.4.4 || 6.0.3 || 6.0.4"
+            },
+            "require-dev": {
+                "bamarni/composer-bin-plugin": "^1.2",
+                "composer/class-map-generator": "^1.6"
+            },
+            "suggest": {
+                "composer/class-map-generator": "Improved tab completion performance with better class discovery.",
+                "ext-pcntl": "Enabling the PCNTL extension makes PsySH a lot happier :)",
+                "ext-posix": "If you have PCNTL, you'll want the POSIX extension as well."
+            },
+            "bin": [
+                "bin/psysh"
+            ],
+            "type": "library",
+            "extra": {
+                "bamarni-bin": {
+                    "bin-links": false,
+                    "forward-command": false
+                },
+                "branch-alias": {
+                    "dev-main": "0.12.x-dev"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/functions.php"
+                ],
+                "psr-4": {
+                    "Psy\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Justin Hileman",
+                    "email": "justin@justinhileman.info"
+                }
+            ],
+            "description": "An interactive shell for modern PHP.",
+            "homepage": "https://psysh.org",
+            "keywords": [
+                "REPL",
+                "console",
+                "interactive",
+                "shell"
+            ],
+            "support": {
+                "issues": "https://github.com/bobthecow/psysh/issues",
+                "source": "https://github.com/bobthecow/psysh/tree/v0.12.24"
+            },
+            "time": "2026-06-29T15:41:09+00:00"
+        },
+        {
             "name": "sebastian/cli-parser",
             "version": "4.2.1",
             "source": {
@@ -16102,33 +14114,29 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "nvl/activity": 20,
-        "nvl/auth": 20,
-        "nvl/comments": 20,
-        "nvl/content": 20,
-        "nvl/csv": 20,
-        "nvl/data": 20,
-        "nvl/filterable": 20,
-        "nvl/forms": 20,
-        "nvl/mail-notifications": 20,
-        "nvl/media": 20,
-        "nvl/metafields": 20,
-        "nvl/pages": 20,
-        "nvl/primitives": 20,
-        "nvl/seo": 20,
-        "nvl/settings": 20,
-        "nvl/support": 20,
-        "nvl/taxonomy": 20,
-        "nvl/templates": 20,
-        "nvl/translatable": 20,
-        "nvl/translations": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.3"
+        "php": "^8.3",
+        "composer-runtime-api": "^2.2",
+        "ext-ctype": "*",
+        "ext-curl": "*",
+        "ext-dom": "*",
+        "ext-fileinfo": "*",
+        "ext-filter": "*",
+        "ext-iconv": "*",
+        "ext-json": "*",
+        "ext-libxml": "*",
+        "ext-mbstring": "*",
+        "ext-tokenizer": "*",
+        "ext-xmlwriter": "*"
     },
-    "platform-dev": {},
+    "platform-dev": {
+        "ext-gd": "*",
+        "ext-openssl": "*",
+        "ext-pcntl": "*",
+        "ext-pdo": "*"
+    },
     "plugin-api-version": "2.6.0"
 }

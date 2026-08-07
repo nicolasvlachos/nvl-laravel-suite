@@ -29,7 +29,7 @@ It does not own an admin UI, application roles/policies, content routing, analyt
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
 
 ```bash
-composer require nvl/seo:^1.0
+composer require nvl/laravel-suite:^1.0
 php artisan migrate
 php artisan vendor:publish --tag=seo-config
 php artisan vendor:publish --tag=seo-skills

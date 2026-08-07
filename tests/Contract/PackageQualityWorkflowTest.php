@@ -5,6 +5,41 @@ declare(strict_types=1);
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
+it('defines one installable suite package for every internal module', function (): void {
+    $root = dirname(__DIR__, 2);
+    $manifest = json_decode(
+        file_get_contents($root.'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $catalog = require $root.'/tools/package-family.php';
+    $packages = $catalog['packages'];
+    $replacedPackages = array_fill_keys(
+        array_map(static fn (string $package): string => 'nvl/'.$package, $packages),
+        'self.version',
+    );
+    ksort($replacedPackages);
+
+    expect($manifest['name'] ?? null)->toBe('nvl/laravel-suite')
+        ->and($manifest['type'] ?? null)->toBe('library')
+        ->and($manifest)->not->toHaveKey('repositories')
+        ->and(array_intersect_key($manifest['require'] ?? [], $replacedPackages))->toBe([])
+        ->and($manifest['replace'] ?? null)->toBe($replacedPackages)
+        ->and($manifest['extra']['laravel']['providers'] ?? null)->toBe([
+            'Nvl\\Suite\\SuiteServiceProvider',
+        ])
+        ->and($manifest['autoload']['psr-4']['Nvl\\Suite\\'] ?? null)->toBe('src/')
+        ->and($manifest['autoload']['psr-4']['Nvl\\Workbench\\'] ?? null)->toBe('app/')
+        ->and($manifest['autoload']['psr-4'] ?? [])->not->toHaveKey('App\\');
+
+    foreach ($packages as $package) {
+        $namespace = str_replace(' ', '', ucwords(str_replace('-', ' ', $package)));
+
+        expect($manifest['autoload']['psr-4']['Nvl\\'.$namespace.'\\'] ?? null)
+            ->toBe('packages/nvl/'.$package.'/src/');
+    }
+});
+
 it('keeps Composer update hooks independent of optional development tools', function (): void {
     $manifest = json_decode(
         file_get_contents(dirname(__DIR__, 2).'/composer.json'),
@@ -143,39 +178,39 @@ it('collects coverage only for packages changed by the event', function (): void
         ->and($coverage)->not->toHaveKey('strategy');
 });
 
-it('publishes tagged archives only after all five routine gates pass', function (): void {
+it('publishes one tagged suite archive only after all five routine gates pass', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();
 
     $jobs = $workflow['jobs'] ?? [];
-    $archives = $jobs['archives'] ?? [];
+    $archive = $jobs['archive'] ?? [];
     $publish = $jobs['publish-release'] ?? [];
-    $deploy = $jobs['deploy-composer-repository'] ?? [];
-    $archiveCommands = workflowCommands($archives);
+    $archiveCommands = workflowCommands($archive);
     $publishCommands = workflowCommands($publish);
 
     expect($jobs['checks']['uses'] ?? null)->toBe('./.github/workflows/package-quality.yml')
-        ->and($archives)->not->toHaveKey('if')
-        ->and($archives['needs'] ?? null)->toBe('checks')
+        ->and(array_keys($jobs))->toBe(['checks', 'archive', 'publish-release'])
+        ->and($archive['needs'] ?? null)->toBe('checks')
         ->and($archiveCommands)->toContain(
-            'for directory in packages/nvl/*; do',
-            'composer archive',
-            'inspect-package-archive.php',
-            'composer config repositories.nvl artifact',
+            'COMPOSER_ROOT_VERSION="$package_version" composer archive',
+            'test "$archive_count" -eq 1',
+            '{type:"path",url:$url,options:{symlink:false,versions:{"nvl/laravel-suite":$version}}}',
+            '"nvl/laravel-suite:$PACKAGE_VERSION"',
             'composer audit --locked --no-interaction',
         )
-        ->and($publish)->not->toHaveKey('if')
-        ->and($publish['needs'] ?? null)->toBe('archives')
-        ->and($publishCommands)->toContain(
-            'test "$archive_count" -eq 20',
+        ->not->toContain(
+            'for directory in packages/nvl/*; do',
             'build-public-composer-repository.php',
+            'actions/deploy-pages',
+        )
+        ->and($publish['needs'] ?? null)->toBe('archive')
+        ->and($publishCommands)->toContain(
+            "--pattern 'nvl-laravel-suite-*.zip'",
             'gh release create',
         )
         ->and($publish['permissions']['contents'] ?? null)->toBe('write')
-        ->and($publish['permissions']['pages'] ?? null)->toBe('write')
-        ->and($deploy['needs'] ?? null)->toBe('publish-release')
-        ->and($deploy['steps'][0]['uses'] ?? null)->toBe('actions/deploy-pages@v4');
+        ->and($publish['permissions']['pages'] ?? null)->toBeNull();
 });
 
 it('keeps every package workflow shell block syntactically valid', function (): void {

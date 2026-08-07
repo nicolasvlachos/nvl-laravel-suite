@@ -38,33 +38,34 @@ function activityWorkflowCommands(array $job): string
         ->implode("\n");
 }
 
-it('installs Activity with every package from tagged release archives', function (): void {
+it('installs Activity from the tagged suite archive', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();
 
-    $job = $workflow['jobs']['archives'] ?? null;
-    $buildStep = collect($job['steps'] ?? [])->firstWhere('name', 'Build and inspect all package archives');
-    $installStep = collect($job['steps'] ?? [])->firstWhere('name', 'Install and exercise built archives');
+    $job = $workflow['jobs']['archive'] ?? null;
+    $buildStep = collect($job['steps'] ?? [])->firstWhere('name', 'Build and inspect the suite archive');
+    $installStep = collect($job['steps'] ?? [])->firstWhere('name', 'Install and exercise the suite archive');
     $buildCommand = is_array($buildStep) ? ($buildStep['run'] ?? null) : null;
     $installCommand = is_array($installStep) ? ($installStep['run'] ?? null) : null;
 
     expect($job)->toBeArray()
-        ->and($job)->not->toHaveKey('if')
         ->and($buildCommand)->toBeString()->toContain(
-            'for directory in packages/nvl/*; do',
-            'php tools/inspect-package-archive.php "$archive" "$package"',
+            'COMPOSER_ROOT_VERSION="$package_version" composer archive',
+            '.name == "nvl/laravel-suite"',
         )
         ->and($installCommand)->toBeString()->toContain(
-            'packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")',
-            'composer config repositories.nvl artifact',
-            'export QUEUE_CONNECTION=database',
-            'export DB_QUEUE_RETRY_AFTER=960',
+            '"nvl/laravel-suite:$PACKAGE_VERSION"',
+            'composer config repositories.nvl "$repository_config"',
+            'test ! -L vendor/nvl/laravel-suite',
             'php artisan config:cache',
             'php artisan route:cache',
         )
-        ->not->toContain('composer config repositories.nvl composer');
+        ->not->toContain(
+            'packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")',
+            'composer config repositories.nvl composer',
+        );
 });
 
 it('keeps the Activity production consumer fixture representative', function (): void {
@@ -76,6 +77,7 @@ it('keeps the Activity production consumer fixture representative', function ():
         'app/Console/Commands/ActivityConsumerSmokeCommand.php',
         'app/Http/Middleware/AuthenticateActivityConsumer.php',
         'app/Models/ActivityArticle.php',
+        'app/Models/User.php',
         'app/Providers/ActivityProductionServiceProvider.php',
         'bootstrap/providers.php',
         'config/activity.php',

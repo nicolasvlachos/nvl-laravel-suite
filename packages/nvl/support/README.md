@@ -9,7 +9,7 @@ It deliberately has no internal NVL dependency, configuration, migrations, model
 ## Requirements and installation
 
 ```bash
-composer require nvl/support:^1.0
+composer require nvl/laravel-suite:^1.0
 ```
 
 Laravel auto-discovers `Nvl\Support\Providers\SupportServiceProvider`. The provider has no runtime boot side effects. Agent guidance is optional:

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Providers;
+namespace Nvl\Workbench\Providers;
 
-use App\Models\IntegrationTestModel;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use Nvl\Metafields\Enums\MetafieldTypeEnum;
+use Nvl\Workbench\Models\IntegrationTestModel;
 
 /**
  * Configures the monorepo application as an executable all-package reference consumer.

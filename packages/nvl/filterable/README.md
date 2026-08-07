@@ -9,7 +9,7 @@ The package depends only on `nvl/data` inside the NVL family. It has no migratio
 ## Requirements and installation
 
 ```bash
-composer require nvl/filterable:^1.0
+composer require nvl/laravel-suite:^1.0
 php artisan vendor:publish --tag=filterable-skills
 ```
 

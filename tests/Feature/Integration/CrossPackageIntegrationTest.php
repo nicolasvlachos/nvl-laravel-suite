@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\IntegrationTestModel;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +25,7 @@ use Nvl\Taxonomy\Actions\CreateTermAction;
 use Nvl\Taxonomy\Data\MutateTermPayload;
 use Nvl\Taxonomy\Services\TaxonomyOwnerRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
+use Nvl\Workbench\Models\IntegrationTestModel;
 
 it('gathers package type sources and translatable resources through central registries', function (): void {
     $catalog = require base_path('tools/package-family.php');

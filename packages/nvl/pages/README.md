@@ -19,7 +19,7 @@ The package is intended for Laravel applications that need a stable front-end co
 Install the package in a clean Laravel application:
 
 ```bash
-composer require nvl/pages
+composer require nvl/laravel-suite:^1.0
 php artisan vendor:publish --tag=pages-config
 php artisan vendor:publish --tag=pages-migrations
 php artisan vendor:publish --tag=pages-skills

@@ -26,7 +26,7 @@ It does not own users, settings, authorization, controllers, application routes,
 The package uses Brick Money/Math, Google's numbering metadata through `giggsey/libphonenumber-for-php`, the SWIFT-derived IBAN registry through `jschaedl/iban-validation`, and Symfony Intl data.
 
 ```bash
-composer require nvl/primitives:^1.0
+composer require nvl/laravel-suite:^1.0
 php artisan vendor:publish --tag=primitives-config
 php artisan vendor:publish --tag=primitives-skills
 ```

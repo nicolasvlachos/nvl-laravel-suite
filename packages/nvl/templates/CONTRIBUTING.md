@@ -26,7 +26,7 @@ vendor/bin/pest \
     packages/nvl/templates/tests
 ```
 
-From a standalone package checkout after `composer install`:
+From the suite root after `composer install`:
 
 ```bash
 composer quality

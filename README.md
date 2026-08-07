@@ -1,10 +1,10 @@
 # NVL Laravel Suite
 
-The NVL Laravel Suite is a monorepo for developing and verifying an independently installable Laravel package family against one integration workbench. Composer path repositories symlink every package from `packages/nvl`, while each package retains its own manifest, provider, migrations, tests, documentation, and optional Laravel Boost skill.
+The NVL Laravel Suite is one installable Composer package containing 20 focused Laravel modules and an integration workbench. The modules remain isolated under `packages/nvl`, retain their namespaces, providers, migrations, tests, documentation, and Laravel Boost skills, and ship together under one version.
 
-## Packages
+## Internal modules
 
-| Package | Responsibility |
+| Module identifier | Responsibility |
 |---|---|
 | `nvl/activity` | Activity capture and merged model timelines |
 | `nvl/auth` | Headless authentication, invitations, authenticators, recovery, sessions, RBAC, and security audit |
@@ -27,31 +27,26 @@ The NVL Laravel Suite is a monorepo for developing and verifying an independentl
 | `nvl/translatable` | Shared locale validation, request-scoped content locale, fallback, queries, and writes |
 | `nvl/translations` | File/database UI-string translation workflows |
 
-Package-specific installation and public APIs are documented in each package README.
+Module-specific configuration and public APIs are documented in each module README.
 
-Each package is independently publishable, auto-discoverable, and supports Laravel 12 or 13 on PHP 8.3+. Package source/config must not reference a host `App\`/`Modules\` class or named host middleware. Packages that own translated Eloquent content declare `nvl/translatable:^1.0`; all other cross-package requirements are explicit and bounded.
+The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.3+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
 
 ## Composer installation
 
-The tag-only `Package release` workflow publishes each `v*` release as individual
-package archives through the suite's static Composer repository. Register it once
-in a consumer application:
+Install the complete suite from Packagist:
 
 ```bash
-composer config repositories.nvl composer \
-    https://nicolasvlachos.github.io/nvl-laravel-suite/
+composer require nvl/laravel-suite:^1.0
 ```
 
-Install only the required packages; Composer resolves their NVL dependencies
-from the same repository:
+For development before the first stable tag, a consumer may use the public GitHub repository directly:
 
 ```bash
-composer require nvl/auth:^1.0 --with-all-dependencies
-composer require nvl/media:^1.0 --with-all-dependencies
+composer config repositories.nvl vcs https://github.com/nicolasvlachos/nvl-laravel-suite.git
+composer require nvl/laravel-suite:dev-main
 ```
 
-The monorepo remains the only source repository. A coordinated `vX.Y.Z` tag
-publishes the same version for every package without creating split repositories.
+One `vX.Y.Z` tag versions every internal module and produces one release archive.
 
 ## Translation architecture
 
@@ -77,7 +72,7 @@ php artisan key:generate
 php artisan migrate
 ```
 
-The root `composer.json` declares `packages/*/*` as a Composer path repository. Root requirements intentionally allow development versions; individual publishable package manifests use the coordinated `^1.0` dependency line and alias `dev-main` to `1.x-dev`.
+The root `composer.json` is both the published package manifest and the local workbench manifest. The `Nvl\Workbench` namespace keeps local application fixtures separate from consumer `App\` namespaces.
 
 Laravel Herd serves this workspace automatically; do not start a separate PHP development server.
 
@@ -90,7 +85,7 @@ Laravel Herd serves this workspace automatically; do not start a separate PHP de
 - CI holds each package at its measured coverage baseline, requires 90% line
   coverage for newly changed source lines on pull requests and branch pushes,
   and ratchets package baselines upward as tests improve.
-- Keep package dependencies declared directly and bounded.
+- Keep module boundaries and external dependencies declared directly and bounded.
 - Keep the v1 API free of pre-release aliases; document breaking upgrades explicitly.
 - Use package Actions and Services from consumers; do not reach into persistence internals.
 
@@ -114,17 +109,13 @@ composer quality
 ```
 
 The root quality gate checks formatting, Larastan/PHPStan at maximum strictness,
-declared package and extension dependencies, family architecture/distribution
-rules, the frozen public package contracts, and the complete Pest suite with a
+declared module and extension dependencies, suite architecture/distribution
+rules, the frozen public contracts, and the complete Pest suite with a
 1 GB memory limit. The root integration suite is an executable reference
 consumer: one application model composes Activity, Comments, Content, Media,
 Metafields, SEO, and Taxonomy and exercises the shared registries, strict
-doctors, and a constant eager-loading query budget. Each package exposes the
-same isolated gate:
-
-```bash
-composer quality --working-dir=packages/nvl/media
-```
+doctors, and a constant eager-loading query budget. Module-specific test suites
+remain independently runnable through their `phpunit.xml.dist` files.
 
 Public and protected extension contracts, command signatures, provider
 discovery, publish tags, autoload files, configuration, routes, and migrations
@@ -148,7 +139,7 @@ composer validate --strict packages/nvl/forms/composer.json
 
 ## Agent skills
 
-Each provider exposes its packaged skill directory through a stable `*-skills` publish tag. Newer packages use the Laravel Boost layout:
+Each module provider exposes its skill directory through a stable `*-skills` publish tag. Modules use the Laravel Boost layout:
 
 ```text
 resources/boost/skills/<skill-name>/
@@ -156,7 +147,7 @@ resources/boost/skills/<skill-name>/
 └── agents/openai.yaml
 ```
 
-Publish a package skill into a consumer application:
+Publish a module skill into a consumer application:
 
 ```bash
 php artisan vendor:publish --tag=forms-skills
@@ -192,7 +183,7 @@ future-proposal guidance are rejected by the family validator.
 
 ## Generated TypeScript contracts
 
-Packages that expose DTO or enum contracts register their source paths with `nvl/data`; infrastructure-only packages do not acquire a data dependency just for discovery. Applications may add their own paths in `config/nvl-data.php`. Generate declarations during build:
+Modules that expose DTO or enum contracts register their source paths with the Data module; infrastructure-only modules do not acquire a data dependency just for discovery. Applications may add their own paths in `config/nvl-data.php`. Generate declarations during build:
 
 ```bash
 php artisan nvl:data:types:generate
@@ -206,41 +197,32 @@ by configured middleware when enabled, and never generates during a request.
 
 ## Release workflow
 
-1. Choose a coordinated semantic version and update the changelog/release notes in the release system.
+1. Choose a semantic version and update the changelog/release notes.
 2. Review `composer contracts:check`; acknowledge intentional compatible or breaking changes before updating the baseline.
 3. Run migrations and backfills against a representative existing database.
 4. Run `composer quality`. Routine CI keeps five gates: formatting/static analysis/manifests/contracts, the complete PHP 8.4 + Laravel 13 + SQLite suite, Laravel 12 on the lowest supported dependencies, PostgreSQL stateful tests, and coverage for packages changed by the event.
-5. Run strict Composer validation and security audit for every package.
-6. Build each package archive with an explicit release version:
+5. Run strict Composer validation and `composer audit`.
+6. Build the single suite archive with the release version:
 
    ```bash
    COMPOSER_ROOT_VERSION=1.0.0 composer archive \
-       --working-dir=packages/nvl/forms \
        --format=zip \
-       --dir=/tmp/nvl-package-archives
+       --dir=/tmp/nvl-suite-archive
    ```
 
-7. Run `tools/inspect-package-archive.php` for each archive and
-   `tools/build-archive-repository.php` once for the complete archive directory.
-8. Let the distribution CI install those exact ZIPs in a clean Laravel 13
-   consumer, publish every NVL resource tag, cache configuration/routes, run
-   and roll back migrations, execute every strict doctor, and audit the lock.
-9. Before tagging, manually run `.github/workflows/release-rehearsal.yml` with
-   the prior release ref/version and candidate version. It performs an
-   archive-to-archive upgrade on SQLite, MySQL, and PostgreSQL and repeats the
-   full post-upgrade validation.
-10. Ensure GitHub Pages uses **GitHub Actions** as its publishing source, then
-    push one annotated coordinated tag such as `v1.0.0`.
-11. The tagged package-quality workflow waits for the same five quality gates and
-    the sealed archive installation before creating the GitHub Release and
-    deploying the merged `packages.json` index to GitHub Pages.
-12. Verify the release assets, the Pages deployment, and a clean consumer
-    installation before announcing the release.
+7. Push one annotated tag such as `v1.0.0`. The tag-only release workflow reruns
+   the five quality gates, builds one ZIP, installs that exact artifact in a clean
+   Laravel 13 consumer, validates discovery/caches/migrations/doctors, audits the
+   lock, and creates the GitHub Release.
+8. Register `nvl/laravel-suite` on Packagist and enable its GitHub integration.
+   Packagist reads subsequent `v*` tags without a custom Pages repository.
+9. Verify `composer require nvl/laravel-suite:^1.0` in a clean application before
+   announcing the release.
 
-Do not publish `dev-main` as a stable dependency. Stable packages depend on the `^1.0` line.
+Do not publish `dev-main` as a stable dependency. Consumers should use the `^1.0` line.
 Published NVL migrations retain their package timestamps so they have the same
 identity as auto-loaded migrations and cannot execute twice.
 
 ## License
 
-The monorepo and every distributable package are released under the [MIT License](LICENSE).
+The suite is released under the [MIT License](LICENSE).

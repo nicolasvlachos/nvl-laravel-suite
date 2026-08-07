@@ -9,7 +9,7 @@ It has no internal NVL dependency. It does not own Eloquent models, database tra
 ## Requirements and installation
 
 ```bash
-composer require nvl/data:^1.0
+composer require nvl/laravel-suite:^1.0
 ```
 
 Laravel auto-discovers `DataServiceProvider`. Optional publish tags are:
