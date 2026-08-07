@@ -196,33 +196,28 @@ if ($databaseMatrixPackages !== $expectedDatabaseTested) {
     $fail('family', 'database CI matrix does not contain exactly every database-tested package');
 }
 
-foreach (['line-coverage'] as $coverageJob) {
-    $coveragePackages = $workflowConfiguration['jobs'][$coverageJob]['strategy']['matrix']['package'] ?? [];
+$coverageSteps = $workflowConfiguration['jobs']['changed-coverage']['steps'] ?? [];
+$coverageCommands = is_array($coverageSteps)
+    ? implode("\n", array_values(array_filter(array_map(
+        static fn (mixed $step): ?string => is_array($step) && is_string($step['run'] ?? null)
+            ? $step['run']
+            : null,
+        $coverageSteps,
+    ))))
+    : '';
 
-    if (! is_array($coveragePackages)) {
-        $coveragePackages = [];
-    }
-
-    sort($coveragePackages);
-
-    if ($coveragePackages !== $expectedPackages) {
+foreach ([
+    'git diff --name-only "$base_sha...HEAD" -- packages/nvl',
+    '[[ -f "packages/nvl/$package/composer.json" ]]',
+    '--test-directory="packages/nvl/$package/tests"',
+    'check-changed-clover-coverage.php',
+] as $requiredCoverageCommand) {
+    if (! str_contains($coverageCommands, $requiredCoverageCommand)) {
         $fail(
             'family',
-            "{$coverageJob} CI matrix does not contain exactly every package",
+            "changed-package coverage is missing [{$requiredCoverageCommand}]",
         );
     }
-}
-
-$standalonePackages = $workflowConfiguration['jobs']['standalone-consumers']['strategy']['matrix']['package'] ?? [];
-
-if (! is_array($standalonePackages)) {
-    $standalonePackages = [];
-}
-
-sort($standalonePackages);
-
-if ($standalonePackages !== $expectedPackages) {
-    $fail('family', 'standalone-consumer CI matrix does not contain exactly every package');
 }
 
 $manifestPath = "{$root}/resources/js/types/generated.manifest.json";

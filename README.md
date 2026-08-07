@@ -208,7 +208,7 @@ by configured middleware when enabled, and never generates during a request.
 1. Choose a coordinated semantic version and update the changelog/release notes in the release system.
 2. Review `composer contracts:check`; acknowledge intentional compatible or breaking changes before updating the baseline.
 3. Run migrations and backfills against a representative existing database.
-4. Run `composer quality` and the PHP 8.3–8.5, Laravel 12–13, lowest/highest dependency, MySQL, PostgreSQL, coverage, and standalone-consumer CI matrices.
+4. Run `composer quality`. Routine CI keeps five gates: formatting/static analysis/manifests/contracts, the complete PHP 8.4 + Laravel 13 + SQLite suite, Laravel 12 on the lowest supported dependencies, PostgreSQL stateful tests, and coverage for packages changed by the event.
 5. Run strict Composer validation and security audit for every package.
 6. Build each package archive with an explicit release version:
 
@@ -230,9 +230,9 @@ by configured middleware when enabled, and never generates during a request.
    full post-upgrade validation.
 10. Ensure GitHub Pages uses **GitHub Actions** as its publishing source, then
     push one annotated coordinated tag such as `v1.0.0`.
-11. The tagged package-quality workflow waits for every quality, compatibility,
-    database, coverage, standalone-consumer, and archive job before creating the
-    GitHub Release and deploying the merged `packages.json` index to GitHub Pages.
+11. The tagged package-quality workflow waits for the same five quality gates and
+    the sealed archive installation before creating the GitHub Release and
+    deploying the merged `packages.json` index to GitHub Pages.
 12. Verify the release assets, the Pages deployment, and a clean consumer
     installation before announcing the release.
 

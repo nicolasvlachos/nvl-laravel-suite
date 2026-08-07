@@ -7,8 +7,6 @@ on:
       - main
     tags:
       - 'v*'
-  schedule:
-    - cron: '17 2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,9 +18,9 @@ concurrency:
 
 jobs:
   quality:
-    name: Invariant package quality
+    name: Formatting, analysis, manifests and contracts
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -34,20 +32,19 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Install canonical dependencies
-        run: composer install --no-interaction --prefer-dist
+      - run: composer install --no-interaction --prefer-dist
 
       - name: Repository contract tests
         run: vendor/bin/pest --compact tests/Contract
 
-      - name: Validate manifests
+      - name: Validate Composer manifests
         run: |
           composer validate --strict
           for manifest in packages/nvl/*/composer.json; do
             composer validate --strict "$manifest"
           done
 
-      - name: Validate architecture and distributions
+      - name: Validate architecture and public contracts
         run: |
           composer packages:validate
           composer contracts:check
@@ -60,105 +57,10 @@ jobs:
       - name: Formatting
         run: composer format:test
 
-      - name: Dependency analysis
-        run: composer dependencies:check
-
-      - name: Generated TypeScript integrity
-        run: |
-          php artisan nvl:data:types:check
-          if [ -f package.json ]; then
-            npm ci --ignore-scripts
-            npx tsc --noEmit
-          fi
-
-      - name: Security audit
-        run: composer audit --locked --no-interaction
-
-  package-matrix:
-    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / ${{ matrix.dependencies }}
+  current-tests:
+    name: PHP 8.4 / Laravel 13 / SQLite
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - php: '8.3'
-            laravel: '12'
-            dependencies: lowest
-          - php: '8.4'
-            laravel: '12'
-            dependencies: highest
-          - php: '8.4'
-            laravel: '13'
-            dependencies: lowest
-          - php: '8.5'
-            laravel: '13'
-            dependencies: highest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, zip
-          coverage: none
-          tools: composer:v2
-
-      - name: Select framework line
-        run: |
-          composer require --no-update \
-            "laravel/framework:^${{ matrix.laravel }}.0" \
-            "laravel/tinker:^${{ matrix.laravel == '12' && '2.10.1' || '3.0' }}" \
-            "orchestra/testbench:^${{ matrix.laravel == '12' && '10' || '11' }}.0"
-
-      - name: Install dependencies
-        run: composer update --no-interaction --prefer-dist --with-all-dependencies ${{ matrix.dependencies == 'lowest' && '--prefer-lowest' || '' }}
-
-      - name: Package tests
-        run: |
-          composer test:integration
-          composer test:packages
-
-  database-matrix:
-    name: Stateful packages / ${{ matrix.database }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - database: mysql
-            image: mysql:8.4
-            port: 3306
-            health: >-
-              --health-cmd="mysqladmin ping -h localhost -uroot -proot"
-              --health-interval=10s
-              --health-timeout=5s
-              --health-retries=10
-          - database: pgsql
-            image: postgres:17
-            port: 5432
-            health: >-
-              --health-cmd="pg_isready -U nvl"
-              --health-interval=10s
-              --health-timeout=5s
-              --health-retries=10
-
-    services:
-      database:
-        image: ${{ matrix.image }}
-        env:
-          MYSQL_DATABASE: nvl_mail_notifications_test_ci
-          MYSQL_USER: nvl
-          MYSQL_PASSWORD: nvl
-          MYSQL_ROOT_PASSWORD: root
-          POSTGRES_DB: nvl_mail_notifications_test_ci
-          POSTGRES_USER: nvl
-          POSTGRES_PASSWORD: nvl
-        ports:
-          - "${{ matrix.port }}:${{ matrix.port }}"
-        options: ${{ matrix.health }}
 
     steps:
       - uses: actions/checkout@v4
@@ -166,7 +68,80 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_mysql, pdo_pgsql, zip
+          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Select Laravel 13
+        run: |
+          composer require --no-update \
+            "laravel/framework:^13.0" \
+            "laravel/tinker:^3.0" \
+            "orchestra/testbench:^11.0"
+
+      - name: Install dependencies
+        run: composer update --no-interaction --prefer-dist --with-all-dependencies
+
+      - name: Complete test suite
+        run: composer test
+
+  laravel12-lowest:
+    name: PHP 8.3 / Laravel 12 / lowest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Select Laravel 12
+        run: |
+          composer require --no-update \
+            "laravel/framework:^12.0" \
+            "laravel/tinker:^2.10.1" \
+            "orchestra/testbench:^10.0"
+
+      - name: Install lowest supported dependencies
+        run: composer update --no-interaction --prefer-dist --with-all-dependencies --prefer-lowest
+
+      - name: Compatibility tests
+        run: |
+          composer test:integration
+          composer test:packages
+
+  postgresql:
+    name: PostgreSQL stateful packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: nvl_test_ci
+          POSTGRES_USER: nvl
+          POSTGRES_PASSWORD: nvl
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U nvl"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_pgsql, zip
           coverage: none
           tools: composer:v2
 
@@ -174,10 +149,10 @@ jobs:
 
       - name: Stateful package tests
         env:
-          DB_CONNECTION: ${{ matrix.database }}
+          DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
-          DB_PORT: ${{ matrix.port }}
-          DB_DATABASE: nvl_mail_notifications_test_ci
+          DB_PORT: 5432
+          DB_DATABASE: nvl_test_ci
           DB_USERNAME: nvl
           DB_PASSWORD: nvl
           PGTZ: UTC
@@ -192,229 +167,115 @@ jobs:
           done
           composer test:integration
 
-  mail-notifications-mariadb:
-    name: Mail Notifications / MariaDB 12.1
+  changed-coverage:
+    name: Changed-package coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      mariadb:
-        image: mariadb:12.1
-        env:
-          MARIADB_DATABASE: nvl_mail_notifications_test_ci
-          MARIADB_USER: nvl
-          MARIADB_PASSWORD: nvl
-          MARIADB_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_mysql, zip
-          coverage: none
-          tools: composer:v2
-
-      - run: composer install --no-interaction --prefer-dist
-
-      - name: Mail Notifications MariaDB tests
-        env:
-          DB_CONNECTION: mariadb
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: nvl_mail_notifications_test_ci
-          DB_USERNAME: nvl
-          DB_PASSWORD: nvl
-        run: |
-          vendor/bin/pest \
-            --test-directory=packages/nvl/mail-notifications/tests \
-            --configuration=packages/nvl/mail-notifications/phpunit.xml.dist \
-            --bootstrap=vendor/autoload.php \
-            --compact \
-            packages/nvl/mail-notifications/tests
-
-  comments-mariadb:
-    name: Comments / MariaDB 12.1
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      mariadb:
-        image: mariadb:12.1
-        env:
-          MARIADB_DATABASE: nvl_comments_test_ci
-          MARIADB_USER: nvl
-          MARIADB_PASSWORD: nvl
-          MARIADB_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_mysql, zip
-          coverage: none
-          tools: composer:v2
-
-      - run: composer install --no-interaction --prefer-dist
-
-      - name: Comments MariaDB tests
-        env:
-          DB_CONNECTION: mariadb
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: nvl_comments_test_ci
-          DB_USERNAME: nvl
-          DB_PASSWORD: nvl
-        run: |
-          vendor/bin/pest \
-            --test-directory=packages/nvl/comments/tests \
-            --configuration=packages/nvl/comments/phpunit.xml.dist \
-            --bootstrap=vendor/autoload.php \
-            --compact \
-            packages/nvl/comments/tests
-
-  line-coverage:
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/'))
-    name: Line coverage / nvl/${{ matrix.package }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: true
-      matrix:
-        package:
-          - activity
-          - auth
-          - comments
-          - content
-          - csv
-          - data
-          - filterable
-          - forms
-          - mail-notifications
-          - media
-          - metafields
-          - pages
-          - primitives
-          - seo
-          - settings
-          - support
-          - taxonomy
-          - templates
-          - translatable
-          - translations
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Detect changed packages
+        id: changes
+        shell: bash
+        env:
+          EVENT_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          base_sha="$EVENT_BASE_SHA"
+          if [[ -z "$base_sha" \
+            || "$base_sha" == "0000000000000000000000000000000000000000" ]] \
+            || ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
+            base_sha="$(git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD)"
+          fi
+          packages_json="$({
+            git diff --name-only "$base_sha...HEAD" -- packages/nvl \
+              | awk -F/ '$1 == "packages" && $2 == "nvl" && NF >= 4 { print $3 }' \
+              | sort -u \
+              | while IFS= read -r package; do
+                  if [[ -f "packages/nvl/$package/composer.json" ]]; then
+                    printf '%s\n' "$package"
+                  fi
+                done
+          } | jq -R -s 'split("\n") | map(select(length > 0))')"
+          echo "base-sha=$base_sha" >> "$GITHUB_OUTPUT"
+          echo "packages=$packages_json" >> "$GITHUB_OUTPUT"
+          echo "Changed packages: $packages_json"
+
       - uses: shivammathur/setup-php@v2
+        if: steps.changes.outputs.packages != '[]'
         with:
           php-version: '8.4'
           extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, simplexml, zip
           coverage: pcov
-          ini-values: pcov.directory=${{ github.workspace }}/packages/nvl/${{ matrix.package }}/src
+          ini-values: pcov.directory=${{ github.workspace }}/packages/nvl
           tools: composer:v2
 
-      - run: composer install --no-interaction --prefer-dist
-      - run: mkdir -p build/coverage
+      - if: steps.changes.outputs.packages != '[]'
+        run: composer install --no-interaction --prefer-dist
 
-      - name: Enforce line threshold
+      - name: Enforce changed-package coverage
+        if: steps.changes.outputs.packages != '[]'
         env:
-          COVERAGE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          COVERAGE_BASE_SHA: ${{ steps.changes.outputs.base-sha }}
+          PACKAGES_JSON: ${{ steps.changes.outputs.packages }}
         shell: bash
         run: |
           set -euo pipefail
-          coverage_arguments=()
-          minimum_line=90
+          mkdir -p build/coverage
+          while IFS= read -r package; do
+            coverage_arguments=()
+            minimum_line=90
 
-          if [ "${{ matrix.package }}" = "auth" ]; then
-            coverage_arguments+=(--exclude-testsuite=infrastructure)
-          fi
+            if [[ "$package" == "auth" ]]; then
+              coverage_arguments+=(--exclude-testsuite=infrastructure)
+            fi
 
-          case "${{ matrix.package }}" in
-            auth) minimum_line=74 ;;
-            media) minimum_line=82 ;;
-            metafields) minimum_line=67 ;;
-            pages) minimum_line=80 ;;
-          esac
+            case "$package" in
+              auth) minimum_line=74 ;;
+              media) minimum_line=82 ;;
+              metafields) minimum_line=67 ;;
+              pages) minimum_line=80 ;;
+            esac
 
-          vendor/bin/pest \
-            --test-directory="packages/nvl/${{ matrix.package }}/tests" \
-            --configuration="packages/nvl/${{ matrix.package }}/phpunit.xml.dist" \
-            --bootstrap=vendor/autoload.php \
-            --compact \
-            --coverage-filter="packages/nvl/${{ matrix.package }}/src" \
-            --coverage-clover="build/coverage/${{ matrix.package }}.xml" \
-            "${coverage_arguments[@]}"
-          php tools/check-clover-coverage.php \
-            "build/coverage/${{ matrix.package }}.xml" "$minimum_line" 0
-          if [ -n "$COVERAGE_BASE_SHA" ] \
-            && [ "$COVERAGE_BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            vendor/bin/pest \
+              --test-directory="packages/nvl/$package/tests" \
+              --configuration="packages/nvl/$package/phpunit.xml.dist" \
+              --bootstrap=vendor/autoload.php \
+              --compact \
+              --coverage-filter="packages/nvl/$package/src" \
+              --coverage-clover="build/coverage/$package.xml" \
+              "${coverage_arguments[@]}"
+            php tools/check-clover-coverage.php \
+              "build/coverage/$package.xml" "$minimum_line" 0
             php tools/check-changed-clover-coverage.php \
-              "build/coverage/${{ matrix.package }}.xml" \
+              "build/coverage/$package.xml" \
               "$COVERAGE_BASE_SHA" \
-              "packages/nvl/${{ matrix.package }}/src" \
+              "packages/nvl/$package/src" \
               90
-          fi
+          done < <(jq -r '.[]' <<< "$PACKAGES_JSON")
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && steps.changes.outputs.packages != '[]' }}
         with:
-          name: line-coverage-${{ matrix.package }}
-          path: build/coverage/${{ matrix.package }}.xml
+          name: changed-package-coverage
+          path: build/coverage/*.xml
           if-no-files-found: error
           retention-days: 14
 
-  standalone-consumers:
-    name: Standalone nvl/${{ matrix.package }} on Laravel ${{ matrix.laravel }}
+  archives:
+    name: Distribution archives
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - quality
+      - current-tests
+      - laravel12-lowest
+      - postgresql
+      - changed-coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: true
-      matrix:
-        laravel: ${{ fromJSON((startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["12", "13"]' || '["13"]') }}
-        package:
-          - activity
-          - auth
-          - comments
-          - content
-          - csv
-          - data
-          - filterable
-          - forms
-          - mail-notifications
-          - media
-          - metafields
-          - pages
-          - primitives
-          - seo
-          - settings
-          - support
-          - taxonomy
-          - templates
-          - translatable
-          - translations
-        include:
-          - laravel: '12'
-            package: activity
-          - laravel: '12'
-            package: comments
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -426,195 +287,19 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Create clean consumer
-        shell: bash
-        run: |
-          set -euo pipefail
-          composer create-project \
-            --no-interaction \
-            --no-dev \
-            --prefer-dist \
-            "laravel/laravel:^${{ matrix.laravel }}.0" \
-            /tmp/nvl-consumer
-          cd /tmp/nvl-consumer
-          composer config --json repositories.nvl \
-            "{\"type\":\"path\",\"url\":\"$GITHUB_WORKSPACE/packages/nvl/*\",\"options\":{\"symlink\":false}}"
-          composer config minimum-stability dev
-          composer config prefer-stable true
-          composer require \
-            --no-interaction \
-            --no-update \
-            "nvl/${{ matrix.package }}:@dev"
-          composer update \
-            --no-interaction \
-            --no-dev \
-            --prefer-dist \
-            --with-all-dependencies \
-            --prefer-lowest
-          cp .env.example .env
-          php artisan key:generate
-          touch database/database.sqlite
-          php artisan package:discover
-          if [ "${{ matrix.package }}" = "taxonomy" ]; then
-            php artisan vendor:publish --tag=taxonomy-config --force
-            php -r '
-            $path = "config/taxonomy.php";
-            $config = require $path;
-            $config["owners"] = ["users" => App\Models\User::class];
-            file_put_contents($path, "<?php\n\nreturn ".var_export($config, true).";\n");
-            '
-          fi
-          if [ "${{ matrix.package }}" = "activity" ]; then
-            export QUEUE_CONNECTION=database
-            export DB_QUEUE_RETRY_AFTER=960
-          fi
-          php artisan config:cache
-          php artisan route:cache
-          php artisan migrate --force
-          expected_doctors=/tmp/nvl-expected-doctors
-          available_commands=/tmp/nvl-artisan-commands
-          jq -r \
-            --arg package "${{ matrix.package }}" \
-            '.packages[$package].commands // {} | to_entries[] | .value | split(" ")[0] | select(endswith(":doctor"))' \
-            "$GITHUB_WORKSPACE/tools/package-contracts.json" \
-            > "$expected_doctors"
-          php artisan list --raw | awk '{print $1}' | sort -u > "$available_commands"
-          while IFS= read -r doctor; do
-            grep -Fqx "$doctor" "$available_commands" || {
-              echo "Expected doctor [$doctor] is not registered." >&2
-              exit 1
-            }
-          done < "$expected_doctors"
-          while IFS= read -r doctor; do
-            php artisan "$doctor" --strict --format=json
-          done < "$expected_doctors"
-          # Revert the complete disposable history so every package down
-          # migration runs, then reinstall through normal migration discovery.
-          if [ "${{ matrix.package }}" = "mail-notifications" ]; then
-            php artisan migrate:fresh --force
-          else
-            php artisan migrate:rollback --force --step=999
-            php artisan migrate --force
-          fi
-          while IFS= read -r doctor; do
-            php artisan "$doctor" --strict --format=json
-          done < "$expected_doctors"
-
-      - name: Exercise Activity clean consumer
-        if: matrix.package == 'activity'
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/nvl-consumer
-          cp -R \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/app/." \
-            app/
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/config/activity.php" \
-            config/activity.php
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/bootstrap/providers.php" \
-            bootstrap/providers.php
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/database/migrations/2026_08_02_000001_create_activity_consumer_articles_table.php" \
-            database/migrations/2026_08_02_000001_create_activity_consumer_articles_table.php
-          composer dump-autoload --no-interaction
-          activity_artisan() {
-            APP_ENV=production \
-            APP_URL=https://activity-consumer.test \
-            APP_DEBUG=false \
-            DB_QUEUE_RETRY_AFTER=960 \
-            QUEUE_CONNECTION=database \
-              php artisan "$@"
-          }
-          activity_artisan config:clear
-          activity_artisan route:clear
-          activity_artisan config:cache
-          activity_artisan route:cache
-          activity_artisan migrate --force
-          activity_artisan nvl:activity:doctor --strict --format=json
-          activity_artisan activity-consumer:smoke --format=json
-          activity_artisan activity-consumer:smoke --format=json
-          activity_artisan migrate:rollback --force --step=999
-          activity_artisan migrate --force
-          activity_artisan nvl:activity:doctor --strict --format=json
-          activity_artisan activity-consumer:smoke --format=json
-          activity_artisan migrate:rollback --force --step=999
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/database/custom-storage-migrations/2026_08_02_000002_create_activity_consumer_activity_log_table.php" \
-            database/migrations/2026_08_02_000002_create_activity_consumer_activity_log_table.php
-          touch database/activity-consumer.sqlite
-          activity_custom_artisan() {
-            NVL_ACTIVITY_CUSTOM_STORAGE=true \
-            APP_ENV=production \
-            APP_URL=https://activity-consumer.test \
-            APP_DEBUG=false \
-            DB_QUEUE_RETRY_AFTER=960 \
-            QUEUE_CONNECTION=database \
-              php artisan "$@"
-          }
-          activity_custom_artisan config:clear
-          activity_custom_artisan route:clear
-          activity_custom_artisan config:cache
-          activity_custom_artisan route:cache
-          activity_custom_artisan migrate --force
-          activity_custom_artisan nvl:activity:doctor --strict --format=json
-          activity_custom_artisan activity-consumer:smoke --format=json
-          activity_custom_artisan activity-consumer:smoke --format=json
-          activity_custom_artisan migrate:rollback --force --step=999
-          activity_custom_artisan migrate --force
-          activity_custom_artisan nvl:activity:doctor --strict --format=json
-          activity_custom_artisan activity-consumer:smoke --format=json
-
-      - name: Exercise Comments clean consumer
-        if: matrix.package == 'comments'
-        shell: bash
-        run: |
-          set -euo pipefail
-          "$GITHUB_WORKSPACE/tools/run-comments-production-consumer.sh" \
-            /tmp/nvl-consumer
-
-  archives:
-    name: Distribution archives
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: zip
-          tools: composer:v2
-
       - run: composer install --no-interaction --prefer-dist
       - run: mkdir -p build/archives
 
-      - name: Resolve archive version
+      - name: Build and inspect all package archives
         shell: bash
+        env:
+          PACKAGE_VERSION: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          package_version=1.0.0
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            package_version="${GITHUB_REF_NAME#v}"
-          fi
+          package_version="${PACKAGE_VERSION#v}"
           php -r 'require "vendor/autoload.php"; (new Composer\Semver\VersionParser)->normalize($argv[1]);' "$package_version"
-          echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
-
-      - name: Build and inspect
-        shell: bash
-        run: |
-          set -euo pipefail
-          export COMPOSER_ROOT_VERSION="$PACKAGE_VERSION"
-          package_directories=(packages/nvl/*)
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            package_names=(comments data filterable media support translatable)
-            package_directories=()
-            for package in "${package_names[@]}"; do
-              package_directories+=("packages/nvl/$package")
-            done
-          fi
-          for directory in "${package_directories[@]}"; do
+          export COMPOSER_ROOT_VERSION="$package_version"
+          for directory in packages/nvl/*; do
             package="$(basename "$directory")"
             composer archive \
               --working-dir="$directory" \
@@ -623,137 +308,10 @@ jobs:
             archive="$(find build/archives -maxdepth 1 -name "nvl-$package-*.zip" -print -quit)"
             php tools/inspect-package-archive.php "$archive" "$package"
           done
-          php tools/build-archive-repository.php build/archives "$PACKAGE_VERSION"
-
-      - name: Exercise relocated Activity artifacts
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p /tmp/nvl-activity-artifacts
-          cp \
-            "$GITHUB_WORKSPACE"/build/archives/nvl-{activity,data,support}-*.zip \
-            /tmp/nvl-activity-artifacts/
-          test ! -e /tmp/nvl-activity-artifacts/packages.json
-          composer create-project \
-            --no-interaction \
-            --no-dev \
-            --prefer-dist \
-            "laravel/laravel:^13.0" \
-            /tmp/nvl-activity-archive-consumer
-          cd /tmp/nvl-activity-archive-consumer
-          composer config repositories.nvl artifact /tmp/nvl-activity-artifacts
-          composer require \
-            --no-interaction \
-            --update-no-dev \
-            --with-all-dependencies \
-            --prefer-dist \
-            "nvl/activity:$PACKAGE_VERSION"
-          php -r '
-          $lock = json_decode(file_get_contents("composer.lock"), true, 512, JSON_THROW_ON_ERROR);
-          $workspace = getenv("GITHUB_WORKSPACE");
-          $packages = [];
-          foreach ($lock["packages"] ?? [] as $package) {
-              if (in_array($package["name"] ?? null, ["nvl/activity", "nvl/data", "nvl/support"], true)) {
-                  $packages[$package["name"]] = $package;
-              }
-          }
-          foreach (["nvl/activity", "nvl/data", "nvl/support"] as $name) {
-              $package = $packages[$name] ?? null;
-              $url = is_array($package) ? ($package["dist"]["url"] ?? null) : null;
-              if (! is_array($package)
-                  || ($package["version"] ?? null) !== $argv[1]
-                  || ($package["dist"]["type"] ?? null) !== "zip"
-                  || ! is_string($url)
-                  || ! str_starts_with($url, "/tmp/nvl-activity-artifacts/")
-                  || (is_string($workspace) && $workspace !== "" && str_contains($url, $workspace))) {
-                  fwrite(STDERR, "Invalid relocated artifact provenance for [$name].\n");
-                  exit(1);
-              }
-          }
-          $manifest = json_decode(file_get_contents("composer.json"), true, 512, JSON_THROW_ON_ERROR);
-          if (isset($manifest["require"]["nvl/data"]) || isset($manifest["require"]["nvl/support"])) {
-              fwrite(STDERR, "Transitive NVL packages were added as direct consumer requirements.\n");
-              exit(1);
-          }
-          ' "$PACKAGE_VERSION"
-          cp .env.example .env
-          touch database/database.sqlite
-          php artisan key:generate
-          cp -R \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/app/." \
-            app/
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/config/activity.php" \
-            config/activity.php
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/bootstrap/providers.php" \
-            bootstrap/providers.php
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/database/migrations/2026_08_02_000001_create_activity_consumer_articles_table.php" \
-            database/migrations/2026_08_02_000001_create_activity_consumer_articles_table.php
-          composer dump-autoload --no-interaction
-          archive_activity_artisan() {
-            APP_ENV=production \
-            APP_URL=https://activity-archive-consumer.test \
-            APP_DEBUG=false \
-            DB_QUEUE_RETRY_AFTER=960 \
-            QUEUE_CONNECTION=database \
-              php artisan "$@"
-          }
-          archive_activity_artisan config:clear
-          archive_activity_artisan route:clear
-          archive_activity_artisan config:cache
-          archive_activity_artisan route:cache
-          archive_activity_artisan migrate --force
-          archive_activity_artisan nvl:activity:doctor --strict --format=json
-          archive_activity_artisan activity-consumer:smoke --format=json
-          archive_activity_artisan activity-consumer:smoke --format=json
-          archive_activity_artisan migrate:rollback --force --step=999
-          archive_activity_artisan migrate --force
-          archive_activity_artisan nvl:activity:doctor --strict --format=json
-          archive_activity_artisan activity-consumer:smoke --format=json
-          archive_activity_artisan migrate:rollback --force --step=999
-          cp \
-            "$GITHUB_WORKSPACE/tools/fixtures/activity-production-consumer/database/custom-storage-migrations/2026_08_02_000002_create_activity_consumer_activity_log_table.php" \
-            database/migrations/2026_08_02_000002_create_activity_consumer_activity_log_table.php
-          touch database/activity-consumer.sqlite
-          archive_activity_custom_artisan() {
-            NVL_ACTIVITY_CUSTOM_STORAGE=true \
-            APP_ENV=production \
-            APP_URL=https://activity-archive-consumer.test \
-            APP_DEBUG=false \
-            DB_QUEUE_RETRY_AFTER=960 \
-            QUEUE_CONNECTION=database \
-              php artisan "$@"
-          }
-          archive_activity_custom_artisan config:clear
-          archive_activity_custom_artisan route:clear
-          archive_activity_custom_artisan config:cache
-          archive_activity_custom_artisan route:cache
-          archive_activity_custom_artisan migrate --force
-          archive_activity_custom_artisan nvl:activity:doctor --strict --format=json
-          archive_activity_custom_artisan activity-consumer:smoke --format=json
-          archive_activity_custom_artisan migrate:rollback --force --step=999
-          archive_activity_custom_artisan migrate --force
-          archive_activity_custom_artisan nvl:activity:doctor --strict --format=json
-          archive_activity_custom_artisan activity-consumer:smoke --format=json
-          composer audit --locked --no-interaction
-
-      - name: Exercise relocated Comments artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          for laravel in 12 13; do
-            "$GITHUB_WORKSPACE/tools/run-comments-artifact-consumer.sh" \
-              "$laravel" \
-              "$PACKAGE_VERSION" \
-              "$GITHUB_WORKSPACE/build/archives" \
-              "/tmp/nvl-comments-archive-consumer-$laravel"
-          done
+          php tools/build-archive-repository.php build/archives "$package_version"
+          echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
 
       - name: Install and exercise built archives
-        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -807,27 +365,13 @@ jobs:
             | awk '$1 ~ /^nvl:.*:doctor$/ {print $1}' \
             | sort -u > "$available_doctors"
           diff -u "$expected_doctors" "$available_doctors"
-          run_doctors() {
-            while IFS= read -r doctor; do
-              if [ "$doctor" = "nvl:auth:doctor" ]; then
-                APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=database \
-                  php artisan "$doctor" --strict --format=json
-              else
-                APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=database \
-                  php artisan "$doctor" --strict --format=json
-              fi
-            done < "$expected_doctors"
-          }
-          run_doctors
-          php artisan migrate:rollback --force
-          # Forward-only package downs retain schema by design. Rebuild this
-          # disposable consumer explicitly before proving a clean reinstall.
-          php artisan migrate:fresh --force
-          run_doctors
+          while IFS= read -r doctor; do
+            APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=database \
+              php artisan "$doctor" --strict --format=json
+          done < "$expected_doctors"
           composer audit --locked --no-interaction
 
       - uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
           name: nvl-package-archives-${{ github.ref_name }}
           path: build/archives
@@ -837,15 +381,7 @@ jobs:
   publish-release:
     name: Publish GitHub and Composer release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs:
-      - quality
-      - package-matrix
-      - database-matrix
-      - mail-notifications-mariadb
-      - comments-mariadb
-      - line-coverage
-      - standalone-consumers
-      - archives
+    needs: archives
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

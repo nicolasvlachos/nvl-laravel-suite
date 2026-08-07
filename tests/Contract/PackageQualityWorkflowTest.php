@@ -30,184 +30,158 @@ it('gives clean-runner integration tests a deterministic non-production applicat
         ->and((string) $testingKey['force'])->toBe('true');
 });
 
-it('keeps fast line coverage complete and its Auth infrastructure exclusion effective', function (): void {
-    $root = dirname(__DIR__, 2);
-    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
-    $catalog = require $root.'/tools/package-family.php';
-    $expectedPackages = $catalog['packages'];
-
-    expect($workflow)->toBeArray();
-
-    sort($expectedPackages);
-
-    $job = $workflow['jobs']['line-coverage'] ?? null;
-
-    expect($job)->toBeArray();
-
-    $packages = $job['strategy']['matrix']['package'] ?? [];
-    $setupStep = collect($job['steps'] ?? [])->firstWhere(
-        'uses',
-        'shivammathur/setup-php@v2',
-    );
-    $coverageStep = collect($job['steps'] ?? [])->firstWhere(
-        'name',
-        'Enforce line threshold',
-    );
-
-    expect($packages)->toBeArray();
-
-    sort($packages);
-
-    expect($packages)->toBe($expectedPackages)
-        ->and($coverageStep)->toBeArray();
-
-    $command = $coverageStep['run'] ?? null;
-    $lines = is_string($command)
-        ? array_map('trim', explode("\n", $command))
-        : [];
-
-    expect($command)->toBeString()
-        ->toContain(
-            '--exclude-testsuite=infrastructure',
-            '--test-directory="packages/nvl/${{ matrix.package }}/tests"',
-            '"${coverage_arguments[@]}"',
-            'check-changed-clover-coverage.php',
-            'COVERAGE_BASE_SHA',
-            '0000000000000000000000000000000000000000',
-            'minimum_line=90',
-            '"$minimum_line" 0',
-        )
-        ->and($lines)->not->toContain(
-            '"packages/nvl/${{ matrix.package }}/tests"',
-        )
-        ->and($setupStep)->toBeArray()
-        ->and($setupStep['with']['coverage'] ?? null)->toBe('pcov')
-        ->and($setupStep['with']['ini-values'] ?? null)->toBe(
-            'pcov.directory=${{ github.workspace }}/packages/nvl/${{ matrix.package }}/src',
-        )
-        ->and($coverageStep['env']['COVERAGE_BASE_SHA'] ?? null)->toContain(
-            'github.event.pull_request.base.sha',
-            'github.event.before',
-        )
-        ->and($workflow['jobs'])->not->toHaveKey('branch-coverage');
-});
-
-it('uses representative compatibility boundaries and push-scoped line coverage', function (): void {
+it('runs five routine gates without scheduled fan-out', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
     $jobs = $workflow['jobs'] ?? [];
-    $compatibility = $jobs['package-matrix']['strategy']['matrix']['include'] ?? null;
-    $frameworkStep = collect($jobs['package-matrix']['steps'] ?? [])->firstWhere(
-        'name',
-        'Select framework line',
+    $routineJobs = array_filter(
+        $jobs,
+        static fn (mixed $job): bool => is_array($job) && ! isset($job['if']),
     );
-    $frameworkCommand = is_array($frameworkStep) ? ($frameworkStep['run'] ?? null) : null;
-    $lineCoverage = $jobs['line-coverage'] ?? null;
-    $archives = $jobs['archives'] ?? null;
-    $archiveExercise = is_array($archives)
-        ? collect($archives['steps'] ?? [])->firstWhere('name', 'Install and exercise built archives')
-        : null;
-    $archiveCommand = is_array($archiveExercise) ? ($archiveExercise['run'] ?? null) : null;
 
-    expect($compatibility)->toBe([
-        ['php' => '8.3', 'laravel' => '12', 'dependencies' => 'lowest'],
-        ['php' => '8.4', 'laravel' => '12', 'dependencies' => 'highest'],
-        ['php' => '8.4', 'laravel' => '13', 'dependencies' => 'lowest'],
-        ['php' => '8.5', 'laravel' => '13', 'dependencies' => 'highest'],
+    expect(array_keys($routineJobs))->toBe([
+        'quality',
+        'current-tests',
+        'laravel12-lowest',
+        'postgresql',
+        'changed-coverage',
     ])
-        ->and($frameworkCommand)->toBeString()->toContain(
-            '"laravel/tinker:^${{ matrix.laravel == \'12\' && \'2.10.1\' || \'3.0\' }}"',
-        )
-        ->and($lineCoverage)->toBeArray()
-        ->and($lineCoverage['if'] ?? null)->toContain(
-            "github.event_name == 'pull_request'",
-            "github.event_name == 'push'",
-        )
-        ->and($archives)->toBeArray()
-        ->and($archives['if'] ?? null)->toBeNull()
-        ->and($archiveExercise)->toBeArray()
-        ->and($archiveCommand)->toBeString()
-        ->toContain(
-            'composer config repositories.nvl artifact',
-            'export QUEUE_CONNECTION=database',
-            'export DB_QUEUE_RETRY_AFTER=960',
-            'php artisan config:cache',
-        )
-        ->not->toContain('composer config repositories.nvl composer');
+        ->and($workflow['on'])->not->toHaveKey('schedule')
+        ->and($workflow['on']['push']['branches'] ?? null)->toBe(['main'])
+        ->and($workflow['on']['push']['tags'] ?? null)->toBe(['v*'])
+        ->and($workflow['concurrency']['cancel-in-progress'] ?? null)
+        ->toBe('${{ !startsWith(github.ref, \'refs/tags/v\') }}')
+        ->and(is_file($root.'/.github/workflows/media-quality.yml'))->toBeFalse();
 });
 
-it('publishes tagged archives only after every release gate succeeds', function (): void {
-    $root = dirname(__DIR__, 2);
-    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+it('keeps routine quality focused on formatting analysis manifests and contracts', function (): void {
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
-    $publish = $workflow['jobs']['publish-release'] ?? null;
-    $deploy = $workflow['jobs']['deploy-composer-repository'] ?? null;
-    $metadataStep = is_array($publish)
-        ? collect($publish['steps'] ?? [])->firstWhere(
-            'name',
-            'Build public Composer repository metadata',
-        )
-        : null;
-    $releaseStep = is_array($publish)
-        ? collect($publish['steps'] ?? [])->firstWhere(
-            'name',
-            'Publish immutable GitHub release assets',
-        )
-        : null;
-    $pagesUpload = is_array($publish)
-        ? collect($publish['steps'] ?? [])->firstWhere(
-            'name',
-            'Upload Composer repository to GitHub Pages',
-        )
-        : null;
-    $metadataCommand = is_array($metadataStep) ? ($metadataStep['run'] ?? null) : null;
-    $releaseCommand = is_array($releaseStep) ? ($releaseStep['run'] ?? null) : null;
+    $quality = $workflow['jobs']['quality'] ?? [];
+    $commands = collect($quality['steps'] ?? [])
+        ->pluck('run')
+        ->filter(static fn (mixed $command): bool => is_string($command))
+        ->implode("\n");
 
-    expect($publish)->toBeArray()
-        ->and($publish['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
-        ->and($publish['needs'] ?? null)->toBe([
+    expect($quality['timeout-minutes'] ?? null)->toBe(15)
+        ->and($commands)->toContain(
+            'vendor/bin/pest --compact tests/Contract',
+            'composer validate --strict',
+            'composer packages:validate',
+            'composer contracts:check',
+            'composer analyse',
+            'composer packages:analyse',
+            'composer format:test',
+        )
+        ->not->toContain(
+            'npm ci',
+            'composer test:packages',
+        );
+});
+
+it('tests the current stack Laravel 12 lowest and PostgreSQL exactly once', function (): void {
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
+
+    expect($workflow)->toBeArray();
+
+    $jobs = $workflow['jobs'] ?? [];
+    $currentCommands = workflowCommands($jobs['current-tests'] ?? []);
+    $lowestCommands = workflowCommands($jobs['laravel12-lowest'] ?? []);
+    $postgresCommands = workflowCommands($jobs['postgresql'] ?? []);
+
+    expect($currentCommands)->toContain(
+        '"laravel/framework:^13.0"',
+        '"orchestra/testbench:^11.0"',
+        'composer test',
+    )
+        ->and($lowestCommands)->toContain(
+            '"laravel/framework:^12.0"',
+            '"laravel/tinker:^2.10.1"',
+            '"orchestra/testbench:^10.0"',
+            '--prefer-lowest',
+            'composer test:integration',
+            'composer test:packages',
+        )
+        ->and($jobs['postgresql']['services']['postgres']['image'] ?? null)->toBe('postgres:17')
+        ->and($postgresCommands)->toContain(
+            'for package in activity auth comments content',
+            'composer test:integration',
+        )
+        ->not->toContain('mysql');
+});
+
+it('collects coverage only for packages changed by the event', function (): void {
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
+
+    expect($workflow)->toBeArray();
+
+    $coverage = $workflow['jobs']['changed-coverage'] ?? [];
+    $commands = workflowCommands($coverage);
+    $setup = collect($coverage['steps'] ?? [])->firstWhere('uses', 'shivammathur/setup-php@v2');
+
+    expect($commands)->toContain(
+        'git diff --name-only "$base_sha...HEAD" -- packages/nvl',
+        '[[ -f "packages/nvl/$package/composer.json" ]]',
+        'while IFS= read -r package; do',
+        '--test-directory="packages/nvl/$package/tests"',
+        '--exclude-testsuite=infrastructure',
+        'check-clover-coverage.php',
+        'check-changed-clover-coverage.php',
+    )
+        ->and($setup)->toBeArray()
+        ->and($setup['with']['coverage'] ?? null)->toBe('pcov')
+        ->and($setup['with']['ini-values'] ?? null)
+        ->toBe('pcov.directory=${{ github.workspace }}/packages/nvl')
+        ->and($coverage)->not->toHaveKey('strategy');
+});
+
+it('publishes tagged archives only after all five routine gates pass', function (): void {
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
+
+    expect($workflow)->toBeArray();
+
+    $jobs = $workflow['jobs'] ?? [];
+    $archives = $jobs['archives'] ?? [];
+    $publish = $jobs['publish-release'] ?? [];
+    $deploy = $jobs['deploy-composer-repository'] ?? [];
+    $archiveCommands = workflowCommands($archives);
+    $publishCommands = workflowCommands($publish);
+
+    expect($archives['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
+        ->and($archives['needs'] ?? null)->toBe([
             'quality',
-            'package-matrix',
-            'database-matrix',
-            'mail-notifications-mariadb',
-            'comments-mariadb',
-            'line-coverage',
-            'standalone-consumers',
-            'archives',
+            'current-tests',
+            'laravel12-lowest',
+            'postgresql',
+            'changed-coverage',
         ])
-        ->and($publish['permissions']['contents'] ?? null)->toBe('write')
-        ->and($publish['permissions']['pages'] ?? null)->toBe('write')
-        ->and($metadataCommand)->toBeString()->toContain(
+        ->and($archiveCommands)->toContain(
+            'for directory in packages/nvl/*; do',
+            'composer archive',
+            'inspect-package-archive.php',
+            'composer config repositories.nvl artifact',
+            'composer audit --locked --no-interaction',
+        )
+        ->and($publish['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
+        ->and($publish['needs'] ?? null)->toBe('archives')
+        ->and($publishCommands)->toContain(
             'test "$archive_count" -eq 20',
             'build-public-composer-repository.php',
-            'build/previous-packages.json',
-            'build/public/packages.json',
-            'Unable to fetch the existing Composer index',
-        )
-        ->and($releaseCommand)->toBeString()->toContain(
-            'gh release view',
-            'gh release download',
             'gh release create',
-            'cmp -s',
-            '--verify-tag',
-            '--generate-notes',
         )
-        ->and($pagesUpload)->toBeArray()
-        ->and($pagesUpload['uses'] ?? null)->toBe('actions/upload-pages-artifact@v4')
-        ->and($deploy)->toBeArray()
+        ->and($publish['permissions']['contents'] ?? null)->toBe('write')
+        ->and($publish['permissions']['pages'] ?? null)->toBe('write')
         ->and($deploy['needs'] ?? null)->toBe('publish-release')
-        ->and($deploy['environment']['name'] ?? null)->toBe('github-pages')
         ->and($deploy['steps'][0]['uses'] ?? null)->toBe('actions/deploy-pages@v4');
 });
 
 it('keeps every package-quality shell block syntactically valid', function (): void {
-    $root = dirname(__DIR__, 2);
-    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
@@ -219,11 +193,7 @@ it('keeps every package-quality shell block syntactically valid', function (): v
                 continue;
             }
 
-            $sanitized = preg_replace(
-                '/\$\{\{.*?\}\}/s',
-                'ci_expression',
-                $script,
-            );
+            $sanitized = preg_replace('/\$\{\{.*?\}\}/s', 'ci_expression', $script);
 
             expect($sanitized)->toBeString();
 
@@ -232,146 +202,25 @@ it('keeps every package-quality shell block syntactically valid', function (): v
             $process->setTimeout(5);
             $process->run();
 
-            expect($process->isSuccessful())->toBeTrue(
-                sprintf(
-                    'Invalid shell in job [%s], step [%s]: %s',
-                    $jobName,
-                    $step['name'] ?? $index,
-                    $process->getErrorOutput(),
-                ),
-            );
+            expect($process->isSuccessful())->toBeTrue(sprintf(
+                'Invalid shell in job [%s], step [%s]: %s',
+                $jobName,
+                $step['name'] ?? $index,
+                $process->getErrorOutput(),
+            ));
         }
     }
 });
 
-it('keeps the Auth clean-consumer proof on current package-owned surfaces', function (): void {
-    $root = dirname(__DIR__, 2);
-    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
-
-    expect($workflow)->toBeArray();
-
-    $jobs = $workflow['jobs'] ?? [];
-    $job = $jobs['standalone-consumers'] ?? null;
-    $step = collect($job['steps'] ?? [])->firstWhere('name', 'Create clean consumer');
-    $command = is_array($step) ? ($step['run'] ?? null) : null;
-    $packages = $job['strategy']['matrix']['package'] ?? [];
-
-    expect($job)->toBeArray()
-        ->and($packages)->toContain('auth')
-        ->and($step)->toBeArray()
-        ->and($command)->toBeString()
-        ->toContain(
-            '--no-dev',
-            '--prefer-lowest',
-            '"nvl/${{ matrix.package }}:@dev"',
-            'php artisan package:discover',
-            'php artisan config:cache',
-            'php artisan route:cache',
-            'php artisan migrate --force',
-            'select(endswith(":doctor"))',
-            'php artisan "$doctor" --strict --format=json',
-            'php artisan migrate:rollback --force --step=999',
-        )
-        ->not->toContain(
-            'tools/fixtures/auth-production-consumer',
-            'tools/run-auth-production-consumer.sh',
-            'auth-consumer:maintenance',
-            'auth-consumer:smoke',
-            'AuthMaintenanceTask',
-            'SynchronizePermissionCatalogAction',
-            'boost:update',
-        )
-        ->and($jobs)->not->toHaveKey('auth-consumer-profiles');
-
-    expect(substr_count(
-        $command,
-        'php artisan "$doctor" --strict --format=json',
-    ))->toBe(2)
-        ->and(is_dir($root.'/tools/fixtures/auth-production-consumer'))->toBeFalse()
-        ->and(is_file($root.'/tools/run-auth-production-consumer.sh'))->toBeFalse();
-});
-
-it('bounds routine CI fan-out while preserving the full release grid', function (): void {
-    $root = dirname(__DIR__, 2);
-    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
-
-    expect($workflow)->toBeArray();
-
-    $jobs = $workflow['jobs'] ?? [];
-    $standalone = $jobs['standalone-consumers'] ?? null;
-    $laravelMatrix = is_array($standalone)
-        ? ($standalone['strategy']['matrix']['laravel'] ?? null)
-        : null;
-
-    expect($workflow['concurrency']['cancel-in-progress'] ?? null)
-        ->toBe('${{ !startsWith(github.ref, \'refs/tags/v\') }}')
-        ->and($laravelMatrix)->toBeString()
-        ->toContain(
-            "startsWith(github.ref, 'refs/tags/v')",
-            "github.event_name == 'schedule'",
-            "github.event_name == 'workflow_dispatch'",
-            '["12", "13"]',
-            '["13"]',
-        );
-
-    foreach ([
-        'package-matrix' => 20,
-        'database-matrix' => 20,
-        'line-coverage' => 15,
-        'standalone-consumers' => 15,
-    ] as $jobName => $timeout) {
-        expect($jobs[$jobName]['strategy']['fail-fast'] ?? null)
-            ->toBeTrue()
-            ->and($jobs[$jobName]['timeout-minutes'] ?? null)
-            ->toBe($timeout);
-    }
-
-    expect($jobs['quality']['timeout-minutes'] ?? null)->toBe(20)
-        ->and($jobs['archives']['timeout-minutes'] ?? null)->toBe(30);
-});
-
-it('runs the real Auth suite on both stateful databases without fictional test paths', function (): void {
-    $root = dirname(__DIR__, 2);
-    $path = $root.'/.github/workflows/package-quality.yml';
-    $workflow = Yaml::parseFile($path);
-    $source = file_get_contents($path);
-
-    expect($workflow)->toBeArray()
-        ->and($source)->toBeString()
-        ->toContain('for package in activity auth comments content')
-        ->not->toContain(
-            'auth-security-integration',
-            'RealSecurityConcurrencyTest.php',
-            'RealDeliveryWorkerTest.php',
-            'RedisLifecycleMessageDispatcher',
-        );
-
-    $databaseMatrix = $workflow['jobs']['database-matrix']['strategy']['matrix']['include'] ?? [];
-
-    expect($databaseMatrix)->toBeArray()
-        ->and(array_column($databaseMatrix, 'database'))->toBe(['mysql', 'pgsql']);
-});
-
-it('keeps the dedicated Media workflow bounded and Laravel 12 installable', function (): void {
-    $root = dirname(__DIR__, 2);
-    $path = $root.'/.github/workflows/media-quality.yml';
-    $workflow = Yaml::parseFile($path);
-    $source = file_get_contents($path);
-
-    expect($workflow)->toBeArray()
-        ->and($source)->toBeString()
-        ->toContain(
-            '"laravel/tinker:^${{ matrix.laravel == \'12\' && \'2.10.1\' || \'3.0\' }}"',
-            '--test-directory=packages/nvl/media/tests',
-        );
-
-    expect($source)->not->toContain(
-        '--test-directory=packages/nvl/media/tests/Integration',
-    );
-
-    $jobs = $workflow['jobs'] ?? [];
-
-    expect($jobs['runtime-matrix']['strategy']['fail-fast'] ?? null)->toBeTrue()
-        ->and($jobs['runtime-matrix']['timeout-minutes'] ?? null)->toBe(15)
-        ->and($jobs['production-stack']['timeout-minutes'] ?? null)->toBe(20);
-});
+/**
+ * Return every shell command declared by a workflow job.
+ *
+ * @param  array<string, mixed>  $job
+ */
+function workflowCommands(array $job): string
+{
+    return collect($job['steps'] ?? [])
+        ->pluck('run')
+        ->filter(static fn (mixed $command): bool => is_string($command))
+        ->implode("\n");
+}

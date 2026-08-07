@@ -4,99 +4,71 @@ declare(strict_types=1);
 
 use Symfony\Component\Yaml\Yaml;
 
-it('keeps the Comments source consumer proof on both supported Laravel majors', function (): void {
+it('keeps Comments in the complete and Laravel 12 compatibility suites', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = commentsWorkflowDefinition($root);
     $jobs = commentsWorkflowArray($workflow, 'jobs');
-    $job = commentsWorkflowArray($jobs, 'standalone-consumers');
-    $strategy = commentsWorkflowArray($job, 'strategy');
-    $matrix = commentsWorkflowArray($strategy, 'matrix');
-    $step = commentsWorkflowStep($job, 'Exercise Comments clean consumer');
-    $command = commentsWorkflowString($step, 'run');
+    $current = commentsWorkflowArray($jobs, 'current-tests');
+    $lowest = commentsWorkflowArray($jobs, 'laravel12-lowest');
+    $currentStep = commentsWorkflowStep($current, 'Complete test suite');
+    $lowestStep = commentsWorkflowStep($lowest, 'Compatibility tests');
 
-    expect(commentsWorkflowString($matrix, 'laravel'))->toBe(
-        '${{ fromJSON((startsWith(github.ref, \'refs/tags/v\') || github.event_name == \'schedule\' || github.event_name == \'workflow_dispatch\') && \'["12", "13"]\' || \'["13"]\') }}',
-    )
-        ->and(commentsWorkflowStringList($matrix, 'package'))->toContain('comments')
-        ->and(commentsWorkflowArrayList($matrix, 'include'))->toContain([
-            'laravel' => '12',
-            'package' => 'comments',
-        ])
-        ->and($step['if'] ?? null)->toBe("matrix.package == 'comments'")
-        ->and($command)->toContain(
-            '"$GITHUB_WORKSPACE/tools/run-comments-production-consumer.sh"',
-            '/tmp/nvl-consumer',
+    expect(commentsWorkflowString($currentStep, 'run'))->toBe('composer test')
+        ->and(commentsWorkflowString($lowestStep, 'run'))->toContain(
+            'composer test:integration',
+            'composer test:packages',
         );
 });
 
-it('keeps the Comments sealed artifact proof active on pull requests and release events', function (): void {
+it('keeps the Comments sealed artifact proof on version tags', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = commentsWorkflowDefinition($root);
     $jobs = commentsWorkflowArray($workflow, 'jobs');
     $job = commentsWorkflowArray($jobs, 'archives');
-    $buildStep = commentsWorkflowStep($job, 'Build and inspect');
-    $commentsStep = commentsWorkflowStep($job, 'Exercise relocated Comments artifacts');
-    $activityStep = commentsWorkflowStep($job, 'Exercise relocated Activity artifacts');
+    $buildStep = commentsWorkflowStep($job, 'Build and inspect all package archives');
     $allArchivesStep = commentsWorkflowStep($job, 'Install and exercise built archives');
     $buildCommand = commentsWorkflowString($buildStep, 'run');
-    $commentsCommand = commentsWorkflowString($commentsStep, 'run');
 
-    expect($job['if'] ?? null)->toBeNull()
+    expect($job['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
         ->and($buildCommand)->toContain(
-            'comments data filterable media support translatable',
+            'for directory in packages/nvl/*; do',
             'php tools/inspect-package-archive.php "$archive" "$package"',
         )
-        ->and($commentsStep['if'] ?? null)->toBeNull()
-        ->and($commentsCommand)->toContain(
-            'for laravel in 12 13; do',
-            '"$GITHUB_WORKSPACE/tools/run-comments-artifact-consumer.sh"',
-            '"$laravel"',
-            '"$PACKAGE_VERSION"',
-            '"$GITHUB_WORKSPACE/build/archives"',
-        )
-        ->and($activityStep['if'] ?? null)->toBe("github.event_name != 'pull_request'")
-        ->and($allArchivesStep['if'] ?? null)->toBe("github.event_name != 'pull_request'");
+        ->and(commentsWorkflowString($allArchivesStep, 'run'))->toContain(
+            'composer config repositories.nvl artifact',
+            'packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")',
+        );
 });
 
-it('runs the complete Comments suite against the advertised MariaDB boundary', function (): void {
+it('runs the complete Comments suite against PostgreSQL', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = commentsWorkflowDefinition($root);
     $jobs = commentsWorkflowArray($workflow, 'jobs');
-    $job = commentsWorkflowArray($jobs, 'comments-mariadb');
+    $job = commentsWorkflowArray($jobs, 'postgresql');
     $services = commentsWorkflowArray($job, 'services');
-    $service = commentsWorkflowArray($services, 'mariadb');
+    $service = commentsWorkflowArray($services, 'postgres');
     $serviceEnvironment = commentsWorkflowArray($service, 'env');
-    $step = commentsWorkflowStep($job, 'Comments MariaDB tests');
+    $step = commentsWorkflowStep($job, 'Stateful package tests');
     $stepEnvironment = commentsWorkflowArray($step, 'env');
     $command = commentsWorkflowString($step, 'run');
-    $expectedCommand = implode("\n", [
-        'vendor/bin/pest \\',
-        '  --test-directory=packages/nvl/comments/tests \\',
-        '  --configuration=packages/nvl/comments/phpunit.xml.dist \\',
-        '  --bootstrap=vendor/autoload.php \\',
-        '  --compact \\',
-        '  packages/nvl/comments/tests',
-        '',
-    ]);
 
-    expect(commentsWorkflowString($job, 'name'))->toBe('Comments / MariaDB 12.1')
-        ->and(commentsWorkflowString($service, 'image'))->toBe('mariadb:12.1')
+    expect(commentsWorkflowString($job, 'name'))->toBe('PostgreSQL stateful packages')
+        ->and(commentsWorkflowString($service, 'image'))->toBe('postgres:17')
         ->and($serviceEnvironment)->toBe([
-            'MARIADB_DATABASE' => 'nvl_comments_test_ci',
-            'MARIADB_USER' => 'nvl',
-            'MARIADB_PASSWORD' => 'nvl',
-            'MARIADB_ROOT_PASSWORD' => 'root',
+            'POSTGRES_DB' => 'nvl_test_ci',
+            'POSTGRES_USER' => 'nvl',
+            'POSTGRES_PASSWORD' => 'nvl',
         ])
-        ->and(commentsWorkflowStringList($service, 'ports'))->toBe(['3306:3306'])
-        ->and($stepEnvironment)->toBe([
-            'DB_CONNECTION' => 'mariadb',
+        ->and(commentsWorkflowStringList($service, 'ports'))->toBe(['5432:5432'])
+        ->and($stepEnvironment)->toMatchArray([
+            'DB_CONNECTION' => 'pgsql',
             'DB_HOST' => '127.0.0.1',
-            'DB_PORT' => 3306,
-            'DB_DATABASE' => 'nvl_comments_test_ci',
+            'DB_PORT' => 5432,
+            'DB_DATABASE' => 'nvl_test_ci',
             'DB_USERNAME' => 'nvl',
             'DB_PASSWORD' => 'nvl',
         ])
-        ->and($command)->toBe($expectedCommand);
+        ->and($command)->toContain('for package in activity auth comments content');
 });
 
 it('exercises the Comments production consumer after a release candidate upgrade', function (): void {

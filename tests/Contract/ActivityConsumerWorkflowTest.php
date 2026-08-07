@@ -4,110 +4,67 @@ declare(strict_types=1);
 
 use Symfony\Component\Yaml\Yaml;
 
-it('keeps the Activity source consumer proof isolated and complete', function (): void {
+it('keeps Activity in the complete and PostgreSQL routine suites', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
-    $job = $workflow['jobs']['standalone-consumers'] ?? null;
-    $bootstrapStep = collect($job['steps'] ?? [])->firstWhere(
-        'name',
-        'Create clean consumer',
-    );
-    $bootstrapCommand = is_array($bootstrapStep) ? ($bootstrapStep['run'] ?? null) : null;
-    $step = collect($job['steps'] ?? [])->firstWhere(
-        'name',
-        'Exercise Activity clean consumer',
-    );
-    $command = is_array($step) ? ($step['run'] ?? null) : null;
+    $current = activityWorkflowCommands($workflow['jobs']['current-tests'] ?? []);
+    $lowest = activityWorkflowCommands($workflow['jobs']['laravel12-lowest'] ?? []);
+    $postgresJob = $workflow['jobs']['postgresql'] ?? [];
+    $postgres = activityWorkflowCommands($postgresJob);
+    $statefulStep = collect($postgresJob['steps'] ?? [])->firstWhere('name', 'Stateful package tests');
 
-    expect($job)->toBeArray()
-        ->and($job['strategy']['matrix']['include'] ?? null)->toContain([
-            'laravel' => '12',
-            'package' => 'activity',
-        ])
-        ->and($bootstrapCommand)->toBeString()->toContain(
-            'if [ "${{ matrix.package }}" = "activity" ]; then',
-            'export DB_QUEUE_RETRY_AFTER=960',
+    expect($current)->toContain('composer test')
+        ->and($lowest)->toContain(
+            '"laravel/framework:^12.0"',
+            'composer test:packages',
         )
-        ->and($step)->toBeArray()
-        ->and($step['if'] ?? null)->toBe("matrix.package == 'activity'")
-        ->and($command)->toBeString()
-        ->toContain(
-            'tools/fixtures/activity-production-consumer/app/.',
-            'tools/fixtures/activity-production-consumer/config/activity.php',
-            'tools/fixtures/activity-production-consumer/bootstrap/providers.php',
-            'create_activity_consumer_articles_table.php',
-            'create_activity_consumer_activity_log_table.php',
-            'QUEUE_CONNECTION=database',
-            'DB_QUEUE_RETRY_AFTER=960',
-            'NVL_ACTIVITY_CUSTOM_STORAGE=true',
-            'touch database/activity-consumer.sqlite',
-            'activity_artisan config:cache',
-            'activity_artisan route:cache',
-            'activity_artisan nvl:activity:doctor --strict --format=json',
-            'activity_custom_artisan nvl:activity:doctor --strict --format=json',
-            'activity_custom_artisan migrate:rollback --force --step=999',
-            'activity-consumer:smoke --format=json',
-        );
-
-    expect(substr_count($command, 'activity-consumer:smoke --format=json'))
-        ->toBeGreaterThanOrEqual(6)
-        ->and(substr_count($command, 'nvl:activity:doctor --strict --format=json'))
-        ->toBeGreaterThanOrEqual(4);
+        ->and($postgres)->toContain('for package in activity auth comments content')
+        ->and($statefulStep['env']['DB_CONNECTION'] ?? null)->toBe('pgsql');
 });
 
-it('installs and exercises Activity from a relocated real artifact subset', function (): void {
+/**
+ * Return every shell command declared by an Activity-related workflow job.
+ *
+ * @param  array<string, mixed>  $job
+ */
+function activityWorkflowCommands(array $job): string
+{
+    return collect($job['steps'] ?? [])
+        ->pluck('run')
+        ->filter(static fn (mixed $command): bool => is_string($command))
+        ->implode("\n");
+}
+
+it('installs Activity with every package from tagged release archives', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
     $job = $workflow['jobs']['archives'] ?? null;
-    $allArchivesStep = collect($job['steps'] ?? [])->firstWhere(
-        'name',
-        'Install and exercise built archives',
-    );
-    $allArchivesCommand = is_array($allArchivesStep) ? ($allArchivesStep['run'] ?? null) : null;
-    $step = collect($job['steps'] ?? [])->firstWhere(
-        'name',
-        'Exercise relocated Activity artifacts',
-    );
-    $command = is_array($step) ? ($step['run'] ?? null) : null;
+    $buildStep = collect($job['steps'] ?? [])->firstWhere('name', 'Build and inspect all package archives');
+    $installStep = collect($job['steps'] ?? [])->firstWhere('name', 'Install and exercise built archives');
+    $buildCommand = is_array($buildStep) ? ($buildStep['run'] ?? null) : null;
+    $installCommand = is_array($installStep) ? ($installStep['run'] ?? null) : null;
 
     expect($job)->toBeArray()
-        ->and($step)->toBeArray()
-        ->and($allArchivesCommand)->toBeString()->toContain(
+        ->and($job['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
+        ->and($buildCommand)->toBeString()->toContain(
+            'for directory in packages/nvl/*; do',
+            'php tools/inspect-package-archive.php "$archive" "$package"',
+        )
+        ->and($installCommand)->toBeString()->toContain(
+            'packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")',
+            'composer config repositories.nvl artifact',
             'export QUEUE_CONNECTION=database',
             'export DB_QUEUE_RETRY_AFTER=960',
+            'php artisan config:cache',
+            'php artisan route:cache',
         )
-        ->and($command)->toBeString()
-        ->toContain(
-            'nvl-{activity,data,support}-*.zip',
-            'test ! -e /tmp/nvl-activity-artifacts/packages.json',
-            'composer config repositories.nvl artifact /tmp/nvl-activity-artifacts',
-            '"nvl/activity:$PACKAGE_VERSION"',
-            '["nvl/activity", "nvl/data", "nvl/support"]',
-            'str_starts_with($url, "/tmp/nvl-activity-artifacts/")',
-            '$workspace = getenv("GITHUB_WORKSPACE")',
-            'is_string($workspace) && $workspace !== "" && str_contains($url, $workspace)',
-            'isset($manifest["require"]["nvl/data"])',
-            'tools/fixtures/activity-production-consumer/app/.',
-            'archive_activity_artisan config:cache',
-            'archive_activity_artisan route:cache',
-            'archive_activity_artisan nvl:activity:doctor --strict --format=json',
-            'archive_activity_custom_artisan nvl:activity:doctor --strict --format=json',
-            'touch database/activity-consumer.sqlite',
-            'DB_QUEUE_RETRY_AFTER=960',
-        )
-        ->not->toContain(
-            'composer config repositories.nvl composer',
-            'cp "$GITHUB_WORKSPACE/build/archives/packages.json"',
-        );
-
-    expect(substr_count($command, 'activity-consumer:smoke --format=json'))
-        ->toBeGreaterThanOrEqual(5);
+        ->not->toContain('composer config repositories.nvl composer');
 });
 
 it('keeps the Activity production consumer fixture representative', function (): void {
