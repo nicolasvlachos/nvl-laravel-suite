@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -81,9 +81,14 @@ jobs:
             --with-all-dependencies \
             "nvl/laravel-suite:$PACKAGE_VERSION"
           test ! -L vendor/nvl/laravel-suite
+          cp \
+            "$GITHUB_WORKSPACE/tools/fixtures/suite-release-consumer/app/Providers/AppServiceProvider.php" \
+            app/Providers/AppServiceProvider.php
           cp .env.example .env
           touch database/database.sqlite
           php artisan key:generate
+          export QUEUE_CONNECTION=database
+          export DB_QUEUE_RETRY_AFTER=960
           php artisan package:discover
           php artisan config:cache
           php artisan route:cache
@@ -107,12 +112,13 @@ jobs:
             | sort -u > "$available_doctors"
           diff -u "$expected_doctors" "$available_doctors"
           while IFS= read -r doctor; do
-            APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=sync \
+            APP_ENV=testing MAIL_MAILER=array \
+              QUEUE_CONNECTION=database DB_QUEUE_RETRY_AFTER=960 \
               php artisan "$doctor" --strict --format=json
           done < "$expected_doctors"
           composer audit --locked --no-interaction
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nvl-laravel-suite-${{ github.ref_name }}
           path: build/archives/nvl-laravel-suite-*.zip
@@ -128,7 +134,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: nvl-laravel-suite-${{ github.ref_name }}
           path: build/archives

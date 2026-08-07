@@ -67,7 +67,11 @@ it('gives clean-runner integration tests a deterministic non-production applicat
 
 it('runs five routine gates without scheduled fan-out', function (): void {
     $root = dirname(__DIR__, 2);
-    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+    $qualityWorkflowPath = $root.'/.github/workflows/package-quality.yml';
+    $releaseWorkflowPath = $root.'/.github/workflows/package-release.yml';
+    $workflow = Yaml::parseFile($qualityWorkflowPath);
+    $qualityWorkflowSource = file_get_contents($qualityWorkflowPath);
+    $releaseWorkflowSource = file_get_contents($releaseWorkflowPath);
 
     expect($workflow)->toBeArray();
 
@@ -86,13 +90,29 @@ it('runs five routine gates without scheduled fan-out', function (): void {
         ->and($workflow['on']['push']['tags'] ?? null)->toBeNull()
         ->and($workflow['concurrency']['cancel-in-progress'] ?? null)
         ->toBeTrue()
+        ->and($qualityWorkflowSource)->toBeString()->toContain(
+            'actions/checkout@v6',
+            'actions/upload-artifact@v7',
+        )->not->toContain(
+            'actions/checkout@v4',
+            'actions/upload-artifact@v4',
+        )
         ->and(is_file($root.'/.github/workflows/media-quality.yml'))->toBeFalse();
 
-    $releaseWorkflow = Yaml::parseFile($root.'/.github/workflows/package-release.yml');
+    $releaseWorkflow = Yaml::parseFile($releaseWorkflowPath);
 
     expect($releaseWorkflow)->toBeArray()
         ->and($releaseWorkflow['on']['push']['tags'] ?? null)->toBe(['v*'])
-        ->and($releaseWorkflow['on']['push']['branches'] ?? null)->toBeNull();
+        ->and($releaseWorkflow['on']['push']['branches'] ?? null)->toBeNull()
+        ->and($releaseWorkflowSource)->toBeString()->toContain(
+            'actions/checkout@v6',
+            'actions/upload-artifact@v7',
+            'actions/download-artifact@v8',
+        )->not->toContain(
+            'actions/checkout@v4',
+            'actions/upload-artifact@v4',
+            'actions/download-artifact@v4',
+        );
 });
 
 it('keeps routine quality focused on formatting analysis manifests and contracts', function (): void {
@@ -165,6 +185,7 @@ it('collects coverage only for packages changed by the event', function (): void
     expect($commands)->toContain(
         'git diff --name-only "$base_sha...HEAD" -- packages/nvl',
         '[[ -f "packages/nvl/$package/composer.json" ]]',
+        "jq -R -s -c 'split(\"\\n\") | map(select(length > 0))'",
         'while IFS= read -r package; do',
         '--test-directory="packages/nvl/$package/tests"',
         '--exclude-testsuite=infrastructure',

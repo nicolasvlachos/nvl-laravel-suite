@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -62,7 +62,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -90,7 +90,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -135,7 +135,7 @@ jobs:
           --health-retries=10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -172,7 +172,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -198,7 +198,7 @@ jobs:
                     printf '%s\n' "$package"
                   fi
                 done
-          } | jq -R -s 'split("\n") | map(select(length > 0))')"
+          } | jq -R -s -c 'split("\n") | map(select(length > 0))')"
           echo "base-sha=$base_sha" >> "$GITHUB_OUTPUT"
           echo "packages=$packages_json" >> "$GITHUB_OUTPUT"
           echo "Changed packages: $packages_json"
@@ -256,7 +256,7 @@ jobs:
               90
           done < <(jq -r '.[]' <<< "$PACKAGES_JSON")
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ always() && steps.changes.outputs.packages != '[]' }}
         with:
           name: changed-package-coverage

@@ -49,6 +49,7 @@ it('installs Activity from the tagged suite archive', function (): void {
     $installStep = collect($job['steps'] ?? [])->firstWhere('name', 'Install and exercise the suite archive');
     $buildCommand = is_array($buildStep) ? ($buildStep['run'] ?? null) : null;
     $installCommand = is_array($installStep) ? ($installStep['run'] ?? null) : null;
+    $releaseProvider = $root.'/tools/fixtures/suite-release-consumer/app/Providers/AppServiceProvider.php';
 
     expect($job)->toBeArray()
         ->and($buildCommand)->toBeString()->toContain(
@@ -59,12 +60,23 @@ it('installs Activity from the tagged suite archive', function (): void {
             '"nvl/laravel-suite:$PACKAGE_VERSION"',
             'composer config repositories.nvl "$repository_config"',
             'test ! -L vendor/nvl/laravel-suite',
+            'tools/fixtures/suite-release-consumer/app/Providers/AppServiceProvider.php',
+            'export QUEUE_CONNECTION=database',
+            'export DB_QUEUE_RETRY_AFTER=960',
+            'QUEUE_CONNECTION=database DB_QUEUE_RETRY_AFTER=960',
             'php artisan config:cache',
             'php artisan route:cache',
         )
         ->not->toContain(
             'packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")',
             'composer config repositories.nvl composer',
+            'QUEUE_CONNECTION=sync',
+        )
+        ->and($releaseProvider)->toBeFile()
+        ->and(file_get_contents($releaseProvider))->toContain(
+            "Config::set('taxonomy.owners.users', User::class)",
+            "Config::set('taxonomy.taxonomies.category.allowed_owners', ['users'])",
+            "Config::set('taxonomy.taxonomies.tag.allowed_owners', ['users'])",
         );
 });
 
