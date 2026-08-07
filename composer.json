@@ -116,7 +116,6 @@
             "packages/nvl/activity/src/Support/activitylog_compatibility.php"
         ],
         "psr-4": {
-            "Nvl\\Workbench\\": "app/",
             "Nvl\\Suite\\": "src/",
             "Nvl\\Activity\\": "packages/nvl/activity/src/",
             "Nvl\\Activity\\Database\\Factories\\": "packages/nvl/activity/database/factories/",
@@ -152,6 +151,7 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "Nvl\\Workbench\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Tests\\": "tests/",
@@ -187,6 +187,7 @@
             "npm run build"
         ],
         "analyse": "phpstan analyse --memory-limit=2G",
+        "autoload:check": "@composer dump-autoload --optimize --strict-psr --strict-ambiguous --no-scripts --no-interaction",
         "packages:analyse": "@php tools/analyse-packages.php",
         "dependencies:check": "@php package-dependency-audit.php",
         "contracts:check": "@php tools/check-package-contracts.php",
@@ -200,6 +201,7 @@
         "format:test": "pint --parallel --test --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/fixtures/activity-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/suite-release-consumer",
         "quality": [
             "@format:test",
+            "@autoload:check",
             "@analyse",
             "@packages:analyse",
             "@dependencies:check",

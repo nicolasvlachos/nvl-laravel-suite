@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Composer\Semver\Intervals;
+use Composer\Semver\VersionParser;
+use Nvl\Suite\SuiteServiceProvider;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -165,6 +168,125 @@ if ($rootPackages !== $expectedPackages
     ) !== []) {
     $fail('family', 'suite replacements do not contain exactly the canonical module catalog at self.version');
 }
+
+$rootAutoload = is_array($rootManifest['autoload']['psr-4'] ?? null)
+    ? $rootManifest['autoload']['psr-4']
+    : [];
+$rootDevAutoload = is_array($rootManifest['autoload-dev']['psr-4'] ?? null)
+    ? $rootManifest['autoload-dev']['psr-4']
+    : [];
+
+if (array_key_exists('Nvl\\Workbench\\', $rootAutoload)
+    || ($rootDevAutoload['Nvl\\Workbench\\'] ?? null) !== 'app/') {
+    $fail('family', 'the executable workbench namespace must remain development-only');
+}
+
+$providerPackages = [];
+$expectedProviders = [];
+$versionParser = new VersionParser;
+
+foreach ($packages as $package) {
+    $namespace = str_replace(' ', '', ucwords(str_replace('-', ' ', $package)));
+
+    if (($rootAutoload['Nvl\\'.$namespace.'\\'] ?? null)
+        !== "packages/nvl/{$package}/src/") {
+        $fail($package, 'suite runtime PSR-4 mapping is missing or points to the wrong source directory');
+    }
+
+    $manifest = json_decode(
+        (string) file_get_contents("{$root}/packages/nvl/{$package}/composer.json"),
+        true,
+    );
+    $providers = is_array($manifest['extra']['laravel']['providers'] ?? null)
+        ? $manifest['extra']['laravel']['providers']
+        : [];
+
+    if (count($providers) !== 1 || ! is_string($providers[0] ?? null)) {
+        $fail($package, 'module manifest must discover exactly one Laravel provider');
+    } else {
+        $provider = $providers[0];
+
+        if (isset($providerPackages[$provider])) {
+            $fail($package, "provider [{$provider}] is already owned by nvl/{$providerPackages[$provider]}");
+        }
+
+        $providerPackages[$provider] = $package;
+        $expectedProviders[] = $provider;
+
+        if (! class_exists($provider)) {
+            $fail($package, "discovered provider [{$provider}] is not autoloadable");
+        }
+    }
+
+    $requirements = is_array($manifest['require'] ?? null) ? $manifest['require'] : [];
+
+    foreach ($requirements as $dependency => $constraint) {
+        if (! is_string($dependency)
+            || ! is_string($constraint)
+            || str_starts_with($dependency, 'nvl/')) {
+            continue;
+        }
+
+        $rootConstraint = $rootRequirements[$dependency] ?? null;
+
+        if (! is_string($rootConstraint)) {
+            $fail($package, "suite runtime requirements are missing [{$dependency}]");
+
+            continue;
+        }
+
+        try {
+            if (! Intervals::isSubsetOf(
+                $versionParser->parseConstraints($rootConstraint),
+                $versionParser->parseConstraints($constraint),
+            )) {
+                $fail(
+                    $package,
+                    "suite constraint [{$dependency}: {$rootConstraint}] permits versions outside module constraint [{$constraint}]",
+                );
+            }
+        } catch (UnexpectedValueException $exception) {
+            $fail($package, "invalid [{$dependency}] constraint: {$exception->getMessage()}");
+        }
+    }
+}
+
+$providerConstant = (new ReflectionClass(SuiteServiceProvider::class))
+    ->getReflectionConstant('PROVIDERS');
+$registeredProviders = $providerConstant === false ? [] : $providerConstant->getValue();
+
+if (! is_array($registeredProviders)) {
+    $registeredProviders = [];
+}
+
+$sortedExpectedProviders = $expectedProviders;
+$sortedRegisteredProviders = $registeredProviders;
+sort($sortedExpectedProviders);
+sort($sortedRegisteredProviders);
+
+if ($sortedRegisteredProviders !== $sortedExpectedProviders
+    || count(array_unique($registeredProviders)) !== count($registeredProviders)) {
+    $fail('family', 'suite provider must register every module provider exactly once');
+}
+
+$registeredPackages = array_values(array_filter(array_map(
+    static fn (mixed $provider): ?string => is_string($provider)
+        ? ($providerPackages[$provider] ?? null)
+        : null,
+    $registeredProviders,
+)));
+$providerPositions = array_flip($registeredPackages);
+
+foreach ($internalDependencies as $package => $dependencies) {
+    foreach ($dependencies as $dependency) {
+        if (! isset($providerPositions[$package], $providerPositions[$dependency])
+            || $providerPositions[$dependency] >= $providerPositions[$package]) {
+            $fail($package, "suite provider must register dependency [nvl/{$dependency}] first");
+        }
+    }
+}
+
+Intervals::clear();
 
 $rootReadme = (string) file_get_contents("{$root}/README.md");
 preg_match_all('/^\| `nvl\/([a-z0-9-]+)` \|/m', $rootReadme, $rootReadmeRows);

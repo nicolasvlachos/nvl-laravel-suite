@@ -43,6 +43,9 @@ jobs:
             composer validate --strict "$manifest"
           done
 
+      - name: Validate optimized autoloading
+        run: composer autoload:check
+
       - name: Validate architecture and public contracts
         run: |
           composer packages:validate

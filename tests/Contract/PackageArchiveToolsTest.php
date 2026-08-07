@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Nvl\Suite\SuiteServiceProvider;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
@@ -38,6 +39,9 @@ it('autoloads every internal module from the suite archive layout', function ():
         expect($manifest['autoload']['psr-4']['Nvl\\'.$namespace.'\\'] ?? null)
             ->toBe('packages/nvl/'.$package.'/src/');
     }
+
+    expect($manifest['autoload']['psr-4'])->not->toHaveKey('Nvl\\Workbench\\')
+        ->and($manifest['autoload-dev']['psr-4']['Nvl\\Workbench\\'] ?? null)->toBe('app/');
 });
 
 it('discovers one suite provider instead of twenty package providers', function (): void {
@@ -46,6 +50,49 @@ it('discovers one suite provider instead of twenty package providers', function 
     expect($manifest['extra']['laravel']['providers'] ?? null)->toBe([
         'Nvl\\Suite\\SuiteServiceProvider',
     ]);
+});
+
+it('registers every module provider once and after its internal dependencies', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/package-family.php';
+    $providerPackages = [];
+
+    foreach ($catalog['packages'] as $package) {
+        $manifest = json_decode(
+            file_get_contents($root.'/packages/nvl/'.$package.'/composer.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+        $providers = $manifest['extra']['laravel']['providers'] ?? [];
+
+        expect($providers)->toHaveCount(1);
+
+        $providerPackages[$providers[0]] = $package;
+    }
+
+    $providerConstant = (new ReflectionClass(SuiteServiceProvider::class))
+        ->getReflectionConstant('PROVIDERS');
+
+    expect($providerConstant)->not->toBeFalse();
+
+    $providers = $providerConstant->getValue();
+    $registeredPackages = array_map(
+        static fn (string $provider): string => $providerPackages[$provider],
+        $providers,
+    );
+
+    expect($providers)->toHaveCount(count($catalog['packages']))
+        ->and(array_unique($providers))->toHaveCount(count($providers))
+        ->and(array_diff($catalog['packages'], $registeredPackages))->toBe([])
+        ->and(array_diff($registeredPackages, $catalog['packages']))->toBe([]);
+
+    $positions = array_flip($registeredPackages);
+
+    foreach ($catalog['internal_dependencies'] as $package => $dependencies) {
+        foreach ($dependencies as $dependency) {
+            expect($positions[$dependency])->toBeLessThan($positions[$package]);
+        }
+    }
 });
 
 it('builds exactly one versioned Composer archive', function (): void {

@@ -29,7 +29,8 @@ it('defines one installable suite package for every internal module', function (
             'Nvl\\Suite\\SuiteServiceProvider',
         ])
         ->and($manifest['autoload']['psr-4']['Nvl\\Suite\\'] ?? null)->toBe('src/')
-        ->and($manifest['autoload']['psr-4']['Nvl\\Workbench\\'] ?? null)->toBe('app/')
+        ->and($manifest['autoload']['psr-4'] ?? [])->not->toHaveKey('Nvl\\Workbench\\')
+        ->and($manifest['autoload-dev']['psr-4']['Nvl\\Workbench\\'] ?? null)->toBe('app/')
         ->and($manifest['autoload']['psr-4'] ?? [])->not->toHaveKey('App\\');
 
     foreach ($packages as $package) {
@@ -130,6 +131,7 @@ it('keeps routine quality focused on formatting analysis manifests and contracts
         ->and($commands)->toContain(
             'vendor/bin/pest --compact tests/Contract',
             'composer validate --strict',
+            'composer autoload:check',
             'composer packages:validate',
             'composer contracts:check',
             'composer analyse',
