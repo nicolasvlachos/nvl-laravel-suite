@@ -55,7 +55,7 @@ it('runs the complete Comments suite against PostgreSQL', function (): void {
     expect(commentsWorkflowString($job, 'name'))->toBe('PostgreSQL stateful packages')
         ->and(commentsWorkflowString($service, 'image'))->toBe('postgres:17')
         ->and($serviceEnvironment)->toBe([
-            'POSTGRES_DB' => 'nvl_test_ci',
+            'POSTGRES_DB' => 'nvl_mail_notifications_test_ci',
             'POSTGRES_USER' => 'nvl',
             'POSTGRES_PASSWORD' => 'nvl',
         ])
@@ -64,7 +64,7 @@ it('runs the complete Comments suite against PostgreSQL', function (): void {
             'DB_CONNECTION' => 'pgsql',
             'DB_HOST' => '127.0.0.1',
             'DB_PORT' => 5432,
-            'DB_DATABASE' => 'nvl_test_ci',
+            'DB_DATABASE' => 'nvl_mail_notifications_test_ci',
             'DB_USERNAME' => 'nvl',
             'DB_PASSWORD' => 'nvl',
         ])
