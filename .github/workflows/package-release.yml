@@ -1,0 +1,244 @@
+name: Package release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Release quality gates
+    uses: ./.github/workflows/package-quality.yml
+
+  archives:
+    name: Distribution archives
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, zip
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: mkdir -p build/archives
+
+      - name: Build and inspect all package archives
+        shell: bash
+        env:
+          PACKAGE_VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          package_version="${PACKAGE_VERSION#v}"
+          php -r 'require "vendor/autoload.php"; (new Composer\Semver\VersionParser)->normalize($argv[1]);' "$package_version"
+          export COMPOSER_ROOT_VERSION="$package_version"
+          for directory in packages/nvl/*; do
+            package="$(basename "$directory")"
+            composer archive \
+              --working-dir="$directory" \
+              --format=zip \
+              --dir="$GITHUB_WORKSPACE/build/archives"
+            archive="$(find build/archives -maxdepth 1 -name "nvl-$package-*.zip" -print -quit)"
+            php tools/inspect-package-archive.php "$archive" "$package"
+          done
+          php tools/build-archive-repository.php build/archives "$package_version"
+          echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
+
+      - name: Install and exercise built archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer create-project \
+            --no-interaction \
+            --no-dev \
+            --prefer-dist \
+            "laravel/laravel:^13.0" \
+            /tmp/nvl-archive-consumer
+          cd /tmp/nvl-archive-consumer
+          composer config repositories.nvl artifact "$GITHUB_WORKSPACE/build/archives"
+          packages=()
+          for directory in "$GITHUB_WORKSPACE"/packages/nvl/*; do
+            packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")
+          done
+          composer require \
+            --no-interaction \
+            --update-no-dev \
+            --with-all-dependencies \
+            "${packages[@]}"
+          cp .env.example .env
+          cp "$GITHUB_WORKSPACE/app/Models/IntegrationTestModel.php" app/Models/IntegrationTestModel.php
+          cp "$GITHUB_WORKSPACE/app/Providers/AppServiceProvider.php" app/Providers/AppServiceProvider.php
+          cp \
+            "$GITHUB_WORKSPACE/database/migrations/2026_07_25_205913_create_integration_test_models_table.php" \
+            database/migrations/2026_07_25_205913_create_integration_test_models_table.php
+          touch database/database.sqlite
+          php artisan key:generate
+          composer dump-autoload --no-interaction
+          php artisan package:discover
+          export QUEUE_CONNECTION=database
+          export DB_QUEUE_RETRY_AFTER=960
+          php artisan config:cache
+          php artisan route:cache
+          php artisan migrate --force
+          publish_tags=/tmp/nvl-publish-tags
+          jq -r '.packages[].publish_tags[]' \
+            "$GITHUB_WORKSPACE/tools/package-contracts.json" \
+            > "$publish_tags"
+          while IFS= read -r tag; do
+            php artisan vendor:publish --tag="$tag" --force
+          done < "$publish_tags"
+          php artisan migrate --force
+          expected_doctors=/tmp/nvl-expected-doctors
+          available_doctors=/tmp/nvl-available-doctors
+          jq -r \
+            '.packages[].commands // {} | to_entries[] | .value | split(" ")[0] | select(endswith(":doctor"))' \
+            "$GITHUB_WORKSPACE/tools/package-contracts.json" \
+            | sort -u > "$expected_doctors"
+          php artisan list --raw \
+            | awk '$1 ~ /^nvl:.*:doctor$/ {print $1}' \
+            | sort -u > "$available_doctors"
+          diff -u "$expected_doctors" "$available_doctors"
+          while IFS= read -r doctor; do
+            APP_ENV=testing MAIL_MAILER=array QUEUE_CONNECTION=database \
+              php artisan "$doctor" --strict --format=json
+          done < "$expected_doctors"
+          composer audit --locked --no-interaction
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvl-package-archives-${{ github.ref_name }}
+          path: build/archives
+          if-no-files-found: error
+          retention-days: 90
+
+  publish-release:
+    name: Publish GitHub and Composer release
+    needs: archives
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: json, zip
+          coverage: none
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvl-package-archives-${{ github.ref_name }}
+          path: build/archives
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build public Composer repository metadata
+        shell: bash
+        env:
+          COMPOSER_REPOSITORY_URL: ${{ steps.pages.outputs.base_url }}
+          DIST_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          package_version="${GITHUB_REF_NAME#v}"
+          archive_count="$(find build/archives -maxdepth 1 -name '*.zip' | wc -l | tr -d ' ')"
+          test "$archive_count" -eq 20
+          mkdir -p build/public
+          previous_repository=()
+          previous_url="${COMPOSER_REPOSITORY_URL%/}/packages.json"
+          if curl --fail --location --silent --show-error \
+            "$previous_url" \
+            --output build/previous-packages.json; then
+            previous_repository=(build/previous-packages.json)
+          else
+            previous_tag="$(git tag --list 'v*' --sort=-v:refname \
+              | grep -Fxv "$GITHUB_REF_NAME" \
+              | head -n 1 \
+              || true)"
+            if [[ -n "$previous_tag" ]]; then
+              echo "Unable to fetch the existing Composer index containing [$previous_tag]." >&2
+              exit 1
+            fi
+          fi
+          php tools/build-public-composer-repository.php \
+            build/archives \
+            "$package_version" \
+            "$DIST_BASE_URL" \
+            build/public/packages.json \
+            "${previous_repository[@]}"
+          touch build/public/.nojekyll
+
+      - name: Publish immutable GitHub release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          package_version="${GITHUB_REF_NAME#v}"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            mkdir -p build/existing-release
+            gh release download \
+              "$GITHUB_REF_NAME" \
+              --pattern 'nvl-*.zip' \
+              --dir build/existing-release
+            existing_count="$(find build/existing-release -maxdepth 1 -name '*.zip' | wc -l | tr -d ' ')"
+            test "$existing_count" -eq 20
+            for archive in build/archives/*.zip; do
+              cmp -s "$archive" "build/existing-release/$(basename "$archive")"
+            done
+          else
+            release_flags=()
+            if [[ "$package_version" == *-* ]]; then
+              release_flags+=(--prerelease)
+            fi
+            gh release create \
+              "$GITHUB_REF_NAME" \
+              build/archives/*.zip \
+              --verify-tag \
+              --generate-notes \
+              --title "NVL Laravel Suite $package_version" \
+              "${release_flags[@]}"
+          fi
+
+      - name: Upload Composer repository to GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/public
+
+  deploy-composer-repository:
+    name: Deploy Composer repository
+    needs: publish-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy Composer repository to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

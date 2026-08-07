@@ -40,7 +40,7 @@ function activityWorkflowCommands(array $job): string
 
 it('installs Activity with every package from tagged release archives', function (): void {
     $root = dirname(__DIR__, 2);
-    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+    $workflow = Yaml::parseFile($root.'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();
 
@@ -51,7 +51,7 @@ it('installs Activity with every package from tagged release archives', function
     $installCommand = is_array($installStep) ? ($installStep['run'] ?? null) : null;
 
     expect($job)->toBeArray()
-        ->and($job['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
+        ->and($job)->not->toHaveKey('if')
         ->and($buildCommand)->toBeString()->toContain(
             'for directory in packages/nvl/*; do',
             'php tools/inspect-package-archive.php "$archive" "$package"',

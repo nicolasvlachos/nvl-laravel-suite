@@ -33,8 +33,9 @@ Each package is independently publishable, auto-discoverable, and supports Larav
 
 ## Composer installation
 
-Tagged releases are published as individual package archives through the suite's
-static Composer repository. Register it once in a consumer application:
+The tag-only `Package release` workflow publishes each `v*` release as individual
+package archives through the suite's static Composer repository. Register it once
+in a consumer application:
 
 ```bash
 composer config repositories.nvl composer \

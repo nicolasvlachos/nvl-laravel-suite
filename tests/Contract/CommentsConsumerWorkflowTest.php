@@ -22,14 +22,14 @@ it('keeps Comments in the complete and Laravel 12 compatibility suites', functio
 
 it('keeps the Comments sealed artifact proof on version tags', function (): void {
     $root = dirname(__DIR__, 2);
-    $workflow = commentsWorkflowDefinition($root);
+    $workflow = commentsWorkflowDefinition($root, 'package-release.yml');
     $jobs = commentsWorkflowArray($workflow, 'jobs');
     $job = commentsWorkflowArray($jobs, 'archives');
     $buildStep = commentsWorkflowStep($job, 'Build and inspect all package archives');
     $allArchivesStep = commentsWorkflowStep($job, 'Install and exercise built archives');
     $buildCommand = commentsWorkflowString($buildStep, 'run');
 
-    expect($job['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
+    expect($job)->not->toHaveKey('if')
         ->and($buildCommand)->toContain(
             'for directory in packages/nvl/*; do',
             'php tools/inspect-package-archive.php "$archive" "$package"',

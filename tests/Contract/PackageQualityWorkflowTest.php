@@ -37,12 +37,8 @@ it('runs five routine gates without scheduled fan-out', function (): void {
     expect($workflow)->toBeArray();
 
     $jobs = $workflow['jobs'] ?? [];
-    $routineJobs = array_filter(
-        $jobs,
-        static fn (mixed $job): bool => is_array($job) && ! isset($job['if']),
-    );
 
-    expect(array_keys($routineJobs))->toBe([
+    expect(array_keys($jobs))->toBe([
         'quality',
         'current-tests',
         'laravel12-lowest',
@@ -50,11 +46,18 @@ it('runs five routine gates without scheduled fan-out', function (): void {
         'changed-coverage',
     ])
         ->and($workflow['on'])->not->toHaveKey('schedule')
+        ->and($workflow['on'])->toHaveKey('workflow_call')
         ->and($workflow['on']['push']['branches'] ?? null)->toBe(['main'])
-        ->and($workflow['on']['push']['tags'] ?? null)->toBe(['v*'])
+        ->and($workflow['on']['push']['tags'] ?? null)->toBeNull()
         ->and($workflow['concurrency']['cancel-in-progress'] ?? null)
-        ->toBe('${{ !startsWith(github.ref, \'refs/tags/v\') }}')
+        ->toBeTrue()
         ->and(is_file($root.'/.github/workflows/media-quality.yml'))->toBeFalse();
+
+    $releaseWorkflow = Yaml::parseFile($root.'/.github/workflows/package-release.yml');
+
+    expect($releaseWorkflow)->toBeArray()
+        ->and($releaseWorkflow['on']['push']['tags'] ?? null)->toBe(['v*'])
+        ->and($releaseWorkflow['on']['push']['branches'] ?? null)->toBeNull();
 });
 
 it('keeps routine quality focused on formatting analysis manifests and contracts', function (): void {
@@ -141,7 +144,7 @@ it('collects coverage only for packages changed by the event', function (): void
 });
 
 it('publishes tagged archives only after all five routine gates pass', function (): void {
-    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();
 
@@ -152,14 +155,9 @@ it('publishes tagged archives only after all five routine gates pass', function 
     $archiveCommands = workflowCommands($archives);
     $publishCommands = workflowCommands($publish);
 
-    expect($archives['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
-        ->and($archives['needs'] ?? null)->toBe([
-            'quality',
-            'current-tests',
-            'laravel12-lowest',
-            'postgresql',
-            'changed-coverage',
-        ])
+    expect($jobs['checks']['uses'] ?? null)->toBe('./.github/workflows/package-quality.yml')
+        ->and($archives)->not->toHaveKey('if')
+        ->and($archives['needs'] ?? null)->toBe('checks')
         ->and($archiveCommands)->toContain(
             'for directory in packages/nvl/*; do',
             'composer archive',
@@ -167,7 +165,7 @@ it('publishes tagged archives only after all five routine gates pass', function 
             'composer config repositories.nvl artifact',
             'composer audit --locked --no-interaction',
         )
-        ->and($publish['if'] ?? null)->toBe("startsWith(github.ref, 'refs/tags/v')")
+        ->and($publish)->not->toHaveKey('if')
         ->and($publish['needs'] ?? null)->toBe('archives')
         ->and($publishCommands)->toContain(
             'test "$archive_count" -eq 20',
@@ -180,34 +178,39 @@ it('publishes tagged archives only after all five routine gates pass', function 
         ->and($deploy['steps'][0]['uses'] ?? null)->toBe('actions/deploy-pages@v4');
 });
 
-it('keeps every package-quality shell block syntactically valid', function (): void {
-    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
+it('keeps every package workflow shell block syntactically valid', function (): void {
+    $root = dirname(__DIR__, 2);
 
-    expect($workflow)->toBeArray();
+    foreach (['package-quality.yml', 'package-release.yml'] as $filename) {
+        $workflow = Yaml::parseFile($root.'/.github/workflows/'.$filename);
 
-    foreach ($workflow['jobs'] ?? [] as $jobName => $job) {
-        foreach ($job['steps'] ?? [] as $index => $step) {
-            $script = $step['run'] ?? null;
+        expect($workflow)->toBeArray();
 
-            if (! is_string($script)) {
-                continue;
+        foreach ($workflow['jobs'] ?? [] as $jobName => $job) {
+            foreach ($job['steps'] ?? [] as $index => $step) {
+                $script = $step['run'] ?? null;
+
+                if (! is_string($script)) {
+                    continue;
+                }
+
+                $sanitized = preg_replace('/\$\{\{.*?\}\}/s', 'ci_expression', $script);
+
+                expect($sanitized)->toBeString();
+
+                $process = new Process(['bash', '-n']);
+                $process->setInput($sanitized);
+                $process->setTimeout(5);
+                $process->run();
+
+                expect($process->isSuccessful())->toBeTrue(sprintf(
+                    'Invalid shell in workflow [%s], job [%s], step [%s]: %s',
+                    $filename,
+                    $jobName,
+                    $step['name'] ?? $index,
+                    $process->getErrorOutput(),
+                ));
             }
-
-            $sanitized = preg_replace('/\$\{\{.*?\}\}/s', 'ci_expression', $script);
-
-            expect($sanitized)->toBeString();
-
-            $process = new Process(['bash', '-n']);
-            $process->setInput($sanitized);
-            $process->setTimeout(5);
-            $process->run();
-
-            expect($process->isSuccessful())->toBeTrue(sprintf(
-                'Invalid shell in job [%s], step [%s]: %s',
-                $jobName,
-                $step['name'] ?? $index,
-                $process->getErrorOutput(),
-            ));
         }
     }
 });
