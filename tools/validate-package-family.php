@@ -314,10 +314,43 @@ foreach ($expectedPackages as $package) {
     $packageReadme = is_file($packageReadmePath)
         ? (string) file_get_contents($packageReadmePath)
         : '';
+    $packageManifest = json_decode(
+        (string) file_get_contents("{$root}/packages/nvl/{$package}/composer.json"),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $namespace = array_search('src/', $packageManifest['autoload']['psr-4'] ?? [], true);
+    $provider = $packageManifest['extra']['laravel']['providers'][0] ?? null;
 
     if (preg_match('/^# NVL .+ — API and usage$/m', $packageReadme) !== 1
         || ! str_contains($packageReadme, '[← NVL Laravel Suite](../../../README.md)')) {
         $fail($package, 'README must be a linked API and usage documentation page');
+    }
+
+    if (! is_string($namespace) || ! is_string($provider)
+        || ! str_contains($packageReadme, '| Installed through | `composer require nvl/laravel-suite:^1.0` |')
+        || ! str_contains($packageReadme, "| Module identifier | `nvl/{$package}` |")
+        || ! str_contains($packageReadme, '| PHP namespace | `'.rtrim($namespace, '\\').'` |')
+        || ! str_contains($packageReadme, "| Service provider | `{$provider}` |")
+        || ! str_contains($packageReadme, '| Configuration |')) {
+        $fail($package, 'README quick reference must match the package manifest');
+    }
+
+    if (preg_match('/^## (Requirements and installation|Requirements and dependency|Requirements and dependencies|Requirements|Installation|Install)$/m', $packageReadme) !== 1
+        || substr_count($packageReadme, '```') % 2 !== 0) {
+        $fail($package, 'README must contain installation guidance and balanced code fences');
+    }
+
+    preg_match_all(
+        '/\[[^\]]+\]\((?!https?:|mailto:|#)([^)#]+)(?:#[^)]*)?\)/',
+        $packageReadme,
+        $relativeLinks,
+    );
+
+    foreach (array_unique($relativeLinks[1] ?? []) as $relativeLink) {
+        if (! file_exists(dirname($packageReadmePath).'/'.$relativeLink)) {
+            $fail($package, "README link target [{$relativeLink}] does not exist");
+        }
     }
 }
 

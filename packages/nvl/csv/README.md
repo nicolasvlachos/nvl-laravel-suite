@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/csv` |
+| PHP namespace | `Nvl\Csv` |
+| Service provider | `Nvl\Csv\Providers\CsvServiceProvider` |
+| Configuration | None; behavior is supplied through typed options and services |
+
 Typed, memory-conscious CSV analysis, validation, transformation, import, export, and queued chunk processing for Laravel 12 and 13.
 
 ## Purpose

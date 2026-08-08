@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/filterable` |
+| PHP namespace | `Nvl\Filterable` |
+| Service provider | `Nvl\Filterable\Providers\FilterableServiceProvider` |
+| Configuration | None; schemas are declared in application code |
+
 ## Purpose
 
 `nvl/filterable` translates explicit typed filter sets into allowlisted Eloquent predicates and sorting on Laravel 12–13 and PHP 8.3–8.5. It is not a facets engine, full-text search engine, authorization layer, or arbitrary query language.

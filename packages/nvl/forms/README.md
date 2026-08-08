@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/forms` |
+| PHP namespace | `Nvl\Forms` |
+| Service provider | `Nvl\Forms\Providers\FormsServiceProvider` |
+| Configuration | `config/forms.php` |
+
 ## Purpose
 
 `nvl/forms` is a headless form-definition and submission engine for Laravel 12–13 on PHP 8.3–8.5. It owns secure form definitions, localized nested content, public rendering contracts, submissions, stored entries, analytics, and privacy operations. It does not ship an admin UI, frontend scaffold, mail provider, application-specific form types, or a required audit system.

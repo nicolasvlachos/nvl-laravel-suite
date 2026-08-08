@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/data` |
+| PHP namespace | `Nvl\Data` |
+| Service provider | `Nvl\Data\Providers\DataServiceProvider` |
+| Configuration | `config/nvl-data.php` |
+
 ## Purpose
 
 `nvl/data` is the package family's sole DTO and PHP-to-TypeScript boundary for Laravel 12–13 on PHP 8.3–8.5. It standardizes Spatie Data persistence transforms, pagination, deterministic source registration, declaration generation, integrity manifests, stale checks, and protected artifact delivery.

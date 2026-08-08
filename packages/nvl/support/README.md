@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/support` |
+| PHP namespace | `Nvl\Support` |
+| Service provider | `Nvl\Support\Providers\SupportServiceProvider` |
+| Configuration | None |
+
 ## Purpose
 
 `nvl/support` is the smallest foundation in the NVL package family. It provides transport-neutral business exceptions and stable response-code contracts for Laravel 12–13 on PHP 8.3–8.4.

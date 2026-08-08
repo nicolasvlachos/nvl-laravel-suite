@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/content` |
+| PHP namespace | `Nvl\Content` |
+| Service provider | `Nvl\Content\Providers\ContentServiceProvider` |
+| Configuration | `config/content.php` |
+
 `nvl/content` is a headless, schema-driven content-block engine for Laravel
 12–13 on PHP 8.3–8.4. It provides reusable, translatable blocks, typed fields,
 validated structured data, semantic rich-content presets, generated JSON

@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/pages` |
+| PHP namespace | `Nvl\Pages` |
+| Service provider | `Nvl\Pages\Providers\PagesServiceProvider` |
+| Configuration | `config/pages.php` |
+
 `nvl/pages` is a headless Laravel package for structural pages, four-level navigation trees, localized editorial copy, dynamic resource-backed routes, composed Content blocks, SEO, Metafields, and sitemap discovery.
 
 ## Purpose and boundaries

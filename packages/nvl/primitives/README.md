@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/primitives` |
+| PHP namespace | `Nvl\Primitives` |
+| Service provider | `Nvl\Primitives\Providers\PrimitivesServiceProvider` |
+| Configuration | `config/primitives.php` |
+
 Immutable application value objects, exact money, Eloquent casts, validation rules, currency conversion, and standards-backed reference catalogs for Laravel 12 and 13.
 
 ## Purpose and boundaries

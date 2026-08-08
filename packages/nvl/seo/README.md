@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/seo` |
+| PHP namespace | `Nvl\Seo` |
+| Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
+| Configuration | `config/seo.php` |
+
 A standalone localized SEO system for Laravel 12 and 13: polymorphic profiles,
 deterministic translations, canonical and hreflang URLs, social cards, safe
 JSON-LD, media integration, robots policies, and bounded cached XML sitemaps.

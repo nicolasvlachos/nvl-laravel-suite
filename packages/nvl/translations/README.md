@@ -2,6 +2,16 @@
 
 [← NVL Laravel Suite](../../../README.md)
 
+## Quick reference
+
+| Item | Value |
+|---|---|
+| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Module identifier | `nvl/translations` |
+| PHP namespace | `Nvl\Translations` |
+| Service provider | `Nvl\Translations\Providers\TranslationsServiceProvider` |
+| Configuration | `config/translations.php` |
+
 The suite's Laravel 12–13 file-catalog module for reading, scanning, editing, synchronizing, and resaving PHP-array and JSON translation files.
 
 Use `nvl/translatable` for locale-specific Eloquent content. This package only manages Laravel language files.
