@@ -1,5 +1,10 @@
 # NVL Laravel Suite
 
+[![Packagist](https://img.shields.io/packagist/v/nvl/laravel-suite)](https://packagist.org/packages/nvl/laravel-suite)
+[![Downloads](https://img.shields.io/packagist/dt/nvl/laravel-suite)](https://packagist.org/packages/nvl/laravel-suite)
+[![Package quality](https://github.com/nicolasvlachos/nvl-laravel-suite/actions/workflows/package-quality.yml/badge.svg?branch=main)](https://github.com/nicolasvlachos/nvl-laravel-suite/actions/workflows/package-quality.yml)
+[![License](https://img.shields.io/packagist/l/nvl/laravel-suite)](LICENSE)
+
 The NVL Laravel Suite is one installable Composer package containing 20 focused Laravel modules and an integration workbench. The modules remain isolated under `packages/nvl`, retain their namespaces, providers, migrations, tests, documentation, and Laravel Boost skills, and ship together under one version.
 
 ## Packages and API documentation
@@ -39,7 +44,7 @@ The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.3+. Module
 
 ## Composer installation
 
-Install the stable suite from Packagist:
+Install a stable suite release from [Packagist](https://packagist.org/packages/nvl/laravel-suite):
 
 ```bash
 composer require nvl/laravel-suite:^1.0
@@ -48,12 +53,14 @@ composer require nvl/laravel-suite:^1.0
 Composer installs the clean distribution archive for the selected tag by
 default. A normal installation does not clone the development repository.
 
-For development before the first stable tag, a consumer may use the public GitHub repository directly:
+When intentionally testing the development branch, require the Packagist
+development version explicitly:
 
 ```bash
-composer config repositories.nvl vcs https://github.com/nicolasvlachos/nvl-laravel-suite.git
 composer require nvl/laravel-suite:dev-main
 ```
+
+No custom Composer repository entry is required.
 
 One `vX.Y.Z` tag versions every internal module and produces one release archive.
 
@@ -65,9 +72,10 @@ lockfiles, and GitHub Actions needed to verify releases. Repository-local AI,
 MCP, and editor configuration is ignored and is not part of the tracked source.
 
 Stable version tags are built from the verified Composer archive. Packagist
-consumers receive only `composer.json`, the license and package documentation,
-`src`, `config`, and the runtime contents under `packages/nvl`; development
-workbench and repository tooling are not included.
+consumers receive only the root manifest, license, changelogs and documentation,
+the suite provider, and runtime contents under `packages/nvl`; development
+workbench configuration, tests, fixtures, and repository tooling are not
+included.
 
 ## Translation architecture
 
@@ -82,7 +90,7 @@ workbench and repository tooling are not included.
 
 The central `TranslationResourceRegistry` gathers Forms, Media, Metafields, SEO, Taxonomy, and application resources from one place. Use `php artisan nvl:translatable:gather --json` for catalog/coverage output.
 
-Read [the translation architecture and rollout guide](references/translation-architecture.md) before adding another translated model or adopting an existing localized schema.
+Read [the translation architecture and rollout guide](docs/translation-architecture.md) before adding another translated model or adopting an existing localized schema.
 
 ## Local setup
 
@@ -257,3 +265,6 @@ identity as auto-loaded migrations and cannot execute twice.
 ## License
 
 The suite is released under the [MIT License](LICENSE).
+
+See the project-wide [changelog](CHANGELOG.md), [contributing guide](CONTRIBUTING.md),
+and [security policy](SECURITY.md) for maintenance and disclosure guidance.

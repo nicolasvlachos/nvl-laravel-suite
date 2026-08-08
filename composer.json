@@ -10,7 +10,21 @@
         "media",
         "packages"
     ],
+    "homepage": "https://github.com/nicolasvlachos/nvl-laravel-suite",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Nicolas Vlachos",
+            "homepage": "https://github.com/nicolasvlachos",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/nicolasvlachos/nvl-laravel-suite/issues",
+        "source": "https://github.com/nicolasvlachos/nvl-laravel-suite",
+        "docs": "https://github.com/nicolasvlachos/nvl-laravel-suite#readme",
+        "security": "https://github.com/nicolasvlachos/nvl-laravel-suite/security/policy"
+    },
     "require": {
         "php": "^8.3",
         "composer-runtime-api": "^2.2",
@@ -107,8 +121,11 @@
     },
     "suggest": {
         "bacon/bacon-qr-code": "Renders server-side QR codes for TOTP provisioning when a headless URI is not sufficient.",
+        "ext-gd": "Provides the default Media image-processing driver.",
+        "ext-imagick": "Provides an alternative Media image-processing driver.",
         "ext-intl": "Enables locale-aware monetary formatting through Brick Money.",
         "ext-zip": "Enables downloadable archives for generated TypeScript declarations.",
+        "jcupitt/vips": "Provides the optional libvips Media image-processing driver.",
         "laravel/socialite": "Enables the optional OAuth identity adapter."
     },
     "autoload": {
@@ -269,11 +286,11 @@
             "/boost.json",
             "/build",
             "/composer-dependency-analyser.php",
+            "/config",
             "/coverage",
             "/database",
             "/node_modules",
             "/package-dependency-audit.php",
-            "/packages.md",
             "/pint.json",
             "/public",
             "/references",
@@ -304,8 +321,11 @@
             "/packages/**/tests",
             "/packages/**/composer.json",
             "/packages/**/composer.lock",
+            "/packages/**/composer-dependency-analyser.php",
+            "/packages/**/composer-require-checker.json",
             "/packages/**/phpstan.neon.dist",
-            "/packages/**/phpunit.xml.dist"
+            "/packages/**/phpunit*.xml*",
+            "/packages/**/tmp"
         ]
     },
     "config": {

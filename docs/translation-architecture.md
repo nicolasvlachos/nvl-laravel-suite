@@ -1,6 +1,6 @@
 # Translation Architecture and Rollout
 
-This monorepo uses `nvl/translatable` as the only runtime for model-backed content translations. Laravel language files remain responsible for interface strings, validation messages, command output, and other application-owned copy.
+This suite uses `nvl/translatable` as the only runtime for model-backed content translations. Laravel language files remain responsible for interface strings, validation messages, command output, and other application-owned copy.
 
 ## Ownership matrix
 

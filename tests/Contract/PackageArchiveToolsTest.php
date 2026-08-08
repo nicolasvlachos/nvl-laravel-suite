@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Nvl\Suite\SuiteServiceProvider;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
@@ -12,6 +13,12 @@ it('declares the repository root as the only installable package', function (): 
 
     expect($manifest['name'] ?? null)->toBe('nvl/laravel-suite')
         ->and($manifest['type'] ?? null)->toBe('library')
+        ->and($manifest['homepage'] ?? null)
+        ->toBe('https://github.com/nicolasvlachos/nvl-laravel-suite')
+        ->and($manifest['support']['issues'] ?? null)
+        ->toBe('https://github.com/nicolasvlachos/nvl-laravel-suite/issues')
+        ->and($manifest['support']['security'] ?? null)
+        ->toBe('https://github.com/nicolasvlachos/nvl-laravel-suite/security/policy')
         ->and($manifest)->not->toHaveKey('repositories');
 });
 
@@ -146,7 +153,7 @@ it('rejects development-only content from the suite archive', function (): void 
         $developmentEntries = array_values(array_filter(
             $entries,
             static fn (string $entry): bool => preg_match(
-                '#(^|/)(vendor|node_modules|tests|build|\\.temp|\\.phpunit\\.cache)(/|$)|(^|/)\\.(DS_Store|gitattributes|gitignore|gitkeep)$#',
+                '#(^|/)(vendor|node_modules|tests?|build|tmp|\\.temp|\\.phpunit\\.cache)(/|$)|(^|/)(phpunit[^/]*\\.xml[^/]*|phpstan[^/]*\\.neon[^/]*|composer-dependency-analyser\\.php|composer-require-checker\\.json)$|(^|/)\\.(DS_Store|gitattributes|gitignore|gitkeep)$#',
                 $entry,
             ) === 1,
         ));
@@ -159,14 +166,52 @@ it('rejects development-only content from the suite archive', function (): void 
         ));
 
         expect($topLevelEntries)->toBe([
+            'CHANGELOG.md',
+            'CONTRIBUTING.md',
             'LICENSE',
             'README.md',
+            'SECURITY.md',
             'composer.json',
-            'config',
+            'docs',
             'packages',
+            'packages.md',
             'src',
         ])->and($developmentEntries)->toBe([])
             ->and($nestedManifests)->toBe([]);
+    } finally {
+        expect($workspace)->toBeDirectory();
+    }
+});
+
+it('keeps every relative README link valid inside the suite archive', function (): void {
+    [$workspace, $archive] = suiteArchiveBuild();
+
+    try {
+        $entries = suiteArchiveEntries($archive);
+        $entryLookup = array_fill_keys($entries, true);
+        $readmes = array_values(array_filter(
+            $entries,
+            static fn (string $entry): bool => $entry === 'README.md'
+                || preg_match('#^packages/nvl/[^/]+/README\\.md$#', $entry) === 1,
+        ));
+
+        foreach ($readmes as $readme) {
+            $contents = suiteArchiveRead($archive, $readme);
+            preg_match_all(
+                '~\\[[^]]+\\]\\((?!https?://|mailto:|#)([^)#]+)(?:#[^)]*)?\\)~',
+                $contents,
+                $matches,
+            );
+
+            foreach (array_unique($matches[1] ?? []) as $link) {
+                $target = ltrim(Path::canonicalize(dirname($readme).'/'.$link), './');
+
+                expect($entryLookup)->toHaveKey(
+                    $target,
+                    "Archive README [{$readme}] links to missing file [{$target}].",
+                );
+            }
+        }
     } finally {
         expect($workspace)->toBeDirectory();
     }
@@ -249,15 +294,24 @@ function suiteArchiveBuild(): array
  */
 function suiteArchiveReadManifest(string $archive): array
 {
+    return json_decode(
+        suiteArchiveRead($archive, 'composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+}
+
+function suiteArchiveRead(string $archive, string $entry): string
+{
     $zip = new ZipArchive;
     expect($zip->open($archive))->toBeTrue();
 
     try {
-        $contents = $zip->getFromName('composer.json');
+        $contents = $zip->getFromName($entry);
 
         expect($contents)->toBeString();
 
-        return json_decode($contents, true, flags: JSON_THROW_ON_ERROR);
+        return $contents;
     } finally {
         $zip->close();
     }

@@ -5,6 +5,11 @@ declare(strict_types=1);
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
+const SUITE_CHECKOUT_ACTION = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1';
+const SUITE_SETUP_PHP_ACTION = 'shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240';
+const SUITE_UPLOAD_ARTIFACT_ACTION = 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a';
+const SUITE_DOWNLOAD_ARTIFACT_ACTION = 'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c';
+
 it('defines one installable suite package for every internal module', function (): void {
     $root = dirname(__DIR__, 2);
     $manifest = json_decode(
@@ -92,9 +97,11 @@ it('runs five routine gates without scheduled fan-out', function (): void {
         ->and($workflow['concurrency']['cancel-in-progress'] ?? null)
         ->toBeTrue()
         ->and($qualityWorkflowSource)->toBeString()->toContain(
+            SUITE_CHECKOUT_ACTION,
+            SUITE_UPLOAD_ARTIFACT_ACTION,
+        )->not->toContain(
             'actions/checkout@v6',
             'actions/upload-artifact@v7',
-        )->not->toContain(
             'actions/checkout@v4',
             'actions/upload-artifact@v4',
         )
@@ -112,14 +119,39 @@ it('runs five routine gates without scheduled fan-out', function (): void {
         ->and($releaseWorkflow['concurrency']['group'] ?? null)->toBe('package-release')
         ->and($releaseWorkflow['concurrency']['cancel-in-progress'] ?? null)->toBeFalse()
         ->and($releaseWorkflowSource)->toBeString()->toContain(
+            SUITE_CHECKOUT_ACTION,
+            SUITE_UPLOAD_ARTIFACT_ACTION,
+            SUITE_DOWNLOAD_ARTIFACT_ACTION,
+        )->not->toContain(
             'actions/checkout@v6',
             'actions/upload-artifact@v7',
             'actions/download-artifact@v8',
-        )->not->toContain(
             'actions/checkout@v4',
             'actions/upload-artifact@v4',
             'actions/download-artifact@v4',
         );
+});
+
+it('pins every third-party action to an immutable commit', function (): void {
+    $root = dirname(__DIR__, 2);
+
+    foreach (['package-quality.yml', 'package-release.yml'] as $filename) {
+        $workflow = Yaml::parseFile($root.'/.github/workflows/'.$filename);
+
+        expect($workflow)->toBeArray();
+
+        foreach ($workflow['jobs'] ?? [] as $job) {
+            foreach ($job['steps'] ?? [] as $step) {
+                $uses = $step['uses'] ?? null;
+
+                if (! is_string($uses) || str_starts_with($uses, './')) {
+                    continue;
+                }
+
+                expect($uses)->toMatch('/\A[^@\s]+@[0-9a-f]{40}\z/');
+            }
+        }
+    }
 });
 
 it('keeps routine quality focused on formatting analysis manifests and contracts', function (): void {
@@ -188,7 +220,7 @@ it('collects coverage only for packages changed by the event', function (): void
 
     $coverage = $workflow['jobs']['changed-coverage'] ?? [];
     $commands = workflowCommands($coverage);
-    $setup = collect($coverage['steps'] ?? [])->firstWhere('uses', 'shivammathur/setup-php@v2');
+    $setup = collect($coverage['steps'] ?? [])->firstWhere('uses', SUITE_SETUP_PHP_ACTION);
 
     expect($commands)->toContain(
         'git diff --name-only "$base_sha...HEAD" -- packages/nvl',
@@ -218,7 +250,7 @@ it('publishes one clean suite tag only after all five routine gates pass', funct
     $validateCommands = workflowCommands($jobs['validate'] ?? []);
     $archiveCommands = workflowCommands($archive);
     $publishCommands = workflowCommands($publish);
-    $publishCheckout = collect($publish['steps'] ?? [])->firstWhere('uses', 'actions/checkout@v6');
+    $publishCheckout = collect($publish['steps'] ?? [])->firstWhere('uses', SUITE_CHECKOUT_ACTION);
 
     expect(array_keys($jobs))->toBe(['validate', 'checks', 'archive', 'publish-release'])
         ->and($validateCommands)->toContain(
