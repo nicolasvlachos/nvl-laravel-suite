@@ -53,7 +53,7 @@ it('installs Activity from the tagged suite archive', function (): void {
 
     expect($job)->toBeArray()
         ->and($buildCommand)->toBeString()->toContain(
-            'COMPOSER_ROOT_VERSION="$package_version" composer archive',
+            'COMPOSER_ROOT_VERSION="$PACKAGE_VERSION" composer archive',
             '.name == "nvl/laravel-suite"',
         )
         ->and($installCommand)->toBeString()->toContain(

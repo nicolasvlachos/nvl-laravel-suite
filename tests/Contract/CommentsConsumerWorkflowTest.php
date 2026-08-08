@@ -30,7 +30,7 @@ it('keeps the Comments sealed artifact proof on version tags', function (): void
     $buildCommand = commentsWorkflowString($buildStep, 'run');
 
     expect($buildCommand)->toContain(
-        'COMPOSER_ROOT_VERSION="$package_version" composer archive',
+        'COMPOSER_ROOT_VERSION="$PACKAGE_VERSION" composer archive',
         '.name == "nvl/laravel-suite"',
     )
         ->and(commentsWorkflowString($allArchivesStep, 'run'))->toContain(

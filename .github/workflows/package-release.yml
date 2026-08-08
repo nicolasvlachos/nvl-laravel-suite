@@ -1,20 +1,47 @@
 name: Package release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic version without the v prefix (for example, 1.0.0)
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: package-release-${{ github.ref }}
+  group: package-release
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Validate release request
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Require the default branch and a semantic version
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PACKAGE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+            echo "Releases must be dispatched from the default branch [$DEFAULT_BRANCH]." >&2
+            exit 1
+          fi
+          semver_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if [[ ! "$PACKAGE_VERSION" =~ $semver_pattern ]]; then
+            echo "Release version [$PACKAGE_VERSION] is not valid semantic versioning without a v prefix." >&2
+            exit 1
+          fi
+
   checks:
     name: Release quality gates
+    needs: validate
     uses: ./.github/workflows/package-quality.yml
 
   archive:
@@ -38,13 +65,12 @@ jobs:
       - name: Build and inspect the suite archive
         shell: bash
         env:
-          PACKAGE_VERSION: ${{ github.ref_name }}
+          PACKAGE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          package_version="${PACKAGE_VERSION#v}"
-          php -r 'require "vendor/autoload.php"; (new Composer\Semver\VersionParser)->normalize($argv[1]);' "$package_version"
+          php -r 'require "vendor/autoload.php"; (new Composer\Semver\VersionParser)->normalize($argv[1]);' "$PACKAGE_VERSION"
           mkdir -p build/archives
-          COMPOSER_ROOT_VERSION="$package_version" composer archive \
+          COMPOSER_ROOT_VERSION="$PACKAGE_VERSION" composer archive \
             --format=zip \
             --dir="$GITHUB_WORKSPACE/build/archives"
           archive_count="$(find build/archives -maxdepth 1 -name 'nvl-laravel-suite-*.zip' | wc -l | tr -d ' ')"
@@ -52,15 +78,24 @@ jobs:
           archive="$(find build/archives -maxdepth 1 -name 'nvl-laravel-suite-*.zip' -print -quit)"
           unzip -p "$archive" composer.json \
             | jq -e '.name == "nvl/laravel-suite" and (.version | not)'
-          if unzip -Z1 "$archive" | grep -Eq '(^|/)(vendor|node_modules|tests|\.temp)(/|$)'; then
+          expected_top_level=/tmp/nvl-expected-top-level
+          actual_top_level=/tmp/nvl-actual-top-level
+          printf '%s\n' LICENSE README.md composer.json config packages src \
+            | sort -u > "$expected_top_level"
+          unzip -Z1 "$archive" \
+            | awk -F/ 'NF {print $1}' \
+            | sort -u > "$actual_top_level"
+          diff -u "$expected_top_level" "$actual_top_level"
+          if unzip -Z1 "$archive" | grep -Eq '(^|/)(vendor|node_modules|tests|build|\.temp|\.phpunit\.cache)(/|$)|(^|/)\.(DS_Store|gitattributes|gitignore|gitkeep)$'; then
             echo 'The release archive contains development-only paths.' >&2
             exit 1
           fi
           unzip -q "$archive" -d /tmp/nvl-suite-artifact
-          echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
 
       - name: Install and exercise the suite archive
         shell: bash
+        env:
+          PACKAGE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           composer create-project \
@@ -120,13 +155,13 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: nvl-laravel-suite-${{ github.ref_name }}
+          name: nvl-laravel-suite-v${{ inputs.version }}
           path: build/archives/nvl-laravel-suite-*.zip
           if-no-files-found: error
           retention-days: 90
 
   publish-release:
-    name: Publish GitHub release
+    name: Publish clean tag and GitHub release
     needs: archive
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -134,23 +169,70 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v8
         with:
-          name: nvl-laravel-suite-${{ github.ref_name }}
+          name: nvl-laravel-suite-v${{ inputs.version }}
           path: build/archives
+
+      - name: Create immutable clean distribution tag
+        shell: bash
+        env:
+          PACKAGE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$PACKAGE_VERSION"
+          archive="$(find build/archives -maxdepth 1 -name 'nvl-laravel-suite-*.zip' -print -quit)"
+          test -n "$archive"
+          release_tree="$RUNNER_TEMP/nvl-laravel-suite-$PACKAGE_VERSION"
+          mkdir -p "$release_tree"
+          unzip -q "$archive" -d "$release_tree"
+
+          export GIT_INDEX_FILE="$RUNNER_TEMP/nvl-release-index"
+          git read-tree --empty
+          git --work-tree="$release_tree" add --all --force -- .
+          tree="$(git write-tree)"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            git fetch --force origin "refs/tags/$tag:refs/tags/$tag"
+            if [[ "$(git cat-file -t "$tag")" != tag ]]; then
+              echo "Existing release tag [$tag] is not annotated." >&2
+              exit 1
+            fi
+            tagged_commit="$(git rev-parse "$tag^{commit}")"
+            if [[ "$(git show -s --format=%T "$tagged_commit")" != "$tree" ]]; then
+              echo "Existing release tag [$tag] does not contain the verified archive tree." >&2
+              exit 1
+            fi
+            if [[ "$(git show -s --format=%P "$tagged_commit")" != "$GITHUB_SHA" ]]; then
+              echo "Existing release tag [$tag] was not built from commit [$GITHUB_SHA]." >&2
+              exit 1
+            fi
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            release_commit="$(printf 'release: nvl/laravel-suite %s\n' "$PACKAGE_VERSION" | git commit-tree "$tree" -p "$GITHUB_SHA")"
+            git tag -a "$tag" "$release_commit" -m "NVL Laravel Suite $PACKAGE_VERSION"
+            git push origin "refs/tags/$tag"
+          fi
 
       - name: Publish immutable release asset
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          PACKAGE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
+          tag="v$PACKAGE_VERSION"
           archive="$(find build/archives -maxdepth 1 -name 'nvl-laravel-suite-*.zip' -print -quit)"
           test -n "$archive"
-          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             mkdir -p build/existing-release
             gh release download \
-              "$GITHUB_REF_NAME" \
+              "$tag" \
               --repo "$GITHUB_REPOSITORY" \
               --pattern 'nvl-laravel-suite-*.zip' \
               --dir build/existing-release
@@ -158,17 +240,16 @@ jobs:
             test -n "$existing_archive"
             cmp -s "$archive" "$existing_archive"
           else
-            package_version="${GITHUB_REF_NAME#v}"
             release_flags=()
-            if [[ "$package_version" == *-* ]]; then
+            if [[ "$PACKAGE_VERSION" == *-* ]]; then
               release_flags+=(--prerelease)
             fi
             gh release create \
-              "$GITHUB_REF_NAME" \
+              "$tag" \
               "$archive" \
               --repo "$GITHUB_REPOSITORY" \
               --verify-tag \
               --generate-notes \
-              --title "NVL Laravel Suite $package_version" \
+              --title "NVL Laravel Suite $PACKAGE_VERSION" \
               "${release_flags[@]}"
           fi

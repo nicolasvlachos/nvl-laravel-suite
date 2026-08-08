@@ -138,10 +138,15 @@ it('rejects development-only content from the suite archive', function (): void 
 
     try {
         $entries = suiteArchiveEntries($archive);
+        $topLevelEntries = array_values(array_unique(array_map(
+            static fn (string $entry): string => explode('/', $entry, 2)[0],
+            $entries,
+        )));
+        sort($topLevelEntries);
         $developmentEntries = array_values(array_filter(
             $entries,
             static fn (string $entry): bool => preg_match(
-                '#(^|/)(vendor|node_modules|tests|\\.temp)(/|$)#',
+                '#(^|/)(vendor|node_modules|tests|build|\\.temp|\\.phpunit\\.cache)(/|$)|(^|/)\\.(DS_Store|gitattributes|gitignore|gitkeep)$#',
                 $entry,
             ) === 1,
         ));
@@ -153,19 +158,31 @@ it('rejects development-only content from the suite archive', function (): void 
             ) === 1,
         ));
 
-        expect($developmentEntries)->toBe([])
+        expect($topLevelEntries)->toBe([
+            'LICENSE',
+            'README.md',
+            'composer.json',
+            'config',
+            'packages',
+            'src',
+        ])->and($developmentEntries)->toBe([])
             ->and($nestedManifests)->toBe([]);
     } finally {
         expect($workspace)->toBeDirectory();
     }
 });
 
-it('keeps release automation free of the retired package repository tools', function (): void {
+it('publishes clean Packagist tags without a custom Composer repository', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-release.yml');
     $serializedWorkflow = json_encode($workflow, JSON_THROW_ON_ERROR);
 
-    expect($serializedWorkflow)->not->toContain(
+    expect($serializedWorkflow)->toContain(
+        'git read-tree --empty',
+        'git write-tree',
+        'git commit-tree',
+        'git push origin',
+    )->not->toContain(
         'build-archive-repository.php',
         'build-public-composer-repository.php',
         'inspect-package-archive.php',

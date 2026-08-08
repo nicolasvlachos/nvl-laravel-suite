@@ -103,8 +103,14 @@ it('runs five routine gates without scheduled fan-out', function (): void {
     $releaseWorkflow = Yaml::parseFile($releaseWorkflowPath);
 
     expect($releaseWorkflow)->toBeArray()
-        ->and($releaseWorkflow['on']['push']['tags'] ?? null)->toBe(['v*'])
-        ->and($releaseWorkflow['on']['push']['branches'] ?? null)->toBeNull()
+        ->and($releaseWorkflow['on'])->not->toHaveKey('push')
+        ->and($releaseWorkflow['on']['workflow_dispatch']['inputs']['version'] ?? null)
+        ->toMatchArray([
+            'required' => true,
+            'type' => 'string',
+        ])
+        ->and($releaseWorkflow['concurrency']['group'] ?? null)->toBe('package-release')
+        ->and($releaseWorkflow['concurrency']['cancel-in-progress'] ?? null)->toBeFalse()
         ->and($releaseWorkflowSource)->toBeString()->toContain(
             'actions/checkout@v6',
             'actions/upload-artifact@v7',
@@ -201,7 +207,7 @@ it('collects coverage only for packages changed by the event', function (): void
         ->and($coverage)->not->toHaveKey('strategy');
 });
 
-it('publishes one tagged suite archive only after all five routine gates pass', function (): void {
+it('publishes one clean suite tag only after all five routine gates pass', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();
@@ -209,15 +215,23 @@ it('publishes one tagged suite archive only after all five routine gates pass', 
     $jobs = $workflow['jobs'] ?? [];
     $archive = $jobs['archive'] ?? [];
     $publish = $jobs['publish-release'] ?? [];
+    $validateCommands = workflowCommands($jobs['validate'] ?? []);
     $archiveCommands = workflowCommands($archive);
     $publishCommands = workflowCommands($publish);
+    $publishCheckout = collect($publish['steps'] ?? [])->firstWhere('uses', 'actions/checkout@v6');
 
-    expect($jobs['checks']['uses'] ?? null)->toBe('./.github/workflows/package-quality.yml')
-        ->and(array_keys($jobs))->toBe(['checks', 'archive', 'publish-release'])
+    expect(array_keys($jobs))->toBe(['validate', 'checks', 'archive', 'publish-release'])
+        ->and($validateCommands)->toContain(
+            'refs/heads/$DEFAULT_BRANCH',
+            'semver_pattern=',
+        )
+        ->and($jobs['checks']['uses'] ?? null)->toBe('./.github/workflows/package-quality.yml')
+        ->and($jobs['checks']['needs'] ?? null)->toBe('validate')
         ->and($archive['needs'] ?? null)->toBe('checks')
         ->and($archiveCommands)->toContain(
-            'COMPOSER_ROOT_VERSION="$package_version" composer archive',
+            'COMPOSER_ROOT_VERSION="$PACKAGE_VERSION" composer archive',
             'test "$archive_count" -eq 1',
+            'diff -u "$expected_top_level" "$actual_top_level"',
             '{type:"path",url:$url,options:{symlink:false,versions:{"nvl/laravel-suite":$version}}}',
             '"nvl/laravel-suite:$PACKAGE_VERSION"',
             'composer audit --locked --no-interaction',
@@ -229,11 +243,26 @@ it('publishes one tagged suite archive only after all five routine gates pass', 
         )
         ->and($publish['needs'] ?? null)->toBe('archive')
         ->and($publishCommands)->toContain(
+            'git read-tree --empty',
+            'git --work-tree="$release_tree" add --all --force -- .',
+            'tree="$(git write-tree)"',
+            'git commit-tree "$tree" -p "$GITHUB_SHA"',
+            'git tag -a "$tag" "$release_commit"',
+            'git push origin "refs/tags/$tag"',
             "--pattern 'nvl-laravel-suite-*.zip'",
             'gh release create',
         )
+        ->and($publishCheckout)->toBeArray()
+        ->and($publishCheckout['with']['fetch-depth'] ?? null)->toBe(0)
         ->and($publish['permissions']['contents'] ?? null)->toBe('write')
-        ->and($publish['permissions']['pages'] ?? null)->toBeNull();
+        ->and($publish['permissions']['pages'] ?? null)->toBeNull()
+        ->and(json_encode($workflow, JSON_THROW_ON_ERROR))->toContain(
+            'nvl-laravel-suite-v${{ inputs.version }}',
+        )->not->toContain(
+            'build-public-composer-repository.php',
+            'actions/deploy-pages',
+            'actions/upload-pages-artifact',
+        );
 });
 
 it('keeps every package workflow shell block syntactically valid', function (): void {

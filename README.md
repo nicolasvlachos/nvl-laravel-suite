@@ -33,11 +33,14 @@ The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.3+. Module
 
 ## Composer installation
 
-Install the complete suite from Packagist:
+Install the stable suite from Packagist:
 
 ```bash
 composer require nvl/laravel-suite:^1.0
 ```
+
+Composer installs the clean distribution archive for the selected tag by
+default. A normal installation does not clone the development repository.
 
 For development before the first stable tag, a consumer may use the public GitHub repository directly:
 
@@ -210,14 +213,24 @@ by configured middleware when enabled, and never generates during a request.
        --dir=/tmp/nvl-suite-archive
    ```
 
-7. Push one annotated tag such as `v1.0.0`. The tag-only release workflow reruns
-   the five quality gates, builds one ZIP, installs that exact artifact in a clean
-   Laravel 13 consumer, validates discovery/caches/migrations/doctors, audits the
-   lock, and creates the GitHub Release.
-8. Register `nvl/laravel-suite` on Packagist and enable its GitHub integration.
-   Packagist reads subsequent `v*` tags without a custom Pages repository.
-9. Verify `composer require nvl/laravel-suite:^1.0` in a clean application before
-   announcing the release.
+7. Do **not** create or push the version tag manually. Open **Actions → Package
+   release → Run workflow** on the default branch and enter the version without
+   a `v` prefix, such as `1.0.0`.
+8. The workflow reruns the five quality gates, builds one ZIP, installs that exact
+   artifact in a clean Laravel 13 consumer, and validates discovery, caches,
+   migrations, doctors, and the lock audit. It then creates an annotated
+   `v1.0.0` tag whose tree is the verified clean archive and publishes the GitHub
+   Release. The full development tree remains on `main`; the stable tag contains
+   only files intended for Composer consumers, so Packagist's GitHub distribution
+   archive excludes the workbench, tests, tools, and other development files.
+9. Register `nvl/laravel-suite` on Packagist using this GitHub repository and
+   enable the GitHub integration. If the package was already registered, ask
+   Packagist to update after the workflow publishes the tag.
+10. Verify the Packagist release in a clean application before announcing it:
+
+   ```bash
+   composer require nvl/laravel-suite:^1.0
+   ```
 
 Do not publish `dev-main` as a stable dependency. Consumers should use the `^1.0` line.
 Published NVL migrations retain their package timestamps so they have the same
