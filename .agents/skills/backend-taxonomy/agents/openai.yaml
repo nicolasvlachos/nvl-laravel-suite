@@ -1,4 +1,0 @@
-interface:
-  display_name: "Backend Taxonomy"
-  short_description: "Build localized hierarchical taxonomies"
-  default_prompt: "Use $backend-taxonomy to implement a localized taxonomy workflow."

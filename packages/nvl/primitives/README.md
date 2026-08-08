@@ -1,4 +1,6 @@
-# NVL Primitives
+# NVL Primitives — API and usage
+
+[← NVL Laravel Suite](../../../README.md)
 
 Immutable application value objects, exact money, Eloquent casts, validation rules, currency conversion, and standards-backed reference catalogs for Laravel 12 and 13.
 

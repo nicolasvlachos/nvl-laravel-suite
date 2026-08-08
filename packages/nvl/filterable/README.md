@@ -1,4 +1,6 @@
-# NVL Filterable
+# NVL Filterable — API and usage
+
+[← NVL Laravel Suite](../../../README.md)
 
 ## Purpose
 

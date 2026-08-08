@@ -1,4 +1,0 @@
-interface:
-  display_name: "Backend Metafields"
-  short_description: "Build typed translatable custom fields"
-  default_prompt: "Use $backend-metafields to implement typed and localized custom fields."

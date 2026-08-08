@@ -1,4 +1,6 @@
-# NVL Templates
+# NVL Templates — API and usage
+
+[← NVL Laravel Suite](../../../README.md)
 
 `nvl/templates` is a composable Laravel 12–13 package for rendering
 source-controlled Blade templates as HTML, PDF, or application-defined output.

@@ -1,4 +1,6 @@
-# NVL SEO
+# NVL SEO — API and usage
+
+[← NVL Laravel Suite](../../../README.md)
 
 A standalone localized SEO system for Laravel 12 and 13: polymorphic profiles,
 deterministic translations, canonical and hreflang URLs, social cards, safe

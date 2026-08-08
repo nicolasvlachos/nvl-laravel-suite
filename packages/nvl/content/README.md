@@ -1,4 +1,6 @@
-# NVL Content
+# NVL Content — API and usage
+
+[← NVL Laravel Suite](../../../README.md)
 
 `nvl/content` is a headless, schema-driven content-block engine for Laravel
 12–13 on PHP 8.3–8.4. It provides reusable, translatable blocks, typed fields,

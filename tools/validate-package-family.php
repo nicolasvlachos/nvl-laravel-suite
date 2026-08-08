@@ -297,6 +297,30 @@ if ($documentedRootPackages !== $expectedPackages) {
     $fail('family', 'root README package table does not contain exactly the canonical package catalog');
 }
 
+preg_match_all(
+    '/^\| `nvl\/([a-z0-9-]+)` \|.*\| \[Documentation\]\(packages\/nvl\/\1\/README\.md\) \|$/m',
+    $rootReadme,
+    $rootDocumentationRows,
+);
+$documentedApiPackages = $rootDocumentationRows[1] ?? [];
+sort($documentedApiPackages);
+
+if ($documentedApiPackages !== $expectedPackages) {
+    $fail('family', 'root README must link one canonical API and usage page for every package');
+}
+
+foreach ($expectedPackages as $package) {
+    $packageReadmePath = "{$root}/packages/nvl/{$package}/README.md";
+    $packageReadme = is_file($packageReadmePath)
+        ? (string) file_get_contents($packageReadmePath)
+        : '';
+
+    if (preg_match('/^# NVL .+ — API and usage$/m', $packageReadme) !== 1
+        || ! str_contains($packageReadme, '[← NVL Laravel Suite](../../../README.md)')) {
+        $fail($package, 'README must be a linked API and usage documentation page');
+    }
+}
+
 $packageCatalog = (string) file_get_contents("{$root}/packages.md");
 preg_match_all('/^## `nvl\/([a-z0-9-]+)`$/m', $packageCatalog, $packageCatalogHeadings);
 $documentedCatalogPackages = $packageCatalogHeadings[1] ?? [];

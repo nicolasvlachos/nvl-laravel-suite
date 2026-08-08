@@ -1,4 +1,0 @@
-interface:
-  display_name: "Testing Practices & Optimization"
-  short_description: "Design fast trustworthy Laravel test suites"
-  default_prompt: "Use $testing-practices-and-optimization to audit and optimize this Laravel Pest test suite."

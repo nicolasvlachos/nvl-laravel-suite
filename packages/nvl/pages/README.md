@@ -1,4 +1,6 @@
-# NVL Pages
+# NVL Pages — API and usage
+
+[← NVL Laravel Suite](../../../README.md)
 
 `nvl/pages` is a headless Laravel package for structural pages, four-level navigation trees, localized editorial copy, dynamic resource-backed routes, composed Content blocks, SEO, Metafields, and sitemap discovery.
 

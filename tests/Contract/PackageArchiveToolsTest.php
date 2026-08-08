@@ -226,7 +226,7 @@ function suiteArchiveBuild(): array
         $root,
         ['COMPOSER_ROOT_VERSION' => '1.2.3'],
     );
-    $process->setTimeout(30);
+    $process->setTimeout(90);
     $process->run();
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());

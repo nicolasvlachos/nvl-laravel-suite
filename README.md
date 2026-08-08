@@ -2,32 +2,38 @@
 
 The NVL Laravel Suite is one installable Composer package containing 20 focused Laravel modules and an integration workbench. The modules remain isolated under `packages/nvl`, retain their namespaces, providers, migrations, tests, documentation, and Laravel Boost skills, and ship together under one version.
 
-## Internal modules
+## Packages and API documentation
 
-| Module identifier | Responsibility |
-|---|---|
-| `nvl/activity` | Activity capture and merged model timelines |
-| `nvl/auth` | Headless authentication, invitations, authenticators, recovery, sessions, RBAC, and security audit |
-| `nvl/comments` | Polymorphic threads, replies, reactions, moderation, reports, and attachments |
-| `nvl/content` | Schema-driven translatable content blocks, placements, Media/reference fields, and rendering |
-| `nvl/csv` | Typed CSV analysis, validation, transformation, import, export, streaming, and queued chunk processing |
-| `nvl/data` | Shared Spatie Data and TypeScript transformation support |
-| `nvl/filterable` | Validated Eloquent filtering and sorting |
-| `nvl/forms` | Form CRUD, public rendering/submission, security, analytics, and localized content |
-| `nvl/mail-notifications` | Provider-neutral mail tracking, optional scheduling, MailerSend integration, privacy, and safe interception |
-| `nvl/media` | Uploads, storage, associations, variations, delivery, and localized metadata |
-| `nvl/metafields` | Typed polymorphic custom fields and localized definition/value data |
-| `nvl/pages` | Localized hierarchical pages, dynamic resources, Content composition, SEO, and sitemaps |
-| `nvl/primitives` | Immutable value objects, exact money, validation, and ISO/reference catalogs |
-| `nvl/seo` | Localized metadata, canonical/social/structured output, robots, and sitemaps |
-| `nvl/settings` | Typed database-backed application-wide settings |
-| `nvl/support` | Transport-neutral business exceptions and stable response codes |
-| `nvl/taxonomy` | Hierarchical attachable vocabularies and localized terms |
-| `nvl/templates` | Versioned Content compositions, validated payloads, PDF/HTML rendering, assignments, and queues |
-| `nvl/translatable` | Shared locale validation, request-scoped content locale, fallback, queries, and writes |
-| `nvl/translations` | File/database UI-string translation workflows |
+Each module has one canonical API and usage page. These pages cover installation,
+configuration, primary PHP entry points, optional HTTP surfaces, commands,
+extension contracts, operational behavior, and verification where applicable.
 
-Module-specific configuration and public APIs are documented in each module README.
+| Module identifier | Responsibility | API and usage |
+|---|---|---|
+| `nvl/activity` | Activity capture and merged model timelines | [Documentation](packages/nvl/activity/README.md) |
+| `nvl/auth` | Headless authentication, invitations, authenticators, recovery, sessions, RBAC, and security audit | [Documentation](packages/nvl/auth/README.md) |
+| `nvl/comments` | Polymorphic threads, replies, reactions, moderation, reports, and attachments | [Documentation](packages/nvl/comments/README.md) |
+| `nvl/content` | Schema-driven translatable content blocks, placements, Media/reference fields, and rendering | [Documentation](packages/nvl/content/README.md) |
+| `nvl/csv` | Typed CSV analysis, validation, transformation, import, export, streaming, and queued chunk processing | [Documentation](packages/nvl/csv/README.md) |
+| `nvl/data` | Shared Spatie Data and TypeScript transformation support | [Documentation](packages/nvl/data/README.md) |
+| `nvl/filterable` | Validated Eloquent filtering and sorting | [Documentation](packages/nvl/filterable/README.md) |
+| `nvl/forms` | Form CRUD, public rendering/submission, security, analytics, and localized content | [Documentation](packages/nvl/forms/README.md) |
+| `nvl/mail-notifications` | Provider-neutral mail tracking, optional scheduling, MailerSend integration, privacy, and safe interception | [Documentation](packages/nvl/mail-notifications/README.md) |
+| `nvl/media` | Uploads, storage, associations, variations, delivery, and localized metadata | [Documentation](packages/nvl/media/README.md) |
+| `nvl/metafields` | Typed polymorphic custom fields and localized definition/value data | [Documentation](packages/nvl/metafields/README.md) |
+| `nvl/pages` | Localized hierarchical pages, dynamic resources, Content composition, SEO, and sitemaps | [Documentation](packages/nvl/pages/README.md) |
+| `nvl/primitives` | Immutable value objects, exact money, validation, and ISO/reference catalogs | [Documentation](packages/nvl/primitives/README.md) |
+| `nvl/seo` | Localized metadata, canonical/social/structured output, robots, and sitemaps | [Documentation](packages/nvl/seo/README.md) |
+| `nvl/settings` | Typed database-backed application-wide settings | [Documentation](packages/nvl/settings/README.md) |
+| `nvl/support` | Transport-neutral business exceptions and stable response codes | [Documentation](packages/nvl/support/README.md) |
+| `nvl/taxonomy` | Hierarchical attachable vocabularies and localized terms | [Documentation](packages/nvl/taxonomy/README.md) |
+| `nvl/templates` | Versioned Content compositions, validated payloads, PDF/HTML rendering, assignments, and queues | [Documentation](packages/nvl/templates/README.md) |
+| `nvl/translatable` | Shared locale validation, request-scoped content locale, fallback, queries, and writes | [Documentation](packages/nvl/translatable/README.md) |
+| `nvl/translations` | File/database UI-string translation workflows | [Documentation](packages/nvl/translations/README.md) |
+
+See the [package capability catalog](packages.md) for a concise comparison of
+all modules. The linked module pages are the source of truth for callable APIs
+and integration guidance.
 
 The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.3+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
 
@@ -50,6 +56,18 @@ composer require nvl/laravel-suite:dev-main
 ```
 
 One `vX.Y.Z` tag versions every internal module and produces one release archive.
+
+## Repository and distribution contents
+
+The `main` branch is the maintainable source repository. It intentionally keeps
+the integration workbench, tests, fixtures, static-analysis configuration,
+lockfiles, and GitHub Actions needed to verify releases. Repository-local AI,
+MCP, and editor configuration is ignored and is not part of the tracked source.
+
+Stable version tags are built from the verified Composer archive. Packagist
+consumers receive only `composer.json`, the license and package documentation,
+`src`, `config`, and the runtime contents under `packages/nvl`; development
+workbench and repository tooling are not included.
 
 ## Translation architecture
 
@@ -81,7 +99,7 @@ Laravel Herd serves this workspace automatically; do not start a separate PHP de
 
 ## Development rules
 
-- Follow `AGENTS.md` and the package-specific skill for the domain being changed.
+- Keep changes within the owning module and follow its established architecture and naming conventions.
 - Keep Controllers as HTTP adapters, Actions as transaction owners, Services as focused collaborators, Models lean, and DTOs explicit.
 - Add a migration instead of editing a migration that may already be deployed.
 - Add or update Pest coverage for every behavior change.
