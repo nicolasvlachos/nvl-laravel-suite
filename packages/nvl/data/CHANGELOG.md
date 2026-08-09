@@ -4,6 +4,8 @@ All notable changes to `nvl/data` are documented here.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-09
+
 - Added validated PHP-to-TypeScript replacement maps with legacy host-map
   compatibility and explicit configuration precedence.
 - Made transformer warnings fail generation and freshness checks before

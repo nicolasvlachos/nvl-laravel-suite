@@ -9,6 +9,8 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-09
+
 ### Added
 
 - Added staged module adoption through `config/nvl-suite.php`, including
