@@ -32,7 +32,8 @@ Use this package as the package family's only DTO and PHP-to-TypeScript boundary
 - Keep HTTP artifact routes disabled by default. Enabled routes serve manifest-listed files only and never generate in a request.
 - Configure exceptional PHP references through validated `type_replacements`;
   transformer warnings fail generation and freshness checks.
-- TypeScript Transformer 3.3 has no `RecordTypeScriptType`; use
+- TypeScript Transformer 3.3 removed
+  `Spatie\TypeScriptTransformer\Attributes\RecordTypeScriptType`; use
   `LiteralTypeScriptType('Record<string, unknown>')` for dynamic records.
 
 ## Verify
