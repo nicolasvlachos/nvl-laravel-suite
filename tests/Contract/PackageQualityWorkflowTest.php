@@ -292,6 +292,7 @@ it('publishes one clean suite tag only after all five routine gates pass', funct
         ->and($archiveCommands)->toContain(
             'COMPOSER_ROOT_VERSION="$PACKAGE_VERSION" composer archive',
             'test "$archive_count" -eq 1',
+            'sort -u tools/release-archive-top-level.txt',
             'diff -u "$expected_top_level" "$actual_top_level"',
             '{type:"path",url:$url,options:{symlink:false,versions:{"nvl/laravel-suite":$version}}}',
             '"nvl/laravel-suite:$PACKAGE_VERSION"',

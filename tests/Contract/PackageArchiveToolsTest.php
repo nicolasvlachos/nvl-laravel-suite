@@ -213,6 +213,14 @@ it('rejects development-only content from the suite archive', function (): void 
             $entries,
         )));
         sort($topLevelEntries);
+        $expectedTopLevelEntries = file(
+            dirname(__DIR__, 2).'/tools/release-archive-top-level.txt',
+            FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES,
+        );
+
+        expect($expectedTopLevelEntries)->toBeArray();
+
+        sort($expectedTopLevelEntries);
         $developmentEntries = array_values(array_filter(
             $entries,
             static fn (string $entry): bool => preg_match(
@@ -228,19 +236,8 @@ it('rejects development-only content from the suite archive', function (): void 
             ) === 1,
         ));
 
-        expect($topLevelEntries)->toBe([
-            'CHANGELOG.md',
-            'CONTRIBUTING.md',
-            'LICENSE',
-            'README.md',
-            'SECURITY.md',
-            'composer.json',
-            'config',
-            'docs',
-            'packages',
-            'packages.md',
-            'src',
-        ])->and($developmentEntries)->toBe([])
+        expect($topLevelEntries)->toBe($expectedTopLevelEntries)
+            ->and($developmentEntries)->toBe([])
             ->and($nestedManifests)->toBe([]);
     } finally {
         expect($workspace)->toBeDirectory();

@@ -80,9 +80,7 @@ jobs:
             | jq -e '.name == "nvl/laravel-suite" and (.version | not)'
           expected_top_level=/tmp/nvl-expected-top-level
           actual_top_level=/tmp/nvl-actual-top-level
-          printf '%s\n' CHANGELOG.md CONTRIBUTING.md LICENSE README.md SECURITY.md \
-            composer.json docs packages packages.md src \
-            | sort -u > "$expected_top_level"
+          sort -u tools/release-archive-top-level.txt > "$expected_top_level"
           unzip -Z1 "$archive" \
             | awk -F/ 'NF {print $1}' \
             | sort -u > "$actual_top_level"
