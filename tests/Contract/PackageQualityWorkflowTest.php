@@ -144,6 +144,11 @@ it('documents one discoverable push and automated release path', function (): vo
         'git push origin main',
         'gh workflow run package-release.yml --ref main -f version=1.1.0',
         'Never run `git tag vX.Y.Z`',
+        'A commit is not a release, a push is not a version',
+        'Leave a blank `Unreleased` section for future work.',
+        'unless the request also authorizes it.',
+        'If a request is ambiguous about pushing or publishing',
+        'Never silently leave a named release under',
         'Packagist will continue to show',
         'composer require --no-interaction --update-no-dev',
     )

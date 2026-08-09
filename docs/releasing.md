@@ -32,6 +32,36 @@ release commit whose parent is the verified `main` commit. Consequently, the
 tagged commit SHA is intentionally different from the `main` SHA. Do not move,
 replace, force-push, or manually recreate that tag.
 
+## Required maintainer and automation behavior
+
+Treat release preparation, pushing, and publication as separate authorization
+boundaries. A commit is not a release, a push is not a version, and only the
+successful release workflow may create the stable tag.
+
+- **Prepare and commit:** choose the requested version, move the release notes
+  from `Unreleased` into that version with the release date in the root and all
+  affected module changelogs, run the local gates, review explicit staged paths,
+  and commit. Leave a blank `Unreleased` section for future work. Do not push,
+  dispatch a workflow, or create a tag unless the request also authorizes it.
+- **Push:** push only the reviewed release-preparation commit to `main`, then
+  wait for the corresponding **Package quality** run. Do not represent the push
+  as a published release and do not dispatch while any required job is not
+  green.
+- **Publish, release, or tag:** confirm that the requested version matches the
+  changelogs and does not already exist, ensure the release-preparation commit
+  is on `main`, wait for its five quality jobs, and dispatch `Package release`
+  with that exact version. Never substitute a nearby version or create a local
+  tag as a shortcut.
+- **Report state precisely:** after preparation, report the commit and that the
+  previous stable tag remains current. After publication, report success only
+  after the workflow, immutable tag, GitHub Release, archive, and Packagist
+  version have been verified.
+
+If a request is ambiguous about pushing or publishing, stop before the external
+write and ask for that authorization. Never silently leave a named release under
+`Unreleased`, claim that a commit changed the tag, or mutate an existing stable
+tag.
+
 ## 1. Prepare the release change
 
 Start from `main` with a clean worktree. If `git status` shows unrelated work,
