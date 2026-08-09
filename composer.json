@@ -286,7 +286,6 @@
             "/boost.json",
             "/build",
             "/composer-dependency-analyser.php",
-            "/config",
             "/coverage",
             "/database",
             "/node_modules",

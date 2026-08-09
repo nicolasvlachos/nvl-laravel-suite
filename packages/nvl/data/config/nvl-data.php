@@ -29,6 +29,7 @@ return [
         'scope_mappings' => [],
         'model_type' => 'any',
         'readonly_properties' => false,
+        'type_replacements' => [],
         'memory_limit' => '1G',
         'max_source_files' => 50_000,
         'max_generated_files' => 2_000,

@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Config\Repository;
+use Illuminate\Foundation\Application;
+use Nvl\Auth\Providers\AuthServiceProvider;
+use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Suite\SuiteServiceProvider;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
@@ -102,6 +106,65 @@ it('registers every module provider once and after its internal dependencies', f
     }
 });
 
+it('ships a complete staged-adoption module configuration', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/package-family.php';
+    $configuration = require $root.'/config/nvl-suite.php';
+    $configuredModules = array_keys($configuration['modules'] ?? []);
+    $catalogModules = $catalog['packages'];
+    sort($configuredModules);
+    sort($catalogModules);
+
+    $dependencies = (new ReflectionClass(SuiteServiceProvider::class))
+        ->getReflectionConstant('DEPENDENCIES');
+
+    if ($dependencies === false) {
+        throw new RuntimeException('Suite dependency metadata is missing.');
+    }
+
+    $providerDependencies = $dependencies->getValue();
+    $catalogDependencies = $catalog['internal_dependencies'];
+    ksort($providerDependencies);
+    ksort($catalogDependencies);
+
+    expect($configuredModules)->toBe($catalogModules)
+        ->and(array_filter(
+            $configuration['modules'],
+            static fn (mixed $enabled): bool => $enabled !== true,
+        ))->toBe([])
+        ->and($providerDependencies)->toBe($catalogDependencies);
+});
+
+it('selects only an enabled module and its transitive dependencies', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/package-family.php';
+    $modules = array_fill_keys($catalog['packages'], false);
+    $modules['auth'] = true;
+    $provider = new SuiteServiceProvider(new Application($root));
+    $method = (new ReflectionClass($provider))->getMethod('selectedProviders');
+    $selected = $method->invoke($provider, new Repository([
+        'nvl-suite' => ['modules' => $modules],
+    ]));
+
+    expect($selected)->toBe([
+        DataServiceProvider::class,
+        AuthServiceProvider::class,
+    ]);
+});
+
+it('rejects invalid staged-adoption module configuration', function (array $modules, string $message): void {
+    $root = dirname(__DIR__, 2);
+    $provider = new SuiteServiceProvider(new Application($root));
+    $method = (new ReflectionClass($provider))->getMethod('selectedProviders');
+
+    expect(fn (): array => $method->invoke($provider, new Repository([
+        'nvl-suite' => ['modules' => $modules],
+    ])))->toThrow(RuntimeException::class, $message);
+})->with([
+    'non-boolean flag' => [['auth' => null], 'Suite module [auth] must be configured with a boolean flag.'],
+    'unknown module' => [['authentication' => true], 'Unknown suite module configuration: authentication.'],
+]);
+
 it('builds exactly one versioned Composer archive', function (): void {
     [$workspace, $archive] = suiteArchiveBuild();
 
@@ -172,6 +235,7 @@ it('rejects development-only content from the suite archive', function (): void 
             'README.md',
             'SECURITY.md',
             'composer.json',
+            'config',
             'docs',
             'packages',
             'packages.md',

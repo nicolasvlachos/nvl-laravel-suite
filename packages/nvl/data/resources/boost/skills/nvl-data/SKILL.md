@@ -30,6 +30,10 @@ Use this package as the package family's only DTO and PHP-to-TypeScript boundary
 - Treat explicit `#[TypeScript(name: ..., location: ...)]` values as the public symbol contract and fail duplicate public symbols.
 - Use the manifest `revision` for catalog synchronization and its artifact `hash` for declaration/archive synchronization.
 - Keep HTTP artifact routes disabled by default. Enabled routes serve manifest-listed files only and never generate in a request.
+- Configure exceptional PHP references through validated `type_replacements`;
+  transformer warnings fail generation and freshness checks.
+- TypeScript Transformer 3.3 has no `RecordTypeScriptType`; use
+  `LiteralTypeScriptType('Record<string, unknown>')` for dynamic records.
 
 ## Verify
 

@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Nvl\Data\Services\GeneratedArtifactSet;
 use Nvl\Data\Services\GeneratedTypeFileCatalog;
 use Nvl\Data\Services\TypeScriptConfigurator;
+use Nvl\Data\Services\TypeScriptDiagnosticsLogger;
 use Nvl\Data\Services\TypeScriptPathGuard;
 use RuntimeException;
 use Spatie\TypeScriptTransformer\Enums\RunnerMode;
@@ -55,14 +56,21 @@ final class CheckTypesCommand extends Command
         $files->ensureDirectoryExists($temporaryDirectory);
 
         try {
+            $diagnostics = new TypeScriptDiagnosticsLogger(new NullLogger);
             $exitCode = $runner->run(
-                logger: new NullLogger,
+                logger: $diagnostics,
                 config: $configurator->isolatedConfiguration($temporaryDirectory),
                 mode: RunnerMode::Direct,
             );
 
-            if ($exitCode !== self::SUCCESS) {
-                return $exitCode;
+            if ($exitCode !== self::SUCCESS || $diagnostics->failed()) {
+                if ($exitCode === self::SUCCESS) {
+                    $this->components->error(
+                        'Generated TypeScript declarations contain unresolved transformer warnings.',
+                    );
+                }
+
+                return $exitCode !== self::SUCCESS ? $exitCode : self::FAILURE;
             }
 
             $expected = $artifacts->hashes($temporaryDirectory);

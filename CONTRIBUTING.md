@@ -42,3 +42,11 @@ Pull requests should explain the owning module, user-visible impact, migration
 or upgrade implications, and verification performed. Report vulnerabilities
 through the private process in [SECURITY.md](SECURITY.md), never through a
 public issue.
+
+## Maintainer releases
+
+Maintainers must follow the canonical [push and automated release
+guide](docs/releasing.md). Push the reviewed release-preparation commit to
+`main`, wait for all five routine quality jobs, and dispatch `Package release`
+with a semantic version that does not include the `v` prefix. Do not create,
+move, or push version tags manually.

@@ -9,6 +9,16 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+### Added
+
+- Added staged module adoption through `config/nvl-suite.php`, including
+  dependency-safe provider selection and strict module flag validation.
+
+### Changed
+
+- Documented the TypeScript transformer v3 consumer preflight and the canonical
+  automated release procedure.
+
 ## [1.0.0] - 2026-08-08
 
 ### Added

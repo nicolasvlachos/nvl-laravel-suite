@@ -4,6 +4,10 @@ All notable changes to `nvl/data` are documented here.
 
 ## [Unreleased]
 
+- Added validated PHP-to-TypeScript replacement maps with legacy host-map
+  compatibility and explicit configuration precedence.
+- Made transformer warnings fail generation and freshness checks before
+  incomplete declarations can be published or accepted.
 - Added staged, serialized TypeScript generation with rollback-safe publication.
 - Added split namespace declaration output, configurable scope mappings, and application-compatible Data extraction.
 - Bound HTTP delivery to a persisted integrity manifest with checksum, file-count, size, symlink, and archive limits.

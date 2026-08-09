@@ -109,6 +109,10 @@ This is the stable package-family pagination envelope. Pagination does not belon
     ],
     'model_type' => 'any',
     'readonly_properties' => false,
+    'type_replacements' => [
+        App\Data\DateTimeValue::class => 'string',
+        Symfony\Component\HttpFoundation\File\UploadedFile::class => 'File',
+    ],
     'memory_limit' => '1G',
     'max_source_files' => 50_000,
     'max_generated_files' => 2_000,
@@ -122,6 +126,13 @@ Every source and output must resolve inside an allowed root. Invalid roots, trav
 The default split writer groups `Modules\{Module}\*` and `Nvl\{Package}\*` symbols into stable scope files under `generated/`, then writes `output_file` as the compatibility entrypoint. Use longest-prefix `scope_mappings` for application-specific grouping such as a shared `users` scope. Set `writer=global` only when a consumer explicitly requires one declaration file.
 
 The transformer extracts all eligible Spatie Data classes and backed enums, preserves `Optional`, `DataCollectionOf`, native/Carbon date, Eloquent-model, and mutable-property semantics, and omits `#[Hidden]` contracts. Explicit `#[TypeScript(name: ..., location: ...)]` overrides are applied consistently to classes, Data objects, and enums and reflected exactly in manifest symbols and duplicate-symbol checks. Generation raises memory to the configured floor without lowering a larger or unlimited process limit.
+
+`type_replacements` maps PHP class/interface names to TypeScript expressions.
+NVL Data also imports legacy host maps from
+`typescript-transformer.default_type_replacements` (including the historical
+misspelled `default_type_relacements`) and
+`typescript-transformer.type_replacements`; the NVL map has final precedence.
+Every map is validated and remains configuration-cache safe.
 
 NVL providers register their own source directory:
 
@@ -149,7 +160,7 @@ php artisan nvl:data:types:check
 
 Generation sorts providers, paths, symbols, and artifacts. Public symbols use `Nvl.<Package>.*` unless an explicit TypeScript attribute overrides the public name or location. The versioned manifest records source ownership, exact generated source symbols, package and transformer versions, generation time, artifact paths, sizes, and SHA-256 checksums. Its `revision` covers all metadata, while `hash` identifies the declaration artifact set.
 
-`types:check` generates into an isolated temporary directory and fails when committed declarations are stale. CI must also compile the combined declarations with `tsc --noEmit`.
+`types:check` generates into an isolated temporary directory and fails when committed declarations are stale. Transformer warnings, including unresolved references, fail both generation and freshness checks so a warning cannot publish or validate an incomplete contract. CI must also compile the combined declarations with `tsc --noEmit`.
 
 ## Generated-type HTTP routes
 
@@ -191,6 +202,7 @@ A failed transform does not write a successful manifest. Stale, unlisted, checks
 ## Extension points
 
 - `TypeScriptSourceRegistry` for package and application sources
+- validated PHP-to-TypeScript replacement maps through NVL or legacy host configuration
 - Spatie transformers and collectors through the host configuration
 - configured artifact roots, file names, route middleware, and archive bounds
 

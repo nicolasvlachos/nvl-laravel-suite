@@ -132,6 +132,30 @@ it('runs five routine gates without scheduled fan-out', function (): void {
         );
 });
 
+it('documents one discoverable push and automated release path', function (): void {
+    $root = dirname(__DIR__, 2);
+    $guide = file_get_contents($root.'/docs/releasing.md');
+    $readme = file_get_contents($root.'/README.md');
+    $contributing = file_get_contents($root.'/CONTRIBUTING.md');
+
+    expect($guide)->toBeString()->toContain(
+        '.github/workflows/package-quality.yml',
+        '.github/workflows/package-release.yml',
+        'git push origin main',
+        'gh workflow run package-release.yml --ref main -f version=1.1.0',
+        'Never run `git tag vX.Y.Z`',
+        'Packagist will continue to show',
+        'composer require --no-interaction --update-no-dev',
+    )
+        ->and($readme)->toBeString()->toContain(
+            '[push, automated tagging, and release guide](docs/releasing.md)',
+        )
+        ->and($contributing)->toBeString()->toContain(
+            '[push and automated release',
+            'guide](docs/releasing.md)',
+        );
+});
+
 it('pins every third-party action to an immutable commit', function (): void {
     $root = dirname(__DIR__, 2);
 

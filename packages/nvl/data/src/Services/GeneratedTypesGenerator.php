@@ -34,16 +34,21 @@ final readonly class GeneratedTypesGenerator
         return $this->lock->generate(function () use ($logger): int {
             $temporaryDirectory = storage_path('app/nvl-data/generate-'.Str::uuid());
             $this->files->ensureDirectoryExists($temporaryDirectory);
+            $diagnostics = new TypeScriptDiagnosticsLogger($logger);
 
             try {
                 $exitCode = $this->runner->run(
-                    logger: $logger,
+                    logger: $diagnostics,
                     config: $this->configurator->isolatedConfiguration($temporaryDirectory),
                     mode: RunnerMode::Direct,
                 );
 
-                if ($exitCode !== 0) {
-                    return $exitCode;
+                if ($exitCode !== 0 || $diagnostics->failed()) {
+                    if ($exitCode === 0) {
+                        $logger->error('TypeScript generation failed because the transformer emitted warnings.');
+                    }
+
+                    return $exitCode !== 0 ? $exitCode : 1;
                 }
 
                 $this->publisher->publish($temporaryDirectory);

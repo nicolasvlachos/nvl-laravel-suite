@@ -24,6 +24,7 @@ use Nvl\Data\Traits\DataTransform;
 use Nvl\Data\TypeScript\SplitNamespaceWriter;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
+use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
 use Spatie\TypeScriptTransformer\Collections\TransformedCollection;
 use Spatie\TypeScriptTransformer\Transformed\Transformed;
 use Spatie\TypeScriptTransformer\TypeScriptTransformerConfig;
@@ -49,6 +50,11 @@ test('it registers a standalone transformer configuration and configurable sourc
         ->and($registry->all())->toContain(realpath(__DIR__.'/../Fixtures'))
         ->and($registry->all())->toContain(realpath(__DIR__.'/../../src'))
         ->and($registry->all())->not->toContain(false);
+});
+
+test('its package guidance targets installed transformer v3 attributes', function (): void {
+    expect(class_exists(LiteralTypeScriptType::class))->toBeTrue()
+        ->and(class_exists('Spatie\TypeScriptTransformer\Attributes\RecordTypeScriptType'))->toBeFalse();
 });
 
 test('its distributable configuration keeps generated type routes opt in and protected', function (): void {
@@ -517,6 +523,77 @@ test('it rejects ambiguous boolean transformer configuration', function (): void
             RuntimeException::class,
             'Configuration [nvl-data.typescript.enum_union_types] must be a boolean',
         );
+});
+
+test('it validates configured PHP-to-TypeScript replacement maps', function (): void {
+    config()->set('nvl-data.typescript.type_replacements', [
+        'Invalid Type' => '',
+    ]);
+
+    expect(fn (): TypeScriptTransformerConfig => app(TypeScriptConfigurator::class)
+        ->isolatedConfiguration($this->generatedTypesDirectory.'/isolated'))
+        ->toThrow(
+            RuntimeException::class,
+            'must map a PHP type to a non-empty TypeScript type',
+        );
+});
+
+test('it merges legacy replacements and fails generation or checks on unresolved references', function (): void {
+    $sourceDirectory = $this->generatedTypesDirectory.'/replacement-source';
+    File::ensureDirectoryExists($sourceDirectory);
+    File::put($sourceDirectory.'/UploadContract.php', <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Types;
+
+use Spatie\LaravelData\Data;
+
+final class HostUpload
+{
+}
+
+final class UploadContract extends Data
+{
+    public function __construct(public HostUpload $upload) {}
+}
+PHP);
+    require_once $sourceDirectory.'/UploadContract.php';
+    config()->set('nvl-data.typescript.source_paths', [$sourceDirectory]);
+
+    app()->forgetInstance(TypeScriptSourceRegistry::class);
+    app()->forgetInstance(TypeScriptConfigurator::class);
+    app()->forgetInstance(TypeScriptTransformerConfig::class);
+
+    $this->artisan('nvl:data:types:generate')
+        ->expectsOutputToContain('transformer emitted warnings')
+        ->assertFailed();
+
+    config()->set('typescript-transformer.default_type_replacements', [
+        'Consumer\Types\HostUpload' => 'File',
+    ]);
+    app()->forgetInstance(TypeScriptSourceRegistry::class);
+    app()->forgetInstance(TypeScriptConfigurator::class);
+    app()->forgetInstance(TypeScriptTransformerConfig::class);
+
+    $this->artisan('nvl:data:types:generate')->assertSuccessful();
+
+    $declarations = collect(File::allFiles($this->generatedTypesDirectory))
+        ->filter(static fn (SplFileInfo $file): bool => $file->getExtension() === 'ts')
+        ->map(static fn (SplFileInfo $file): string => File::get($file->getPathname()))
+        ->implode("\n");
+
+    expect($declarations)->toContain('upload: File');
+
+    config()->set('typescript-transformer.default_type_replacements', []);
+    app()->forgetInstance(TypeScriptSourceRegistry::class);
+    app()->forgetInstance(TypeScriptConfigurator::class);
+    app()->forgetInstance(TypeScriptTransformerConfig::class);
+
+    $this->artisan('nvl:data:types:check')
+        ->expectsOutputToContain('unresolved transformer warnings')
+        ->assertFailed();
 });
 
 test('its staged generation command publishes an integrity manifest and passes a fresh check', function (): void {

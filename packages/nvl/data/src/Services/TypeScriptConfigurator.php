@@ -19,6 +19,7 @@ use Spatie\TypeScriptTransformer\Transformers\AttributedClassTransformer;
 use Spatie\TypeScriptTransformer\Transformers\EnumTransformer;
 use Spatie\TypeScriptTransformer\TypeScriptNodes\TypeScriptAny;
 use Spatie\TypeScriptTransformer\TypeScriptNodes\TypeScriptProperty;
+use Spatie\TypeScriptTransformer\TypeScriptNodes\TypeScriptRaw;
 use Spatie\TypeScriptTransformer\TypeScriptNodes\TypeScriptReference;
 use Spatie\TypeScriptTransformer\TypeScriptNodes\TypeScriptUnknown;
 use Spatie\TypeScriptTransformer\TypeScriptTransformerConfig;
@@ -112,6 +113,10 @@ final readonly class TypeScriptConfigurator
             )
             ->outputDirectory($resolvedOutputDirectory)
             ->writer($this->writer());
+
+        foreach ($this->typeReplacements() as $phpType => $typeScriptType) {
+            $factory->replaceType($phpType, new TypeScriptRaw($typeScriptType));
+        }
     }
 
     /**
@@ -255,6 +260,45 @@ final readonly class TypeScriptConfigurator
             'unknown' => new TypeScriptUnknown,
             default => throw new RuntimeException('nvl-data.typescript.model_type must be [any] or [unknown].'),
         };
+    }
+
+    /**
+     * Return validated host and NVL TypeScript type replacements.
+     *
+     * @return array<string, string>
+     */
+    private function typeReplacements(): array
+    {
+        $maps = [
+            'typescript-transformer.default_type_replacements',
+            'typescript-transformer.default_type_relacements',
+            'typescript-transformer.type_replacements',
+            'nvl-data.typescript.type_replacements',
+        ];
+        $replacements = [];
+
+        foreach ($maps as $key) {
+            $configured = $this->config->get($key, []);
+
+            if (! is_array($configured)) {
+                throw new RuntimeException("Configuration [{$key}] must be a PHP-to-TypeScript replacement map.");
+            }
+
+            foreach ($configured as $phpType => $typeScriptType) {
+                if (! is_string($phpType)
+                    || preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\\\\[A-Za-z_][A-Za-z0-9_]*)*$/', $phpType) !== 1
+                    || ! is_string($typeScriptType)
+                    || trim($typeScriptType) === '') {
+                    throw new RuntimeException(
+                        "Every replacement in [{$key}] must map a PHP type to a non-empty TypeScript type.",
+                    );
+                }
+
+                $replacements[$phpType] = trim($typeScriptType);
+            }
+        }
+
+        return $replacements;
     }
 
     /**

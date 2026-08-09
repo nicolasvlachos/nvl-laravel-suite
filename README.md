@@ -42,6 +42,27 @@ and integration guidance.
 
 The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.3+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
 
+## Staged module adoption
+
+The auto-discovered suite provider can register a safe subset of modules. Publish
+the module-selection configuration, disable modules that are not ready for the
+host schema, and clear the configuration cache:
+
+```bash
+php artisan vendor:publish --tag=suite-config
+php artisan config:clear
+```
+
+Configure `config/nvl-suite.php` before running migrations. Enabling a module
+automatically registers its transitive NVL dependencies in canonical order; it
+does not enable unrelated modules. For example, enabling only `auth` registers
+`data` followed by `auth`.
+
+When package discovery itself must be disabled, register
+`Nvl\Data\Providers\DataServiceProvider` before
+`Nvl\Auth\Providers\AuthServiceProvider`. Auth also registers its Data
+foundation defensively, so direct Auth-only registration remains supported.
+
 ## Composer installation
 
 Install a stable suite release from [Packagist](https://packagist.org/packages/nvl/laravel-suite):
@@ -63,6 +84,18 @@ composer require nvl/laravel-suite:dev-main
 No custom Composer repository entry is required.
 
 One `vX.Y.Z` tag versions every internal module and produces one release archive.
+
+### Dependency-major preflight
+
+Suite v1 installs `spatie/typescript-transformer` and
+`spatie/laravel-typescript-transformer` 3.3. Consumers upgrading from v2 must
+remove `RecordTypeScriptType` and use
+`LiteralTypeScriptType('Record<string, unknown>')` (or a narrower record shape).
+Version 3 also removed v2 writer APIs such as `SplitWriter`; NVL Data owns split
+declaration output through its configured writer. Run static analysis and both
+`nvl:data:types:generate` and `nvl:data:types:check` immediately after Composer
+changes. Do not rely on packages that happened to be installed transitively by
+the previous transformer version; declare every directly used package.
 
 ## Repository and distribution contents
 
@@ -226,37 +259,30 @@ by configured middleware when enabled, and never generates during a request.
 
 ## Release workflow
 
-1. Choose a semantic version and update the changelog/release notes.
-2. Review `composer contracts:check`; acknowledge intentional compatible or breaking changes before updating the baseline.
-3. Run migrations and backfills against a representative existing database.
-4. Run `composer quality`. Routine CI keeps five gates: formatting/static analysis/manifests/contracts, the complete PHP 8.4 + Laravel 13 + SQLite suite, Laravel 12 on the lowest supported dependencies, PostgreSQL stateful tests, and coverage for packages changed by the event.
-5. Run strict Composer validation and `composer audit`.
-6. Build the single suite archive with the release version:
+The canonical [push, automated tagging, and release guide](docs/releasing.md)
+covers preparation, explicit staging, local gates, pushing `main`, dispatching
+the release workflow, Packagist synchronization, clean-consumer verification,
+and safe retry rules.
 
-   ```bash
-   COMPOSER_ROOT_VERSION=1.0.0 composer archive \
-       --format=zip \
-       --dir=/tmp/nvl-suite-archive
-   ```
+The short path is:
 
-7. Do **not** create or push the version tag manually. Open **Actions → Package
-   release → Run workflow** on the default branch and enter the version without
-   a `v` prefix, such as `1.0.0`.
-8. The workflow reruns the five quality gates, builds one ZIP, installs that exact
-   artifact in a clean Laravel 13 consumer, and validates discovery, caches,
-   migrations, doctors, and the lock audit. It then creates an annotated
-   `v1.0.0` tag whose tree is the verified clean archive and publishes the GitHub
-   Release. The full development tree remains on `main`; the stable tag contains
-   only files intended for Composer consumers, so Packagist's GitHub distribution
-   archive excludes the workbench, tests, tools, and other development files.
-9. Register `nvl/laravel-suite` on Packagist using this GitHub repository and
-   enable the GitHub integration. If the package was already registered, ask
-   Packagist to update after the workflow publishes the tag.
-10. Verify the Packagist release in a clean application before announcing it:
+```bash
+composer quality
+composer validate --strict
+composer audit --locked --no-interaction
+git add <reviewed-paths>
+git diff --cached
+git commit -m "release: prepare v1.1.0"
+git push origin main
 
-   ```bash
-   composer require nvl/laravel-suite:^1.0
-   ```
+gh workflow run package-release.yml --ref main -f version=1.1.0
+```
+
+Wait for the five `Package quality` jobs to pass before dispatching `Package
+release`. Supply `1.1.0`, not `v1.1.0`. Never create or push a version tag
+manually: the workflow builds and installs the clean archive, creates the
+annotated `v1.1.0` tag, publishes the GitHub Release, and lets Packagist discover
+the stable version.
 
 Do not publish `dev-main` as a stable dependency. Consumers should use the `^1.0` line.
 Published NVL migrations retain their package timestamps so they have the same
