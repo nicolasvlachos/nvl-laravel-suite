@@ -1,8 +1,8 @@
 {
     "schemaVersion": 2,
-    "hash": "b5515bf60d602521ce8c0b470998de4377368e541d1dab11c5568baa10e86db3",
-    "transformerHash": "bf43e401e11da8097333e29c7ba606508275d66d0060268634401ad97a14d3e6",
-    "generatedAt": "2026-08-10T09:59:54+00:00",
+    "hash": "89d7a92f59fd69e0ace589f6a6ab6f4cc6fbcb792cb35a0728466c079309fa7c",
+    "transformerHash": "a1eff86d8d96b0775e6469c39dc0fe776d43bb7ae8a1dbd33e1b23ffa70c1445",
+    "generatedAt": "2026-08-10T10:31:02+00:00",
     "packages": {
         "nvl/activity": "unknown",
         "nvl/auth": "unknown",
@@ -257,6 +257,12 @@
             "source": "Data/Mutations/ConsumeRecoveryCodeData.php"
         },
         {
+            "phpType": "Nvl\\Auth\\Data\\Mutations\\DeleteOwnAccountData",
+            "typescriptType": "Nvl.Auth.Data.Mutations.DeleteOwnAccountData",
+            "package": "nvl/auth",
+            "source": "Data/Mutations/DeleteOwnAccountData.php"
+        },
+        {
             "phpType": "Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData",
             "typescriptType": "Nvl.Auth.Data.Mutations.FinishPasskeyAuthenticationData",
             "package": "nvl/auth",
@@ -401,6 +407,12 @@
             "source": "Data/Mutations/VerifyTotpData.php"
         },
         {
+            "phpType": "Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData",
+            "typescriptType": "Nvl.Auth.Data.Queries.InvitationIndexQueryData",
+            "package": "nvl/auth",
+            "source": "Data/Queries/InvitationIndexQueryData.php"
+        },
+        {
             "phpType": "Nvl\\Auth\\Data\\Queries\\PermissionIndexQueryData",
             "typescriptType": "Nvl.Auth.Data.Queries.PermissionIndexQueryData",
             "package": "nvl/auth",
@@ -435,6 +447,12 @@
             "typescriptType": "Nvl.Auth.Enums.AuthMessageType",
             "package": "nvl/auth",
             "source": "Enums/AuthMessageType.php"
+        },
+        {
+            "phpType": "Nvl\\Auth\\Enums\\AuthenticationPurpose",
+            "typescriptType": "Nvl.Auth.Enums.AuthenticationPurpose",
+            "package": "nvl/auth",
+            "source": "Enums/AuthenticationPurpose.php"
         },
         {
             "phpType": "Nvl\\Auth\\Enums\\FeatureOperation",
@@ -2344,7 +2362,7 @@
         "filename": "generated.d.ts",
         "bytes": 1170,
         "hash": "1084a3538e35f79a7b8cf96e2091f90b9c204802945a1cae8afe9c4b2f4caaec",
-        "lastModified": "2026-08-10T09:59:54+00:00"
+        "lastModified": "2026-08-10T10:31:02+00:00"
     },
     "files": [
         {
@@ -2353,15 +2371,15 @@
             "filename": "activity.d.ts",
             "bytes": 4026,
             "hash": "9329235f1518c0b89634ab8dee54dc327baafc9d7e8fc5593d39cb3225ae45b4",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "auth",
             "path": "generated/auth.d.ts",
             "filename": "auth.d.ts",
-            "bytes": 5264,
-            "hash": "1a0d8a541922817360932b384fc9326c9000f8e7fd63836f7d30ac5d8185b48f",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "bytes": 5870,
+            "hash": "e6a7a76714400fbdab37f9c8c36324051f29bca17e6cbfcfcbb21c7d5aa6238a",
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "comments",
@@ -2369,7 +2387,7 @@
             "filename": "comments.d.ts",
             "bytes": 6549,
             "hash": "f4c7bd164713792a4d772611fb07191d92850f8c5230d4263753ba3c93b48217",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "content",
@@ -2377,7 +2395,7 @@
             "filename": "content.d.ts",
             "bytes": 8938,
             "hash": "985ba579ce810a126e1b4fe6df79bd83b1d64558bc646b1d21711769d795ac92",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "csv",
@@ -2385,7 +2403,7 @@
             "filename": "csv.d.ts",
             "bytes": 4214,
             "hash": "b1f4fb1b745726ebb9d24ac18025f00148b4d4726b491cbe969be9c5268eba35",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "data",
@@ -2393,7 +2411,7 @@
             "filename": "data.d.ts",
             "bytes": 376,
             "hash": "2e71c2bfc92b5b17856cc679cdd13b03a0a40f6adbc9537364c57c32f405c56a",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "filterable",
@@ -2401,7 +2419,7 @@
             "filename": "filterable.d.ts",
             "bytes": 933,
             "hash": "d207b741ec396458e51716907d84fd084a80caa4a4a8174f8b76f65c7e1e7a74",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "forms",
@@ -2409,7 +2427,7 @@
             "filename": "forms.d.ts",
             "bytes": 8131,
             "hash": "ac3ce5523dc31e8b817e7c6df642023b00ec3e7ef6111650cbdf5550805aeac0",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "illuminate",
@@ -2417,7 +2435,7 @@
             "filename": "illuminate.d.ts",
             "bytes": 1097,
             "hash": "a64e8e4cb0e546a5b5e90c715bff6c89a7c82113a50bd9e9876697839f5001c0",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "mail-notifications",
@@ -2425,7 +2443,7 @@
             "filename": "mail-notifications.d.ts",
             "bytes": 752,
             "hash": "1c2d857dcbe72f21d4237f391874e48e3410e825dfcc607bd159b083526cae4a",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "media",
@@ -2433,7 +2451,7 @@
             "filename": "media.d.ts",
             "bytes": 8776,
             "hash": "187a3d1469a3a1d2b728a8358479e05cb681c69100285b8d171f6ba039832b72",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "metafields",
@@ -2441,7 +2459,7 @@
             "filename": "metafields.d.ts",
             "bytes": 5579,
             "hash": "230c69d999a299476129f32b076243569b80fa6106d86f532f047a87b3e97ce8",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "pages",
@@ -2449,7 +2467,7 @@
             "filename": "pages.d.ts",
             "bytes": 3481,
             "hash": "e6209ae2ec08148c6b193de95ff70b9b391c2386e804de8798f72606e6e109fc",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "primitives",
@@ -2457,7 +2475,7 @@
             "filename": "primitives.d.ts",
             "bytes": 676,
             "hash": "6f27c2008478672e9b15805b8ce551e871eca89ca860c3327129adafdbd47c1c",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "seo",
@@ -2465,7 +2483,7 @@
             "filename": "seo.d.ts",
             "bytes": 4758,
             "hash": "33159c404428c99c468621a6e1c437cf0ac2f65932e3a8a4904bb564a4cd23de",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "settings",
@@ -2473,7 +2491,7 @@
             "filename": "settings.d.ts",
             "bytes": 1731,
             "hash": "9d8f76edeb3f29081241ea435b8aa65557a69300fdfdac265fe8544bbb5f9696",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "spatie",
@@ -2481,7 +2499,7 @@
             "filename": "spatie.d.ts",
             "bytes": 356,
             "hash": "da79f3f2d2619c04eb76942edf6f1e54d229ffc3be5e2a4c238b2699770c513b",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "taxonomy",
@@ -2489,7 +2507,7 @@
             "filename": "taxonomy.d.ts",
             "bytes": 747,
             "hash": "f81c91c733eb28d1408e1cf6ea56f0350b5f3bcd6b5b983fca6507b61a3685fb",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "templates",
@@ -2497,7 +2515,7 @@
             "filename": "templates.d.ts",
             "bytes": 5573,
             "hash": "d0f88ae9b7bcee9a3f0e66f554bb8a59756ba4618bd39680280634b183306bbd",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "translatable",
@@ -2505,7 +2523,7 @@
             "filename": "translatable.d.ts",
             "bytes": 2076,
             "hash": "0d11e4f1e2ffa0f00a272175d79a6e9a8aaff61b0422c15786db430ad201fab7",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         },
         {
             "scope": "translations",
@@ -2513,12 +2531,12 @@
             "filename": "translations.d.ts",
             "bytes": 1422,
             "hash": "f588972d7f67b7ceb7031d40c8c5277f9f54e4dc63b810d5948bede238ac7f72",
-            "lastModified": "2026-08-10T09:59:54+00:00"
+            "lastModified": "2026-08-10T10:31:02+00:00"
         }
     ],
     "archive": {
         "enabled": true,
-        "filename": "generated-types-b5515bf60d60.zip"
+        "filename": "generated-types-89d7a92f59fd.zip"
     },
-    "revision": "c90be35e524e3d2e3c9ab2ef2a9477be9dbb2599d1f32077709ce55e7c77c641"
+    "revision": "8553f1fc72e81812ec4d51085ba626d5db847301fe4d9b0db188993deff4d26c"
 }

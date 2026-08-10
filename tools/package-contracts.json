@@ -1580,12 +1580,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthSubjectResolver $subjects, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(Nvl\\Auth\\ValueObjects\\SubjectReference $reference, bool $remember=false): Illuminate\\Contracts\\Auth\\Authenticatable"
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthSubjectResolver $subjects, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function execute(Nvl\\Auth\\ValueObjects\\SubjectReference $reference, bool $remember=false, ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext=null, Nvl\\Auth\\Enums\\AuthenticationPurpose $purpose=Nvl\\Auth\\Enums\\AuthenticationPurpose::PasswordlessLogin): Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\LoginAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Authentication\\LoginAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\PrincipalEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata): mixed",
                     "public function execute(#[SensitiveParameter()] Nvl\\Auth\\Data\\Mutations\\LoginData $data, ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext=null): Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\LogoutAction": [
@@ -1608,15 +1608,20 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $messageType, string $recipient, string $purpose, string $secret): Nvl\\Auth\\Models\\Challenge"
                 ],
+                "Nvl\\Auth\\Actions\\Challenges\\ConsumeChallengeByIdAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Challenges\\ConsumeChallengeByIdAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function execute(Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $messageType, string $challengeId, string $purpose, string $secret): Nvl\\Auth\\Models\\Challenge"
+                ],
                 "Nvl\\Auth\\Actions\\Challenges\\ConsumeMagicLinkAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\ConsumeMagicLinkAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Actions\\Challenges\\ConsumeChallengeAction $challenges): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Actions\\Challenges\\ConsumeChallengeAction $challenges, Nvl\\Auth\\Actions\\Challenges\\ConsumeChallengeByIdAction $directChallenges): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\ConsumeMagicLinkData $data, string $purpose=\"login\"): Nvl\\Auth\\Models\\Challenge"
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\IssueChallengeAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\IssueChallengeAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $messageType, string $recipient, string $purpose, Carbon\\CarbonImmutable $expiresAt, bool $numeric=false, int $digits=6, int $maxAttempts=5, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, array $payload=[], array $metadata=[], ?string $locale=null): Nvl\\Auth\\Results\\IssuedChallenge",
+                    "public function execute(Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $messageType, string $recipient, string $purpose, Carbon\\CarbonImmutable $expiresAt, bool $numeric=false, int $digits=6, int $maxAttempts=5, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, array $payload=[], array $metadata=[], ?string $locale=null, bool $withFallbackCode=false, int $fallbackDigits=6): Nvl\\Auth\\Results\\IssuedChallenge",
                     "@param array<string, mixed> $payload",
                     "@param array<string, mixed> $metadata"
                 ],
@@ -1702,12 +1707,12 @@
                 "Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(Nvl\\Auth\\Data\\Mutations\\StoreInvitationData $data, Illuminate\\Contracts\\Auth\\Authenticatable $actor): Nvl\\Auth\\Results\\IssuedInvitation"
+                    "public function execute(Nvl\\Auth\\Data\\Mutations\\StoreInvitationData $data, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization): mixed",
-                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\SecretHasher $hasher): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData $filters=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, Invitation>"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\PreviewInvitationAction": [
@@ -1715,10 +1720,15 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher): mixed",
                     "public function execute(string $token): Nvl\\Auth\\Models\\Invitation"
                 ],
+                "Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\InvitationSubjectResolver $subjects, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function execute(Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData $data): Nvl\\Auth\\Results\\InvitationRegistrationResult"
+                ],
                 "Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(Nvl\\Auth\\Models\\Invitation $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $locale=null): Nvl\\Auth\\Results\\IssuedInvitation"
+                    "public function execute(Nvl\\Auth\\Models\\Invitation $invitation, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?string $locale=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction",
@@ -1757,12 +1767,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Passwords\\RequestPasswordResetAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passwords\\RequestPasswordResetAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestPasswordResetData $data, ?string $locale=null): void"
                 ],
                 "Nvl\\Auth\\Actions\\Passwords\\ResetPasswordAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passwords\\ResetPasswordAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Contracts\\PasswordUpdater $passwords, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Contracts\\PasswordUpdater $passwords, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility): mixed",
                     "public function execute(#[SensitiveParameter()] Nvl\\Auth\\Data\\Mutations\\ResetPasswordData $data): void"
                 ],
                 "Nvl\\Auth\\Actions\\Passwords\\UpdatePasswordAction": [
@@ -1933,6 +1943,11 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\StoreUserData $data): Nvl\\Auth\\Models\\User"
                 ],
+                "Nvl\\Auth\\Actions\\Users\\DeleteOwnAccountAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Users\\DeleteOwnAccountAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AccountConfirmation $confirmation, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\DeleteOwnAccountData $data): bool"
+                ],
                 "Nvl\\Auth\\Actions\\Users\\DeleteUserAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\DeleteUserAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
@@ -1984,7 +1999,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Users\\UpdateProfileAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\UpdateProfileAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\AccountConfirmation $confirmation, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\UpdateProfileData $data): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\UpdateUserAction": [
@@ -2076,6 +2091,10 @@
                     "protected mixed $description=\"Prune terminal NVL Auth state after its retention window\"",
                     "public function handle(Nvl\\Auth\\Actions\\PruneAuthStateAction $action): int"
                 ],
+                "Nvl\\Auth\\Contracts\\AccountConfirmation": [
+                    "interface Nvl\\Auth\\Contracts\\AccountConfirmation",
+                    "public abstract function assertConfirmed(Illuminate\\Contracts\\Auth\\Authenticatable $subject, #[SensitiveParameter()] string $credential): void"
+                ],
                 "Nvl\\Auth\\Contracts\\ApiTokenAbilityProvider": [
                     "interface Nvl\\Auth\\Contracts\\ApiTokenAbilityProvider",
                     "public abstract function abilities(Illuminate\\Contracts\\Auth\\Authenticatable $subject): array",
@@ -2123,6 +2142,10 @@
                     "interface Nvl\\Auth\\Contracts\\AuthSubjectResolver",
                     "public abstract function resolve(Nvl\\Auth\\ValueObjects\\SubjectReference $reference): ?Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
+                "Nvl\\Auth\\Contracts\\AuthenticationEligibility": [
+                    "interface Nvl\\Auth\\Contracts\\AuthenticationEligibility",
+                    "public abstract function assertEligible(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Enums\\AuthenticationPurpose $purpose): void"
+                ],
                 "Nvl\\Auth\\Contracts\\BrowserSession": [
                     "interface Nvl\\Auth\\Contracts\\BrowserSession",
                     "public abstract function regenerateIdentifier(): void",
@@ -2130,6 +2153,12 @@
                     "public abstract function regenerateCsrfToken(): void",
                     "public abstract function confirmPassword(): bool",
                     "@return bool Whether an active session was available."
+                ],
+                "Nvl\\Auth\\Contracts\\InvitationRegistrationMapper": [
+                    "interface Nvl\\Auth\\Contracts\\InvitationRegistrationMapper",
+                    "public abstract function map(Nvl\\Auth\\Models\\Invitation $invitation, array $validated): array",
+                    "@param array<string, mixed> $validated",
+                    "@return array<string, mixed>"
                 ],
                 "Nvl\\Auth\\Contracts\\InvitationSubjectResolver": [
                     "interface Nvl\\Auth\\Contracts\\InvitationSubjectResolver",
@@ -2196,14 +2225,16 @@
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
                     "final class Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData extends Spatie\\LaravelData\\Data",
                     "public readonly string $token",
-                    "#[Spatie\\LaravelData\\Attributes\\Hidden()]",
-                    "public readonly string $password",
-                    "#[Spatie\\LaravelData\\Attributes\\Hidden()]",
-                    "public readonly string $passwordConfirmation",
                     "public readonly string $name",
+                    "public readonly string $registrationMethod",
+                    "#[Spatie\\LaravelData\\Attributes\\Hidden()]",
+                    "public readonly Spatie\\LaravelData\\Optional|string|null $password",
+                    "#[Spatie\\LaravelData\\Attributes\\Hidden()]",
+                    "public readonly Spatie\\LaravelData\\Optional|string|null $passwordConfirmation",
                     "public readonly ?string $locale",
                     "public readonly ?string $timezone",
-                    "public function __construct(string $token, #[SensitiveParameter()] #[Spatie\\LaravelData\\Attributes\\Hidden()] string $password, #[SensitiveParameter()] #[Spatie\\LaravelData\\Attributes\\Hidden()] string $passwordConfirmation, string $name, ?string $locale=null, ?string $timezone=null): mixed",
+                    "public readonly array $extensions",
+                    "public function __construct(string $token, string $name, string $registrationMethod=\"password\", #[SensitiveParameter()] #[Spatie\\LaravelData\\Attributes\\Hidden()] Spatie\\LaravelData\\Optional|string|null $password=Spatie\\LaravelData\\Optional, #[SensitiveParameter()] #[Spatie\\LaravelData\\Attributes\\Hidden()] Spatie\\LaravelData\\Optional|string|null $passwordConfirmation=Spatie\\LaravelData\\Optional, ?string $locale=null, ?string $timezone=null, array $extensions=[]): mixed",
                     "public function toRegistrationArray(): array",
                     "public static function rules(): array",
                     "public function toArray(): array",
@@ -2323,9 +2354,10 @@
                     "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
                     "final class Nvl\\Auth\\Data\\Mutations\\ConsumeMagicLinkData extends Spatie\\LaravelData\\Data",
-                    "public readonly string $recipient",
+                    "public readonly ?string $recipient",
                     "public readonly string $token",
-                    "public function __construct(string $recipient, string $token): mixed",
+                    "public readonly ?string $challengeId",
+                    "public function __construct(?string $recipient, string $token, ?string $challengeId=null): mixed",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -2355,6 +2387,35 @@
                     "final class Nvl\\Auth\\Data\\Mutations\\ConsumeRecoveryCodeData extends Spatie\\LaravelData\\Data",
                     "public readonly string $code",
                     "public function __construct(string $code): mixed",
+                    "public static function rules(): array",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Auth\\Data\\Mutations\\DeleteOwnAccountData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "final class Nvl\\Auth\\Data\\Mutations\\DeleteOwnAccountData extends Spatie\\LaravelData\\Data",
+                    "#[Spatie\\LaravelData\\Attributes\\Hidden()]",
+                    "public readonly string $currentPassword",
+                    "public function __construct(#[SensitiveParameter()] #[Spatie\\LaravelData\\Attributes\\Hidden()] string $currentPassword): mixed",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -2709,7 +2770,8 @@
                     "public readonly array $permissions",
                     "public readonly array $metadata",
                     "public ?string $locale",
-                    "public function __construct(string $recipient, string $type=\"registration\", string $purpose=\"registration\", array $roles=[], array $permissions=[], array $metadata=[], ?string $locale=null): mixed",
+                    "public readonly ?string $context",
+                    "public function __construct(string $recipient, string $type=\"registration\", string $purpose=\"registration\", array $roles=[], array $permissions=[], array $metadata=[], ?string $locale=null, ?string $context=null): mixed",
                     "@param list<string> $roles",
                     "@param list<string> $permissions",
                     "@param array<string, mixed> $metadata",
@@ -2997,11 +3059,14 @@
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
                     "final class Nvl\\Auth\\Data\\Mutations\\UpdateProfileData extends Spatie\\LaravelData\\Data",
                     "public readonly Spatie\\LaravelData\\Optional|string $name",
+                    "public readonly Spatie\\LaravelData\\Optional|string $email",
                     "public readonly Spatie\\LaravelData\\Optional|string $locale",
                     "public readonly Spatie\\LaravelData\\Optional|string $timezone",
                     "public readonly Spatie\\LaravelData\\Optional|array $profile",
                     "public readonly Spatie\\LaravelData\\Optional|array $preferences",
-                    "public function __construct(Spatie\\LaravelData\\Optional|string $name=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|string $locale=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|string $timezone=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|array $profile=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|array $preferences=Spatie\\LaravelData\\Optional): mixed",
+                    "#[Spatie\\LaravelData\\Attributes\\Hidden()]",
+                    "public readonly Spatie\\LaravelData\\Optional|string $currentPassword",
+                    "public function __construct(Spatie\\LaravelData\\Optional|string $name=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|string $email=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|string $locale=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|string $timezone=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|array $profile=Spatie\\LaravelData\\Optional, Spatie\\LaravelData\\Optional|array $preferences=Spatie\\LaravelData\\Optional, #[SensitiveParameter()] #[Spatie\\LaravelData\\Attributes\\Hidden()] Spatie\\LaravelData\\Optional|string $currentPassword=Spatie\\LaravelData\\Optional): mixed",
                     "@param array<string, mixed>|Optional $profile",
                     "@param array<string, mixed>|Optional $preferences",
                     "public static function rules(): array",
@@ -3174,6 +3239,42 @@
                     "final class Nvl\\Auth\\Data\\Mutations\\VerifyTotpData extends Spatie\\LaravelData\\Data",
                     "public readonly string $code",
                     "public function __construct(string $code): mixed",
+                    "public static function rules(): array",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData extends Spatie\\LaravelData\\Data",
+                    "public readonly ?string $recipient",
+                    "public readonly ?string $type",
+                    "public readonly ?string $purpose",
+                    "public readonly ?string $lifecycle",
+                    "public readonly ?string $expiresAfter",
+                    "public readonly ?string $expiresBefore",
+                    "public readonly ?string $context",
+                    "public readonly ?int $perPage",
+                    "public function __construct(?string $recipient=null, ?string $type=null, ?string $purpose=null, ?string $lifecycle=null, ?string $expiresAfter=null, ?string $expiresBefore=null, ?string $context=null, ?int $perPage=null): mixed",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -3428,6 +3529,18 @@
                     "public const mixed SecurityCode=Nvl\\Auth\\Enums\\AuthMessageType::SecurityCode=security_code",
                     "public const mixed PasswordReset=Nvl\\Auth\\Enums\\AuthMessageType::PasswordReset=password_reset",
                     "public const mixed EmailVerification=Nvl\\Auth\\Enums\\AuthMessageType::EmailVerification=email_verification",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Auth\\Enums\\AuthenticationPurpose": [
+                    "enum Nvl\\Auth\\Enums\\AuthenticationPurpose implements BackedEnum, UnitEnum: string",
+                    "public const mixed CredentialLogin=Nvl\\Auth\\Enums\\AuthenticationPurpose::CredentialLogin=credential_login",
+                    "public const mixed PasswordlessLogin=Nvl\\Auth\\Enums\\AuthenticationPurpose::PasswordlessLogin=passwordless_login",
+                    "public const mixed SocialLogin=Nvl\\Auth\\Enums\\AuthenticationPurpose::SocialLogin=social_login",
+                    "public const mixed PasswordReset=Nvl\\Auth\\Enums\\AuthenticationPurpose::PasswordReset=password_reset",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -3700,7 +3813,8 @@
                 "Nvl\\Auth\\Http\\Controllers\\Account\\ProfileController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Account\\ProfileController extends Nvl\\Auth\\Http\\Controllers\\Account\\AuthenticatedController",
                     "public function show(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Users\\ShowProfileAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function update(Nvl\\Auth\\Data\\Mutations\\UpdateProfileData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Users\\UpdateProfileAction $action): Illuminate\\Http\\JsonResponse"
+                    "public function update(Nvl\\Auth\\Data\\Mutations\\UpdateProfileData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Users\\UpdateProfileAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function destroy(Nvl\\Auth\\Data\\Mutations\\DeleteOwnAccountData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Users\\DeleteOwnAccountAction $action): Illuminate\\Http\\JsonResponse"
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Account\\RecoveryCodeController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Account\\RecoveryCodeController extends Nvl\\Auth\\Http\\Controllers\\Account\\AuthenticatedController",
@@ -3750,7 +3864,7 @@
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Management\\InvitationController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Management\\InvitationController extends Nvl\\Auth\\Http\\Controllers\\Account\\AuthenticatedController",
-                    "public function index(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function index(Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction $action): Illuminate\\Http\\JsonResponse",
                     "public function store(Nvl\\Auth\\Data\\Mutations\\StoreInvitationData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction $action): Illuminate\\Http\\JsonResponse",
                     "public function resend(Illuminate\\Http\\Request $request, Nvl\\Auth\\Models\\Invitation $invitation, Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction $action): Illuminate\\Http\\JsonResponse",
                     "public function destroy(Illuminate\\Http\\Request $request, Nvl\\Auth\\Models\\Invitation $invitation, Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction $action): Illuminate\\Http\\JsonResponse"
@@ -3811,7 +3925,7 @@
                 "Nvl\\Auth\\Http\\Controllers\\Public\\ChallengeController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\ChallengeController",
                     "public function requestMagicLink(Nvl\\Auth\\Data\\Mutations\\RequestMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function consumeMagicLink(Nvl\\Auth\\Data\\Mutations\\ConsumeMagicLinkData $data, Nvl\\Auth\\Actions\\Challenges\\ConsumeMagicLinkAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse",
+                    "public function consumeMagicLink(Nvl\\Auth\\Data\\Mutations\\ConsumeMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\ConsumeMagicLinkAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse",
                     "public function requestSecurityCode(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction $action): Illuminate\\Http\\JsonResponse",
                     "public function verifySecurityCode(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data, Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction $action): Illuminate\\Http\\JsonResponse",
                     "protected function requestPayload(Illuminate\\Http\\Request $request): array",
@@ -3845,7 +3959,7 @@
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Public\\InvitationController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\InvitationController",
-                    "public function accept(Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData $data, Nvl\\Auth\\Actions\\Invitations\\PreviewInvitationAction $preview, Nvl\\Auth\\Contracts\\InvitationSubjectResolver $subjects, Nvl\\Auth\\Actions\\Invitations\\AcceptInvitationAction $accept): Illuminate\\Http\\JsonResponse",
+                    "public function accept(Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData $data, Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction $register): Illuminate\\Http\\JsonResponse",
                     "protected function requestPayload(Illuminate\\Http\\Request $request): array",
                     "@return array<string, mixed>",
                     "protected function stringInput(Illuminate\\Http\\Request $request, string $key): string",
@@ -3860,7 +3974,7 @@
                 "Nvl\\Auth\\Http\\Controllers\\Public\\PasskeyController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\PasskeyController",
                     "public function begin(Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function finish(Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData $data, Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyAuthenticationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse",
+                    "public function finish(Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyAuthenticationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse",
                     "protected function requestPayload(Illuminate\\Http\\Request $request): array",
                     "@return array<string, mixed>",
                     "protected function stringInput(Illuminate\\Http\\Request $request, string $key): string",
@@ -3890,7 +4004,7 @@
                 "Nvl\\Auth\\Http\\Controllers\\Public\\SocialIdentityController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\SocialIdentityController",
                     "public function redirect(string $provider, Nvl\\Auth\\Actions\\SocialIdentities\\StartSocialAuthorizationAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function callback(string $provider, Nvl\\Auth\\Actions\\SocialIdentities\\CompleteSocialAuthorizationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse"
+                    "public function callback(string $provider, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\SocialIdentities\\CompleteSocialAuthorizationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse"
                 ],
                 "Nvl\\Auth\\Http\\Middleware\\ApplyAuthSecurityHeaders": [
                     "final class Nvl\\Auth\\Http\\Middleware\\ApplyAuthSecurityHeaders",
@@ -4065,6 +4179,7 @@
                     "@property string|null $subject_id",
                     "@property string|null $recipient_hash",
                     "@property string $secret_hash",
+                    "@property string|null $secondary_secret_hash",
                     "@property string|null $active_key",
                     "@property array<string, mixed>|null $payload",
                     "@property int $attempts",
@@ -4074,8 +4189,8 @@
                     "@property CarbonImmutable|null $revoked_at",
                     "public const mixed TABLE=\"nvl_auth_challenges\"",
                     "protected mixed $table=\"nvl_auth_challenges\"",
-                    "protected mixed $fillable=[\"type\",\"purpose\",\"subject_type\",\"subject_id\",\"recipient_hash\",\"secret_hash\",\"active_key\",\"payload\",\"attempts\",\"max_attempts\",\"expires_at\",\"consumed_at\",\"revoked_at\"]",
-                    "protected mixed $hidden=[\"recipient_hash\",\"secret_hash\",\"active_key\",\"payload\"]",
+                    "protected mixed $fillable=[\"type\",\"purpose\",\"subject_type\",\"subject_id\",\"recipient_hash\",\"secret_hash\",\"secondary_secret_hash\",\"active_key\",\"payload\",\"attempts\",\"max_attempts\",\"expires_at\",\"consumed_at\",\"revoked_at\"]",
+                    "protected mixed $hidden=[\"recipient_hash\",\"secret_hash\",\"secondary_secret_hash\",\"active_key\",\"payload\"]",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function isUsable(): bool",
@@ -4095,6 +4210,7 @@
                     "@property string|null $active_key",
                     "@property string $recipient",
                     "@property string $recipient_hash",
+                    "@property string|null $context_hash",
                     "@property string $type",
                     "@property string $purpose",
                     "@property string|null $inviter_type",
@@ -4111,8 +4227,8 @@
                     "@property CarbonImmutable|null $revoked_at",
                     "public const mixed TABLE=\"nvl_auth_invitations\"",
                     "protected mixed $table=\"nvl_auth_invitations\"",
-                    "protected mixed $fillable=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"type\",\"purpose\",\"inviter_type\",\"inviter_id\",\"accepted_by_type\",\"accepted_by_id\",\"roles\",\"permissions\",\"metadata\",\"resend_count\",\"last_sent_at\",\"expires_at\",\"accepted_at\",\"revoked_at\"]",
-                    "protected mixed $hidden=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\"]",
+                    "protected mixed $fillable=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\",\"type\",\"purpose\",\"inviter_type\",\"inviter_id\",\"accepted_by_type\",\"accepted_by_id\",\"roles\",\"permissions\",\"metadata\",\"resend_count\",\"last_sent_at\",\"expires_at\",\"accepted_at\",\"revoked_at\"]",
+                    "protected mixed $hidden=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\"]",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function isUsable(): bool",
@@ -4700,6 +4816,12 @@
                     "public function __debugInfo(): array",
                     "@return array{batch_id: string, code_count: int}"
                 ],
+                "Nvl\\Auth\\Results\\InvitationRegistrationResult": [
+                    "final readonly class Nvl\\Auth\\Results\\InvitationRegistrationResult",
+                    "public readonly Nvl\\Auth\\Models\\Invitation $invitation",
+                    "public readonly Illuminate\\Contracts\\Auth\\Authenticatable $subject",
+                    "public function __construct(Nvl\\Auth\\Models\\Invitation $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $subject): mixed"
+                ],
                 "Nvl\\Auth\\Results\\IssuedApiToken": [
                     "final readonly class Nvl\\Auth\\Results\\IssuedApiToken",
                     "public readonly Nvl\\Auth\\ValueObjects\\ApiTokenSnapshot $token",
@@ -4712,9 +4834,10 @@
                     "final readonly class Nvl\\Auth\\Results\\IssuedChallenge",
                     "public readonly Nvl\\Auth\\Models\\Challenge $challenge",
                     "public readonly string $secret",
-                    "public function __construct(Nvl\\Auth\\Models\\Challenge $challenge, string $secret): mixed",
+                    "public readonly ?string $fallbackCode",
+                    "public function __construct(Nvl\\Auth\\Models\\Challenge $challenge, string $secret, ?string $fallbackCode=null): mixed",
                     "public function __debugInfo(): array",
-                    "@return array{challenge_id: string, secret: string}"
+                    "@return array{challenge_id: string, secret: string, fallback_code: string|null}"
                 ],
                 "Nvl\\Auth\\Results\\IssuedInvitation": [
                     "final readonly class Nvl\\Auth\\Results\\IssuedInvitation",
@@ -4835,9 +4958,14 @@
                     "final class Nvl\\Auth\\Services\\OpaqueTokenFactory",
                     "public function make(): string"
                 ],
+                "Nvl\\Auth\\Services\\PackageInvitationRegistrationMapper": [
+                    "final readonly class Nvl\\Auth\\Services\\PackageInvitationRegistrationMapper implements Nvl\\Auth\\Contracts\\InvitationRegistrationMapper",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
+                    "public function map(Nvl\\Auth\\Models\\Invitation $invitation, array $validated): array"
+                ],
                 "Nvl\\Auth\\Services\\PackageInvitationSubjectResolver": [
                     "final readonly class Nvl\\Auth\\Services\\PackageInvitationSubjectResolver implements Nvl\\Auth\\Contracts\\InvitationSubjectResolver",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Contracts\\InvitationRegistrationMapper $registration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function resolve(Nvl\\Auth\\Models\\Invitation $invitation, array $input): Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Services\\PackagePermissionCatalog": [
@@ -4856,6 +4984,11 @@
                     "@param array<string, mixed> $response",
                     "public function validateName(?string $name): void"
                 ],
+                "Nvl\\Auth\\Services\\PasswordAccountConfirmation": [
+                    "final readonly class Nvl\\Auth\\Services\\PasswordAccountConfirmation implements Nvl\\Auth\\Contracts\\AccountConfirmation",
+                    "public function __construct(Illuminate\\Contracts\\Hashing\\Hasher $hasher): mixed",
+                    "public function assertConfirmed(Illuminate\\Contracts\\Auth\\Authenticatable $subject, #[SensitiveParameter()] string $credential): void"
+                ],
                 "Nvl\\Auth\\Services\\PermissionCatalogRegistry": [
                     "final readonly class Nvl\\Auth\\Services\\PermissionCatalogRegistry",
                     "public function __construct(iterable $providers): mixed",
@@ -4869,8 +5002,8 @@
                     "@param array<array-key, mixed> $manifest"
                 ],
                 "Nvl\\Auth\\Services\\PrincipalEligibility": [
-                    "final class Nvl\\Auth\\Services\\PrincipalEligibility",
-                    "public function assertAuthenticationAllowed(Illuminate\\Contracts\\Auth\\Authenticatable $subject): void"
+                    "final class Nvl\\Auth\\Services\\PrincipalEligibility implements Nvl\\Auth\\Contracts\\AuthenticationEligibility",
+                    "public function assertEligible(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Enums\\AuthenticationPurpose $purpose): void"
                 ],
                 "Nvl\\Auth\\Services\\RbacEntityLocator": [
                     "final readonly class Nvl\\Auth\\Services\\RbacEntityLocator",
@@ -5008,7 +5141,9 @@
                     "public readonly ?string $name",
                     "public readonly ?string $avatar",
                     "public readonly array $profile",
-                    "public function __construct(string $provider, string $providerUserId, ?string $email=null, ?string $name=null, ?string $avatar=null, array $profile=[]): mixed",
+                    "public readonly bool $emailVerified",
+                    "public readonly ?string $emailVerificationSource",
+                    "public function __construct(string $provider, string $providerUserId, ?string $email=null, ?string $name=null, ?string $avatar=null, array $profile=[], bool $emailVerified=false, ?string $emailVerificationSource=null): mixed",
                     "@param array<string, mixed> $profile"
                 ],
                 "Nvl\\Auth\\ValueObjects\\FeatureDefinition": [
@@ -5030,6 +5165,13 @@
                     "public function supports(Nvl\\Auth\\Enums\\FeatureOperation $operation): bool",
                     "public function dependenciesForSurface(string $surface): array",
                     "@return list<AuthFeature>"
+                ],
+                "Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext",
+                    "public readonly bool $actorlessAuthorized",
+                    "public readonly ?Carbon\\CarbonImmutable $expiresAt",
+                    "public readonly ?string $returnPath",
+                    "public function __construct(bool $actorlessAuthorized=false, ?Carbon\\CarbonImmutable $expiresAt=null, ?string $returnPath=null): mixed"
                 ],
                 "Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping",
@@ -5124,7 +5266,7 @@
                 ]
             },
             "configuration": {
-                "config/nvl-auth.php": "d0f48162ac41271fc263c39e5782369e72f118590d7c27deba4caa10636a108a"
+                "config/nvl-auth.php": "ac0be8f26afa3266cebb1b070099ce67b07f74fe64bdbb8b8fec32e7768ffece"
             },
             "routes": {
                 "routes/account/api_tokens.php": "87625e4b2170c152d7d47882b8023bd652474efdfa2c82bf1ec5ed8eac35e81e",
@@ -5132,7 +5274,7 @@
                 "routes/account/email_verification.php": "329a90c176e3e40e696d716f7f76e8ef34da213650bf46fb2c2334a91688c7e7",
                 "routes/account/passkeys.php": "fdf093a4b435c17787cf7add74907c5c5a269a538ee48954b8a7a395c83a6ef8",
                 "routes/account/passwords.php": "e07d2d23d152604aff0865bd9a36c61a6ebc399a589061d6ee7b23c6346dc091",
-                "routes/account/profile.php": "8db3419b1b117d414af028d27403c5eafbc23847eded63b3f7bd0bb9b1bcb83b",
+                "routes/account/profile.php": "50894ac2f29452a5114fa533a9cfd8a55e9015abbefafbe81e4492f6edde757b",
                 "routes/account/recovery_codes.php": "9ec2b336a0844500ff785d9471dc0b07720e703620f0d5fcd7568de9514bd96e",
                 "routes/account/social_identities.php": "be337186dae437c980403161df15258d744be4f2cf4096d1792e730d4354a8ea",
                 "routes/account/totp.php": "575321542f2b99964d678e0af2febc1457d87d30e62b4e133f113499ea5ff679",
@@ -5153,7 +5295,8 @@
             },
             "migrations": {
                 "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "04dae50fb16b0c115b1aa06adfb067adaf2b5975c082478e02dc3a19ac82980d",
-                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "e0dead6ceb3264ed45fbdaa4c39db458100f0a66b06d93ef36c5ea5e3390fb08"
+                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "e96e1ebba09f466c0aa4ec4936c1e28040fb58c7fd0630eefa214964efb4fb25",
+                "database/migrations/2026_08_10_000000_add_auth_onboarding_indexes.php": "546424cc562b5577c5edc2a40fc38fd81122e8b4be2b600e5cc6a297c651ddb2"
             }
         },
         "comments": {

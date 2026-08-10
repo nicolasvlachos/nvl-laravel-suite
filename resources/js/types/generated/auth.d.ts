@@ -7,11 +7,13 @@ namespace Data {
 namespace Mutations {
 export type AcceptInvitationData = {
 token: string,
-password: string,
-passwordConfirmation: string,
 name: string,
+registrationMethod: string,
+password?: string | null,
+passwordConfirmation?: string | null,
 locale: string | null,
 timezone: string | null,
+extensions: Record<string, any>,
 };
 export type ApiTokenData = {
 name: string,
@@ -25,11 +27,15 @@ export type ConfirmTotpEnrollmentData = {
 code: string,
 };
 export type ConsumeMagicLinkData = {
-recipient: string,
+recipient: string | null,
 token: string,
+challengeId: string | null,
 };
 export type ConsumeRecoveryCodeData = {
 code: string,
+};
+export type DeleteOwnAccountData = {
+currentPassword: string,
 };
 export type FinishPasskeyAuthenticationData = {
 ceremonyId: string,
@@ -90,6 +96,7 @@ roles: string[],
 permissions: string[],
 metadata: Record<string, any>,
 locale: string | null,
+context: string | null,
 };
 export type StorePermissionData = {
 name: string,
@@ -150,10 +157,12 @@ metadata: Record<string, any>,
 };
 export type UpdateProfileData = {
 name?: string,
+email?: string,
 locale?: string,
 timezone?: string,
 profile?: Record<string, any>,
 preferences?: Record<string, any>,
+currentPassword?: string,
 };
 export type UpdateRoleData = {
 name: string,
@@ -188,6 +197,16 @@ code: string,
 };
 }
 namespace Queries {
+export type InvitationIndexQueryData = {
+recipient: string | null,
+type: string | null,
+purpose: string | null,
+lifecycle: string | null,
+expiresAfter: string | null,
+expiresBefore: string | null,
+context: string | null,
+perPage: number | null,
+};
 export type PermissionIndexQueryData = {
 search: string | null,
 group: string | null,
@@ -213,6 +232,7 @@ limit: number | null,
 namespace Enums {
 export type AuthFeature = 'authentication' | 'principal_management' | 'password' | 'email_verification' | 'magic_links' | 'security_codes' | 'invitations' | 'totp' | 'passkeys' | 'recovery_codes' | 'social_identities' | 'clients' | 'sessions' | 'api_tokens' | 'rbac' | 'audit';
 export type AuthMessageType = 'invitation' | 'magic_link' | 'security_code' | 'password_reset' | 'email_verification';
+export type AuthenticationPurpose = 'credential_login' | 'passwordless_login' | 'social_login' | 'password_reset';
 export type FeatureOperation = 'read' | 'enroll' | 'issue' | 'use' | 'update' | 'revoke' | 'cleanup';
 export type PrincipalAttribute = 'id' | 'name' | 'email' | 'email_verified_at' | 'password' | 'active' | 'locale' | 'timezone' | 'profile' | 'preferences' | 'last_login_at' | 'last_login_ip' | 'locked_until' | 'remember_token' | 'created_at' | 'updated_at' | 'deleted_at';
 export type UserBulkOperation = 'enable' | 'disable' | 'delete' | 'restore';
