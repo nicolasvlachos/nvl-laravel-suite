@@ -26,12 +26,12 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Finished | `bca980b` |
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Finished | `40c4816` |
 | G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Finished | `df6c7a6`, `5b353be` |
-| G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Finished | `14be433` |
+| G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Finished | `14be433`, `12c6d0d` |
 | G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Finished | `c2a85e4` |
-| G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
+| G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Finished | `779bd07` |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **10**.
+Total open issues: **3**.
 
 ## Consumer adoption evidence
 
@@ -362,7 +362,8 @@ Total open issues: **10**.
 ### G07 — Authentication and onboarding security
 
 - Status: **Finished**
-- Implementation commit: `14be433`
+- Implementation commits: `14be433`, `12c6d0d`
+- Follow-up consolidation: the onboarding indexes introduced by G07 now live only in Auth's canonical baseline migrations; the redundant corrective migration and its release artifact entry were removed in `12c6d0d`.
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `fix(auth): …`
 
@@ -595,11 +596,12 @@ Total open issues: **10**.
 
 ### G09 — Media storage, delivery, mutation, and adoption
 
-- Status: not started
+- Status: **Finished**
+- Implementation commit: `779bd07`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `fix(media): …`
 
-#### [ ] G09-01 — Media storage hash is incorrectly globally unique
+#### [x] G09-01 — Media storage hash is incorrectly globally unique
 
 - Area: `2024_02_01_000001_create_media_table.php`
 - Impact: high
@@ -607,8 +609,11 @@ Total open issues: **10**.
 - Consumer risk: an in-place adoption must either discard valid rows, rename hashes and break existing object paths, copy large binaries solely to satisfy a database constraint, or diverge from the published migration.
 - Expected package change: make storage identity unique on the actual path boundary, such as `(disk, folder, hash)`, or leave `hash` normally indexed and rely on the existing digest/disk/visibility deduplication constraints.
 - Current workaround: fresh installations use the unmodified vendor migration. KPO's already-adopted database preserves its legacy duplicate paths; the staged bridge now fails explicitly if a not-yet-adopted database contains duplicate hashes instead of silently discarding rows or rewriting object paths. This requires an upstream constraint fix before another duplicate-bearing installation can cut over safely.
+- Resolution: The canonical Media migration now keeps `hash` normally indexed without treating it as a global identity. Distinct folders can preserve the same physical filename while the package's existing path and digest contracts continue to govern storage and deduplication.
+- Resolving implementation commit: `779bd07`
+- Release target: `1.0.2`
 
-#### [ ] G09-02 — Generated binary uploads have no binary-safe package entry point
+#### [x] G09-02 — Generated binary uploads have no binary-safe package entry point
 
 - Area: Media upload actions and `addMediaFromString`
 - Impact: medium
@@ -616,8 +621,11 @@ Total open issues: **10**.
 - Consumer risk: report/template consumers must either bypass package validation or independently reproduce temporary-file adaptation just to enter the canonical upload pipeline.
 - Expected package change: expose a binary-content upload method that accepts a filename and safely detects/validates MIME from the bytes, or a package-owned temporary-upload adapter.
 - Current workaround: KPO's `GeneratedMediaUploader` materializes bytes into a test `UploadedFile` and delegates all validation, storage, associations, and metadata to the package upload pipeline.
+- Resolution: `fromBinary()` now provides a bounded binary-safe entry point across models, the Media library, contract, and facade. It detects MIME from the bytes, validates the requested filename and allowed MIME types, owns temporary-file cleanup, and delegates persistence to the canonical upload pipeline.
+- Resolving implementation commit: `779bd07`
+- Release target: `1.0.2`
 
-#### [ ] G09-03 — Media lacks a reusable single-record cross-disk relocation action
+#### [x] G09-03 — Media lacks a reusable single-record cross-disk relocation action
 
 - Area: Media mutation actions
 - Impact: medium
@@ -625,8 +633,11 @@ Total open issues: **10**.
 - Consumer risk: workflows that promote one generated private artifact to a public or durable disk must reconstruct package transaction and file-effect semantics.
 - Expected package change: expose a public single-media relocation action with optimistic locking and the same integrity/cleanup guarantees as package bulk operations.
 - Current workaround: KPO's `MediaDiskRelocator` composes package locks, gateways, existence checks, file operators, and file-effect scheduling without owning media persistence.
+- Resolution: `RelocateMediaAction` and the public `relocate()` API now lock one record, enforce its expected revision, copy and verify the original plus every variation, atomically swap disk/visibility/revision state, delete sources after commit, and remove only newly staged targets after failure.
+- Resolving implementation commit: `779bd07`
+- Release target: `1.0.2`
 
-#### [ ] G09-04 — Media has no nullable existence-safe URL projection
+#### [x] G09-04 — Media has no nullable existence-safe URL projection
 
 - Area: `MediaUrlResolver` and display/presenter API
 - Impact: medium
@@ -634,8 +645,11 @@ Total open issues: **10**.
 - Consumer risk: each host repeats existence checks and can accidentally expose a URL for a missing object.
 - Expected package change: expose an existence-aware nullable URL helper or presenter that composes `MediaFileExistence` and `MediaUrlResolver`.
 - Current workaround: KPO's `ExistingMediaUrlResolver` is a thin package-service composition and contains no local storage logic.
+- Resolution: `MediaUrlResolver::forExistingMedia()` and the public `urlIfExists()` API return `null` for a null record or missing canonical object and otherwise preserve the package's normal delivery URL behavior.
+- Resolving implementation commit: `779bd07`
+- Release target: `1.0.2`
 
-#### [ ] G09-05 — Separate PUT and PATCH Media routes collide in Wayfinder generation
+#### [x] G09-05 — Separate PUT and PATCH Media routes collide in Wayfinder generation
 
 - Area: Media API route registration
 - Impact: medium
@@ -643,8 +657,11 @@ Total open issues: **10**.
 - Consumer risk: enabling the package API can break frontend route generation even though Laravel accepts the routes.
 - Expected package change: register the verbs through one `Route::match(['put', 'patch'], ...)` definition or give each generated route a distinct export contract.
 - Current workaround: KPO keeps package API registration disabled and mounts the package controllers through host routes, using one consolidated update route.
+- Resolution: Media now registers PUT and PATCH through one named `Route::match()` definition, retaining both HTTP verbs while presenting one stable route declaration to Wayfinder.
+- Resolving implementation commit: `779bd07`
+- Release target: `1.0.2`
 
-#### [ ] G09-06 — Media adoption has no first-party Spatie-to-association bridge
+#### [x] G09-06 — Media adoption has no first-party Spatie-to-association bridge
 
 - Area: Media installation, migration, and command surface
 - Impact: high
@@ -652,8 +669,11 @@ Total open issues: **10**.
 - Consumer risk: consumers can enable the package models against an apparently familiar `px_media` table while its physical schema and ownership semantics are incompatible.
 - Expected package change: ship a dry-run import/adoption command or documented bridge API that maps legacy media, associations, translations, variations, uploader morphs, lifecycle state, counts, and backing-file paths with pre/post row reconciliation.
 - Current workaround: KPO uses a one-time application bridge, count assertions, canonical package tables, and the package doctors; the bridge is removed from runtime ownership after migration.
+- Resolution: `nvl:media:adopt-spatie` is a non-destructive, dry-run-first adoption workflow that maps staged Spatie-style media, associations, translations, variations, uploader morphs, lifecycle fields, visibility, and metadata. It validates every backing path, refuses unsafe apply runs, uses deterministic identities for idempotency, and reconciles all target counts before commit without deleting the source.
+- Resolving implementation commit: `779bd07`
+- Release target: `1.0.2`
 
-#### [ ] G09-07 — Media root-folder default silently changes adopted object paths
+#### [x] G09-07 — Media root-folder default silently changes adopted object paths
 
 - Area: `media.root_folder` adoption guidance
 - Impact: high
@@ -661,6 +681,9 @@ Total open issues: **10**.
 - Consumer risk: database adoption can succeed while all existing media appears missing.
 - Expected package change: make Doctor compare representative persisted paths to storage, and document that existing complete folders require an empty root or an explicit physical move through the disk migration command.
 - Current workaround: KPO uses an empty package root during in-place adoption so existing `folder/hash` paths remain unchanged.
+- Resolution: Media Doctor now checks a bounded sample of persisted canonical paths directly against storage and reports root drift without crashing on incompatible schemas. Adoption guidance explicitly requires an empty root for already-complete folders or a physical move through the disk migration workflow.
+- Resolving implementation commit: `779bd07`
+- Release target: `1.0.2`
 
 ### G10 — Activity adoption, compatibility, and retention safety
 
