@@ -30,8 +30,16 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Finished | `c2a85e4` |
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Finished | `779bd07` |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Finished | `d6c4f0e` |
+| G11 | Cross-suite consumer-readiness audit and enforcement | 1 | `feat(suite): …` | In progress | Pending |
+| G12 | Application-level API boundaries | 1 | `feat(suite): …` | In progress | Pending |
+| G13 | Eager-loading, query budgets, and cache policy | 1 | `test(<package>): …` | In progress | Pending |
+| G14 | Media lifecycle ownership | 1 | `feat(suite): …` | In progress | Pending |
+| G15 | Translation determinism | 1 | `feat(suite): …` | In progress | Pending |
+| G16 | Content, Metafields, and Translatable boundaries | 1 | `feat(suite): …` | In progress | Pending |
+| G17 | Capability-based presets | 1 | `feat(suite): …` | In progress | Pending |
+| G18 | Adoption, upgrades, and diagnostics | 1 | `feat(suite): …` | In progress | Pending |
 
-Total open issues: **0**.
+Total open issues: **8**.
 
 ## Consumer adoption evidence
 
@@ -726,6 +734,134 @@ Total open issues: **0**.
 - Current workaround: KPO records the package semantics in tests and limits purge access to its verified admin scope. The package should own the retention fix rather than KPO reintroducing a parallel purge implementation.
 - Resolution: all general, system-only, API, CLI, and scheduled purge paths now exclude important activity by default. Explicit `include_important=true` or `--include-important` opt-in propagates through immutable criteria, queued DTOs, events, criteria summaries, and job logs, while Doctor and the operating guidance state the effective protection policy.
 - Resolving implementation commit: `d6c4f0e`
+- Release target: `1.0.2`
+
+### G11 — Cross-suite consumer-readiness audit and enforcement
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `feat(suite): …`
+
+#### [~] G11-01 — The seven consumer recommendations have no complete enforceable package catalog
+
+- Area: suite package-family contracts and consumer documentation
+- Impact: high
+- Finding: the package family has strong package-local behavior but no authoritative 20-package matrix proving the seven consumer recommendations, resolving unsupported claims, or rejecting evidence drift.
+- Expected package change: add a machine-readable catalog, rendered matrix, structural Contract test, and G12–G18 remediation evidence. Close only when every classification is Pass or justified N/A and all downstream findings are finished.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
+- Release target: `1.0.2`
+
+### G12 — Application-level API boundaries
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `feat(suite): …`
+
+#### [~] G12-01 — Canonical application APIs and direct-model exceptions are not enforced across the family
+
+- Area: public Actions, services, facades, contracts, traits, and consumer examples
+- Impact: high
+- Finding: consumers cannot mechanically distinguish canonical package entry points from persistence internals, and the intentional Filterable/Translatable trait-query exceptions are not centrally allowlisted.
+- Expected package change: catalog an autoloadable bounded API for every package, reject unreasoned direct-model access, retain documented 1.x compatibility, and avoid a global suite facade.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
+- Release target: `1.0.2`
+
+### G13 — Eager-loading, query budgets, and cache policy
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `test(<package>): …`
+
+#### [~] G13-01 — Normalized read and cache claims lack uniform fixture-size-independent evidence
+
+- Area: package read Actions/services, serialization, query budgets, and caches
+- Impact: high
+- Finding: several packages prove eager loading or bounded pagination without comparing small and populated fixtures, and the suite has no complete cache owner/key/TTL/invalidation/isolation/stampede or uncached rationale catalog.
+- Expected package change: prove one-versus-25 query-count independence with explicit SQLite ceilings, retain the PostgreSQL gate, and document every cached or deliberately uncached read surface without adding speculative caches.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
+- Release target: `1.0.2`
+
+### G14 — Media lifecycle ownership
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `feat(suite): …`
+
+#### [~] G14-01 — Media lifecycle guarantees are implemented but not enforced as a cross-suite consumer contract
+
+- Area: Media lifecycle plus Content, Templates, and Comments integration
+- Impact: high
+- Finding: detach/delete, shared assets, owner deletion, transactional file effects, variations, tombstones, and orphan reconciliation are package-tested, but no family contract requires consumers to reach them only through Media APIs.
+- Expected package change: catalog the lifecycle evidence, enforce Media API ownership for integrating packages, and keep reconciliation dry-run-first, age-bounded, and force-confirmed in production.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
+- Release target: `1.0.2`
+
+### G15 — Translation determinism
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `feat(suite): …`
+
+#### [~] G15-01 — Locale fallback guarantees are not classified for every integrating package
+
+- Area: Translatable fallback and domain package integrations
+- Impact: high
+- Finding: exact/configured/parent/default/lexical fallback, falsey values, provenance, scoped locale state, eager loading, and self-row grouping are tested locally but not required as one deterministic consumer contract.
+- Expected package change: catalog applicability and evidence for Translatable and every localized integration while preserving domain-owned mutation Actions.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
+- Release target: `1.0.2`
+
+### G16 — Content, Metafields, and Translatable boundaries
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `feat(suite): …`
+
+#### [~] G16-01 — Ownership prose lacks a family-level foreign-table-write guard
+
+- Area: Content, Metafields, Translatable, Translations, and integrating packages
+- Impact: high
+- Finding: package docs describe ownership, but the suite does not reject a package raw-writing another package's known table.
+- Expected package change: define the ownership matrix, retain domain Actions around Translatable, and add a fast architecture contract rejecting literal raw writes to foreign package tables.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
+- Release target: `1.0.2`
+
+### G17 — Capability-based presets
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `feat(suite): …`
+
+#### [~] G17-01 — Preset requirements and N/A decisions are not enforced across all packages
+
+- Area: Content semantic fields, Media variations, and package configuration vocabulary
+- Impact: medium
+- Finding: Content and Media provide extensible built-ins, but the suite does not prevent unsupported claims that every package should invent domain presets.
+- Expected package change: require Content and Media built-ins through the same validation path as extensions and classify all other packages N/A with a domain rationale.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
+- Release target: `1.0.2`
+
+### G18 — Adoption, upgrades, and diagnostics
+
+- Status: **In progress**
+- Implementation commit: Pending
+- Commit subject prefix: `feat(suite): …`
+
+#### [~] G18-01 — Operational readiness is not proven for every stateful package
+
+- Area: migrations, adoption, reconciliation, upgrades, and Doctor commands
+- Impact: high
+- Finding: every stateful package has package-local guidance, but no family contract verifies migration ownership, collision/rollback policy, adoption classification, upgrade evidence, and an autoloadable Doctor command.
+- Expected package change: enforce operational evidence for every stateful package, explicit N/A for stateless packages, first-party adoption for supported common formats, and fail-closed application-owned bridges otherwise.
+- Resolution: In progress.
+- Resolving implementation commit: Pending
 - Release target: `1.0.2`
 
 ## Resolved
