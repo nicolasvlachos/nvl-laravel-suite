@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Nvl\Forms\Actions\Form\SearchFormsAction;
 use Nvl\Forms\Models\Form;
 
@@ -33,4 +34,45 @@ test('search forms action can eager load relations safely', function (): void {
 
     expect($result->forms->first()->relationLoaded('entries'))->toBeTrue()
         ->and($result->total)->toBe(1);
+});
+
+test('search projections keep a constant query count as forms grow', function (): void {
+    $create = static function (int $index): void {
+        $form = Form::factory()->create(['name' => "Query Form {$index}"]);
+        $form->entries()->create([
+            'subject' => "Entry {$index}",
+            'submitted_from' => 'example.com',
+        ]);
+    };
+    $measure = static function (): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $result = app(SearchFormsAction::class)->execute([
+            'with' => ['entries'],
+            'limit' => 30,
+        ]);
+        $queryCount = count(DB::getQueryLog());
+
+        foreach ($result->forms as $form) {
+            $form->entries->count();
+        }
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount);
+        DB::disableQueryLog();
+
+        return $queryCount;
+    };
+
+    $create(1);
+    $singleQueryCount = $measure();
+
+    foreach (range(2, 25) as $index) {
+        $create($index);
+    }
+
+    $populatedQueryCount = $measure();
+
+    expect($singleQueryCount)->toBeLessThanOrEqual(4)
+        ->and($populatedQueryCount)->toBe($singleQueryCount);
 });
