@@ -1522,11 +1522,20 @@
                 "auth-skills"
             ],
             "commands": {
+                "Nvl\\Auth\\Console\\Commands\\AdoptPrincipalsCommand": "nvl:auth:adopt-principals {manifest : Absolute or application-relative JSON manifest path} {--stage : Rename canonical-name legacy tables before package schema installation} {--apply : Apply the validated stage or import plan} {--format=text : Output text or json}",
                 "Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand": "nvl:auth:doctor {--strict : Fail for configured integrations owned by disabled features} {--format=text : Output format: text or json}",
+                "Nvl\\Auth\\Console\\Commands\\InstallAuthSchemaCommand": "nvl:auth:schema {--apply : Create missing tables required by enabled features} {--format=text : Output text or json}",
                 "Nvl\\Auth\\Console\\Commands\\ListAuthFeaturesCommand": "nvl:auth:features {--format=table : table or json}",
                 "Nvl\\Auth\\Console\\Commands\\PruneAuthStateCommand": "nvl:auth:prune {--dry-run : Count terminal records without deleting them}"
             },
             "symbols": {
+                "Nvl\\Auth\\Actions\\AdoptPrincipalsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\AdoptPrincipalsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\PrincipalAdoptionManifest $manifests, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function execute(array $manifest, bool $stage=false, bool $apply=false): array",
+                    "@param array<array-key, mixed> $manifest",
+                    "@return array<string, mixed>"
+                ],
                 "Nvl\\Auth\\Actions\\ApiTokens\\CreateApiTokenAction": [
                     "final readonly class Nvl\\Auth\\Actions\\ApiTokens\\CreateApiTokenAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ApiTokenPolicy $policy, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
@@ -1576,7 +1585,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\LoginAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Authentication\\LoginAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\PrincipalEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\PrincipalEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata): mixed",
                     "public function execute(#[SensitiveParameter()] Nvl\\Auth\\Data\\Mutations\\LoginData $data, ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext=null): Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\LogoutAction": [
@@ -1619,7 +1628,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthIdentifierResolver $identifiers, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAction $links, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Nvl\\Auth\\Contracts\\AuthIdentifierResolver $identifiers, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAction $links, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestMagicLinkData $data, ?string $locale=null): ?Nvl\\Auth\\Results\\IssuedChallenge"
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction": [
@@ -1748,12 +1757,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Passwords\\RequestPasswordResetAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passwords\\RequestPasswordResetAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestPasswordResetData $data, ?string $locale=null): void"
                 ],
                 "Nvl\\Auth\\Actions\\Passwords\\ResetPasswordAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passwords\\ResetPasswordAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Contracts\\PasswordUpdater $passwords, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\Passwords\\PasswordBrokerManager $brokers, Nvl\\Auth\\Contracts\\PasswordUpdater $passwords, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(#[SensitiveParameter()] Nvl\\Auth\\Data\\Mutations\\ResetPasswordData $data): void"
                 ],
                 "Nvl\\Auth\\Actions\\Passwords\\UpdatePasswordAction": [
@@ -1915,34 +1924,34 @@
                 ],
                 "Nvl\\Auth\\Actions\\Users\\BulkUpdateUsersAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\BulkUpdateUsersAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Enums\\UserBulkOperation $operation, array $userIds): Nvl\\Auth\\Results\\BulkUserResult",
                     "@param list<string> $userIds"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\CreateUserAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\CreateUserAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\StoreUserData $data): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\DeleteUserAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\DeleteUserAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\User|string $user): bool"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\ListUsersAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\ListUsersAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?bool $active=null, string $trashed=\"without\", ?string $role=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, User>"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\RestoreUserAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\RestoreUserAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\User|string $user): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\SetUserActiveAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\SetUserActiveAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\User|string $user, bool $active): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\ShowProfileAction": [
@@ -1957,30 +1966,30 @@
                 ],
                 "Nvl\\Auth\\Actions\\Users\\SuggestUsersAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\SuggestUsersAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $search, ?int $limit=null): Illuminate\\Database\\Eloquent\\Collection",
                     "@return Collection<int, User>"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\SyncUserPermissionsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\SyncUserPermissionsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\User|string $user, array $permissions): Nvl\\Auth\\Models\\User",
                     "@param list<string> $permissions"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\SyncUserRolesAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\SyncUserRolesAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\User|string $user, array $roles): Nvl\\Auth\\Models\\User",
                     "@param list<string> $roles"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\UpdateProfileAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\UpdateProfileAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\UpdateProfileData $data): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\UpdateUserAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\UpdateUserAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\User|string $user, Nvl\\Auth\\Data\\Mutations\\UpdateUserData $data): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Adapters\\ApiTokens\\SanctumApiTokenManager": [
@@ -2036,11 +2045,24 @@
                     "public function redirectUrl(string $provider, ?string $callbackUrl, array $scopes, array $parameters): string",
                     "public function user(string $provider, ?string $callbackUrl): Nvl\\Auth\\ValueObjects\\ExternalIdentity"
                 ],
+                "Nvl\\Auth\\Console\\Commands\\AdoptPrincipalsCommand": [
+                    "final class Nvl\\Auth\\Console\\Commands\\AdoptPrincipalsCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:auth:adopt-principals\\n        {manifest : Absolute or application-relative JSON manifest path}\\n        {--stage : Rename canonical-name legacy tables before package schema installation}\\n        {--apply : Apply the validated stage or import plan}\\n        {--format=text : Output text or json}\"",
+                    "protected mixed $description=\"Plan, stage, or apply a reconciled legacy principal adoption\"",
+                    "public function handle(Nvl\\Auth\\Actions\\AdoptPrincipalsAction $adopt): int"
+                ],
                 "Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand": [
                     "final class Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand extends Illuminate\\Console\\Command",
                     "protected mixed $signature=\"nvl:auth:doctor\\n        {--strict : Fail for configured integrations owned by disabled features}\\n        {--format=text : Output format: text or json}\"",
                     "protected mixed $description=\"Validate NVL Auth schema and enabled feature readiness\"",
-                    "public function handle(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\FeatureManifest $manifest, Nvl\\Auth\\Services\\FeatureGate $features, Illuminate\\Routing\\Router $router, Illuminate\\Contracts\\Container\\Container $container): int"
+                    "public function handle(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\FeatureManifest $manifest, Nvl\\Auth\\Services\\FeatureGate $features, Illuminate\\Routing\\Router $router, Illuminate\\Contracts\\Container\\Container $container, Nvl\\Auth\\Services\\AuthSchemaManager $schemaManager, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes): int"
+                ],
+                "Nvl\\Auth\\Console\\Commands\\InstallAuthSchemaCommand": [
+                    "final class Nvl\\Auth\\Console\\Commands\\InstallAuthSchemaCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:auth:schema\\n        {--apply : Create missing tables required by enabled features}\\n        {--format=text : Output text or json}\"",
+                    "protected mixed $description=\"Plan or install missing schema for enabled NVL Auth features\"",
+                    "public function handle(Nvl\\Auth\\Services\\AuthSchemaManager $schema): int",
+                    "@throws JsonException"
                 ],
                 "Nvl\\Auth\\Console\\Commands\\ListAuthFeaturesCommand": [
                     "final class Nvl\\Auth\\Console\\Commands\\ListAuthFeaturesCommand extends Illuminate\\Console\\Command",
@@ -2092,6 +2114,11 @@
                     "interface Nvl\\Auth\\Contracts\\AuthPipelineStage",
                     "public abstract function handle(Nvl\\Auth\\ValueObjects\\AuthPipelineContext $context, Closure $next): mixed"
                 ],
+                "Nvl\\Auth\\Contracts\\AuthSchemaMigration": [
+                    "interface Nvl\\Auth\\Contracts\\AuthSchemaMigration",
+                    "public abstract function up(): void",
+                    "public abstract function down(): void"
+                ],
                 "Nvl\\Auth\\Contracts\\AuthSubjectResolver": [
                     "interface Nvl\\Auth\\Contracts\\AuthSubjectResolver",
                     "public abstract function resolve(Nvl\\Auth\\ValueObjects\\SubjectReference $reference): ?Illuminate\\Contracts\\Auth\\Authenticatable"
@@ -2132,6 +2159,16 @@
                     "interface Nvl\\Auth\\Contracts\\PermissionCatalogProvider",
                     "public abstract function permissions(): array",
                     "@return list<string>"
+                ],
+                "Nvl\\Auth\\Contracts\\PrincipalAttributeMapper": [
+                    "interface Nvl\\Auth\\Contracts\\PrincipalAttributeMapper",
+                    "public abstract function column(Nvl\\Auth\\Enums\\PrincipalAttribute $attribute): string",
+                    "public abstract function identifierColumn(string $configuredIdentifier): string",
+                    "public abstract function map(array $canonicalAttributes): array",
+                    "@param array<string, mixed> $canonicalAttributes",
+                    "@return array<string, mixed>",
+                    "public abstract function value(Nvl\\Auth\\Models\\User $principal, Nvl\\Auth\\Enums\\PrincipalAttribute $attribute): mixed",
+                    "public abstract function identifier(Nvl\\Auth\\Models\\User $principal): string"
                 ],
                 "Nvl\\Auth\\Contracts\\RoleTemplateProvider": [
                     "interface Nvl\\Auth\\Contracts\\RoleTemplateProvider",
@@ -3413,6 +3450,31 @@
                     "public static function from(string|int $value): static",
                     "public static function tryFrom(string|int $value): ?static"
                 ],
+                "Nvl\\Auth\\Enums\\PrincipalAttribute": [
+                    "enum Nvl\\Auth\\Enums\\PrincipalAttribute implements BackedEnum, UnitEnum: string",
+                    "public const mixed Id=Nvl\\Auth\\Enums\\PrincipalAttribute::Id=id",
+                    "public const mixed Name=Nvl\\Auth\\Enums\\PrincipalAttribute::Name=name",
+                    "public const mixed Email=Nvl\\Auth\\Enums\\PrincipalAttribute::Email=email",
+                    "public const mixed EmailVerifiedAt=Nvl\\Auth\\Enums\\PrincipalAttribute::EmailVerifiedAt=email_verified_at",
+                    "public const mixed Password=Nvl\\Auth\\Enums\\PrincipalAttribute::Password=password",
+                    "public const mixed Active=Nvl\\Auth\\Enums\\PrincipalAttribute::Active=active",
+                    "public const mixed Locale=Nvl\\Auth\\Enums\\PrincipalAttribute::Locale=locale",
+                    "public const mixed Timezone=Nvl\\Auth\\Enums\\PrincipalAttribute::Timezone=timezone",
+                    "public const mixed Profile=Nvl\\Auth\\Enums\\PrincipalAttribute::Profile=profile",
+                    "public const mixed Preferences=Nvl\\Auth\\Enums\\PrincipalAttribute::Preferences=preferences",
+                    "public const mixed LastLoginAt=Nvl\\Auth\\Enums\\PrincipalAttribute::LastLoginAt=last_login_at",
+                    "public const mixed LastLoginIp=Nvl\\Auth\\Enums\\PrincipalAttribute::LastLoginIp=last_login_ip",
+                    "public const mixed LockedUntil=Nvl\\Auth\\Enums\\PrincipalAttribute::LockedUntil=locked_until",
+                    "public const mixed RememberToken=Nvl\\Auth\\Enums\\PrincipalAttribute::RememberToken=remember_token",
+                    "public const mixed CreatedAt=Nvl\\Auth\\Enums\\PrincipalAttribute::CreatedAt=created_at",
+                    "public const mixed UpdatedAt=Nvl\\Auth\\Enums\\PrincipalAttribute::UpdatedAt=updated_at",
+                    "public const mixed DeletedAt=Nvl\\Auth\\Enums\\PrincipalAttribute::DeletedAt=deleted_at",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
                 "Nvl\\Auth\\Enums\\UserBulkOperation": [
                     "enum Nvl\\Auth\\Enums\\UserBulkOperation implements BackedEnum, UnitEnum: string",
                     "public const mixed Enable=Nvl\\Auth\\Enums\\UserBulkOperation::Enable=enable",
@@ -3725,7 +3787,7 @@
                     "public function store(Nvl\\Auth\\Data\\Mutations\\StoreUserData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Users\\CreateUserAction $action): Illuminate\\Http\\JsonResponse",
                     "public function show(Illuminate\\Http\\Request $request, string $user, Nvl\\Auth\\Actions\\Users\\ShowUserAction $action): Illuminate\\Http\\JsonResponse",
                     "public function update(Illuminate\\Http\\Request $request, string $user, Nvl\\Auth\\Actions\\Users\\UpdateUserAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function status(Nvl\\Auth\\Data\\Mutations\\UpdateUserStatusData $data, Illuminate\\Http\\Request $request, string $user, Nvl\\Auth\\Actions\\Users\\SetUserActiveAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function status(Nvl\\Auth\\Data\\Mutations\\UpdateUserStatusData $data, Illuminate\\Http\\Request $request, string $user, Nvl\\Auth\\Actions\\Users\\SetUserActiveAction $action, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): Illuminate\\Http\\JsonResponse",
                     "public function destroy(Illuminate\\Http\\Request $request, string $user, Nvl\\Auth\\Actions\\Users\\DeleteUserAction $action): Illuminate\\Http\\JsonResponse",
                     "public function restore(Illuminate\\Http\\Request $request, string $user, Nvl\\Auth\\Actions\\Users\\RestoreUserAction $action): Illuminate\\Http\\JsonResponse",
                     "public function bulk(Nvl\\Auth\\Http\\Requests\\BulkUserRequest $request, Nvl\\Auth\\Actions\\Users\\BulkUpdateUsersAction $action): Illuminate\\Http\\JsonResponse",
@@ -4355,11 +4417,26 @@
                     "protected mixed $keyType=\"string\"",
                     "protected mixed $fillable=[\"name\",\"email\",\"email_verified_at\",\"password\",\"is_active\",\"locale\",\"timezone\",\"profile\",\"preferences\",\"last_login_at\",\"last_login_ip\",\"locked_until\"]",
                     "protected mixed $hidden=[\"password\",\"remember_token\",\"last_login_ip\"]",
-                    "protected mixed $attributes={\"is_active\":true,\"locale\":\"en\",\"timezone\":\"UTC\"}",
                     "protected mixed $accessToken=null",
                     "protected mixed $forceDeleting=false",
+                    "public function __construct(array $attributes=[]): mixed",
+                    "@param array<string, mixed> $attributes",
+                    "public function getFillable(): array",
+                    "@return list<string>",
+                    "public function getHidden(): array",
+                    "@return list<string>",
                     "public function getTable(): string",
                     "public function getConnectionName(): ?string",
+                    "public function getKeyName(): string",
+                    "public function getAuthPasswordName(): string",
+                    "public function getEmailForVerification(): string",
+                    "public function getEmailForPasswordReset(): string",
+                    "public function hasVerifiedEmail(): bool",
+                    "public function markEmailAsVerified(): bool",
+                    "public function getRememberTokenName(): string",
+                    "public function getCreatedAtColumn(): ?string",
+                    "public function getUpdatedAtColumn(): ?string",
+                    "public function getDeletedAtColumn(): string",
                     "public function preferredLocale(): string",
                     "public function isAuthenticationAllowed(): bool",
                     "public function scopeAuthenticationAllowed(Illuminate\\Database\\Eloquent\\Builder $query): Illuminate\\Database\\Eloquent\\Builder",
@@ -4398,21 +4475,13 @@
                     "@return string",
                     "public function uniqueIds(): mixed",
                     "@return array",
-                    "public function getEmailForPasswordReset(): mixed",
-                    "@return string",
                     "public function sendPasswordResetNotification(#[SensitiveParameter()] mixed $token): mixed",
                     "@param string $token",
                     "@return void",
-                    "public function hasVerifiedEmail(): mixed",
-                    "@return bool",
-                    "public function markEmailAsVerified(): mixed",
-                    "@return bool",
                     "public function markEmailAsUnverified(): mixed",
                     "@return bool",
                     "public function sendEmailVerificationNotification(): mixed",
                     "@return void",
-                    "public function getEmailForVerification(): mixed",
-                    "@return string",
                     "public function tokens(): mixed",
                     "@return \\Illuminate\\Database\\Eloquent\\Relations\\MorphMany<TToken, $this>",
                     "public function tokenCan(string $ability): mixed",
@@ -4587,8 +4656,6 @@
                     "@return void",
                     "public function isForceDeleting(): mixed",
                     "@return bool",
-                    "public function getDeletedAtColumn(): mixed",
-                    "@return string",
                     "public function getQualifiedDeletedAtColumn(): mixed",
                     "@return string"
                 ],
@@ -4711,10 +4778,26 @@
                     "public function personalAccessTokenClass(): string",
                     "@return class-string<PersonalAccessToken>"
                 ],
+                "Nvl\\Auth\\Services\\AuthSchemaManager": [
+                    "final readonly class Nvl\\Auth\\Services\\AuthSchemaManager",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function execute(bool $apply=false): array",
+                    "@return array{mode: 'apply'|'plan', required: list<string>, existing: list<string>, missing: list<string>, created: list<string>}",
+                    "public function requiredTables(): array",
+                    "@return list<string>"
+                ],
                 "Nvl\\Auth\\Services\\ConfiguredApiTokenAbilityProvider": [
                     "final readonly class Nvl\\Auth\\Services\\ConfiguredApiTokenAbilityProvider implements Nvl\\Auth\\Contracts\\ApiTokenAbilityProvider",
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
                     "public function abilities(Illuminate\\Contracts\\Auth\\Authenticatable $subject): array"
+                ],
+                "Nvl\\Auth\\Services\\ConfiguredPrincipalAttributeMapper": [
+                    "final class Nvl\\Auth\\Services\\ConfiguredPrincipalAttributeMapper implements Nvl\\Auth\\Contracts\\PrincipalAttributeMapper",
+                    "public function column(Nvl\\Auth\\Enums\\PrincipalAttribute $attribute): string",
+                    "public function identifierColumn(string $configuredIdentifier): string",
+                    "public function map(array $canonicalAttributes): array",
+                    "public function value(Nvl\\Auth\\Models\\User $principal, Nvl\\Auth\\Enums\\PrincipalAttribute $attribute): mixed",
+                    "public function identifier(Nvl\\Auth\\Models\\User $principal): string"
                 ],
                 "Nvl\\Auth\\Services\\EloquentPasswordUpdater": [
                     "final readonly class Nvl\\Auth\\Services\\EloquentPasswordUpdater implements Nvl\\Auth\\Contracts\\PasswordUpdater",
@@ -4723,6 +4806,7 @@
                 ],
                 "Nvl\\Auth\\Services\\EloquentSuccessfulLoginMetadataRecorder": [
                     "final class Nvl\\Auth\\Services\\EloquentSuccessfulLoginMetadataRecorder implements Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder",
+                    "public function __construct(Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function record(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $context): void"
                 ],
                 "Nvl\\Auth\\Services\\FeatureGate": [
@@ -4753,7 +4837,7 @@
                 ],
                 "Nvl\\Auth\\Services\\PackageInvitationSubjectResolver": [
                     "final readonly class Nvl\\Auth\\Services\\PackageInvitationSubjectResolver implements Nvl\\Auth\\Contracts\\InvitationSubjectResolver",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
                     "public function resolve(Nvl\\Auth\\Models\\Invitation $invitation, array $input): Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Services\\PackagePermissionCatalog": [
@@ -4778,6 +4862,11 @@
                     "@param iterable<PermissionCatalogProvider> $providers",
                     "public function permissions(): array",
                     "@return list<string>"
+                ],
+                "Nvl\\Auth\\Services\\PrincipalAdoptionManifest": [
+                    "final class Nvl\\Auth\\Services\\PrincipalAdoptionManifest",
+                    "public function normalize(array $manifest): Nvl\\Auth\\ValueObjects\\PrincipalAdoptionPlan",
+                    "@param array<array-key, mixed> $manifest"
                 ],
                 "Nvl\\Auth\\Services\\PrincipalEligibility": [
                     "final class Nvl\\Auth\\Services\\PrincipalEligibility",
@@ -4942,6 +5031,37 @@
                     "public function dependenciesForSurface(string $surface): array",
                     "@return list<AuthFeature>"
                 ],
+                "Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping",
+                    "public readonly string $table",
+                    "public readonly int $expectedCount",
+                    "public readonly array $columns",
+                    "public function __construct(string $table, int $expectedCount, array $columns): mixed"
+                ],
+                "Nvl\\Auth\\ValueObjects\\LegacyPrincipalForeignKey": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\LegacyPrincipalForeignKey",
+                    "public readonly string $table",
+                    "public readonly string $column",
+                    "public readonly string $name",
+                    "public readonly string $onDelete",
+                    "public function __construct(string $table, string $column, string $name, string $onDelete): mixed"
+                ],
+                "Nvl\\Auth\\ValueObjects\\LegacyPrincipalMapping": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\LegacyPrincipalMapping",
+                    "public readonly string $table",
+                    "public readonly int $expectedCount",
+                    "public readonly array $columns",
+                    "public readonly array $extensionColumns",
+                    "public function __construct(string $table, int $expectedCount, array $columns, array $extensionColumns): mixed",
+                    "@param array<string, string|null> $columns",
+                    "@param array<string, string> $extensionColumns"
+                ],
+                "Nvl\\Auth\\ValueObjects\\LegacyPrincipalTableStage": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\LegacyPrincipalTableStage",
+                    "public readonly string $sourceTable",
+                    "public readonly string $stagingTable",
+                    "public function __construct(string $sourceTable, string $stagingTable): mixed"
+                ],
                 "Nvl\\Auth\\ValueObjects\\PasskeyAssertion": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\PasskeyAssertion",
                     "public readonly string $credentialId",
@@ -4983,6 +5103,18 @@
                     "public function __construct(string $credentialId, string $publicKey, string $userHandle, int $signatureCounter, array $transports=[], bool $backupEligible=false, bool $backedUp=false): mixed",
                     "@param list<string> $transports"
                 ],
+                "Nvl\\Auth\\ValueObjects\\PrincipalAdoptionPlan": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\PrincipalAdoptionPlan",
+                    "public readonly ?string $connection",
+                    "public readonly array $stages",
+                    "public readonly Nvl\\Auth\\ValueObjects\\LegacyPrincipalMapping $principals",
+                    "public readonly ?Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping $passwordResetTokens",
+                    "public readonly array $foreignKeys",
+                    "public readonly bool $dropSources",
+                    "public function __construct(?string $connection, array $stages, Nvl\\Auth\\ValueObjects\\LegacyPrincipalMapping $principals, ?Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping $passwordResetTokens, array $foreignKeys, bool $dropSources): mixed",
+                    "@param list<LegacyPrincipalTableStage> $stages",
+                    "@param list<LegacyPrincipalForeignKey> $foreignKeys"
+                ],
                 "Nvl\\Auth\\ValueObjects\\SubjectReference": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\SubjectReference",
                     "public readonly string $type",
@@ -4992,7 +5124,7 @@
                 ]
             },
             "configuration": {
-                "config/nvl-auth.php": "4660f54dcb9ca90a4fa9267f8b12e8252c257901f833b8e33fa6c6802c7ff99e"
+                "config/nvl-auth.php": "d0f48162ac41271fc263c39e5782369e72f118590d7c27deba4caa10636a108a"
             },
             "routes": {
                 "routes/account/api_tokens.php": "87625e4b2170c152d7d47882b8023bd652474efdfa2c82bf1ec5ed8eac35e81e",
@@ -5020,8 +5152,8 @@
                 "routes/public/social_identities.php": "c982c6a1ffdb5543ae5822a202e67bc7fbcb90ba898e820dc4fe98acd77a41f3"
             },
             "migrations": {
-                "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "52df515efcc7296066f50ff1894073580cca99b8617665ba213d812049a3efe7",
-                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "2a20193ec5f1619ac64fcd37e2de65217f9b631fcf657ba93ddcd547b1ca1922"
+                "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "04dae50fb16b0c115b1aa06adfb067adaf2b5975c082478e02dc3a19ac82980d",
+                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "e0dead6ceb3264ed45fbdaa4c39db458100f0a66b06d93ef36c5ea5e3390fb08"
             }
         },
         "comments": {

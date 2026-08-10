@@ -214,6 +214,7 @@ namespace Enums {
 export type AuthFeature = 'authentication' | 'principal_management' | 'password' | 'email_verification' | 'magic_links' | 'security_codes' | 'invitations' | 'totp' | 'passkeys' | 'recovery_codes' | 'social_identities' | 'clients' | 'sessions' | 'api_tokens' | 'rbac' | 'audit';
 export type AuthMessageType = 'invitation' | 'magic_link' | 'security_code' | 'password_reset' | 'email_verification';
 export type FeatureOperation = 'read' | 'enroll' | 'issue' | 'use' | 'update' | 'revoke' | 'cleanup';
+export type PrincipalAttribute = 'id' | 'name' | 'email' | 'email_verified_at' | 'password' | 'active' | 'locale' | 'timezone' | 'profile' | 'preferences' | 'last_login_at' | 'last_login_ip' | 'locked_until' | 'remember_token' | 'created_at' | 'updated_at' | 'deleted_at';
 export type UserBulkOperation = 'enable' | 'disable' | 'delete' | 'restore';
 }
 }
