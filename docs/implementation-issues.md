@@ -26,12 +26,12 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Finished | `bca980b` |
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Finished | `40c4816` |
 | G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Finished | `df6c7a6`, `5b353be` |
-| G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Not started | — |
+| G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Finished | `14be433` |
 | G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Not started | — |
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **27**.
+Total open issues: **17**.
 
 ## Consumer adoption evidence
 
@@ -361,11 +361,12 @@ Total open issues: **27**.
 
 ### G07 — Authentication and onboarding security
 
-- Status: not started
+- Status: **Finished**
+- Implementation commit: `14be433`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `fix(auth): …`
 
-#### [ ] G07-01 — Auth delivery requests permit incoherent feature and message-type pairs
+#### [x] G07-01 — Auth delivery requests permit incoherent feature and message-type pairs
 
 - Area: `Nvl\Auth\ValueObjects\AuthDeliveryRequest`
 - Impact: medium
@@ -374,7 +375,11 @@ Total open issues: **27**.
 - Expected package change: define and validate the supported feature-to-message-type mapping when constructing a delivery request, or expose a package-owned invariant that consumers can call before delivery.
 - Current workaround: KPO's email-verification listener requires both `AuthFeature::EmailVerification` and `AuthMessageType::EmailVerification` before resolving a recipient or claiming an idempotency key.
 
-#### [ ] G07-02 — Authentication policy is not consistently extensible across login flows
+- Resolution: `AuthDeliveryRequest` now enforces the closed package-owned feature/message map at construction, before any delivery listener can observe an incoherent request.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-02 — Authentication policy is not consistently extensible across login flows
 
 - Area: `LoginAction`, `EstablishAuthenticatedSessionAction`, and `PrincipalEligibility`
 - Impact: high
@@ -383,7 +388,11 @@ Total open issues: **27**.
 - Expected package change: add a replaceable authentication-eligibility contract used by every session-establishment flow; run it before successful-login metadata is recorded; apply the same login pipeline, request context, metadata recorder, rejection events, and audit semantics to passwordless/social session establishment.
 - Current workaround: KPO retains a narrow credential-login policy gateway and its existing passwordless login gateway. Package login/logout, auditing, events, session rotation, and successful credential-login metadata are used wherever their ordering is safe.
 
-#### [ ] G07-03 — Socialite identity contract discards provider email-verification evidence
+- Resolution: The replaceable `AuthenticationEligibility` contract now gates credential, passwordless, passkey, and social session establishment. Passwordless flows use the same login pipeline, request context, metadata recorder, attempt/rejection events, audit semantics, and session rotation as credential login. Successful metadata and events run only after eligibility and the host pipeline accept the subject.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-03 — Socialite identity contract discards provider email-verification evidence
 
 - Area: `SocialiteIdentityProvider`, `ExternalIdentity`, and `SocialSubjectResolver`
 - Impact: high
@@ -392,7 +401,11 @@ Total open issues: **27**.
 - Expected package change: carry a normalized email-verification claim with explicit provenance through `ExternalIdentity`, require resolvers to enforce it when matching by email, and make provider adapters fail closed when a configured provider cannot prove the address.
 - Current workaround: KPO uses the package `StartSocialAuthorizationAction` and `LinkSocialIdentityAction`, but retains a narrow Google claim-acquisition check that requires the raw verified-email claim before linking. Canonical identity data lives only in `nvl_auth_social_identities`; KPO no longer stores OAuth access or refresh tokens on the principal row.
 
-#### [ ] G07-04 — Self-service profile mutation cannot change or partially update an email address
+- Resolution: `ExternalIdentity` now carries a normalized verified-email boolean and bounded provenance. The Socialite adapter recognizes raw `email_verified` and `verified_email` claims, fails closed whenever a returned email is not proven, and persists authoritative provenance without allowing provider profile keys to overwrite it. Resolver documentation and callback orchestration require verified evidence before email-based resolution.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-04 — Self-service profile mutation cannot change or partially update an email address
 
 - Area: `UpdateProfileAction` and principal email-verification lifecycle
 - Impact: high
@@ -401,7 +414,11 @@ Total open issues: **27**.
 - Expected package change: provide a partial self-service principal mutation with explicit field policy, including an atomic email-change flow that verifies the current credential, normalizes and writes the new email, clears verification, emits delivery/audit/event contracts, and contains any credentials required by policy. Authorization must receive both actor and target.
 - Current workaround: KPO delegates name, locale, timezone, package profile, and preferences to `UpdateProfileAction`; only the unsupported self-service email transition and KPO extension columns are written by one application composition Action, which records package audit/event contracts. Administrative email changes use `UpdateUserAction` directly.
 
-#### [ ] G07-05 — Invitation issuance cannot support actorless or host-expiry workflows
+- Resolution: `UpdateProfileData` is now a sparse `Optional` DTO including email and a hidden confirmation credential. `UpdateProfileAction` persists only the validated DTO payload, detects actual email transitions, applies the replaceable `AccountConfirmation` policy, rejects conflicts, normalizes the address, clears verification in the same transaction, and emits verification delivery, audit, and principal-change contracts after commit.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-05 — Invitation issuance cannot support actorless or host-expiry workflows
 
 - Area: `CreateInvitationAction`, `ResendInvitationAction`, and invitation delivery
 - Impact: high
@@ -410,7 +427,11 @@ Total open issues: **27**.
 - Expected package change: support an explicitly authorized actorless issuance context, allow a bounded per-invitation expiry override, and expose host hooks for contextual acceptance and post-accept routing.
 - Current workaround: KPO stores invitations exclusively in `Nvl\Auth\Models\Invitation`, uses package-compatible HMAC blind indexes, and keeps a thin host issuance/acceptance adapter for the unsupported public workflow.
 
-#### [ ] G07-06 — Invitation acceptance cannot atomically create a package principal
+- Resolution: Trusted host orchestration can now pass `InvitationIssuanceContext` for explicitly authorized actorless create/resend operations, a future expiry bounded to one year, and a return path. Encrypted contextual metadata reaches the in-transaction acceptance pipeline, while delivery carries the bounded routing context without making the trusted context HTTP-hydratable.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-06 — Invitation acceptance cannot atomically create a package principal
 
 - Area: `AcceptInvitationAction`, `CreateUserAction`, and public registration
 - Impact: high
@@ -419,7 +440,11 @@ Total open issues: **27**.
 - Expected package change: add an invitation-registration Action with a replaceable registration-data mapper, configured principal model, one transaction, unique-email conflict handling, password/social identity variants, invitation RBAC application, audit/events, and an extension hook for host fields and post-accept work.
 - Current workaround: KPO creates `App\Models\User` on the package-owned `nvl_auth_users` table inside its invitation transaction, then delegates token verification, RBAC assignment, invitation consumption, audit recording, verification delivery, and social identity persistence to package Actions. No local principal model or table exists.
 
-#### [ ] G07-07 — One passwordless login cannot carry both a link token and numeric code
+- Resolution: `RegisterInvitationAction` locks and validates the bearer invitation, resolves or creates the configured principal through a replaceable `InvitationRegistrationMapper`, applies RBAC, consumes the invitation, records audit/events, and runs post-accept hooks on one required connection and in one transaction. The built-in mapper supports password registration; bounded social registration input and host fields flow through the replaceable mapper. Unique conflicts are normalized and rollback coverage proves no orphan principal remains after hook rejection.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-07 — One passwordless login cannot carry both a link token and numeric code
 
 - Area: `IssueChallengeAction` and challenge verification
 - Impact: high
@@ -428,7 +453,11 @@ Total open issues: **27**.
 - Expected package change: support a compound single-use challenge with multiple verification methods, or expose package-owned secondary-secret storage and verification. Token callbacks should have a documented challenge-id contract that avoids scanning active challenge rows.
 - Current workaround: KPO uses `Nvl\Auth\Models\Challenge` and package-compatible purpose-separated HMACs, retaining only the combined link/code issuance and atomic-consumption adapter.
 
-#### [ ] G07-08 — Invitation listing cannot search encrypted recipients by partial email
+- Resolution: Magic-link issuance now stores independent primary-token and numeric fallback-code hashes on one challenge and includes both plaintext credentials only in the issuance result/delivery event. Either credential atomically consumes the row. `ConsumeChallengeByIdAction` gives token callbacks a documented UUID lookup contract, preserves bounded attempts, and never scans active rows.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-08 — Invitation listing cannot search encrypted recipients by partial email
 
 - Area: `ListInvitationsAction` and `Invitation::recipient`
 - Impact: medium
@@ -437,7 +466,11 @@ Total open issues: **27**.
 - Expected package change: add a package-owned filter DTO and exact recipient blind-index filtering; document that substring recipient search is intentionally unavailable when encrypted storage is enabled.
 - Current workaround: KPO uses exact normalized-email search plus package fields for type, lifecycle, expiry, and contextual metadata filters.
 
-#### [ ] G07-09 — Auth has no explicit self-service account-deletion Action
+- Resolution: `InvitationIndexQueryData` now drives exact normalized-recipient blind-index, type, purpose, lifecycle, expiry-range, context blind-index, and pagination filters. Auth documentation explicitly rejects substring recipient search and in-memory decryption scans as incompatible with encrypted recipient storage.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-09 — Auth has no explicit self-service account-deletion Action
 
 - Area: principal lifecycle Actions
 - Impact: medium
@@ -446,7 +479,11 @@ Total open issues: **27**.
 - Expected package change: add a dedicated `DeleteOwnAccountAction` with a replaceable confirmation policy and complete session/token containment while retaining the management Action's self-deletion guard.
 - Current workaround: KPO keeps one narrowly scoped application Action that requires the authenticated actor to be the target, revokes browser/API credentials, soft deletes the package principal, and records package audit/event contracts.
 
-#### [ ] G07-10 — Password reset Actions cannot enforce host subject eligibility
+- Resolution: `DeleteOwnAccountAction` is a separate account route/use case using the replaceable `AccountConfirmation` policy. It revokes every subject token when token storage exists, soft deletes the authenticated principal, records audit/event contracts, logs out the configured guard, invalidates the browser session, and rotates the CSRF token; the management self-delete guard remains unchanged.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
+
+#### [x] G07-10 — Password reset Actions cannot enforce host subject eligibility
 
 - Area: `RequestPasswordResetAction` and `ResetPasswordAction`
 - Impact: high
@@ -454,6 +491,10 @@ Total open issues: **27**.
 - Consumer risk: inactive, locked, soft-deleted, or otherwise ineligible host accounts can receive or consume reset tokens unless the host retains duplicate broker orchestration.
 - Expected package change: apply the shared replaceable subject-eligibility contract after broker resolution and before token issuance or credential mutation, with enumeration-safe public responses and explicit rejection audits.
 - Current workaround: KPO calls both package password-reset Actions directly. Its package delivery listener suppresses mail for ineligible principals, and its configured `PasswordUpdater` extension checks the canonical `App\Models\User` policy before delegating credential persistence to the package's `EloquentPasswordUpdater`. This closes delivery and consumption without retaining duplicate broker orchestration, but the package still creates an unused token and records a matched request before the listener can reject an ineligible subject.
+
+- Resolution: Both password-reset Actions invoke the shared `AuthenticationEligibility` contract after broker subject resolution. Request rejection is enumeration-safe and produces no token or delivery; consumption checks the same policy before credential mutation. Both paths record explicit internal rejection audits without exposing subject state publicly.
+- Resolving implementation commit: `14be433`
+- Release target: `1.0.2`
 
 ### G08 — RBAC and principal lifecycle system transitions
 
