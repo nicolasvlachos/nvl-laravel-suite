@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Nvl\Filterable\Data\FilterSet;
+use Nvl\Translations\Actions\Entries\ListTranslationEntriesAction;
 use Nvl\Translations\Contracts\TranslationsAuthorization;
 use Nvl\Translations\Enums\TranslationsAbility;
 use Nvl\Translations\Exceptions\TranslationConflictException;
@@ -150,6 +153,47 @@ test('a consumer can run the complete safe translation command workflow', functi
     $this->artisan('nvl:translations:doctor')
         ->expectsOutputToContain('PASS')
         ->assertSuccessful();
+});
+
+test('keeps translation catalog list queries independent of result size', function (): void {
+    $create = static function (int $index): void {
+        TranslationEntry::query()->create([
+            'scope_type' => 'app',
+            'scope_name' => 'app',
+            'locale' => 'en',
+            'format' => 'json',
+            'group' => '*',
+            'key' => "Query {$index}",
+            'value' => "Value {$index}",
+            'source_hash' => hash('sha256', "Value {$index}"),
+            'is_missing' => false,
+        ]);
+    };
+    $measure = static function (): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $page = app(ListTranslationEntriesAction::class)->execute(100, FilterSet::none());
+        $queryCount = count(DB::getQueryLog());
+        collect($page->items())->each(static fn (TranslationEntry $entry): string => $entry->key);
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount);
+        DB::disableQueryLog();
+
+        return $queryCount;
+    };
+
+    $create(1);
+    $singleQueryCount = $measure();
+
+    foreach (range(2, 25) as $index) {
+        $create($index);
+    }
+
+    $populatedQueryCount = $measure();
+
+    expect($singleQueryCount)->toBeLessThanOrEqual(2)
+        ->and($populatedQueryCount)->toBe($singleQueryCount);
 });
 
 test('commands reject every ambiguous or unsafe option before doing work', function (): void {
