@@ -10,6 +10,20 @@ id: string | number | null,
 system: boolean,
 signed: boolean,
 };
+export type MediaAdoptionResultData = {
+mode: string,
+ready: boolean,
+sourceMedia: number,
+sourceAssociations: number,
+sourceTranslations: number,
+sourceVariations: number,
+matchedMedia: number,
+matchedAssociations: number,
+matchedTranslations: number,
+matchedVariations: number,
+missingPaths: string[],
+errors: string[],
+};
 export type MediaDoctorCheckData = {
 key: string,
 severity: string,

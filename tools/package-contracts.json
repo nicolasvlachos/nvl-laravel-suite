@@ -6968,6 +6968,7 @@
                     "public function addMediaFromUrl(string $url, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromBase64(string $base64data, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromString(string $text): Nvl\\Media\\MediaAdder",
+                    "public function addMediaFromBinary(string $contents, string $filename, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromDisk(string $key, ?string $disk=null): Nvl\\Media\\MediaAdder",
                     "public function reusePublicMedia(Nvl\\Media\\Models\\Media|string $media, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\Media",
                     "@param array<string, mixed> $metadata",
@@ -18206,6 +18207,7 @@
                 "media-translations"
             ],
             "commands": {
+                "Nvl\\Media\\Console\\Commands\\AdoptSpatieMediaCommand": "nvl:media:adopt-spatie {--source=media_spatie_legacy : Staged legacy media table} {--translations= : Optional staged translation table} {--variations= : Optional staged variation table} {--uploader-type= : Fallback morph type for legacy uploaded_by values} {--locale=en : Fallback locale for translation rows} {--apply : Insert reconciled rows; default is dry-run} {--format=text : Output format: text or json}",
                 "Nvl\\Media\\Console\\Commands\\MediaDoctorCommand": "nvl:media:doctor {--production : Enforce production deployment requirements} {--strict : Treat warnings as failures} {--format=text : Output format: text or json}",
                 "Nvl\\Media\\Console\\Commands\\MigrateDiskCommand": "nvl:media:migrate-disk {--from=media : Source value to migrate from} {--to=local : Destination value to migrate to} {--column=disk : Database column to migrate [disk|folder]} {--from-path= : Absolute path to source disk root (when the source disk is no longer configured)} {--on-disk= : Restrict folder migrations to a specific disk} {--associable-type=* : Restrict to media associated with one or more model morph classes/types} {--collection=* : Restrict to media associated through one or more collections} {--records-only : Update database records only; do not move filesystem content} {--dry-run : Preview without moving or updating}",
                 "Nvl\\Media\\Console\\Commands\\PruneExpiredMultipartUploadsCommand": "nvl:media:multipart:prune {--limit=500 : Maximum expired sessions to process}",
@@ -18217,6 +18219,13 @@
                     "final readonly class Nvl\\Media\\Actions\\AbortMultipartUploadAction",
                     "public function __construct(Nvl\\Media\\Contracts\\MultipartUploadGateway $gateway, Nvl\\Media\\Services\\MediaMultipartLock $lock, Nvl\\Media\\Services\\MediaMultipartSessionMapper $sessionMapper): mixed",
                     "public function execute(string $uploadId, Nvl\\Media\\Data\\MediaActorData $actor): void"
+                ],
+                "Nvl\\Media\\Actions\\AdoptSpatieMediaAction": [
+                    "final readonly class Nvl\\Media\\Actions\\AdoptSpatieMediaAction",
+                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaFileExistence $existence): mixed",
+                    "public function execute(string $sourceTable, ?string $translationTable=null, ?string $variationTable=null, ?string $uploaderType=null, string $defaultLocale=\"en\", bool $apply=false): Nvl\\Media\\Data\\MediaAdoptionResultData",
+                    "@throws InvalidArgumentException",
+                    "@throws LogicException"
                 ],
                 "Nvl\\Media\\Actions\\AttachMediaAction": [
                     "final class Nvl\\Media\\Actions\\AttachMediaAction implements Nvl\\Media\\Contracts\\AttachMediaContract",
@@ -18288,6 +18297,13 @@
                     "@param list<string> $add",
                     "@param list<string> $remove"
                 ],
+                "Nvl\\Media\\Actions\\RelocateMediaAction": [
+                    "final readonly class Nvl\\Media\\Actions\\RelocateMediaAction",
+                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaFileExistence $existence, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaMutationLock $mutationLock): mixed",
+                    "public function execute(Nvl\\Media\\Models\\Media|string $media, string $disk, Nvl\\Media\\Enums\\MediaVisibility $visibility, ?int $expectedRevision=null): Nvl\\Media\\Models\\Media",
+                    "@throws MediaUploadException",
+                    "@throws Throwable"
+                ],
                 "Nvl\\Media\\Actions\\RenameMediaAction": [
                     "final class Nvl\\Media\\Actions\\RenameMediaAction",
                     "public function __construct(Nvl\\Media\\Services\\MediaMutationLock $mutationLock): mixed",
@@ -18346,6 +18362,13 @@
                     "public function ofType(Nvl\\Media\\Enums\\MediaType|string $type): static",
                     "public function onDisk(string $disk): static",
                     "public function withTag(string $tag): static"
+                ],
+                "Nvl\\Media\\Console\\Commands\\AdoptSpatieMediaCommand": [
+                    "final class Nvl\\Media\\Console\\Commands\\AdoptSpatieMediaCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:media:adopt-spatie\\n        {--source=media_spatie_legacy : Staged legacy media table}\\n        {--translations= : Optional staged translation table}\\n        {--variations= : Optional staged variation table}\\n        {--uploader-type= : Fallback morph type for legacy uploaded_by values}\\n        {--locale=en : Fallback locale for translation rows}\\n        {--apply : Insert reconciled rows; default is dry-run}\\n        {--format=text : Output format: text or json}\"",
+                    "protected mixed $description=\"Plan or apply a non-destructive Spatie-style media adoption\"",
+                    "public function handle(Nvl\\Media\\Actions\\AdoptSpatieMediaAction $adopt): int",
+                    "@throws JsonException"
                 ],
                 "Nvl\\Media\\Console\\Commands\\MediaDoctorCommand": [
                     "final class Nvl\\Media\\Console\\Commands\\MediaDoctorCommand extends Illuminate\\Console\\Command",
@@ -18409,6 +18432,7 @@
                     "public abstract function addMediaFromUrl(string $url, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public abstract function addMediaFromBase64(string $base64data, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public abstract function addMediaFromString(string $text): Nvl\\Media\\MediaAdder",
+                    "public abstract function addMediaFromBinary(string $contents, string $filename, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public abstract function addMediaFromDisk(string $key, ?string $disk=null): Nvl\\Media\\MediaAdder",
                     "public abstract function reusePublicMedia(Nvl\\Media\\Models\\Media|string $media, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\Media",
                     "@param array<string, mixed> $metadata",
@@ -18471,11 +18495,13 @@
                     "public abstract function fromUrl(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $url, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public abstract function fromBase64(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $payload, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public abstract function fromString(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $contents): Nvl\\Media\\MediaAdder",
+                    "public abstract function fromBinary(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $contents, string $filename, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public abstract function fromDisk(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $key, ?string $disk=null): Nvl\\Media\\MediaAdder",
                     "public abstract function paginate(Nvl\\Media\\Data\\MediaFilter|array $filters=[], ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, bool $includeVariations=false): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@param MediaFilter|array<string, mixed> $filters",
                     "@return LengthAwarePaginator<int, Media>",
                     "public abstract function findOrFail(string $id, bool $includeVariations=true): Nvl\\Media\\Models\\Media",
+                    "public abstract function urlIfExists(?Nvl\\Media\\Models\\Media $media, string $variation=\"\"): ?string",
                     "public abstract function usages(string $id): Illuminate\\Support\\Collection",
                     "@return Collection<int, MediaUsage>",
                     "public abstract function attach(Nvl\\Media\\Models\\Media $media, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\MediaAssociation",
@@ -18486,6 +18512,7 @@
                     "public abstract function delete(Nvl\\Media\\Models\\Media|string $media, bool $force=false): bool",
                     "public abstract function replace(Nvl\\Media\\Models\\Media|string $media, Illuminate\\Http\\UploadedFile $file): Nvl\\Media\\Models\\Media",
                     "public abstract function rename(Nvl\\Media\\Models\\Media|string $media, string $filename): Nvl\\Media\\Models\\Media",
+                    "public abstract function relocate(Nvl\\Media\\Models\\Media|string $media, string $disk, Nvl\\Media\\Enums\\MediaVisibility $visibility, ?int $expectedRevision=null): Nvl\\Media\\Models\\Media",
                     "public abstract function updateMetadata(Nvl\\Media\\Models\\Media|string $media, Nvl\\Media\\Data\\Mutations\\UpdateMediaPayload $data): Nvl\\Media\\Models\\Media",
                     "public abstract function generateVariation(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Conversions\\ConversionDefinition $definition, ?int $expectedRevision=null): ?Nvl\\Media\\Models\\MediaImageVariation",
                     "public abstract function finalizeScan(Nvl\\Media\\Models\\Media|string $media, Nvl\\Media\\Data\\MediaScanResultData $result): Nvl\\Media\\Models\\Media",
@@ -19280,6 +19307,24 @@
                     "public static function fromAuthenticatable(Illuminate\\Contracts\\Auth\\Authenticatable $actor): self",
                     "public static function system(): self",
                     "public static function signed(string $owner): self"
+                ],
+                "Nvl\\Media\\Data\\MediaAdoptionResultData": [
+                    "final class Nvl\\Media\\Data\\MediaAdoptionResultData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $mode",
+                    "public readonly bool $ready",
+                    "public readonly int $sourceMedia",
+                    "public readonly int $sourceAssociations",
+                    "public readonly int $sourceTranslations",
+                    "public readonly int $sourceVariations",
+                    "public readonly int $matchedMedia",
+                    "public readonly int $matchedAssociations",
+                    "public readonly int $matchedTranslations",
+                    "public readonly int $matchedVariations",
+                    "public readonly array $missingPaths",
+                    "public readonly array $errors",
+                    "public function __construct(string $mode, bool $ready, int $sourceMedia, int $sourceAssociations, int $sourceTranslations, int $sourceVariations, int $matchedMedia, int $matchedAssociations, int $matchedTranslations, int $matchedVariations, array $missingPaths, array $errors): mixed",
+                    "@param list<string> $missingPaths",
+                    "@param list<string> $errors"
                 ],
                 "Nvl\\Media\\Data\\MediaDoctorCheckData": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
@@ -20266,9 +20311,11 @@
                     "@method static MediaAdder fromUrl(Model&HasMedia $owner, string $url, string ...$allowedMimeTypes)",
                     "@method static MediaAdder fromBase64(Model&HasMedia $owner, string $payload, string ...$allowedMimeTypes)",
                     "@method static MediaAdder fromString(Model&HasMedia $owner, string $contents)",
+                    "@method static MediaAdder fromBinary(Model&HasMedia $owner, string $contents, string $filename, string ...$allowedMimeTypes)",
                     "@method static MediaAdder fromDisk(Model&HasMedia $owner, string $key, ?string $disk = null)",
                     "@method static LengthAwarePaginator<int, MediaModel> paginate(MediaFilter|array<string, mixed> $filters = [], ?Authenticatable $actor = null, bool $includeVariations = false)",
                     "@method static MediaModel findOrFail(string $id, bool $includeVariations = true)",
+                    "@method static string|null urlIfExists(MediaModel|null $media, string $variation = '')",
                     "@method static Collection<int, MediaUsage> usages(string $id)",
                     "@method static MediaAssociation attach(MediaModel $media, Model&HasMedia $owner, string $collection = 'default', ?string $locale = null, ?int $order = null, array<string, mixed> $metadata = [], bool $dispatchVariations = true)",
                     "@method static MediaModel reuse(MediaModel|string $media, Model&HasMedia $owner, string $collection = 'default', ?string $locale = null, ?int $order = null, array<string, mixed> $metadata = [], bool $dispatchVariations = true)",
@@ -20276,6 +20323,7 @@
                     "@method static bool delete(MediaModel|string $media, bool $force = false)",
                     "@method static MediaModel replace(MediaModel|string $media, UploadedFile $file)",
                     "@method static MediaModel rename(MediaModel|string $media, string $filename)",
+                    "@method static MediaModel relocate(MediaModel|string $media, string $disk, MediaVisibility $visibility, ?int $expectedRevision = null)",
                     "@method static MediaModel updateMetadata(MediaModel|string $media, UpdateMediaPayload $data)",
                     "@method static MediaImageVariation|null generateVariation(MediaModel $media, ConversionDefinition $definition, ?int $expectedRevision = null)",
                     "@method static MediaModel finalizeScan(MediaModel|string $media, MediaScanResultData $result)",
@@ -21117,18 +21165,20 @@
                 ],
                 "Nvl\\Media\\MediaLibrary": [
                     "final readonly class Nvl\\Media\\MediaLibrary implements Nvl\\Media\\Contracts\\MediaLibraryContract",
-                    "public function __construct(Nvl\\Media\\Services\\MediaModelInteractionService $interactions, Nvl\\Media\\Services\\MediaQueryService $queries, Nvl\\Media\\Services\\MediaMutationService $mutations, Nvl\\Media\\Services\\MediaMultipartService $multipart, Nvl\\Media\\Services\\MediaAccessService $access): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaModelInteractionService $interactions, Nvl\\Media\\Services\\MediaQueryService $queries, Nvl\\Media\\Services\\MediaMutationService $mutations, Nvl\\Media\\Services\\MediaMultipartService $multipart, Nvl\\Media\\Services\\MediaAccessService $access, Nvl\\Media\\Services\\MediaUrlResolver $urls): mixed",
                     "public function add(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, Illuminate\\Http\\UploadedFile|string $file, ?string $slot=null): Nvl\\Media\\MediaAdder",
                     "public function copy(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, Illuminate\\Http\\UploadedFile|string $file): Nvl\\Media\\MediaAdder",
                     "public function fromRequest(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $key): Nvl\\Media\\MediaAdder",
                     "public function fromUrl(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $url, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function fromBase64(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $payload, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function fromString(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $contents): Nvl\\Media\\MediaAdder",
+                    "public function fromBinary(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $contents, string $filename, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function fromDisk(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $key, ?string $disk=null): Nvl\\Media\\MediaAdder",
                     "public function paginate(Nvl\\Media\\Data\\MediaFilter|array $filters=[], ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, bool $includeVariations=false): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@param MediaFilter|array<string, mixed> $filters",
                     "@return LengthAwarePaginator<int, Media>",
                     "public function findOrFail(string $id, bool $includeVariations=true): Nvl\\Media\\Models\\Media",
+                    "public function urlIfExists(?Nvl\\Media\\Models\\Media $media, string $variation=\"\"): ?string",
                     "public function usages(string $id): Illuminate\\Support\\Collection",
                     "@return Collection<int, MediaUsage>",
                     "public function attach(Nvl\\Media\\Models\\Media $media, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\MediaAssociation",
@@ -21139,6 +21189,7 @@
                     "public function delete(Nvl\\Media\\Models\\Media|string $media, bool $force=false): bool",
                     "public function replace(Nvl\\Media\\Models\\Media|string $media, Illuminate\\Http\\UploadedFile $file): Nvl\\Media\\Models\\Media",
                     "public function rename(Nvl\\Media\\Models\\Media|string $media, string $filename): Nvl\\Media\\Models\\Media",
+                    "public function relocate(Nvl\\Media\\Models\\Media|string $media, string $disk, Nvl\\Media\\Enums\\MediaVisibility $visibility, ?int $expectedRevision=null): Nvl\\Media\\Models\\Media",
                     "public function updateMetadata(Nvl\\Media\\Models\\Media|string $media, Nvl\\Media\\Data\\Mutations\\UpdateMediaPayload $data): Nvl\\Media\\Models\\Media",
                     "public function generateVariation(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Conversions\\ConversionDefinition $definition, ?int $expectedRevision=null): ?Nvl\\Media\\Models\\MediaImageVariation",
                     "public function finalizeScan(Nvl\\Media\\Models\\Media|string $media, Nvl\\Media\\Data\\MediaScanResultData $result): Nvl\\Media\\Models\\Media",
@@ -21773,7 +21824,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaDoctor": [
                     "final readonly class Nvl\\Media\\Services\\MediaDoctor",
-                    "public function __construct(Illuminate\\Contracts\\Container\\Container $container): mixed",
+                    "public function __construct(Illuminate\\Contracts\\Container\\Container $container, Nvl\\Media\\Services\\MediaFileExistence $existence): mixed",
                     "public function inspect(bool $production=false): array",
                     "@return list<MediaDoctorCheckData>"
                 ],
@@ -21827,11 +21878,12 @@
                     "@param string $toDisk Destination disk",
                     "@param string $toPath Destination object path",
                     "@return bool True when the object moved",
-                    "public function copy(string $fromDisk, string $fromPath, string $toDisk, string $toPath): bool",
+                    "public function copy(string $fromDisk, string $fromPath, string $toDisk, string $toPath, ?Nvl\\Media\\Enums\\MediaVisibility $visibility=null): bool",
                     "@param string $fromDisk Source disk",
                     "@param string $fromPath Source object path",
                     "@param string $toDisk Destination disk",
                     "@param string $toPath Destination object path",
+                    "@param MediaVisibility|null $visibility Optional target visibility override",
                     "@return bool True when the object copied",
                     "public function deleteDirectory(string $disk, string $directory): bool",
                     "@param string $disk Disk name",
@@ -21912,6 +21964,7 @@
                     "public function addMediaFromUrl(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $model, string $url, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromBase64(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $model, string $base64data, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromString(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $model, string $text): Nvl\\Media\\MediaAdder",
+                    "public function addMediaFromBinary(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $model, string $contents, string $filename, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromDisk(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $model, string $key, ?string $disk=null): Nvl\\Media\\MediaAdder",
                     "public function reusePublicMedia(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $model, Nvl\\Media\\Models\\Media|string $media, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\Media",
                     "@param array<string, mixed> $metadata"
@@ -21957,10 +22010,11 @@
                 ],
                 "Nvl\\Media\\Services\\MediaMutationService": [
                     "final readonly class Nvl\\Media\\Services\\MediaMutationService",
-                    "public function __construct(Nvl\\Media\\Contracts\\DeleteMediaContract $deleteMedia, Nvl\\Media\\Actions\\ReplaceMediaFileAction $replaceMedia, Nvl\\Media\\Actions\\RenameMediaAction $renameMedia, Nvl\\Media\\Actions\\UpdateMediaMetadataAction $updateMedia, Nvl\\Media\\Actions\\GenerateImageVariationAction $generateVariation, Nvl\\Media\\Actions\\FinalizeMediaScanAction $finalizeScan): mixed",
+                    "public function __construct(Nvl\\Media\\Contracts\\DeleteMediaContract $deleteMedia, Nvl\\Media\\Actions\\ReplaceMediaFileAction $replaceMedia, Nvl\\Media\\Actions\\RenameMediaAction $renameMedia, Nvl\\Media\\Actions\\RelocateMediaAction $relocateMedia, Nvl\\Media\\Actions\\UpdateMediaMetadataAction $updateMedia, Nvl\\Media\\Actions\\GenerateImageVariationAction $generateVariation, Nvl\\Media\\Actions\\FinalizeMediaScanAction $finalizeScan): mixed",
                     "public function delete(Nvl\\Media\\Models\\Media|string $media, bool $force=false): bool",
                     "public function replace(Nvl\\Media\\Models\\Media|string $media, Illuminate\\Http\\UploadedFile $file): Nvl\\Media\\Models\\Media",
                     "public function rename(Nvl\\Media\\Models\\Media|string $media, string $filename): Nvl\\Media\\Models\\Media",
+                    "public function relocate(Nvl\\Media\\Models\\Media|string $media, string $disk, Nvl\\Media\\Enums\\MediaVisibility $visibility, ?int $expectedRevision=null): Nvl\\Media\\Models\\Media",
                     "public function update(Nvl\\Media\\Models\\Media|string $media, Nvl\\Media\\Data\\Mutations\\UpdateMediaPayload $data): Nvl\\Media\\Models\\Media",
                     "public function generateVariation(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Conversions\\ConversionDefinition $definition, ?int $expectedRevision=null): ?Nvl\\Media\\Models\\MediaImageVariation",
                     "public function finalizeScan(Nvl\\Media\\Models\\Media|string $media, Nvl\\Media\\Data\\MediaScanResultData $result): Nvl\\Media\\Models\\Media"
@@ -22039,6 +22093,9 @@
                     "@throws FileUnacceptableForCollection",
                     "public function fromString(string $text): Illuminate\\Http\\UploadedFile",
                     "@throws MediaUploadException",
+                    "public function fromBinary(string $contents, string $filename, string ...$allowedMimeTypes): Illuminate\\Http\\UploadedFile",
+                    "@throws MediaUploadException",
+                    "@throws FileUnacceptableForCollection",
                     "public function fromDisk(string $key, ?string $disk=null): Illuminate\\Http\\UploadedFile",
                     "@throws MediaUploadException",
                     "public function fromRequest(Illuminate\\Http\\Request $request, string $key): Illuminate\\Http\\UploadedFile",
@@ -22077,6 +22134,7 @@
                     "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaFileExistence $existence): mixed",
                     "public function forMedia(Nvl\\Media\\Models\\Media $media, string $variation=\"\"): string",
                     "@param string $variation Variation label, or empty for original",
+                    "public function forExistingMedia(?Nvl\\Media\\Models\\Media $media, string $variation=\"\"): ?string",
                     "public function forVariation(Nvl\\Media\\Models\\MediaImageVariation $variation): string",
                     "public function buildUrl(Nvl\\Media\\Models\\Media $media, array $parameters=[], ?DateTimeInterface $expiration=null, ?string $owner=null): string",
                     "@param array<string, scalar|null> $parameters",
@@ -22372,6 +22430,7 @@
                     "public function addMediaFromUrl(string $url, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromBase64(string $base64data, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromString(string $text): Nvl\\Media\\MediaAdder",
+                    "public function addMediaFromBinary(string $contents, string $filename, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromDisk(string $key, ?string $disk=null): Nvl\\Media\\MediaAdder",
                     "public function reusePublicMedia(Nvl\\Media\\Models\\Media|string $media, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\Media",
                     "@param array<string, mixed> $metadata",
@@ -22417,14 +22476,14 @@
                 ]
             },
             "configuration": {
-                "config/media.php": "2ffef2935a76ff19ff58f11bf48cc50c4222cbb24f9a0aa686bd96216e306d42"
+                "config/media.php": "c960cbac4ba0aa8ae2beaee737659b5b912b3e8e757e12e728629de5516a5273"
             },
             "routes": {
-                "routes/api.php": "4168128bb87a09f3d33b6718d9760e0efb64d023f8339c07fb0183a20cfadbd0",
+                "routes/api.php": "85bb1199819a207493a61fe48f6772fcf696358d949b010f5c5939b28d4a4ff9",
                 "routes/assets.php": "83e6e15c42567f231eeffa7981d0e2e3c27c899ece6d0b63329882d0b45d65dd"
             },
             "migrations": {
-                "database/migrations/2024_02_01_000001_create_media_table.php": "4bfa8f7e43cb70b47e70562386e5e803af54436e4fa3d91c8d3b3b646d2870cd",
+                "database/migrations/2024_02_01_000001_create_media_table.php": "9b536661e08dbf342b52945d2539c5c55c9fc2f93ae647b200801a53677e4aa3",
                 "database/migrations/2024_02_01_000002_create_media_associations_table.php": "ab8d580bf7144425c739f5a42409ed3684731fd9da647dc07559c753de1032be",
                 "database/migrations/2024_02_01_000003_create_media_image_variations_table.php": "c31641945c2c9a3f667036b2f493ada3930cef19565a1bd156f4ccfd7c477de0",
                 "database/migrations/2024_02_01_000004_create_media_i18n_table.php": "8609d2ca2ddf921dd16eac3fdf0f0f8d21d8f018df94520eab698cb88bf32225",
@@ -30054,6 +30113,7 @@
                     "public function addMediaFromUrl(string $url, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromBase64(string $base64data, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromString(string $text): Nvl\\Media\\MediaAdder",
+                    "public function addMediaFromBinary(string $contents, string $filename, string ...$allowedMimeTypes): Nvl\\Media\\MediaAdder",
                     "public function addMediaFromDisk(string $key, ?string $disk=null): Nvl\\Media\\MediaAdder",
                     "public function reusePublicMedia(Nvl\\Media\\Models\\Media|string $media, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\Media",
                     "@param array<string, mixed> $metadata",
