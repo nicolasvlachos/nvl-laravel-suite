@@ -8,26 +8,28 @@ The issue descriptions below preserve the source report's area, impact, finding,
 
 - Status markers are `[ ]` not started, `[~]` in progress, and `[x]` resolved.
 - Work one group at a time in the order agreed before implementation.
-- Default to one cohesive commit per group. If a group must be split, keep every commit within that group and use the same group identifier in the commit body.
+- Default to one cohesive implementation commit per group. If a group must be split, keep every implementation commit within that group and use the same group identifier in the commit body.
 - Do not mix implementation from different groups in one commit.
 - A resolution requires production code, focused regression tests, relevant documentation and skill updates, public-contract review, formatting, and the smallest sufficient package/root verification.
-- When closing an item, retain its original report, add the resolving commit SHA and release target, and move it to the resolved history only after verification.
+- When a group is complete, mark its table and section status as **Finished**, check every resolved item, and record the implementation commit SHA in both places.
+- Record completion in an immediate tracker-only follow-up commit because a Git commit cannot contain its own final SHA. The closure commit must not contain implementation changes.
+- When closing an item, retain its original report, add the resolving implementation commit SHA and release target, and move it to the resolved history only after verification.
 - Reassess overlapping findings inside a group before coding so one shared contract fixes the underlying problem instead of adding parallel adapters.
 
 ## Commit groups
 
-| Group | Scope | Issues | Commit prefix | Status |
-|---|---|---:|---|---|
-| G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | Not started |
-| G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Not started |
-| G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Not started |
-| G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Not started |
-| G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Not started |
-| G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Not started |
-| G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Not started |
-| G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Not started |
-| G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started |
-| G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started |
+| Group | Scope | Issues | Commit prefix | Status | Implementation commit |
+|---|---|---:|---|---|---|
+| G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | In progress | — |
+| G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Not started | — |
+| G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Not started | — |
+| G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Not started | — |
+| G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Not started | — |
+| G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Not started | — |
+| G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Not started | — |
+| G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Not started | — |
+| G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
+| G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
 Total open issues: **46**.
 
@@ -89,7 +91,8 @@ Total open issues: **46**.
 
 ### G01 — Suite migration ownership and release workflow
 
-- Status: not started
+- Status: in progress
+- Implementation commit: pending
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `fix(suite): …`
 

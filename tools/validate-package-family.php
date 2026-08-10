@@ -448,14 +448,23 @@ if ($generatedPackages !== $expectedGeneratedPackages) {
     $fail('family', 'generated TypeScript manifest does not cover exactly every Data-backed package');
 }
 
+$timestampAwareMigrationPublishers = [
+    'activity',
+    'auth',
+    'comments',
+    'mail-notifications',
+    'media',
+];
+
 foreach ($packages as $package) {
     $path = "{$root}/packages/nvl/{$package}";
     $packageSource = selfReadTree("{$path}/src");
 
-    if (str_contains($packageSource, 'publishesMigrations(')) {
+    if (in_array($package, $timestampAwareMigrationPublishers, true)
+        && ! str_contains($packageSource, 'publishesMigrations(')) {
         $fail(
             $package,
-            'migration publication must preserve package migration names when migrations also auto-load',
+            'migration publication must use Laravel timestamp-aware publishing',
         );
     }
 

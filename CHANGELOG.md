@@ -9,6 +9,12 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+### Changed
+
+- Separated automatic vendor migration loading from host-owned published
+  migrations across Auth, Activity, Comments, Media, and Mail Notifications,
+  including timestamp-aware publishing and strict duplicate-owner diagnostics.
+
 ## [1.0.1] - 2026-08-09
 
 ### Added
