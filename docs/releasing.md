@@ -97,6 +97,19 @@ composer quality
 composer audit --locked --no-interaction
 ```
 
+For suite `1.0.2` and later, release/consumer CI may make the existing
+warning-free TypeScript contract explicit with:
+
+```bash
+php artisan nvl:data:types:generate --fail-on-warning
+php artisan nvl:data:types:check --fail-on-warning
+```
+
+Do not pass `--fail-on-warning` when rehearsing the published `1.0.1`
+artifact; that version enforces transformer warnings internally but does not
+expose the option in its Artisan signature. Always align release commands with
+the exact artifact version under test.
+
 Review intentional public-contract changes before running
 `composer contracts:update`. A baseline update is part of the reviewed release
 change, never an automatic way to silence a failure.

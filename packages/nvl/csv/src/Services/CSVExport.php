@@ -346,7 +346,9 @@ final class CSVExport
      * to minimize memory usage for large datasets. Automatically handles
      * model-to-array conversion and relationship loading.
      *
-     * @param  Builder<Model>  $query  Eloquent query builder instance
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query  Eloquent query builder instance
      * @return CSVExportResult Export result with file information and statistics
      *
      * @throws RuntimeException If file operations fail or database query fails

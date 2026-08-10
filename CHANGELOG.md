@@ -11,6 +11,10 @@ Module-level implementation history remains available in each
 
 ### Changed
 
+- Added versioned strict TypeScript generation flags and generated-artifact
+  lint/format exclusions, registered Mail Notifications public enums for
+  declaration generation, and made CSV exports accept concrete Eloquent
+  builders without static-analysis errors.
 - Separated automatic vendor migration loading from host-owned published
   migrations across Auth, Activity, Comments, Media, and Mail Notifications,
   including timestamp-aware publishing and strict duplicate-owner diagnostics.

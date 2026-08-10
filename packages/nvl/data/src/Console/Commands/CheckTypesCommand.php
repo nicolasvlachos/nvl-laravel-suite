@@ -26,7 +26,8 @@ final class CheckTypesCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'nvl:data:types:check';
+    protected $signature = 'nvl:data:types:check
+        {--fail-on-warning : Explicitly require warning-free output (available since nvl/laravel-suite 1.0.2)}';
 
     /**
      * @var string

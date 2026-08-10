@@ -182,6 +182,10 @@ Export sources are:
 
 Fields may be dot-notated array keys or closures receiving the complete row. When fields and headings are omitted, the first row’s keys define both. Closure-based fields require explicit headings. Arrays and ordinary objects are JSON encoded, `DateTimeInterface` values use ISO 8601, backed enums use their values, and `Stringable` objects use their string representation. Booleans become `1` or `0`, and null becomes an empty field.
 
+`fromQuery()` is generic over the concrete Eloquent model. A correctly typed
+`Builder<App\Models\User>` may be passed directly under maximum-level PHPStan;
+consumers do not need to widen it to `Builder<Model>` or erase its model type.
+
 `CSVExportOptionsData` applies format, delimiter, enclosure, escape, BOM, headers, index, processing mode, chunk size, encoding, and memory settings:
 
 ```php

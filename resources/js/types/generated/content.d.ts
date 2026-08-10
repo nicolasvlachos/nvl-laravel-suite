@@ -156,6 +156,18 @@ revision: number,
 export type ContentSchemaData = {
 fields: Nvl.Content.Data.ContentFieldDefinitionData[],
 };
+export type ContentScopeData = {
+scope: string,
+scopeKey: string,
+};
+export type ContentScopeResolutionData = {
+locale: string,
+scopes: Nvl.Content.Data.ContentScopeData[],
+values: Record<string, Record<string, any>>,
+sources: Record<string, string>,
+matched: number,
+limit: number,
+};
 export type RenderedContentBannerData = {
 heading: Nvl.Content.Data.RenderedContentHeadingData,
 image: Nvl.Content.Data.RenderedContentImageData | null,

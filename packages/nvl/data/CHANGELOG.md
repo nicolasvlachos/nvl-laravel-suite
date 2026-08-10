@@ -4,6 +4,10 @@ All notable changes to `nvl/data` are documented here.
 
 ## [Unreleased]
 
+- Added the versioned `--fail-on-warning` generation/check CLI contract while
+  retaining warning-free output as the default.
+- Added publishable ESLint flat-config and Prettier-ignore fragments for every
+  default split declaration and integrity-manifest path.
 ## [1.0.1] - 2026-08-09
 
 - Added validated PHP-to-TypeScript replacement maps with legacy host-map

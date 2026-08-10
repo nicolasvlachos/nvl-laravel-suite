@@ -86,6 +86,10 @@ class DataServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../../resources/boost/skills' => base_path('.agents/skills'),
             ], 'data-skills');
+            $this->publishes([
+                __DIR__.'/../../resources/tooling/eslint.config.fragment.js' => base_path('nvl-data.eslint.config.js'),
+                __DIR__.'/../../resources/tooling/prettierignore.fragment' => base_path('.nvl-data.prettierignore'),
+            ], 'nvl-data-generated-types-tooling');
         }
 
         if ($routeConfiguration->enabled()) {

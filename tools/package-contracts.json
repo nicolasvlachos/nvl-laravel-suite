@@ -11170,7 +11170,8 @@
                     "@throws RuntimeException If file operations fail or system resources are unavailable",
                     "@throws CSVConfigurationException If export configuration is invalid or incomplete",
                     "public function fromQuery(Illuminate\\Database\\Eloquent\\Builder $query): Nvl\\Csv\\ValueObjects\\CSVExportResult",
-                    "@param Builder<Model> $query Eloquent query builder instance",
+                    "@template TModel of Model",
+                    "@param Builder<TModel> $query Eloquent query builder instance",
                     "@return CSVExportResult Export result with file information and statistics",
                     "@throws RuntimeException If file operations fail or database query fails",
                     "@throws CSVConfigurationException If export configuration is invalid or incomplete",
@@ -11908,20 +11909,20 @@
                 "nvl-data-config"
             ],
             "commands": {
-                "Nvl\\Data\\Console\\Commands\\CheckTypesCommand": "nvl:data:types:check",
-                "Nvl\\Data\\Console\\Commands\\GenerateTypesCommand": "nvl:data:types:generate",
+                "Nvl\\Data\\Console\\Commands\\CheckTypesCommand": "nvl:data:types:check {--fail-on-warning : Explicitly require warning-free output (available since nvl/laravel-suite 1.0.2)}",
+                "Nvl\\Data\\Console\\Commands\\GenerateTypesCommand": "nvl:data:types:generate {--fail-on-warning : Explicitly require warning-free output (available since nvl/laravel-suite 1.0.2)}",
                 "Nvl\\Data\\Console\\Commands\\ShowTypesManifestCommand": "nvl:data:types:manifest {--write : Persist the manifest beside declarations}"
             },
             "symbols": {
                 "Nvl\\Data\\Console\\Commands\\CheckTypesCommand": [
                     "final class Nvl\\Data\\Console\\Commands\\CheckTypesCommand extends Illuminate\\Console\\Command",
-                    "protected mixed $signature=\"nvl:data:types:check\"",
+                    "protected mixed $signature=\"nvl:data:types:check\\n        {--fail-on-warning : Explicitly require warning-free output (available since nvl/laravel-suite 1.0.2)}\"",
                     "protected mixed $description=\"Fail when generated NVL TypeScript declarations are stale\"",
                     "public function handle(Illuminate\\Contracts\\Config\\Repository $config, Illuminate\\Filesystem\\Filesystem $files, Spatie\\TypeScriptTransformer\\Runners\\Runner $runner, Nvl\\Data\\Services\\TypeScriptConfigurator $configurator, Nvl\\Data\\Services\\TypeScriptPathGuard $pathGuard, Nvl\\Data\\Services\\GeneratedArtifactSet $artifacts, Nvl\\Data\\Services\\GeneratedTypeFileCatalog $catalog): int"
                 ],
                 "Nvl\\Data\\Console\\Commands\\GenerateTypesCommand": [
                     "final class Nvl\\Data\\Console\\Commands\\GenerateTypesCommand extends Illuminate\\Console\\Command",
-                    "protected mixed $signature=\"nvl:data:types:generate\"",
+                    "protected mixed $signature=\"nvl:data:types:generate\\n        {--fail-on-warning : Explicitly require warning-free output (available since nvl/laravel-suite 1.0.2)}\"",
                     "protected mixed $description=\"Generate deterministic NVL TypeScript declarations and a manifest\"",
                     "public function handle(Nvl\\Data\\Services\\GeneratedTypesGenerator $generator): int"
                 ],
@@ -26573,6 +26574,7 @@
                 "settings-skills"
             ],
             "commands": {
+                "Nvl\\Settings\\Commands\\AdoptCommand": "nvl:settings:adopt {manifest : Absolute or application-relative JSON manifest path} {--apply : Persist all mapped overrides after successful validation} {--format=text : Output text or json}",
                 "Nvl\\Settings\\Commands\\CacheCommand": "nvl:settings:cache",
                 "Nvl\\Settings\\Commands\\ClearCommand": "nvl:settings:clear",
                 "Nvl\\Settings\\Commands\\DoctorCommand": "nvl:settings:doctor {--strict : Treat warnings as failures} {--format=text : Output format: text or json}",
@@ -26582,6 +26584,13 @@
                 "Nvl\\Settings\\Commands\\ValidateCommand": "nvl:settings:validate {--format=text : Output format: text or json}"
             },
             "symbols": {
+                "Nvl\\Settings\\Actions\\AdoptSettingsAction": [
+                    "final readonly class Nvl\\Settings\\Actions\\AdoptSettingsAction",
+                    "public function __construct(Nvl\\Settings\\Services\\SettingsAdoptionManifest $manifests, Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingValueValidator $values, Nvl\\Settings\\Contracts\\SettingRepository $settings): mixed",
+                    "public function execute(array $manifest, bool $apply=false): array",
+                    "@param array<array-key, mixed> $manifest",
+                    "@return array{mode: string, source_table: string, reconciliation: array{expected: int, source: int, mapped: int, matched: int, created: int, updated: int, unchanged: int}}"
+                ],
                 "Nvl\\Settings\\Actions\\GetManySettingsAction": [
                     "final readonly class Nvl\\Settings\\Actions\\GetManySettingsAction",
                     "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions): mixed",
@@ -26601,12 +26610,12 @@
                 ],
                 "Nvl\\Settings\\Actions\\ResetSettingAction": [
                     "final readonly class Nvl\\Settings\\Actions\\ResetSettingAction",
-                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache): mixed",
+                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache, Nvl\\Settings\\Contracts\\SettingsAuditContextProvider $auditContext): mixed",
                     "public function execute(string $key, int $expectedRevision): Nvl\\Settings\\Data\\SettingValueData"
                 ],
                 "Nvl\\Settings\\Actions\\SetSettingAction": [
                     "final readonly class Nvl\\Settings\\Actions\\SetSettingAction",
-                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache, Nvl\\Settings\\Services\\SettingValueValidator $values): mixed",
+                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache, Nvl\\Settings\\Services\\SettingValueValidator $values, Nvl\\Settings\\Contracts\\SettingsAuditContextProvider $auditContext): mixed",
                     "public function execute(Nvl\\Settings\\Data\\SettingMutationData $data): Nvl\\Settings\\Data\\SettingValueData",
                     "@throws ValidationException"
                 ],
@@ -26614,6 +26623,11 @@
                     "final readonly class Nvl\\Settings\\Actions\\ValidateSettingsSourcesAction",
                     "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions): mixed",
                     "public function execute(): Nvl\\Settings\\Data\\SettingsSourceStatusData"
+                ],
+                "Nvl\\Settings\\Adapters\\Laravel\\LaravelSettingsAuditContextProvider": [
+                    "final readonly class Nvl\\Settings\\Adapters\\Laravel\\LaravelSettingsAuditContextProvider implements Nvl\\Settings\\Contracts\\SettingsAuditContextProvider",
+                    "public function __construct(Illuminate\\Http\\Request $request): mixed",
+                    "public function current(): Nvl\\Settings\\Data\\SettingAuditContextData"
                 ],
                 "Nvl\\Settings\\Casts\\SettingValueCast": [
                     "final class Nvl\\Settings\\Casts\\SettingValueCast implements Illuminate\\Contracts\\Database\\Eloquent\\CastsAttributes",
@@ -26623,6 +26637,12 @@
                     "public function set(Illuminate\\Database\\Eloquent\\Model $model, string $key, mixed $value, array $attributes): array",
                     "@param array<string, mixed> $attributes",
                     "@return array<string, string|null>"
+                ],
+                "Nvl\\Settings\\Commands\\AdoptCommand": [
+                    "final class Nvl\\Settings\\Commands\\AdoptCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:settings:adopt\\n        {manifest : Absolute or application-relative JSON manifest path}\\n        {--apply : Persist all mapped overrides after successful validation}\\n        {--format=text : Output text or json}\"",
+                    "protected mixed $description=\"Plan or apply a reconciled legacy Settings adoption manifest\"",
+                    "public function handle(Nvl\\Settings\\Actions\\AdoptSettingsAction $adopt): int"
                 ],
                 "Nvl\\Settings\\Commands\\CacheCommand": [
                     "final class Nvl\\Settings\\Commands\\CacheCommand extends Illuminate\\Console\\Command",
@@ -26675,6 +26695,10 @@
                     "public abstract function forget(string $key): void",
                     "public abstract function has(string $key): bool"
                 ],
+                "Nvl\\Settings\\Contracts\\SettingsAuditContextProvider": [
+                    "interface Nvl\\Settings\\Contracts\\SettingsAuditContextProvider",
+                    "public abstract function current(): Nvl\\Settings\\Data\\SettingAuditContextData"
+                ],
                 "Nvl\\Settings\\Contracts\\SettingsAuthorization": [
                     "interface Nvl\\Settings\\Contracts\\SettingsAuthorization",
                     "public abstract function authorize(Nvl\\Settings\\Enums\\SettingAbility $ability, ?string $key=null): void"
@@ -26686,6 +26710,15 @@
                     "public function __construct(int $expectedRevision): mixed",
                     "public static function rules(): array",
                     "@return array<string, list<string>>"
+                ],
+                "Nvl\\Settings\\Data\\SettingAuditContextData": [
+                    "final readonly class Nvl\\Settings\\Data\\SettingAuditContextData",
+                    "public readonly ?string $actorType",
+                    "public readonly ?string $actorId",
+                    "public readonly ?string $requestId",
+                    "public readonly ?string $ipAddress",
+                    "public readonly ?string $userAgent",
+                    "public function __construct(?string $actorType=null, ?string $actorId=null, ?string $requestId=null, ?string $ipAddress=null, ?string $userAgent=null): mixed"
                 ],
                 "Nvl\\Settings\\Data\\SettingDefinitionData": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
@@ -26845,11 +26878,12 @@
                 ],
                 "Nvl\\Settings\\Events\\SettingChanged": [
                     "final readonly class Nvl\\Settings\\Events\\SettingChanged implements Illuminate\\Contracts\\Events\\ShouldDispatchAfterCommit",
+                    "public readonly Nvl\\Settings\\Data\\SettingAuditContextData $context",
                     "public readonly string $id",
                     "public readonly string $key",
                     "public readonly int $revision",
                     "public readonly string $operation",
-                    "public function __construct(string $id, string $key, int $revision, string $operation): mixed",
+                    "public function __construct(string $id, string $key, int $revision, string $operation, ?Nvl\\Settings\\Data\\SettingAuditContextData $context=null): mixed",
                     "public static function dispatch(mixed ...$arguments): mixed",
                     "@param mixed ...$arguments",
                     "@return mixed",
@@ -26965,6 +26999,24 @@
                     "public function register(): void",
                     "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void"
                 ],
+                "Nvl\\Settings\\Rules\\IntegerListBetween": [
+                    "final readonly class Nvl\\Settings\\Rules\\IntegerListBetween implements Illuminate\\Contracts\\Validation\\ValidationRule, Stringable",
+                    "public readonly int $minimum",
+                    "public readonly int $maximum",
+                    "public function __construct(int $minimum, int $maximum): mixed",
+                    "public function isValid(mixed $value): bool",
+                    "public function validate(string $attribute, mixed $value, Closure $fail): void",
+                    "public function __toString(): string"
+                ],
+                "Nvl\\Settings\\Rules\\IntegerMapBetween": [
+                    "final readonly class Nvl\\Settings\\Rules\\IntegerMapBetween implements Illuminate\\Contracts\\Validation\\ValidationRule, Stringable",
+                    "public readonly int $minimum",
+                    "public readonly int $maximum",
+                    "public function __construct(int $minimum, int $maximum): mixed",
+                    "public function isValid(mixed $value): bool",
+                    "public function validate(string $attribute, mixed $value, Closure $fail): void",
+                    "public function __toString(): string"
+                ],
                 "Nvl\\Settings\\Services\\ConfigOverrideApplier": [
                     "final readonly class Nvl\\Settings\\Services\\ConfigOverrideApplier",
                     "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache): mixed",
@@ -26998,6 +27050,13 @@
                     "public function validateStored(Nvl\\Settings\\Support\\Definition $definition, ?string $rawValue): ?string",
                     "@throws ValidationException"
                 ],
+                "Nvl\\Settings\\Services\\SettingsAdoptionManifest": [
+                    "final readonly class Nvl\\Settings\\Services\\SettingsAdoptionManifest",
+                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions): mixed",
+                    "public function normalize(array $manifest): array",
+                    "@param array<array-key, mixed> $manifest",
+                    "@return NormalizedManifest"
+                ],
                 "Nvl\\Settings\\Services\\SettingsDoctor": [
                     "final readonly class Nvl\\Settings\\Services\\SettingsDoctor",
                     "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Contracts\\SettingsAuthorization $authorization): mixed",
@@ -27006,7 +27065,7 @@
                 ],
                 "Nvl\\Settings\\SettingManager": [
                     "final class Nvl\\Settings\\SettingManager implements Nvl\\Settings\\Contracts\\SettingRepository",
-                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache, Nvl\\Settings\\Services\\SettingValueValidator $values): mixed",
+                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache, Nvl\\Settings\\Services\\SettingValueValidator $values, Nvl\\Settings\\Contracts\\SettingsAuditContextProvider $auditContext): mixed",
                     "public function get(string $key): mixed",
                     "public function set(string $key, mixed $value): void",
                     "public function setMany(array $values): void",
@@ -27069,6 +27128,15 @@
                     "public static function path(): string",
                     "public static function name(): string"
                 ],
+                "Nvl\\Settings\\Support\\SettingsRules": [
+                    "final class Nvl\\Settings\\Support\\SettingsRules",
+                    "public static function integerListBetween(int $minimum, int $maximum): Nvl\\Settings\\Rules\\IntegerListBetween",
+                    "public static function integerMapBetween(int $minimum, int $maximum): Nvl\\Settings\\Rules\\IntegerMapBetween",
+                    "public static function integerListBetweenParameters(array $parameters): Nvl\\Settings\\Rules\\IntegerListBetween",
+                    "@param list<string> $parameters",
+                    "public static function integerMapBetweenParameters(array $parameters): Nvl\\Settings\\Rules\\IntegerMapBetween",
+                    "@param list<string> $parameters"
+                ],
                 "Nvl\\Settings\\Testing\\InteractsWithSettings": [
                     "trait Nvl\\Settings\\Testing\\InteractsWithSettings",
                     "public function defineSettings(array $definitions): void",
@@ -27076,7 +27144,7 @@
                 ]
             },
             "configuration": {
-                "config/settings.php": "98f08ad656488ce2dafac5358e3b741cb6474e76994115bb5bb823688dc1a1a5"
+                "config/settings.php": "3163d61a89904a74030fe63cf2f5c87e1386569793342c8786b5bb450a1a9c15"
             },
             "routes": {
                 "routes/api.php": "6f83cda1d9cb49a66008fb26af76876c5c8a8ccdd14ab301dfce92f747271829"

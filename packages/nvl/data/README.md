@@ -29,6 +29,7 @@ Laravel auto-discovers `DataServiceProvider`. Optional publish tags are:
 ```bash
 php artisan vendor:publish --tag=nvl-data-config
 php artisan vendor:publish --tag=data-skills
+php artisan vendor:publish --tag=nvl-data-generated-types-tooling
 ```
 
 The configuration also participates in Laravel's conventional `config` publish
@@ -156,11 +157,48 @@ Set `configure_transformer=false` only if the application binds its own Spatie `
 php artisan nvl:data:types:generate
 php artisan nvl:data:types:manifest
 php artisan nvl:data:types:check
+php artisan nvl:data:types:generate --fail-on-warning
+php artisan nvl:data:types:check --fail-on-warning
 ```
+
+`--fail-on-warning` is accepted by `nvl/laravel-suite` 1.0.2 and later. Suite
+1.0.1 already rejects transformer warnings but does not expose the flag, so
+shared release scripts targeting 1.0.1 must omit it. The option description in
+Artisan help records this minimum version. Warning-free generation and checks
+remain the safe package default; the flag makes that CI requirement explicit.
 
 Generation sorts providers, paths, symbols, and artifacts. Public symbols use `Nvl.<Package>.*` unless an explicit TypeScript attribute overrides the public name or location. The versioned manifest records source ownership, exact generated source symbols, package and transformer versions, generation time, artifact paths, sizes, and SHA-256 checksums. Its `revision` covers all metadata, while `hash` identifies the declaration artifact set.
 
 `types:check` generates into an isolated temporary directory and fails when committed declarations are stale. Transformer warnings, including unresolved references, fail both generation and freshness checks so a warning cannot publish or validate an incomplete contract. CI must also compile the combined declarations with `tsc --noEmit`.
+
+Split declarations and their integrity metadata are generator-owned. Do not
+run ESLint or Prettier over them: formatting output changes their verified
+hashes, and the compatibility entrypoint intentionally uses TypeScript
+triple-slash path references. Keep exact integrity enforcement in
+`nvl:data:types:check` and use these default-path exclusions:
+
+```js
+// eslint.config.js
+import nvlGeneratedTypes from './nvl-data.eslint.config.js';
+
+export default [
+    ...nvlGeneratedTypes,
+    // application configuration
+];
+```
+
+```text
+# .prettierignore
+resources/js/types/generated.d.ts
+resources/js/types/generated/**
+resources/js/types/generated.manifest.json
+```
+
+The `nvl-data-generated-types-tooling` publish tag provides the ESLint flat
+config as `nvl-data.eslint.config.js` and the same Prettier lines in
+`.nvl-data.prettierignore` for copying into the host ignore file. Adjust all
+three paths together when `output_directory`, `output_file`,
+`split_directory`, or `manifest_file` differs from the defaults.
 
 ## Generated-type HTTP routes
 

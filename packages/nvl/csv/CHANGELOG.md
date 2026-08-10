@@ -4,6 +4,8 @@ All notable changes to `nvl/csv` are documented here.
 
 ## [Unreleased]
 
+- Made `CSVExport::fromQuery()` generic over its concrete Eloquent model so
+  invariant `Builder<ConsumerModel>` types pass maximum-level PHPStan.
 - Excluded tests, static-analysis configuration, coverage output, and test-run
   caches from production release archives.
 - Fixed nested transaction ownership, error-threshold handling, strict row-shape validation, and bounded failure diagnostics.

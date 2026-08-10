@@ -10,6 +10,7 @@
 /// <reference path="./generated/filterable.d.ts" />
 /// <reference path="./generated/forms.d.ts" />
 /// <reference path="./generated/illuminate.d.ts" />
+/// <reference path="./generated/mail-notifications.d.ts" />
 /// <reference path="./generated/media.d.ts" />
 /// <reference path="./generated/metafields.d.ts" />
 /// <reference path="./generated/pages.d.ts" />

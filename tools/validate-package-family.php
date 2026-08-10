@@ -24,6 +24,7 @@ require_once $autoload;
 $catalog = require __DIR__.'/package-family.php';
 $packages = $catalog['packages'];
 $internalDependencies = $catalog['internal_dependencies'];
+$typeScriptSources = $catalog['typescript_sources'];
 $databaseTested = $catalog['database_tested'];
 $stateful = $catalog['stateful'];
 $managementConfiguration = [
@@ -424,11 +425,7 @@ $manifestPath = "{$root}/resources/js/types/generated.manifest.json";
 $generatedManifest = is_file($manifestPath)
     ? json_decode((string) file_get_contents($manifestPath), true)
     : null;
-$expectedGeneratedPackages = array_values(array_filter(
-    $packages,
-    static fn (string $package): bool => $package === 'data'
-        || in_array('data', $internalDependencies[$package], true),
-));
+$expectedGeneratedPackages = $typeScriptSources;
 sort($expectedGeneratedPackages);
 $generatedPackages = [];
 
@@ -644,12 +641,10 @@ foreach ($packages as $package) {
         }
     }
 
-    if ($package === 'data' || in_array('data', $internalDependencies[$package], true)) {
+    if (in_array($package, $typeScriptSources, true)) {
         if ($package !== 'data'
-            && ! str_contains(
-                $providerSource,
-                "\$typeScriptSources->register(__DIR__.'/..', 'nvl/{$package}')",
-            )) {
+            && (! str_contains($providerSource, 'TypeScriptSourceRegistry')
+                || ! str_contains($providerSource, "'nvl/{$package}'"))) {
             $fail($package, 'Data-backed package must register its TypeScript source directory');
         }
     }

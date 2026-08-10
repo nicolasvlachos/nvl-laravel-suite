@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Nvl\Activity\Jobs\PurgeActivityLogsJob;
@@ -29,11 +30,7 @@ use Nvl\Workbench\Models\IntegrationTestModel;
 
 it('gathers package type sources and translatable resources through central registries', function (): void {
     $catalog = require base_path('tools/package-family.php');
-    $expectedTypeSourcePackages = array_values(array_filter(
-        $catalog['packages'],
-        static fn (string $package): bool => $package === 'data'
-            || in_array('data', $catalog['internal_dependencies'][$package], true),
-    ));
+    $expectedTypeSourcePackages = $catalog['typescript_sources'];
     $typeSourcePackages = array_values(array_filter(array_map(
         static fn (array $source): ?string => is_string($source['package'])
             ? substr($source['package'], 4)
@@ -47,6 +44,9 @@ it('gathers package type sources and translatable resources through central regi
 
     expect($typeSourcePackages)
         ->toBe($expectedTypeSourcePackages)
+        ->and(base_path('resources/js/types/generated/mail-notifications.d.ts'))->toBeFile()
+        ->and(File::get(base_path('resources/js/types/generated/mail-notifications.d.ts')))
+        ->toContain('MailDeliveryStatus')
         ->and($translationResources)->toBe([
             'content.blocks',
             'forms.forms',

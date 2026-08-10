@@ -4,6 +4,15 @@
 declare namespace Nvl {
 namespace Templates {
 namespace Data {
+export type MediaTemplateAssetData = {
+key: string,
+mediaId: string,
+scope: string,
+type: string,
+variation: string,
+delivery: string,
+expectedRevision: number | null,
+};
 export type PdfMargins = {
 left: number | null,
 right: number | null,

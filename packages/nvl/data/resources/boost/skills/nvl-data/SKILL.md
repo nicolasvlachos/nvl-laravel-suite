@@ -24,14 +24,20 @@ Use this package as the package family's only DTO and PHP-to-TypeScript boundary
 
 ## Generate artifacts
 
-- Run `nvl:data:types:generate` to create declarations and the manifest.
-- Run `nvl:data:types:check` in CI to detect stale output.
+- Run `nvl:data:types:generate --fail-on-warning` to create declarations and
+  the manifest on suite 1.0.2+; omit the flag on 1.0.1.
+- Run `nvl:data:types:check --fail-on-warning` in 1.0.2+ CI to detect stale
+  output while making the warning-free requirement explicit.
 - Run `nvl:data:types:manifest --write` when only the manifest must be refreshed.
 - Treat explicit `#[TypeScript(name: ..., location: ...)]` values as the public symbol contract and fail duplicate public symbols.
 - Use the manifest `revision` for catalog synchronization and its artifact `hash` for declaration/archive synchronization.
 - Keep HTTP artifact routes disabled by default. Enabled routes serve manifest-listed files only and never generate in a request.
 - Configure exceptional PHP references through validated `type_replacements`;
   transformer warnings fail generation and freshness checks.
+- Exclude the configured entrypoint, split declaration directory, and integrity
+  manifest from ESLint and Prettier. Verify their exact generator-owned content
+  with `nvl:data:types:check`; publish `nvl-data-generated-types-tooling` for
+  default-path fragments.
 - TypeScript Transformer 3.3 removed
   `Spatie\TypeScriptTransformer\Attributes\RecordTypeScriptType`; use
   `LiteralTypeScriptType('Record<string, unknown>')` for dynamic records.

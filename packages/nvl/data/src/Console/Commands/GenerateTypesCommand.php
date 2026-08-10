@@ -17,7 +17,8 @@ final class GenerateTypesCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'nvl:data:types:generate';
+    protected $signature = 'nvl:data:types:generate
+        {--fail-on-warning : Explicitly require warning-free output (available since nvl/laravel-suite 1.0.2)}';
 
     /**
      * @var string

@@ -252,10 +252,14 @@ future-proposal guidance are rejected by the family validator.
 Modules that expose DTO or enum contracts register their source paths with the Data module; infrastructure-only modules do not acquire a data dependency just for discovery. Applications may add their own paths in `config/nvl-data.php`. Generate declarations during build:
 
 ```bash
-php artisan nvl:data:types:generate
-php artisan nvl:data:types:check
+php artisan nvl:data:types:generate --fail-on-warning
+php artisan nvl:data:types:check --fail-on-warning
 php artisan nvl:data:types:manifest
 ```
+
+The explicit strict flags are available in suite 1.0.2 and later. Generated
+declarations should be excluded from ESLint and Prettier; Data publishes the
+canonical ignore fragments with the `nvl-data-generated-types-tooling` tag.
 
 The opt-in generated-type surface serves only manifest-listed, pre-generated
 artifacts and a bounded streamed archive. It is disabled by default, protected

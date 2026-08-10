@@ -133,6 +133,10 @@ it('ships a complete staged-adoption module configuration', function (): void {
             static fn (mixed $enabled): bool => $enabled !== true,
         ))->toBe([])
         ->and($providerDependencies)->toBe($catalogDependencies);
+
+    expect($catalog['typescript_sources'])
+        ->toContain('data', 'mail-notifications')
+        ->each->toBeIn($catalogModules);
 });
 
 it('selects only an enabled module and its transitive dependencies', function (): void {

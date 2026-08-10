@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @return array{
  *     packages: list<string>,
  *     internal_dependencies: array<string, list<string>>,
+ *     typescript_sources: list<string>,
  *     database_tested: list<string>,
  *     stateful: list<string>
  * }
@@ -56,6 +57,27 @@ return [
         'templates' => ['content', 'data', 'filterable', 'media', 'translatable'],
         'translatable' => ['data'],
         'translations' => ['data', 'filterable', 'support'],
+    ],
+    'typescript_sources' => [
+        'activity',
+        'auth',
+        'comments',
+        'content',
+        'csv',
+        'data',
+        'filterable',
+        'forms',
+        'mail-notifications',
+        'media',
+        'metafields',
+        'pages',
+        'primitives',
+        'seo',
+        'settings',
+        'taxonomy',
+        'templates',
+        'translatable',
+        'translations',
     ],
     'database_tested' => [
         'activity',

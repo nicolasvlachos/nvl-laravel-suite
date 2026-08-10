@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Filesystem\LockableFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Nvl\Data\Data\PaginatedCollection;
@@ -77,6 +78,31 @@ test('it publishes its configuration through package and conventional config tag
             DataServiceProvider::class,
             'config',
         )))->toContain($expectedTarget);
+});
+
+test('it exposes versioned strict warning flags and generated tooling fragments', function (): void {
+    $commands = Artisan::all();
+    $generateOption = $commands['nvl:data:types:generate']
+        ->getDefinition()
+        ->getOption('fail-on-warning');
+    $checkOption = $commands['nvl:data:types:check']
+        ->getDefinition()
+        ->getOption('fail-on-warning');
+    $published = DataServiceProvider::pathsToPublish(
+        DataServiceProvider::class,
+        'nvl-data-generated-types-tooling',
+    );
+
+    expect($generateOption->getDescription())->toContain('1.0.2')
+        ->and($checkOption->getDescription())->toContain('1.0.2')
+        ->and(array_values($published))->toContain(
+            base_path('nvl-data.eslint.config.js'),
+            base_path('.nvl-data.prettierignore'),
+        )
+        ->and(File::get(__DIR__.'/../../resources/tooling/eslint.config.fragment.js'))
+        ->toContain('resources/js/types/generated/**')
+        ->and(File::get(__DIR__.'/../../resources/tooling/prettierignore.fragment'))
+        ->toContain('resources/js/types/generated.manifest.json');
 });
 
 test('it rejects route configuration that could silently expose the artifact API', function (): void {
@@ -566,7 +592,7 @@ PHP);
     app()->forgetInstance(TypeScriptConfigurator::class);
     app()->forgetInstance(TypeScriptTransformerConfig::class);
 
-    $this->artisan('nvl:data:types:generate')
+    $this->artisan('nvl:data:types:generate', ['--fail-on-warning' => true])
         ->expectsOutputToContain('transformer emitted warnings')
         ->assertFailed();
 
@@ -591,7 +617,7 @@ PHP);
     app()->forgetInstance(TypeScriptConfigurator::class);
     app()->forgetInstance(TypeScriptTransformerConfig::class);
 
-    $this->artisan('nvl:data:types:check')
+    $this->artisan('nvl:data:types:check', ['--fail-on-warning' => true])
         ->expectsOutputToContain('unresolved transformer warnings')
         ->assertFailed();
 });
