@@ -24,14 +24,14 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Finished | `d7f1a32` |
 | G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Finished | `f88cba0` |
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Finished | `bca980b` |
-| G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Not started | — |
+| G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Finished | `40c4816` |
 | G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Not started | — |
 | G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Not started | — |
 | G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Not started | — |
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **33**.
+Total open issues: **31**.
 
 ## Consumer adoption evidence
 
@@ -275,11 +275,12 @@ Total open issues: **33**.
 
 ### G05 — Mail Notifications adoption and administrative reads
 
-- Status: not started
+- Status: **Finished**
+- Implementation commit: `40c4816`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `feat(mail-notifications): …`
 
-#### [ ] G05-01 — Mail Notifications has no first-party legacy-schema adoption command
+#### [x] G05-01 — Mail Notifications has no first-party legacy-schema adoption command
 
 - Area: Mail Notifications installation, compatibility preflight, and scheduled-message upgrade path
 - Impact: high
@@ -287,8 +288,11 @@ Total open issues: **33**.
 - Consumer risk: enabling automatic package migrations fails before a later host migration can inspect the canonical table name. Consumers must invent a timestamp-sensitive bridge and may silently lose provider events, stable notifiable aliases, privacy boundaries, or scheduled work.
 - Expected package change: provide a dry-run adoption command or documented bridge API that inventories legacy columns and foreign keys, validates a mapping, stages canonical-name collisions, maps statuses/events/notifiable aliases, requires explicit scheduled factory mappings, reconciles counts, and emits a forward-only cutover report.
 - Current workaround: KPO stages the two incompatible tables immediately before the package preflight, lets the unmodified package migrations establish canonical ownership, imports only privacy-safe delivery state, refuses to discard non-empty legacy scheduled rows, reconciles all attempt IDs, retargets the reminder ledger, and drops staging tables.
+- Resolution: `nvl:mail-notifications:adopt` now consumes a versioned, bounded manifest and defaults to a dry run. Its explicit staging phase inventories and detaches declared host foreign keys before canonical-name renames; the import phase validates the canonical schema, complete field/status/notifiable/event/factory mappings, registered scheduled factory aliases and payload versions, privacy-safe metadata, source counts, UUID identities, and target conflicts. Apply mode transactionally imports notifications, generated provider events, and scheduled work with stale claims cleared, reconciles every imported identity, restores declared foreign keys, and drops source tables only when the reviewed manifest opts in. The package publishes a complete example manifest and documents the forward-only cutover sequence.
+- Resolving implementation commit: `40c4816`
+- Release target: `1.0.2`
 
-#### [ ] G05-02 — Mail Notifications has no package read/query Actions
+#### [x] G05-02 — Mail Notifications has no package read/query Actions
 
 - Area: Mail Notifications administrative read API
 - Impact: medium
@@ -296,6 +300,9 @@ Total open issues: **33**.
 - Consumer risk: every host must query the package model directly and independently define filters, pagination, statistics, suggestions, and public-safe projections, which makes downstream UI contracts inconsistent.
 - Expected package change: add read-only list/show/statistics/suggestion Actions with bounded filters, stable pagination, privacy-safe DTOs, and explicit authorization hooks.
 - Current workaround: KPO's remaining Mail Notifications Actions are read-only host projections over `Nvl\MailNotifications\Models\MailNotification`; all tracking and delivery mutations remain package-owned. `reminder_occurrences` is a separate KPO workflow ledger.
+- Resolution: Mail Notifications now provides list, show, statistics, and suggestion Actions behind four explicit `MailNotificationReadAbility` checks and a fail-closed, replaceable `MailNotificationReadAuthorization` contract. Validated filters enforce allowlisted sorts, bounded search values, date ranges, pagination caps, and deterministic ordering. Stable read value objects omit recipient arrays, notification/provider-event metadata, raw webhook content, scheduled payloads, and scheduler claims while still exposing the operational delivery fields and metadata-free event history needed by host-owned controllers and administrative interfaces.
+- Resolving implementation commit: `40c4816`
+- Release target: `1.0.2`
 
 ### G06 — Auth schema and principal adoption
 
