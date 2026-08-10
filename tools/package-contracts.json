@@ -16026,6 +16026,7 @@
                 "mail-notifications-skills"
             ],
             "commands": {
+                "Nvl\\MailNotifications\\Console\\Commands\\AdoptMailNotificationsCommand": "nvl:mail-notifications:adopt {manifest : Absolute or application-relative JSON manifest path} {--stage : Rename canonical-name legacy tables before package migrations} {--apply : Apply the validated stage or import plan} {--format=text : Output text or json}",
                 "Nvl\\MailNotifications\\Console\\Commands\\AnonymizeMailNotificationsCommand": "nvl:mail-notifications:anonymize {--dry-run : Count eligible rows without anonymizing them} {--before= : Explicit RFC 3339 cutoff; defaults to configured anonymization ages} {--limit= : Maximum rows selected independently from each data set}",
                 "Nvl\\MailNotifications\\Console\\Commands\\MailNotificationsDoctorCommand": "nvl:mail-notifications:doctor {--strict : Treat warnings as failures} {--format=text : Output format: text or json}",
                 "Nvl\\MailNotifications\\Console\\Commands\\ProcessScheduledMailCommand": "nvl:mail-notifications:process-scheduled {--limit= : Maximum due messages to process in this run}",
@@ -16035,6 +16036,34 @@
                 "Nvl\\MailNotifications\\Console\\Commands\\SyncRemoteWebhooksCommand": "nvl:mail-notifications:webhooks:sync {--provider= : Limit synchronization to one registered provider} {--force : Apply updates when an existing webhook differs} {--dry-run : Inspect and report changes without remote writes}"
             },
             "symbols": {
+                "Nvl\\MailNotifications\\Actions\\AdoptMailNotificationsAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\AdoptMailNotificationsAction",
+                    "public function __construct(Nvl\\MailNotifications\\Services\\MailNotificationsAdoptionManifest $manifests, Nvl\\MailNotifications\\Services\\MailNotificationNotifiableTypeRegistry $notifiableTypes, Nvl\\MailNotifications\\Services\\ScheduledMessageFactoryRegistry $factories): mixed",
+                    "public function execute(array $manifest, bool $stage=false, bool $apply=false): array",
+                    "@param array<array-key, mixed> $manifest",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\MailNotifications\\Actions\\GetMailNotificationStatisticsAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\GetMailNotificationStatisticsAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization, Nvl\\MailNotifications\\Services\\MailNotificationReadQueryBuilder $queries): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery $filters): Nvl\\MailNotifications\\ValueObjects\\MailNotificationStatistics"
+                ],
+                "Nvl\\MailNotifications\\Actions\\ListMailNotificationsAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\ListMailNotificationsAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization, Nvl\\MailNotifications\\Services\\MailNotificationReadQueryBuilder $queries): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery $filters): Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadPage"
+                ],
+                "Nvl\\MailNotifications\\Actions\\ShowMailNotificationAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\ShowMailNotificationAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $id): Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadData"
+                ],
+                "Nvl\\MailNotifications\\Actions\\SuggestMailNotificationsAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\SuggestMailNotificationsAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $search, ?Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $status=null, ?string $mailer=null, ?int $limit=null): array",
+                    "@return list<MailNotificationSuggestion>"
+                ],
                 "Nvl\\MailNotifications\\Adapters\\MailerSend\\MailerSendAdapter": [
                     "final readonly class Nvl\\MailNotifications\\Adapters\\MailerSend\\MailerSendAdapter implements Nvl\\MailNotifications\\Contracts\\ProviderAdapter, Nvl\\MailNotifications\\Contracts\\ProviderConfigurationValidator, Nvl\\MailNotifications\\Contracts\\ProviderMessageIdResolver, Nvl\\MailNotifications\\Contracts\\WebhookEventNormalizer, Nvl\\MailNotifications\\Contracts\\WebhookSignatureVerifier",
                     "public function __construct(Illuminate\\Contracts\\Config\\Repository $config, Nvl\\MailNotifications\\Adapters\\MailerSend\\MailerSendWebhookNormalizer $normalizer): mixed",
@@ -16074,6 +16103,12 @@
                     "public function __construct(Illuminate\\Contracts\\Config\\Repository $config): mixed",
                     "public function validateConfiguration(): void",
                     "public function normalize(Nvl\\MailNotifications\\ValueObjects\\VerifiedWebhook $webhook): Nvl\\MailNotifications\\ValueObjects\\VerifiedDeliveryEvent|Nvl\\MailNotifications\\ValueObjects\\WebhookAcknowledgement"
+                ],
+                "Nvl\\MailNotifications\\Console\\Commands\\AdoptMailNotificationsCommand": [
+                    "final class Nvl\\MailNotifications\\Console\\Commands\\AdoptMailNotificationsCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:mail-notifications:adopt\\n        {manifest : Absolute or application-relative JSON manifest path}\\n        {--stage : Rename canonical-name legacy tables before package migrations}\\n        {--apply : Apply the validated stage or import plan}\\n        {--format=text : Output text or json}\"",
+                    "protected mixed $description=\"Plan, stage, or apply a reconciled legacy Mail Notifications adoption\"",
+                    "public function handle(Nvl\\MailNotifications\\Actions\\AdoptMailNotificationsAction $adopt): int"
                 ],
                 "Nvl\\MailNotifications\\Console\\Commands\\AnonymizeMailNotificationsCommand": [
                     "final class Nvl\\MailNotifications\\Console\\Commands\\AnonymizeMailNotificationsCommand extends Illuminate\\Console\\Command",
@@ -16123,6 +16158,10 @@
                     "protected mixed $signature=\"nvl:mail-notifications:webhooks:sync\\n        {--provider= : Limit synchronization to one registered provider}\\n        {--force : Apply updates when an existing webhook differs}\\n        {--dry-run : Inspect and report changes without remote writes}\"",
                     "protected mixed $description=\"Synchronize explicitly configured remote mail webhooks\"",
                     "public function handle(Nvl\\MailNotifications\\Services\\RemoteWebhookManagerRegistry $registry): int"
+                ],
+                "Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization": [
+                    "interface Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization",
+                    "public abstract function authorize(Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility $ability, Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\MailNotifications\\Models\\MailNotification $notification=null): void"
                 ],
                 "Nvl\\MailNotifications\\Contracts\\MailTrackable": [
                     "interface Nvl\\MailNotifications\\Contracts\\MailTrackable",
@@ -16279,6 +16318,18 @@
                     "public readonly string $value",
                     "public function canTransitionTo(self $next): bool",
                     "public function isTerminal(): bool",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility": [
+                    "enum Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility implements BackedEnum, UnitEnum: string",
+                    "public const mixed List=Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility::List=list",
+                    "public const mixed View=Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility::View=view",
+                    "public const mixed Statistics=Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility::Statistics=statistics",
+                    "public const mixed Suggest=Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility::Suggest=suggest",
+                    "public readonly string $name",
+                    "public readonly string $value",
                     "public static function cases(): array",
                     "public static function from(string|int $value): static",
                     "public static function tryFrom(string|int $value): ?static"
@@ -16919,6 +16970,10 @@
                     "public function register(): void",
                     "public function boot(): void"
                 ],
+                "Nvl\\MailNotifications\\Services\\ConfiguredMailNotificationReadAuthorization": [
+                    "final class Nvl\\MailNotifications\\Services\\ConfiguredMailNotificationReadAuthorization implements Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization",
+                    "public function authorize(Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility $ability, Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\MailNotifications\\Models\\MailNotification $notification=null): void"
+                ],
                 "Nvl\\MailNotifications\\Services\\DatabaseTrackingLifecycle": [
                     "final readonly class Nvl\\MailNotifications\\Services\\DatabaseTrackingLifecycle implements Nvl\\MailNotifications\\Contracts\\TrackingLifecycle",
                     "public function __construct(Nvl\\MailNotifications\\Contracts\\SensitiveDataRedactor $redactor, Nvl\\MailNotifications\\Services\\MailTrackingEventDispatcher $events, Nvl\\MailNotifications\\Services\\MailNotificationNotifiableTypeRegistry $notifiableTypes, Nvl\\MailNotifications\\Services\\SensitiveStorageCodec $sensitiveStorage): mixed",
@@ -16974,6 +17029,20 @@
                     "@return class-string<MailTrackable>|null",
                     "public function all(): array",
                     "@return array<string, class-string<MailTrackable>>"
+                ],
+                "Nvl\\MailNotifications\\Services\\MailNotificationReadQueryBuilder": [
+                    "final class Nvl\\MailNotifications\\Services\\MailNotificationReadQueryBuilder",
+                    "public function build(Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery $filters): Illuminate\\Database\\Eloquent\\Builder",
+                    "@return Builder<MailNotification>",
+                    "public static function failureStatuses(): array",
+                    "@return list<string>",
+                    "public static function successfulStatuses(): array",
+                    "@return list<string>"
+                ],
+                "Nvl\\MailNotifications\\Services\\MailNotificationsAdoptionManifest": [
+                    "final class Nvl\\MailNotifications\\Services\\MailNotificationsAdoptionManifest",
+                    "public function normalize(array $manifest): Nvl\\MailNotifications\\ValueObjects\\MailNotificationsAdoptionPlan",
+                    "@param array<array-key, mixed> $manifest"
                 ],
                 "Nvl\\MailNotifications\\Services\\MailNotificationsDoctor": [
                     "final readonly class Nvl\\MailNotifications\\Services\\MailNotificationsDoctor",
@@ -17187,6 +17256,12 @@
                     "public function unmatchedEventPolicy(): Nvl\\MailNotifications\\Enums\\UnmatchedWebhookEventPolicy",
                     "public function unmatchedEventRetryGraceSeconds(): int"
                 ],
+                "Nvl\\MailNotifications\\Support\\CanonicalMailNotificationSchema": [
+                    "final class Nvl\\MailNotifications\\Support\\CanonicalMailNotificationSchema",
+                    "public static function notifications(): array",
+                    "public static function events(): array",
+                    "public static function scheduled(): array"
+                ],
                 "Nvl\\MailNotifications\\Support\\DatabaseTimestamp": [
                     "final class Nvl\\MailNotifications\\Support\\DatabaseTimestamp",
                     "public const string FORMAT=\"Y-m-d H:i:s.u\"",
@@ -17245,6 +17320,52 @@
                     "public static function queuedFailure(Nvl\\MailNotifications\\ValueObjects\\TrackingContext $context, ?string $mailer, string $queueReference, Symfony\\Component\\Mime\\Email $message, Throwable $exception): void",
                     "public static function queuedFailureSynchronizationFailed(string $queueReference, Throwable $exception): void"
                 ],
+                "Nvl\\MailNotifications\\ValueObjects\\LegacyMailForeignKey": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\LegacyMailForeignKey",
+                    "public readonly string $table",
+                    "public readonly string $column",
+                    "public readonly string $name",
+                    "public readonly string $onDelete",
+                    "public function __construct(string $table, string $column, string $name, string $onDelete): mixed"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\LegacyMailNotificationMapping": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\LegacyMailNotificationMapping",
+                    "public readonly string $table",
+                    "public readonly int $expectedCount",
+                    "public readonly array $columns",
+                    "public readonly array $statuses",
+                    "public readonly array $notifiableTypes",
+                    "public readonly array $eventTimestamps",
+                    "public readonly array $metadataAllowlist",
+                    "public function __construct(string $table, int $expectedCount, array $columns, array $statuses, array $notifiableTypes, array $eventTimestamps, array $metadataAllowlist): mixed",
+                    "@param array<string, string> $columns",
+                    "@param array<string, string> $statuses",
+                    "@param array<string, string|null> $notifiableTypes",
+                    "@param array<string, string> $eventTimestamps",
+                    "@param list<string> $metadataAllowlist"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\LegacyMailTableStage": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\LegacyMailTableStage",
+                    "public readonly string $sourceTable",
+                    "public readonly string $stagingTable",
+                    "public function __construct(string $sourceTable, string $stagingTable): mixed"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\LegacyScheduledMailMapping": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\LegacyScheduledMailMapping",
+                    "public readonly string $table",
+                    "public readonly int $expectedCount",
+                    "public readonly array $columns",
+                    "public readonly array $statuses",
+                    "public readonly array $notifiableTypes",
+                    "public readonly array $factories",
+                    "public readonly array $metadataAllowlist",
+                    "public function __construct(string $table, int $expectedCount, array $columns, array $statuses, array $notifiableTypes, array $factories, array $metadataAllowlist): mixed",
+                    "@param array<string, string> $columns",
+                    "@param array<string, string> $statuses",
+                    "@param array<string, string|null> $notifiableTypes",
+                    "@param array<string, array{alias: string, version: int}> $factories",
+                    "@param list<string> $metadataAllowlist"
+                ],
                 "Nvl\\MailNotifications\\ValueObjects\\MailAnonymizationResult": [
                     "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailAnonymizationResult",
                     "public readonly Carbon\\CarbonImmutable $notificationCutoff",
@@ -17254,6 +17375,121 @@
                     "public readonly int $scheduledMessageCount",
                     "public readonly bool $dryRun",
                     "public function __construct(Carbon\\CarbonImmutable $notificationCutoff, ?Carbon\\CarbonImmutable $scheduledMessageCutoff, int $notificationCount, int $providerEventCount, int $scheduledMessageCount, bool $dryRun): mixed"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationEventReadData": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationEventReadData",
+                    "public readonly string $id",
+                    "public readonly string $provider",
+                    "public readonly string $providerEventId",
+                    "public readonly ?string $providerMessageId",
+                    "public readonly Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $type",
+                    "public readonly Carbon\\CarbonImmutable $occurredAt",
+                    "public readonly Carbon\\CarbonImmutable $processedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $redactedAt",
+                    "public function __construct(string $id, string $provider, string $providerEventId, ?string $providerMessageId, Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $type, Carbon\\CarbonImmutable $occurredAt, Carbon\\CarbonImmutable $processedAt, ?Carbon\\CarbonImmutable $redactedAt): mixed",
+                    "public static function fromModel(Nvl\\MailNotifications\\Models\\MailNotificationEvent $event): self",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadData": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadData",
+                    "public const array COLUMNS=[\"id\",\"correlation_id\",\"queue_reference\",\"mailer\",\"provider\",\"provider_message_id\",\"status\",\"message_category\",\"subject\",\"from_email\",\"from_name\",\"primary_recipient_email\",\"notifiable_type\",\"notifiable_id\",\"accepted_at\",\"delivered_at\",\"failed_at\",\"status_changed_at\",\"provider_occurred_at\",\"redacted_at\",\"created_at\",\"updated_at\"]",
+                    "public readonly string $id",
+                    "public readonly string $correlationId",
+                    "public readonly ?string $queueReference",
+                    "public readonly string $mailer",
+                    "public readonly ?string $provider",
+                    "public readonly ?string $providerMessageId",
+                    "public readonly Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $status",
+                    "public readonly string $messageCategory",
+                    "public readonly ?string $subject",
+                    "public readonly ?string $fromEmail",
+                    "public readonly ?string $fromName",
+                    "public readonly ?string $primaryRecipientEmail",
+                    "public readonly ?string $notifiableType",
+                    "public readonly ?string $notifiableId",
+                    "public readonly ?Carbon\\CarbonImmutable $acceptedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $deliveredAt",
+                    "public readonly ?Carbon\\CarbonImmutable $failedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $statusChangedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $providerOccurredAt",
+                    "public readonly ?Carbon\\CarbonImmutable $redactedAt",
+                    "public readonly Carbon\\CarbonImmutable $createdAt",
+                    "public readonly Carbon\\CarbonImmutable $updatedAt",
+                    "public readonly array $events",
+                    "public function __construct(string $id, string $correlationId, ?string $queueReference, string $mailer, ?string $provider, ?string $providerMessageId, Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $status, string $messageCategory, ?string $subject, ?string $fromEmail, ?string $fromName, ?string $primaryRecipientEmail, ?string $notifiableType, ?string $notifiableId, ?Carbon\\CarbonImmutable $acceptedAt, ?Carbon\\CarbonImmutable $deliveredAt, ?Carbon\\CarbonImmutable $failedAt, ?Carbon\\CarbonImmutable $statusChangedAt, ?Carbon\\CarbonImmutable $providerOccurredAt, ?Carbon\\CarbonImmutable $redactedAt, Carbon\\CarbonImmutable $createdAt, Carbon\\CarbonImmutable $updatedAt, array $events=[]): mixed",
+                    "@param list<MailNotificationEventReadData> $events",
+                    "public static function fromModel(Nvl\\MailNotifications\\Models\\MailNotification $notification): self",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadPage": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadPage",
+                    "public readonly array $items",
+                    "public readonly int $currentPage",
+                    "public readonly int $lastPage",
+                    "public readonly int $perPage",
+                    "public readonly int $total",
+                    "public function __construct(array $items, int $currentPage, int $lastPage, int $perPage, int $total): mixed",
+                    "@param list<MailNotificationReadData> $items",
+                    "public function toArray(): array",
+                    "@return array{data: list<array<string, mixed>>, meta: array{current_page: int, last_page: int, per_page: int, total: int}}"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery",
+                    "public readonly ?string $search",
+                    "public readonly ?string $mailer",
+                    "public readonly ?string $messageCategory",
+                    "public readonly string $direction",
+                    "public readonly ?Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $status",
+                    "public readonly ?Carbon\\CarbonImmutable $from",
+                    "public readonly ?Carbon\\CarbonImmutable $to",
+                    "public readonly bool $acceptedOnly",
+                    "public readonly bool $failedOnly",
+                    "public readonly string $sort",
+                    "public readonly int $page",
+                    "public readonly int $perPage",
+                    "public function __construct(?string $search=null, ?Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $status=null, ?string $mailer=null, ?string $messageCategory=null, ?Carbon\\CarbonImmutable $from=null, ?Carbon\\CarbonImmutable $to=null, bool $acceptedOnly=false, bool $failedOnly=false, string $sort=\"created_at\", string $direction=\"desc\", int $page=1, int $perPage=25): mixed"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationStatistics": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationStatistics",
+                    "public readonly int $total",
+                    "public readonly array $statuses",
+                    "public readonly int $accepted",
+                    "public readonly int $successful",
+                    "public readonly int $failed",
+                    "public readonly float $successRate",
+                    "public readonly float $failureRate",
+                    "public readonly array $recent",
+                    "public function __construct(int $total, array $statuses, int $accepted, int $successful, int $failed, float $successRate, float $failureRate, array $recent): mixed",
+                    "@param array<string, int> $statuses",
+                    "@param list<MailNotificationReadData> $recent",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationSuggestion": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationSuggestion",
+                    "public readonly string $id",
+                    "public readonly ?string $subject",
+                    "public readonly ?string $primaryRecipientEmail",
+                    "public readonly Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $status",
+                    "public readonly Carbon\\CarbonImmutable $createdAt",
+                    "public function __construct(string $id, ?string $subject, ?string $primaryRecipientEmail, Nvl\\MailNotifications\\Enums\\MailDeliveryStatus $status, Carbon\\CarbonImmutable $createdAt): mixed",
+                    "public static function fromModel(Nvl\\MailNotifications\\Models\\MailNotification $notification): self",
+                    "public function toArray(): array",
+                    "@return array{id: string, subject: string|null, primary_recipient_email: string|null, status: string, created_at: string}"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationsAdoptionPlan": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationsAdoptionPlan",
+                    "public readonly ?string $connection",
+                    "public readonly array $stages",
+                    "public readonly ?Nvl\\MailNotifications\\ValueObjects\\LegacyMailNotificationMapping $notifications",
+                    "public readonly ?Nvl\\MailNotifications\\ValueObjects\\LegacyScheduledMailMapping $scheduledMessages",
+                    "public readonly array $foreignKeys",
+                    "public readonly bool $dropSources",
+                    "public function __construct(?string $connection, array $stages, ?Nvl\\MailNotifications\\ValueObjects\\LegacyMailNotificationMapping $notifications, ?Nvl\\MailNotifications\\ValueObjects\\LegacyScheduledMailMapping $scheduledMessages, array $foreignKeys, bool $dropSources): mixed",
+                    "@param list<LegacyMailTableStage> $stages",
+                    "@param list<LegacyMailForeignKey> $foreignKeys"
                 ],
                 "Nvl\\MailNotifications\\ValueObjects\\MailNotificationsDoctorCheck": [
                     "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationsDoctorCheck",
@@ -17467,7 +17703,7 @@
                 ]
             },
             "configuration": {
-                "config/mail-notifications.php": "c35f7681422ca0439d5acebe42238cef65415c86d932928395d9b05049c44b0b"
+                "config/mail-notifications.php": "c5dda5f87f23594923c44414faea1cc2463bbe8b6e0901076a37a178f9a24d09"
             },
             "routes": [],
             "migrations": {

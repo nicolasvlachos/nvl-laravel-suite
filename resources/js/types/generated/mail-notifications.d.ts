@@ -6,6 +6,7 @@ namespace MailNotifications {
 namespace Enums {
 export type FailurePolicy = 'fail_closed' | 'fail_open';
 export type MailDeliveryStatus = 'pending' | 'accepted' | 'delayed' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained' | 'rejected' | 'failed' | 'unsubscribed';
+export type MailNotificationReadAbility = 'list' | 'view' | 'statistics' | 'suggest';
 export type ScheduledMailStatus = 'pending' | 'processing' | 'sent' | 'failed' | 'cancelled';
 export type UnknownWebhookEventPolicy = 'acknowledge' | 'reject';
 export type UnmatchedWebhookEventPolicy = 'retry_then_acknowledge' | 'reject' | 'acknowledge';

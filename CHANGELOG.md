@@ -11,6 +11,8 @@ Module-level implementation history remains available in each
 
 ### Changed
 
+- Added dry-run-first Mail Notifications legacy adoption plus fail-closed,
+  privacy-bounded administrative list, show, statistics, and suggestion APIs.
 - Added versioned strict TypeScript generation flags and generated-artifact
   lint/format exclusions, registered Mail Notifications public enums for
   declaration generation, and made CSV exports accept concrete Eloquent
