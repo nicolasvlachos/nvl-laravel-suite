@@ -38,9 +38,9 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G16 | Content, Metafields, and Translatable boundaries | 1 | `feat(suite): …` | Finished | `988f8e7` |
 | G17 | Capability-based presets | 1 | `feat(suite): …` | Finished | `988f8e7` |
 | G18 | Adoption, upgrades, and diagnostics | 1 | `feat(suite): …` | Finished | `988f8e7` |
-| G19 | Package consumption and publishable-resource integrity | 4 | `fix(suite): …` | In progress | Pending |
+| G19 | Package consumption and publishable-resource integrity | 4 | `fix(suite): …` | Finished | `4944f36` |
 
-Total open issues: **4**.
+Total open issues: **0**.
 
 ## Consumer adoption evidence
 
@@ -867,48 +867,48 @@ Total open issues: **4**.
 
 ### G19 — Package consumption and publishable-resource integrity
 
-- Status: **In progress**
-- Implementation commit: Pending
+- Status: **Finished**
+- Implementation commit: `4944f36`
 - Commit subject prefix: `fix(suite): …`
 
-#### [~] G19-01 — Public publish-tag contracts and release rehearsal omit real resources
+#### [x] G19-01 — Public publish-tag contracts and release rehearsal omit real resources
 
 - Area: package providers, public-contract extraction, archive workflow, and clean-consumer verification
 - Impact: high
 - Finding: the public-contract extractor and clean-consumer release job include config, migration, skill, translation, and view tags but omit the suite configuration, Auth and Mail Notifications adoption manifests, and Data generated-type tooling. Publishing a tag is not followed by a materialized-output assertion.
 - Expected package change: inventory every canonical suite/package publish tag, document it, publish it in the clean consumer, and assert every declared source becomes the expected consumer file tree.
-- Resolution: In progress.
-- Resolving implementation commit: Pending
+- Resolution: contract schema v2 now records the suite provider/config and every package adoption, config, migration, skill, tooling, translation, and view tag. Runtime publishing tests reject missing, empty, colliding, or escaping maps; the clean consumer publishes the complete catalog and asserts every configuration, migration, translation, view, adoption manifest, tooling fragment, and skill output.
+- Resolving implementation commit: `4944f36`
 - Release target: `1.0.2`
 
-#### [~] G19-02 — Nine stateful packages bypass timestamp-aware migration publishing
+#### [x] G19-02 — Nine stateful packages bypass timestamp-aware migration publishing
 
 - Area: Settings, Taxonomy, Content, Templates, Metafields, Pages, Translations, SEO, and Forms providers
 - Impact: high
 - Finding: these providers publish migration directories through `publishes()` rather than Laravel's `publishesMigrations()`, so consumers do not receive the framework's configured timestamp refresh behavior consistently across the family.
 - Expected package change: use `publishesMigrations()` for every stateful package and enforce that rule for the complete stateful catalog.
-- Resolution: In progress.
-- Resolving implementation commit: Pending
+- Resolution: every stateful provider now uses `publishesMigrations()`. The family validator covers the full stateful catalog and requires mutually exclusive automatic and host-owned migration guidance; the release consumer runs both ownership modes against separate fresh databases.
+- Resolving implementation commit: `4944f36`
 - Release target: `1.0.2`
 
-#### [~] G19-03 — Primitives translations load at runtime but cannot be published for overrides
+#### [x] G19-03 — Primitives translations load at runtime but cannot be published for overrides
 
 - Area: Primitives localization resources
 - Impact: medium
 - Finding: Primitives loads its English and Bulgarian validation translations but exposes no `primitives-translations` publish tag, unlike every other localized package.
 - Expected package change: add and document the conventional translation tag and verify its destination under `lang/vendor/primitives`.
-- Resolution: In progress.
-- Resolving implementation commit: Pending
+- Resolution: Primitives exposes and documents `primitives-translations`, publishing the bundled catalogs to `lang/vendor/primitives`; the catalog, runtime map, archive assets, and clean-consumer destination are verified.
+- Resolving implementation commit: `4944f36`
 - Release target: `1.0.2`
 
-#### [~] G19-04 — Suite-installed package skills are not discoverable through Laravel Boost
+#### [x] G19-04 — Suite-installed package skills are not discoverable through Laravel Boost
 
 - Area: packaged Agent Skills and archive layout
 - Impact: high
 - Finding: consumers install only `nvl/laravel-suite`, while Laravel Boost discovers third-party skills only at the installed Composer package's root `resources/boost/skills` path. The 20 canonical skills currently exist only below nested module directories and therefore require manual publication.
 - Expected package change: ship a synchronized root Boost skill catalog, retain per-package `*-skills` publication, reject drift between both copies, and verify the full catalog survives the release archive.
-- Resolution: In progress.
-- Resolving implementation commit: Pending
+- Resolution: the archive now ships all 20 canonical skills at root `resources/boost/skills` for native Laravel Boost discovery while retaining package `*-skills` publication. `composer skills:sync`, hash-based drift validation, archive parity checks, clean-consumer assertions, and corrected Media reference paths keep both delivery modes usable and identical.
+- Resolving implementation commit: `4944f36`
 - Release target: `1.0.2`
 
 ## Resolved
