@@ -5503,8 +5503,7 @@
             },
             "migrations": {
                 "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "04dae50fb16b0c115b1aa06adfb067adaf2b5975c082478e02dc3a19ac82980d",
-                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "e96e1ebba09f466c0aa4ec4936c1e28040fb58c7fd0630eefa214964efb4fb25",
-                "database/migrations/2026_08_10_000000_add_auth_onboarding_indexes.php": "546424cc562b5577c5edc2a40fc38fd81122e8b4be2b600e5cc6a297c651ddb2"
+                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "e96e1ebba09f466c0aa4ec4936c1e28040fb58c7fd0630eefa214964efb4fb25"
             }
         },
         "comments": {
