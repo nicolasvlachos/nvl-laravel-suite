@@ -13,7 +13,8 @@ Module-level implementation history remains available in each
 
 - Added Auth principal attribute mapping, dry-run-first first-party principal
   adoption, physical relationship-collision diagnostics, and feature-aware
-  schema reconciliation.
+  schema reconciliation, with sparse validated DTO persistence for partial
+  principal mutations.
 - Added dry-run-first Mail Notifications legacy adoption plus fail-closed,
   privacy-bounded administrative list, show, statistics, and suggestion APIs.
 - Added versioned strict TypeScript generation flags and generated-artifact

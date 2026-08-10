@@ -149,11 +149,11 @@ system: boolean,
 metadata: Record<string, any>,
 };
 export type UpdateProfileData = {
-name: string,
-locale: string,
-timezone: string,
-profile: Record<string, any>,
-preferences: Record<string, any>,
+name?: string,
+locale?: string,
+timezone?: string,
+profile?: Record<string, any>,
+preferences?: Record<string, any>,
 };
 export type UpdateRoleData = {
 name: string,
@@ -166,14 +166,14 @@ permissions: string[],
 metadata: Record<string, any>,
 };
 export type UpdateUserData = {
-name: string | null,
-email: string | null,
-password: string | null,
-locale: string | null,
-timezone: string | null,
-profile: Record<string, any> | null,
-preferences: Record<string, any> | null,
-emailVerified: boolean | null,
+name?: string,
+email?: string,
+password?: string | null,
+locale?: string,
+timezone?: string,
+profile?: Record<string, any>,
+preferences?: Record<string, any>,
+emailVerified?: boolean,
 };
 export type UpdateUserStatusData = {
 active: boolean,
