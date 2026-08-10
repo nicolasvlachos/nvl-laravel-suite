@@ -27,11 +27,11 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Finished | `40c4816` |
 | G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Finished | `df6c7a6`, `5b353be` |
 | G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Finished | `14be433` |
-| G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Not started | — |
+| G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Finished | `c2a85e4` |
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **17**.
+Total open issues: **10**.
 
 ## Consumer adoption evidence
 
@@ -498,11 +498,11 @@ Total open issues: **17**.
 
 ### G08 — RBAC and principal lifecycle system transitions
 
-- Status: not started
+- Status: finished
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `feat(auth-rbac): …`
 
-#### [ ] G08-01 — Host-principal RBAC assignment is coupled to package principal management
+#### [x] G08-01 — Host-principal RBAC assignment is coupled to package principal management
 
 - Area: `SyncUserRolesAction`, `SyncUserPermissionsAction`, and `BulkUpdateUsersAction`
 - Impact: high
@@ -511,7 +511,11 @@ Total open issues: **17**.
 - Expected package change: gate access synchronization on RBAC plus a configurable principal locator/assignment contract; require principal management only for package-shaped principal CRUD and lifecycle mutations.
 - Current workaround: KPO now uses package-shaped principal storage and enables principal management, so package user-role and user-permission synchronization can be adopted directly. The coupling remains a package limitation for consumers that intentionally retain a different principal schema.
 
-#### [ ] G08-02 — Role templates cannot describe or instantiate host presentation metadata
+- Resolution: `SyncUserRolesAction` and `SyncUserPermissionsAction` now depend only on RBAC admission, validated assignment DTOs, and the replaceable `RbacPrincipalAccess` contract. The default Eloquent adapter supports an independently configured host principal using Spatie `HasRoles`, while package principal management remains required only for package-shaped CRUD and lifecycle Actions.
+- Resolving implementation commit: `c2a85e4`
+- Release target: `1.0.2`
+
+#### [x] G08-02 — Role templates cannot describe or instantiate host presentation metadata
 
 - Area: `RoleTemplateProvider`, `ListRoleTemplatesAction`, and `ApplyRoleTemplateAction`
 - Impact: medium
@@ -520,7 +524,11 @@ Total open issues: **17**.
 - Expected package change: introduce a validated role-template value object with optional presentation/hierarchy metadata and allow `ApplyRoleTemplateAction` to accept a bounded target-role mutation.
 - Current workaround: canonical system roles are contributed through the package provider contract. `App\Support\Auth\KpoRoleTemplates` is intentionally only a host presentation-to-`StoreRoleData` mapper because registering those non-system, caller-named templates would make the package synchronizer persist them as fixed system roles. All persisted models, mutations, and tables remain package-owned.
 
-#### [ ] G08-03 — RBAC synchronization has no bootstrap-safe public Action
+- Resolution: Role-template providers now return validated `RoleTemplate` values carrying canonical and target role naming, display copy, description, system state, parent role, priority, permissions, and metadata. `ApplyRoleTemplateAction` consumes `ApplyRoleTemplateData`, applies the complete validated role payload, supports caller-selected role names, and preserves hierarchy validation.
+- Resolving implementation commit: `c2a85e4`
+- Release target: `1.0.2`
+
+#### [x] G08-03 — RBAC synchronization has no bootstrap-safe public Action
 
 - Area: `SynchronizePermissionCatalogAction`, `SynchronizeRoleTemplatesAction`, `SynchronizeRbacAction`, and seeding
 - Impact: medium
@@ -529,7 +537,11 @@ Total open issues: **17**.
 - Expected package change: expose a console/bootstrap synchronization Action with an explicit trusted-installation context, feature checks, transaction handling, cache invalidation, deterministic reporting, and no fabricated actor. Keep the existing actor-authorized Actions for runtime management.
 - Current workaround: KPO contributes catalogs and system roles through package contracts, invokes the package `RbacSynchronizer` from its seeders, and touches `PermissionRegistrar` only to invalidate the transitive cache before and after bootstrap synchronization. Package models remain the sole RBAC persistence layer.
 
-#### [ ] G08-04 — RBAC assignment events and Actions do not cover domain-owned system transitions
+- Resolution: `BootstrapRbacAction` accepts an explicitly authorized `SystemMutationContext`, enforces RBAC admission, synchronizes catalogs and templates transactionally, invalidates Spatie's cache before and after persistence, records a traceable audit without fabricating an actor, and returns `RbacSynchronizationResult`. Existing actor-authorized synchronization Actions remain available for runtime management.
+- Resolving implementation commit: `c2a85e4`
+- Release target: `1.0.2`
+
+#### [x] G08-04 — RBAC assignment events and Actions do not cover domain-owned system transitions
 
 - Area: `RbacManager`, `CreateUserAction`, `AcceptInvitationAction`, `SyncUserRolesAction`, and `RbacChanged`
 - Impact: high
@@ -538,7 +550,11 @@ Total open issues: **17**.
 - Expected package change: emit one package-owned assignment event from the common RBAC manager for every add/remove/sync path, including initial creation and invitation acceptance. Add an explicitly trusted system-transition context or replaceable authorization contract that preserves feature checks, audits, cache invalidation, and package events without fabricating a human actor.
 - Current workaround: KPO listens to Spatie's attachment event only for the missing initial-assignment signal and keeps one isolated domain transition service for candidate/member lifecycle changes. It uses package Role models and tables; management UI mutations continue using package Actions directly.
 
-#### [ ] G08-05 — Domain-driven principal lifecycle changes require a fabricated management actor
+- Resolution: `RbacManager` is now the common principal-assignment boundary for initial creation, invitation acceptance, role replacement, and direct-permission replacement. Every path invalidates permission cache and emits the after-commit `RbacAssignmentChanged` event; synchronization Actions accept either a real management actor or an authorized system context and keep the same audit/event semantics.
+- Resolving implementation commit: `c2a85e4`
+- Release target: `1.0.2`
+
+#### [x] G08-05 — Domain-driven principal lifecycle changes require a fabricated management actor
 
 - Area: `SetUserActiveAction`, `DeleteUserAction`, browser-session containment, and system workflows
 - Impact: high
@@ -547,7 +563,11 @@ Total open issues: **17**.
 - Expected package change: provide an explicitly trusted system-transition context with a required reason/correlation identifier, the same feature/audit/event guarantees, and a replaceable principal-session containment contract covering API tokens, remember credentials, and host browser sessions.
 - Current workaround: management UI changes use package Actions. KPO keeps one narrow account-status writer for actorless domain transitions and one session-containment service; both mutate the canonical package principal, and the remaining gap is recorded here rather than hidden behind a second Auth implementation.
 
-#### [ ] G08-06 — Principal lifecycle Actions do not contain Laravel browser sessions
+- Resolution: Principal status, delete, restore, and bulk lifecycle Actions now accept a real actor or `SystemMutationContext`. System calls require the replaceable, denied-by-default `SystemMutationAccess` policy and carry their required reason, correlation identifier, metadata, and optional real actor into package audits and events without triggering human self-mutation guards.
+- Resolving implementation commit: `c2a85e4`
+- Release target: `1.0.2`
+
+#### [x] G08-06 — Principal lifecycle Actions do not contain Laravel browser sessions
 
 - Area: `SetUserActiveAction`, `DeleteUserAction`, `BulkUpdateUsersAction`, and `RestoreUserAction`
 - Impact: high
@@ -556,7 +576,11 @@ Total open issues: **17**.
 - Expected package change: expose a replaceable principal-session containment contract and invoke it inside package lifecycle transactions, covering Laravel sessions, remember credentials, API tokens, and host-defined client sessions with consistent audit metadata.
 - Current workaround: KPO listens to package `PrincipalChanged` events and revokes Laravel database sessions and remember credentials through one host containment listener. Package Actions remain the only management lifecycle writers.
 
-#### [ ] G08-07 — Principal status mutation has no system/domain workflow context
+- Resolution: `PrincipalSessionContainment` now runs inside disable, delete, restore, and equivalent bulk transitions. The default Laravel adapter revokes package API tokens, rotates remember credentials, and deletes Laravel database-session rows; hosts may replace the complete contract to add other client-session stores without moving lifecycle persistence out of package Actions.
+- Resolving implementation commit: `c2a85e4`
+- Release target: `1.0.2`
+
+#### [x] G08-07 — Principal status mutation has no system/domain workflow context
 
 - Area: `SetUserActiveAction` and lifecycle authorization
 - Impact: medium
@@ -564,6 +588,10 @@ Total open issues: **17**.
 - Consumer risk: domain workflows must forge an actor, bypass their transaction boundary, or write `is_active` directly without a package audit/event context.
 - Expected package change: add an explicitly authorized system mutation context or replaceable lifecycle writer that accepts a domain reason, correlation metadata, and optional actor while preserving audit and event semantics.
 - Current workaround: KPO retains one actorless domain status writer against the package-owned principal table and revokes browser credentials on deactivation. It is not used by Auth management controllers.
+
+- Resolution: `SetUserActiveAction` now consumes the validated `UpdateUserStatusData` payload for both human and system transitions. Authorized actorless calls preserve the Action transaction, feature admission, audit, containment, and `PrincipalChanged` event while recording bounded domain reason and correlation metadata and leaving the actor nullable.
+- Resolving implementation commit: `c2a85e4`
+- Release target: `1.0.2`
 
 ### G09 — Media storage, delivery, mutation, and adoption
 
