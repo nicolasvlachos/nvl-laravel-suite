@@ -213,7 +213,18 @@ resources/boost/skills/<skill-name>/
 └── agents/openai.yaml
 ```
 
-Publish a module skill into a consumer application:
+Laravel Boost discovers every suite skill directly from the installed dependency:
+
+```bash
+php artisan boost:install --skills
+```
+
+The suite archive mirrors the 20 canonical package skills under its root
+`resources/boost/skills` directory for native dependency discovery. The family
+validator rejects any mirror drift.
+
+To install one module skill without running Boost discovery, publish it into a
+consumer application:
 
 ```bash
 php artisan vendor:publish --tag=forms-skills
@@ -293,8 +304,11 @@ annotated `v1.1.0` tag, publishes the GitHub Release, and lets Packagist discove
 the stable version.
 
 Do not publish `dev-main` as a stable dependency. Consumers should use the `^1.0` line.
-Published NVL migrations retain their package timestamps so they have the same
-identity as auto-loaded migrations and cannot execute twice.
+Choose one migration owner per application. Automatic vendor loading is the
+default. Host-owned migrations must be published before the first migration,
+with every relevant `<package>.migrations.enabled` setting changed to `false`;
+Laravel retimestamps published migrations, so the two modes must never run
+together against one database.
 
 ## License
 

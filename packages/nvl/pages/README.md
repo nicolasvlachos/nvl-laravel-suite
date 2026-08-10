@@ -33,7 +33,6 @@ Install the package in a clean Laravel application:
 ```bash
 composer require nvl/laravel-suite:^1.0
 php artisan vendor:publish --tag=pages-config
-php artisan vendor:publish --tag=pages-migrations
 php artisan vendor:publish --tag=pages-skills
 php artisan migrate
 php artisan nvl:pages:doctor --strict
@@ -42,6 +41,14 @@ php artisan nvl:pages:doctor --strict
 Laravel package discovery registers the provider. Composer installs Content, Data, Filterable, Metafields, SEO, and Translatable automatically. The default tables are `pages`, `pages_i18n`, and `page_tree_locks`; their names and the database connection are configurable.
 
 Routes are disabled by default. Publishing migrations is optional because package migrations load automatically while `pages.migrations.enabled` is true.
+
+Choose exactly one migration owner. For automatic vendor loading, leave
+`pages.migrations.enabled=true` and do not publish `pages-migrations`. For
+host-owned migrations, run
+`php artisan vendor:publish --tag=pages-migrations`, set
+`pages.migrations.enabled=false` before the first migration, and maintain the
+copied files as application migrations. Never run both sources; Laravel
+retimestamps published migrations.
 
 ## First working page
 

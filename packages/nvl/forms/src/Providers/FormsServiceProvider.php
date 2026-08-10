@@ -59,7 +59,7 @@ final class FormsServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../resources/boost/skills' => base_path('.agents/skills'),
         ], 'forms-skills');
-        $this->publishes([
+        $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'forms-migrations');
 

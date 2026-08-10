@@ -53,6 +53,13 @@ Publish migration sources only when the application requires copied migrations:
 php artisan vendor:publish --tag=seo-migrations
 ```
 
+Choose exactly one migration owner. For automatic vendor loading, leave
+`seo.migrations.enabled=true` and do not publish `seo-migrations`. For
+host-owned migrations, publish `seo-migrations`, set
+`seo.migrations.enabled=false` before the first migration, and maintain the
+copied files as application migrations. Never run both sources; Laravel
+retimestamps published migrations.
+
 Configure content locales:
 
 ```php

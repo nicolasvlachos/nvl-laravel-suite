@@ -8,6 +8,8 @@ All notable changes to `nvl/data` are documented here.
   retaining warning-free output as the default.
 - Added publishable ESLint flat-config and Prettier-ignore fragments for every
   default split declaration and integrity-manifest path.
+- Added the canonical `data-config` tag while retaining `nvl-data-config` and
+  Laravel's shared `config` group as compatible aliases.
 ## [1.0.1] - 2026-08-09
 
 - Added validated PHP-to-TypeScript replacement maps with legacy host-map

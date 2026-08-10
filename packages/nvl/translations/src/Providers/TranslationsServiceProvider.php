@@ -40,7 +40,7 @@ final class TranslationsServiceProvider extends ServiceProvider
 
         $this->registerTranslations();
         $this->registerConfig();
-        $this->publishes([
+        $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'translations-migrations');
         if ((bool) config('translations.migrations.enabled', true)) {

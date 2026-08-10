@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL Filterable"
+  short_description: "Build safe allowlisted Eloquent filters"
+  default_prompt: "Use $nvl-filterable to implement or review typed FilterSet parsing, filter definitions, safe relations, and sorting."

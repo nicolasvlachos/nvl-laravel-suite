@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL SEO"
+  short_description: "Build and review localized Laravel SEO"
+  default_prompt: "Use $nvl-seo to implement or review localized SEO profiles, metadata rendering, structured data, robots, and sitemaps."

@@ -126,7 +126,7 @@ final class PagesServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../config/pages.php' => config_path('pages.php'),
         ], 'pages-config');
-        $this->publishes([
+        $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'pages-migrations');
         $this->publishes([

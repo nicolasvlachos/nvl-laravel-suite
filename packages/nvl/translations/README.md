@@ -37,9 +37,16 @@ The database is an editing and synchronization workspace. It is not installed as
 composer require nvl/laravel-suite:^1.0
 php artisan migrate
 php artisan vendor:publish --tag=translations-config
-php artisan vendor:publish --tag=translations-migrations
 php artisan vendor:publish --tag=translations-skills
 ```
+
+Choose exactly one migration owner. For automatic vendor loading, leave
+`translations.migrations.enabled=true` and do not publish
+`translations-migrations`. For host-owned migrations, run
+`php artisan vendor:publish --tag=translations-migrations`, set
+`translations.migrations.enabled=false` before the first migration, and
+maintain the copied files as application migrations. Never run both sources;
+Laravel retimestamps published migrations.
 
 The package supplies English and Bulgarian validation copy. Publish overrides when needed:
 

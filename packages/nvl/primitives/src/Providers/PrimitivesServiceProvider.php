@@ -55,6 +55,10 @@ final class PrimitivesServiceProvider extends ServiceProvider
         ], 'primitives-config');
 
         $this->publishes([
+            __DIR__.'/../../lang' => lang_path('vendor/primitives'),
+        ], 'primitives-translations');
+
+        $this->publishes([
             __DIR__.'/../../resources/boost/skills' => base_path('.agents/skills'),
         ], 'primitives-skills');
     }

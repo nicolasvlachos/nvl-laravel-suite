@@ -18,5 +18,26 @@ final class AppServiceProvider extends ServiceProvider
         Config::set('taxonomy.owners.users', User::class);
         Config::set('taxonomy.taxonomies.category.allowed_owners', ['users']);
         Config::set('taxonomy.taxonomies.tag.allowed_owners', ['users']);
+
+        if (Config::boolean('nvl-release-consumer.published_migrations')) {
+            foreach ([
+                'activity',
+                'nvl-auth',
+                'comments',
+                'content',
+                'forms',
+                'media',
+                'mail-notifications',
+                'metafields',
+                'pages',
+                'seo',
+                'settings',
+                'taxonomy',
+                'templates',
+                'translations',
+            ] as $configuration) {
+                Config::set("{$configuration}.migrations.enabled", false);
+            }
+        }
     }
 }

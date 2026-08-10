@@ -201,7 +201,7 @@ final class ContentServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../config/content.php' => config_path('content.php'),
         ], 'content-config');
-        $this->publishes([
+        $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'content-migrations');
         $this->publishes([

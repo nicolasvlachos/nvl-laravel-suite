@@ -97,6 +97,13 @@ php artisan vendor:publish --tag=content-views
 php artisan vendor:publish --tag=content-skills
 ```
 
+Choose exactly one migration owner. For automatic vendor loading, leave
+`content.migrations.enabled=true` and do not publish `content-migrations`. For
+host-owned migrations, publish `content-migrations`, set
+`content.migrations.enabled=false` before the first migration, and maintain the
+copied files as application migrations. Never run both sources; Laravel
+retimestamps published migrations.
+
 Package-owned records use UUID primary keys. Owner, actor, and reference
 identifiers are strings so consumer models may use integers, UUIDs, ULIDs, or
 other scalar keys. All table names and the package database connection are

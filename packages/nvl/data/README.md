@@ -27,13 +27,15 @@ composer require nvl/laravel-suite:^1.0
 Laravel auto-discovers `DataServiceProvider`. Optional publish tags are:
 
 ```bash
-php artisan vendor:publish --tag=nvl-data-config
+php artisan vendor:publish --tag=data-config
 php artisan vendor:publish --tag=data-skills
 php artisan vendor:publish --tag=nvl-data-generated-types-tooling
 ```
 
-The configuration also participates in Laravel's conventional `config` publish
-group, so `php artisan vendor:publish --tag=config` includes `nvl-data.php`.
+The existing `php artisan vendor:publish --tag=nvl-data-config` command remains
+a compatible alias. The configuration
+also participates in Laravel's conventional `config` publish group, so
+`php artisan vendor:publish --tag=config` includes `nvl-data.php`.
 
 Configuration uses `config/nvl-data.php` and cannot collide with Spatie Laravel Data's `data.php`.
 

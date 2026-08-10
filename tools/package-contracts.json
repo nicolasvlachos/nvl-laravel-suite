@@ -1,5 +1,16 @@
 {
-    "schema_version": 1,
+    "schema_version": 2,
+    "suite": {
+        "providers": [
+            "Nvl\\Suite\\SuiteServiceProvider"
+        ],
+        "publish_tags": [
+            "suite-config"
+        ],
+        "configuration": {
+            "config/nvl-suite.php": "70a33b5eafd48496cb8ec7f2dab95468dbc36af06575303f59d2366e4f50d0ed"
+        }
+    },
     "packages": {
         "activity": {
             "providers": [
@@ -1521,6 +1532,7 @@
             ],
             "autoload_files": [],
             "publish_tags": [
+                "auth-adoption",
                 "auth-config",
                 "auth-migrations",
                 "auth-skills"
@@ -12392,8 +12404,10 @@
             ],
             "autoload_files": [],
             "publish_tags": [
+                "data-config",
                 "data-skills",
-                "nvl-data-config"
+                "nvl-data-config",
+                "nvl-data-generated-types-tooling"
             ],
             "commands": {
                 "Nvl\\Data\\Console\\Commands\\CheckTypesCommand": "nvl:data:types:check {--fail-on-warning : Explicitly require warning-free output (available since nvl/laravel-suite 1.0.2)}",
@@ -16507,6 +16521,7 @@
             ],
             "autoload_files": [],
             "publish_tags": [
+                "mail-notifications-adoption",
                 "mail-notifications-config",
                 "mail-notifications-mail-views",
                 "mail-notifications-migrations",
@@ -25435,7 +25450,8 @@
             "autoload_files": [],
             "publish_tags": [
                 "primitives-config",
-                "primitives-skills"
+                "primitives-skills",
+                "primitives-translations"
             ],
             "commands": [],
             "symbols": {

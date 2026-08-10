@@ -36,6 +36,13 @@ php artisan vendor:publish --tag=forms-translations
 php artisan vendor:publish --tag=forms-skills
 ```
 
+Choose exactly one migration owner. For automatic vendor loading, leave
+`forms.migrations.enabled=true` and do not publish `forms-migrations`. For
+host-owned migrations, publish `forms-migrations`, set
+`forms.migrations.enabled=false` before the first migration, and maintain the
+copied files as application migrations. Never run both sources; Laravel
+retimestamps published migrations.
+
 The skill is published as `.agents/skills/nvl-forms`.
 
 ## First working form

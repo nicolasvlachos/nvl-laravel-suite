@@ -453,19 +453,11 @@ if ($generatedPackages !== $expectedGeneratedPackages) {
     $fail('family', 'generated TypeScript manifest does not cover exactly every Data-backed package');
 }
 
-$timestampAwareMigrationPublishers = [
-    'activity',
-    'auth',
-    'comments',
-    'mail-notifications',
-    'media',
-];
-
 foreach ($packages as $package) {
     $path = "{$root}/packages/nvl/{$package}";
     $packageSource = selfReadTree("{$path}/src");
 
-    if (in_array($package, $timestampAwareMigrationPublishers, true)
+    if (in_array($package, $stateful, true)
         && ! str_contains($packageSource, 'publishesMigrations(')) {
         $fail(
             $package,
@@ -612,11 +604,34 @@ foreach ($packages as $package) {
 
     $providerSource = selfReadTree("{$path}/src/Providers");
     preg_match_all(
-        "/'([a-z0-9-]+-(?:config|migrations|skills|translations|views))'/",
+        "/'([a-z0-9-]+-(?:adoption|config|migrations|skills|tooling|translations|views))'/",
         $providerSource,
         $publishTagMatches,
     );
     $publishTags = array_values(array_unique($publishTagMatches[1] ?? []));
+
+    if (! in_array("{$package}-skills", $publishTags, true)) {
+        $fail($package, 'package must expose its canonical skills publish tag');
+    }
+
+    $resourceTagContracts = [
+        'config' => ['suffix' => 'config', 'required' => selfFiles("{$path}/config") !== []],
+        'lang' => ['suffix' => 'translations', 'required' => selfFiles("{$path}/lang") !== []],
+        'resources/views' => ['suffix' => 'views', 'required' => selfFiles("{$path}/resources/views") !== []],
+        'resources/adoption' => ['suffix' => 'adoption', 'required' => selfFiles("{$path}/resources/adoption") !== []],
+        'resources/tooling' => ['suffix' => 'tooling', 'required' => selfFiles("{$path}/resources/tooling") !== []],
+    ];
+
+    foreach ($resourceTagContracts as $resource => $tagContract) {
+        $matchingTags = array_values(array_filter(
+            $publishTags,
+            static fn (string $tag): bool => str_ends_with($tag, '-'.$tagContract['suffix']),
+        ));
+
+        if ($tagContract['required'] && $matchingTags === []) {
+            $fail($package, "resource directory [{$resource}] has no {$tagContract['suffix']} publish tag");
+        }
+    }
 
     foreach ($publishTags as $publishTag) {
         if (! str_contains($readme, "--tag={$publishTag}")) {
@@ -649,6 +664,26 @@ foreach ($packages as $package) {
         if (! in_array("{$package}-migrations", $publishTags, true)) {
             $fail($package, 'stateful package must expose its migrations publish tag');
         }
+
+        $migrationConfiguration = $package === 'auth' ? 'nvl-auth' : $package;
+
+        if (preg_match(
+            '/do not publish\s+`'.preg_quote($package, '/').'-migrations`/i',
+            $readme,
+        ) !== 1
+            || ! str_contains($readme, "`{$migrationConfiguration}.migrations.enabled=false`")
+            || ! str_contains($readme, 'Never run both')) {
+            $fail(
+                $package,
+                'README must document mutually exclusive automatic and host-owned migration modes',
+            );
+        }
+    }
+
+    $suiteSkillDirectory = "{$root}/resources/boost/skills/nvl-{$package}";
+
+    if (selfDirectoryHashes($skillDirectory) !== selfDirectoryHashes($suiteSkillDirectory)) {
+        $fail($package, 'suite-level Boost skill mirror is missing or differs from the packaged skill');
     }
 
     if (in_array($package, $typeScriptSources, true)) {
@@ -913,4 +948,23 @@ function selfFiles(string $directory, ?string $extension = null): array
 function selfIsConstantIdentifier(string $symbol): bool
 {
     return preg_match('/^[A-Z][A-Z0-9_]*$/D', $symbol) === 1;
+}
+
+/**
+ * Return deterministic hashes keyed by paths relative to one directory.
+ *
+ * @return array<string, string>
+ */
+function selfDirectoryHashes(string $directory): array
+{
+    $hashes = [];
+
+    foreach (selfFiles($directory) as $file) {
+        $relative = substr($file, strlen(rtrim($directory, DIRECTORY_SEPARATOR)) + 1);
+        $hashes[$relative] = hash_file('sha256', $file);
+    }
+
+    ksort($hashes);
+
+    return $hashes;
 }

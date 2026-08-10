@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL Pages"
+  short_description: "Build safe hierarchical and dynamic pages"
+  default_prompt: "Use $nvl-pages to implement or review site-serialized hierarchy Actions, exact-revision DTOs, trusted public context, registered resource handlers, and package-owned integration boundaries."

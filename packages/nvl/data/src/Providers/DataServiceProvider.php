@@ -74,7 +74,7 @@ class DataServiceProvider extends ServiceProvider
 
         $this->publishes([
             __DIR__.'/../../config/nvl-data.php' => config_path('nvl-data.php'),
-        ], ['nvl-data-config', 'config']);
+        ], ['data-config', 'nvl-data-config', 'config']);
 
         if ($this->app->runningInConsole()) {
             $this->commands([

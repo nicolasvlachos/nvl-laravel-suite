@@ -146,7 +146,7 @@ final class TemplatesServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../resources/views' => $this->publishedViewPath(),
         ], 'templates-views');
-        $this->publishes([
+        $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'templates-migrations');
         $this->publishes([

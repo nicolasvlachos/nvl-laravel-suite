@@ -40,10 +40,13 @@ The package uses Brick Money/Math, Google's numbering metadata through `giggsey/
 ```bash
 composer require nvl/laravel-suite:^1.0
 php artisan vendor:publish --tag=primitives-config
+php artisan vendor:publish --tag=primitives-translations
 php artisan vendor:publish --tag=primitives-skills
 ```
 
 The package has no migrations and works without a database.
+The translation tag publishes validation overrides to
+`lang/vendor/primitives` while package defaults continue to load directly.
 
 ## Value objects
 

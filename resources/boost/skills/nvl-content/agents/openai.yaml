@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL Content"
+  short_description: "Build and review schema-driven Laravel content blocks"
+  default_prompt: "Use $nvl-content to implement or review source-controlled, translatable Content blocks safely."

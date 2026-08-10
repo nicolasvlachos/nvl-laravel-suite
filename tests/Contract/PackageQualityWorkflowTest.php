@@ -321,6 +321,11 @@ it('publishes one clean suite tag only after all five routine gates pass', funct
             'diff -u "$expected_top_level" "$actual_top_level"',
             '{type:"path",url:$url,options:{symlink:false,versions:{"nvl/laravel-suite":$version}}}',
             '"nvl/laravel-suite:$PACKAGE_VERSION"',
+            '.suite.publish_tags[], .packages[].publish_tags[]',
+            'vendor/nvl/laravel-suite/resources/boost/skills/nvl-$package/SKILL.md',
+            'compgen -G "database/migrations/*_$suffix"',
+            "echo 'NVL_RELEASE_PUBLISHED_MIGRATIONS=true' >> .env",
+            'rm -f database/database.sqlite',
             'composer audit --locked --no-interaction',
         )
         ->not->toContain(

@@ -119,7 +119,7 @@ final class SeoServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../config/seo.php' => config_path('seo.php'),
         ], 'seo-config');
-        $this->publishes([
+        $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'seo-migrations');
         $this->publishes([

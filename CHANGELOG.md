@@ -11,6 +11,11 @@ Module-level implementation history remains available in each
 
 ### Changed
 
+- Completed the 20-package consumption contract: all public publish tags are
+  tracked and rehearsed, stateful migrations use Laravel's timestamp-aware
+  publication API, package skills are natively discoverable by Laravel Boost,
+  and configuration, translations, views, adoption templates, tooling, and
+  archive contents are checked as materialized distribution assets.
 - Added Auth principal attribute mapping, dry-run-first first-party principal
   adoption, physical relationship-collision diagnostics, and feature-aware
   schema reconciliation, with sparse validated DTO persistence for partial

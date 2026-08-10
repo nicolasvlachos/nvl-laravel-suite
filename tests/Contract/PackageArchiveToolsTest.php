@@ -207,6 +207,80 @@ it('ships every module and the central provider in the archive', function (): vo
     }
 });
 
+it('ships every package consumption asset and native Boost skill', function (): void {
+    [$workspace, $archive] = suiteArchiveBuild();
+
+    try {
+        $root = dirname(__DIR__, 2);
+        $entries = suiteArchiveEntries($archive);
+        $entryLookup = array_fill_keys($entries, true);
+        $catalog = require $root.'/tools/package-family.php';
+        $distributionDirectories = ['config', 'database/migrations', 'docs', 'lang', 'resources', 'src'];
+        $distributionFiles = [
+            'CHANGELOG.md',
+            'CONTRIBUTING.md',
+            'LICENSE',
+            'README.md',
+            'SECURITY.md',
+            'UPGRADING.md',
+        ];
+
+        foreach ($catalog['packages'] as $package) {
+            $packagePrefix = 'packages/nvl/'.$package.'/';
+
+            foreach ($distributionFiles as $file) {
+                expect($entryLookup)->toHaveKey($packagePrefix.$file);
+            }
+
+            foreach ($distributionDirectories as $directory) {
+                $source = $root.'/'.$packagePrefix.$directory;
+
+                if (! is_dir($source)) {
+                    continue;
+                }
+
+                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
+                    $source,
+                    FilesystemIterator::SKIP_DOTS,
+                ));
+
+                foreach ($files as $file) {
+                    if (! $file->isFile() || in_array($file->getFilename(), ['.DS_Store', '.gitkeep'], true)) {
+                        continue;
+                    }
+
+                    $relative = substr($file->getPathname(), strlen($root) + 1);
+
+                    expect($entryLookup)->toHaveKey(
+                        $relative,
+                        "Archive is missing package consumption asset [{$relative}].",
+                    );
+                }
+            }
+
+            $skillPrefix = 'resources/boost/skills/nvl-'.$package.'/';
+            $packageSkillPrefix = $packagePrefix.'resources/boost/skills/nvl-'.$package.'/';
+            $skillEntries = array_values(array_filter(
+                $entries,
+                static fn (string $entry): bool => str_starts_with($entry, $skillPrefix),
+            ));
+
+            expect($skillEntries)->not->toBeEmpty();
+
+            foreach ($skillEntries as $skillEntry) {
+                $relative = substr($skillEntry, strlen($skillPrefix));
+                $packageSkillEntry = $packageSkillPrefix.$relative;
+
+                expect($entryLookup)->toHaveKey($packageSkillEntry)
+                    ->and(suiteArchiveRead($archive, $skillEntry))
+                    ->toBe(suiteArchiveRead($archive, $packageSkillEntry));
+            }
+        }
+    } finally {
+        expect($workspace)->toBeDirectory();
+    }
+});
+
 it('rejects development-only content from the suite archive', function (): void {
     [$workspace, $archive] = suiteArchiveBuild();
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "NVL Translations"
+  short_description: "Synchronize authoritative language files"
+  default_prompt: "Use $nvl-translations to implement or review PHP/JSON file scanning, workspace sync, conflicts, atomic export, and path safety."

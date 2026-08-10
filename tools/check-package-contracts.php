@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use Illuminate\Console\Command;
+use Nvl\Suite\SuiteServiceProvider;
 
 require dirname(__DIR__).'/vendor/autoload.php';
 
 const CONTRACT_BASELINE_PATH = __DIR__.'/package-contracts.json';
-const CONTRACT_SCHEMA_VERSION = 1;
+const CONTRACT_SCHEMA_VERSION = 2;
 
 /**
  * Normalize one reflection type into a deterministic source-like signature.
@@ -466,12 +467,12 @@ function contractPublishTags(string $packagePath): array
 {
     $source = '';
 
-    foreach (contractPhpFiles("{$packagePath}/src/Providers") as $provider) {
+    foreach (contractPhpFiles("{$packagePath}/src") as $provider) {
         $source .= "\n".(string) file_get_contents($provider);
     }
 
     preg_match_all(
-        "/'([a-z0-9-]+-(?:config|migrations|skills|translations|views))'/",
+        "/'([a-z0-9-]+-(?:adoption|config|migrations|skills|tooling|translations|views))'/",
         $source,
         $matches,
     );
@@ -479,6 +480,22 @@ function contractPublishTags(string $packagePath): array
     sort($tags);
 
     return $tags;
+}
+
+/**
+ * Build the suite-level distribution contract.
+ *
+ * @return array<string, mixed>
+ */
+function contractSuite(string $root): array
+{
+    return [
+        'providers' => [SuiteServiceProvider::class],
+        'publish_tags' => contractPublishTags($root),
+        'configuration' => [
+            'config/nvl-suite.php' => contractPhpHash("{$root}/config/nvl-suite.php"),
+        ],
+    ];
 }
 
 /**
@@ -657,7 +674,7 @@ function contractPackage(string $root, string $package): array
 /**
  * Build the complete package-family contract snapshot.
  *
- * @return array{schema_version: int, packages: array<string, array<string, mixed>>}
+ * @return array{schema_version: int, suite: array<string, mixed>, packages: array<string, array<string, mixed>>}
  */
 function contractSnapshot(string $root): array
 {
@@ -671,6 +688,7 @@ function contractSnapshot(string $root): array
 
     return [
         'schema_version' => CONTRACT_SCHEMA_VERSION,
+        'suite' => contractSuite($root),
         'packages' => $packages,
     ];
 }
@@ -724,6 +742,12 @@ if ($baseline === $snapshot) {
 }
 
 $changed = [];
+$baselineSuite = contractStringMap($baseline['suite'] ?? null, 'Suite contract baseline');
+
+if ($baselineSuite !== $snapshot['suite']) {
+    $changed[] = 'nvl/laravel-suite';
+}
+
 $baselinePackages = contractStringMap(
     $baseline['packages'] ?? null,
     'Package contract baseline',

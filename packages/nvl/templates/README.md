@@ -93,6 +93,13 @@ php artisan vendor:publish --tag=templates-views
 php artisan vendor:publish --tag=templates-skills
 ```
 
+Choose exactly one migration owner. For automatic vendor loading, leave
+`templates.migrations.enabled=true` and do not publish `templates-migrations`.
+For host-owned migrations, publish `templates-migrations`, set
+`templates.migrations.enabled=false` before the first migration, and maintain
+the copied files as application migrations. Never run both sources; Laravel
+retimestamps published migrations.
+
 Views can also be published to a guarded custom path:
 
 ```bash

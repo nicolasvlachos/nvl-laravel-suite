@@ -118,6 +118,9 @@ jobs:
           cp \
             "$GITHUB_WORKSPACE/tools/fixtures/suite-release-consumer/app/Providers/AppServiceProvider.php" \
             app/Providers/AppServiceProvider.php
+          cp \
+            "$GITHUB_WORKSPACE/tools/fixtures/suite-release-consumer/config/nvl-release-consumer.php" \
+            config/nvl-release-consumer.php
           cp .env.example .env
           touch database/database.sqlite
           php artisan key:generate
@@ -128,12 +131,52 @@ jobs:
           php artisan route:cache
           php artisan migrate --force
           publish_tags=/tmp/nvl-publish-tags
-          jq -r '.packages[].publish_tags[]' \
+          jq -r '.suite.publish_tags[], .packages[].publish_tags[]' \
             "$GITHUB_WORKSPACE/tools/package-contracts.json" \
-            > "$publish_tags"
+            | sort -u > "$publish_tags"
           while IFS= read -r tag; do
             php artisan vendor:publish --tag="$tag" --force
           done < "$publish_tags"
+          test -f config/nvl-suite.php
+          test -f nvl-auth.principals.json
+          test -f mail-notifications.adoption.json
+          test -f nvl-data.eslint.config.js
+          test -f .nvl-data.prettierignore
+          while IFS= read -r package; do
+            test -f ".agents/skills/nvl-$package/SKILL.md"
+            test -f "vendor/nvl/laravel-suite/resources/boost/skills/nvl-$package/SKILL.md"
+          done < <(php -r '$catalog = require $argv[1]; echo implode(PHP_EOL, $catalog["packages"]);' "$GITHUB_WORKSPACE/tools/package-family.php")
+          for source in "$GITHUB_WORKSPACE"/packages/nvl/*/config/*.php; do
+            test -f "config/$(basename "$source")"
+          done
+          for source in "$GITHUB_WORKSPACE"/packages/nvl/*/database/migrations/*.php; do
+            migration="$(basename "$source")"
+            suffix="${migration:18}"
+            compgen -G "database/migrations/*_$suffix" >/dev/null
+          done
+          while IFS= read -r source; do
+            package="${source#"$GITHUB_WORKSPACE/packages/nvl/"}"
+            package="${package%%/*}"
+            relative="${source#"$GITHUB_WORKSPACE/packages/nvl/$package/lang/"}"
+            test -f "lang/vendor/$package/$relative"
+          done < <(find "$GITHUB_WORKSPACE"/packages/nvl/*/lang -type f ! -name '.gitkeep' -print)
+          while IFS= read -r source; do
+            relative="${source#"$GITHUB_WORKSPACE/packages/nvl/content/resources/views/"}"
+            test -f "resources/views/vendor/nvl-content/$relative"
+          done < <(find "$GITHUB_WORKSPACE/packages/nvl/content/resources/views" -type f -print)
+          while IFS= read -r source; do
+            relative="${source#"$GITHUB_WORKSPACE/packages/nvl/templates/resources/views/"}"
+            test -f "resources/views/vendor/nvl-templates/$relative"
+          done < <(find "$GITHUB_WORKSPACE/packages/nvl/templates/resources/views" -type f -print)
+          while IFS= read -r source; do
+            relative="${source#"$GITHUB_WORKSPACE/packages/nvl/mail-notifications/resources/views/mail/"}"
+            test -f "resources/views/vendor/mail/$relative"
+          done < <(find "$GITHUB_WORKSPACE/packages/nvl/mail-notifications/resources/views/mail" -type f -print)
+          echo 'NVL_RELEASE_PUBLISHED_MIGRATIONS=true' >> .env
+          rm -f database/database.sqlite
+          touch database/database.sqlite
+          php artisan config:clear
+          php artisan config:cache
           php artisan migrate --force
           expected_doctors=/tmp/nvl-expected-doctors
           available_doctors=/tmp/nvl-available-doctors
