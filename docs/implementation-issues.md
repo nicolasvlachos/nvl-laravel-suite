@@ -20,7 +20,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 
 | Group | Scope | Issues | Commit prefix | Status | Implementation commit |
 |---|---|---:|---|---|---|
-| G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | In progress | — |
+| G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | Finished | `88d68c9` |
 | G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Not started | — |
 | G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Not started | — |
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Not started | — |
@@ -31,7 +31,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **46**.
+Total open issues: **45**.
 
 ## Consumer adoption evidence
 
@@ -91,12 +91,12 @@ Total open issues: **46**.
 
 ### G01 — Suite migration ownership and release workflow
 
-- Status: in progress
-- Implementation commit: pending
+- Status: **Finished**
+- Implementation commit: `88d68c9`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `fix(suite): …`
 
-#### [ ] G01-01 — Direct-loaded and published migration workflows are not clearly separated
+#### [x] G01-01 — Direct-loaded and published migration workflows are not clearly separated
 
 - Area: Suite module service providers and installation/migration documentation
 - Impact: high
@@ -104,6 +104,9 @@ Total open issues: **46**.
 - Consumer risk: consumers may believe package tables must also be copied into the host repository, accidentally fork package schema ownership, miss later package migration changes, or run a source-path-dependent migration version.
 - Expected package change: use `publishesMigrations()` consistently; document two explicit modes—automatic vendor loading with no published copies, or published host-owned migrations with automatic loading disabled—and add a Doctor warning when enabled vendor migrations have matching published basenames in `database/migrations`.
 - Current workaround: KPO enables package migrations and loads them directly from `vendor/nvl/laravel-suite`; it does not publish or retain copies of package table-creation migrations. KPO-local migrations in these areas are forward-only data-adoption bridges or genuine domain extensions, not alternate package schema owners.
+- Resolution: Auth, Activity, Comments, Media, and Mail Notifications now register migration publication through Laravel's timestamp-aware API. Their installation guides define the two mutually exclusive ownership modes, and their Doctor commands detect timestamp-independent host duplicates as warnings that become failures under `--strict`.
+- Resolving implementation commit: `88d68c9`
+- Release target: `1.0.2`
 
 ### G02 — Templates and Content adoption and rendering
 
