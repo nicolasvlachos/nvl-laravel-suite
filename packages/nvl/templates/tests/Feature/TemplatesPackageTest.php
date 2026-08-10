@@ -384,6 +384,54 @@ it('honors configured pagination and loads complete management aggregates', func
         ->and($aggregate->relationLoaded('assignments'))->toBeTrue();
 });
 
+it('keeps localized template list queries independent of result size', function (): void {
+    $actor = TemplateActorData::system();
+    $create = static function (int $index): void {
+        $template = Template::query()->create([
+            'key' => "query-template-{$index}",
+            'renderer' => 'test',
+            'status' => TemplateStatus::Active,
+            'schema' => [],
+        ]);
+        $template->translations()->create([
+            'locale' => 'en',
+            'title' => "Query template {$index}",
+        ]);
+    };
+    $measure = static function () use ($actor): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $page = app(ListTemplatesAction::class)->execute(
+            FilterSet::none(),
+            $actor,
+            100,
+        );
+        $queryCount = count(DB::getQueryLog());
+
+        foreach ($page->items() as $template) {
+            $template->translations->count();
+        }
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount);
+        DB::disableQueryLog();
+
+        return $queryCount;
+    };
+
+    $create(1);
+    $singleQueryCount = $measure();
+
+    foreach (range(2, 25) as $index) {
+        $create($index);
+    }
+
+    $populatedQueryCount = $measure();
+
+    expect($singleQueryCount)->toBeLessThanOrEqual(3)
+        ->and($populatedQueryCount)->toBe($singleQueryCount);
+});
+
 it('renders a directly constructed template through the same core pipeline', function (): void {
     $template = new RenderableTemplate(
         key: 'direct-example',
