@@ -22,7 +22,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 |---|---|---:|---|---|---|
 | G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | Finished | `88d68c9` |
 | G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Finished | `d7f1a32` |
-| G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Not started | — |
+| G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Finished | `f88cba0` |
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Not started | — |
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Not started | — |
 | G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Not started | — |
@@ -31,7 +31,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **41**.
+Total open issues: **37**.
 
 ## Consumer adoption evidence
 
@@ -165,11 +165,12 @@ Total open issues: **41**.
 
 ### G03 — Settings adoption, keys, audit context, and validation
 
-- Status: not started
+- Status: **Finished**
+- Implementation commit: `f88cba0`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `feat(settings): …`
 
-#### [ ] G03-01 — Settings has no first-party legacy-schema adoption preflight or command
+#### [x] G03-01 — Settings has no first-party legacy-schema adoption preflight or command
 
 - Area: Settings migrations, Doctor, and installation guidance
 - Impact: high
@@ -177,8 +178,11 @@ Total open issues: **41**.
 - Consumer risk: consumers can leave two authoritative settings stores, lose overrides, import invalid raw values, or believe a same-name legacy table is package-compatible until runtime queries fail.
 - Expected package change: add a Doctor preflight that distinguishes the package schema from a same-name legacy table, plus a first-party adoption API/command with explicit key replacement maps, dry-run validation, count reconciliation, and fail-loud unknown-key handling.
 - Current workaround: KPO uses one reviewed forward-only migration from `core_settings` into source-defined NVL records, validates through package definitions/codecs, verifies every inserted identity, and drops the legacy table.
+- Resolution: Doctor now reports an explicit `schema.compatibility` failure for same-name legacy tables. `nvl:settings:adopt` and `AdoptSettingsAction` provide a bounded, dry-run-first manifest workflow with complete key maps, source/definition/codec validation, atomic idempotent writes, and exact post-write reconciliation.
+- Resolving implementation commit: `f88cba0`
+- Release target: `1.0.2`
 
-#### [ ] G03-02 — Settings canonical keys cannot preserve arbitrarily nested legacy keys
+#### [x] G03-02 — Settings canonical keys cannot preserve arbitrarily nested legacy keys
 
 - Area: source definition grammar and legacy key mapping
 - Impact: medium
@@ -186,8 +190,11 @@ Total open issues: **41**.
 - Consumer risk: adoption changes public key strings and requires every caller, migration, cache key, API client, and audit projection to coordinate a replacement map.
 - Expected package change: document the one-scope grammar prominently and support a validated legacy-key replacement map in an adoption command. If nested key paths are intentionally unsupported, provide a canonical flattening convention.
 - Current workaround: KPO defines every package key in `ApplicationSetting` and uses an explicit legacy-to-canonical map in the adoption migration.
+- Resolution: The Settings guide now states the one-optional-scope grammar and canonical flattening convention. Adoption requires an explicit, definition-resolved source-to-canonical key map, rejects duplicate targets, and fails when any source or mapped key is missing.
+- Resolving implementation commit: `f88cba0`
+- Release target: `1.0.2`
 
-#### [ ] G03-03 — Settings audit events lack actor and request metadata
+#### [x] G03-03 — Settings audit events lack actor and request metadata
 
 - Area: `SettingChanged`
 - Impact: medium
@@ -195,8 +202,11 @@ Total open issues: **41**.
 - Consumer risk: package-owned mutations cannot produce a complete security audit without host listeners inferring mutable request context.
 - Expected package change: add a replaceable audit-context provider analogous to Auth login metadata while continuing to prohibit values in events and logs.
 - Current workaround: KPO records a value-free package activity from `SettingChanged`; actor/request enrichment is limited to context safely available to the listener.
+- Resolution: `SettingChanged` now carries an immutable, value-free context snapshot captured before commit through the replaceable `SettingsAuditContextProvider`. The default Laravel adapter supplies bounded actor identity, request id, IP address, and user agent metadata.
+- Resolving implementation commit: `f88cba0`
+- Release target: `1.0.2`
 
-#### [ ] G03-04 — JSON item validation requires undocumented custom root rules
+#### [x] G03-04 — JSON item validation requires undocumented custom root rules
 
 - Area: Settings source-definition validation rules
 - Impact: low
@@ -204,6 +214,9 @@ Total open issues: **41**.
 - Consumer risk: consumers may believe `list` validates item types/ranges or attempt rules that never run against nested elements.
 - Expected package change: document the root-rule behavior and provide examples or first-party helpers for typed JSON lists/maps.
 - Current workaround: KPO supplies one reusable `IntegerListBetween` rule for its source-defined reminder schedules.
+- Resolution: Settings now documents root-value rule semantics and ships deterministic integer list/map rules for PHP definitions plus portable JSON aliases. Repository validation also uses an internal root attribute so dotted canonical keys cannot be misinterpreted as nested Laravel paths and bypass their rules.
+- Resolving implementation commit: `f88cba0`
+- Release target: `1.0.2`
 
 ### G04 — Data, TypeScript, and CSV consumer contracts
 
