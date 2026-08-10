@@ -300,7 +300,32 @@ it('loads the editor bootstrap in a constant query count', function (): void {
         $actor,
     );
 
-    foreach (range(1, 20) as $index) {
+    Content::place(
+        $block,
+        $owner,
+        'homepage',
+        new PlaceContentBlockData(key: 'block-1'),
+        $actor,
+    );
+    $measure = static function () use ($actor, $owner): array {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $editor = Content::editor($owner, 'homepage', $actor);
+            $queryCount = count(DB::getQueryLog());
+            count($editor->placements);
+
+            expect(DB::getQueryLog())->toHaveCount($queryCount);
+
+            return [$queryCount, count($editor->placements)];
+        } finally {
+            DB::disableQueryLog();
+        }
+    };
+    [$singleQueryCount] = $measure();
+
+    foreach (range(2, 20) as $index) {
         Content::place(
             $block,
             $owner,
@@ -309,19 +334,11 @@ it('loads the editor bootstrap in a constant query count', function (): void {
             $actor,
         );
     }
+    [$populatedQueryCount, $placementCount] = $measure();
 
-    DB::flushQueryLog();
-    DB::enableQueryLog();
-
-    try {
-        $editor = Content::editor($owner, 'homepage', $actor);
-        $queries = DB::getQueryLog();
-    } finally {
-        DB::disableQueryLog();
-    }
-
-    expect($editor->placements)->toHaveCount(20)
-        ->and($queries)->toHaveCount(2);
+    expect($placementCount)->toBe(20)
+        ->and($singleQueryCount)->toBe(2)
+        ->and($populatedQueryCount)->toBe($singleQueryCount);
 });
 
 it('reports persisted placements outside their owner group declaration', function (): void {
