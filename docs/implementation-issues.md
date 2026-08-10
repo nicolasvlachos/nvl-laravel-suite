@@ -25,7 +25,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Finished | `f88cba0` |
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Finished | `bca980b` |
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Finished | `40c4816` |
-| G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Finished | `df6c7a6` |
+| G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Finished | `df6c7a6`, `5b353be` |
 | G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Not started | — |
 | G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Not started | — |
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
@@ -307,7 +307,7 @@ Total open issues: **27**.
 ### G06 — Auth schema and principal adoption
 
 - Status: **Finished**
-- Implementation commit: `df6c7a6`
+- Implementation commits: `df6c7a6`, `5b353be`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `feat(auth): …`
 
@@ -332,7 +332,7 @@ Total open issues: **27**.
 - Expected package change: make principal metadata attributes configurable through a mapper/repository, or reserve a clearly namespaced attribute such as `auth_profile` and add Doctor checks for attribute/relation collisions on configured principal models.
 - Current workaround: KPO renamed its domain relationship to `kpoProfile`, reserves `profile`/`preferences` for package Actions, and added focused integration coverage for both contracts.
 - Resolution: Auth now maps canonical profile/preferences metadata to configurable physical columns, allowing hosts to use namespaced storage such as `auth_profile` while retaining a domain `profile()` relationship. The User model builds casts from that map, and Doctor inspects every actual principal-table column and rejects any one whose name resolves to an Eloquent relationship on the configured model, including otherwise-unused legacy columns that would still shadow the relation.
-- Resolving implementation commit: `df6c7a6`
+- Resolving implementation commits: `df6c7a6`, `5b353be`
 - Release target: `1.0.2`
 
 #### [x] G06-03 — Configurable principal models are not mutation-schema adaptable
@@ -343,8 +343,8 @@ Total open issues: **27**.
 - Consumer risk: enabling package principal-management or RBAC Actions against an established host model can silently discard domain fields or fail with missing-column errors even though the configured models correctly extend the package base models.
 - Expected package change: introduce a replaceable principal mutation mapper/repository, or validated field maps, so package orchestration can target an existing schema without requiring package-shaped columns.
 - Current workaround: KPO adopted the package-owned principal table and fields, enabled package principal management, mapped the public `active`/`settings` host surface to `is_active`/`preferences`, and renamed the colliding domain profile relationship. Host-specific fields extend `nvl_auth_users`; remaining domain-specific mutations are being removed or isolated as adapters.
-- Resolution: The replaceable `PrincipalAttributeMapper` and complete validated canonical field map now drive User key/timestamp/authentication contracts, casts/fillable/hidden fields, all principal mutations and queries, validation uniqueness, invitation provisioning, successful-login metadata, HTTP status output, and principal events. Canonical login identifiers resolve safely to mapped physical columns while persisted subject identity remains the mapped UUID key. Focused coverage proves package create/profile/status/login behavior against a host-shaped schema with `active`, `auth_email`, `auth_profile`, `auth_preferences`, and a real `profile()` relation.
-- Resolving implementation commit: `df6c7a6`
+- Resolution: The replaceable `PrincipalAttributeMapper` and complete validated canonical field map now drive User key/timestamp/authentication contracts, casts/fillable/hidden fields, all principal mutations and queries, validation uniqueness, invitation provisioning, successful-login metadata, HTTP status output, and principal events. Canonical login identifiers resolve safely to mapped physical columns while persisted subject identity remains the mapped UUID key. Principal create/update Actions pass complete validated DTO arrays through the mapper into Eloquent mass assignment, and partial DTOs use `Optional` so missing values are never rewritten as defaults or `null`. Focused coverage proves sparse package create/profile/status/login behavior against a host-shaped schema with `active`, `auth_email`, `auth_profile`, `auth_preferences`, and a real `profile()` relation.
+- Resolving implementation commits: `df6c7a6`, `5b353be`
 - Release target: `1.0.2`
 
 #### [x] G06-04 — Auth migrations are monolithic during staged feature adoption
