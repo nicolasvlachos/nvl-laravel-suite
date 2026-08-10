@@ -44,7 +44,7 @@ Real consumer defects and adoption gaps are maintained in the
 [implementation issue tracker](docs/implementation-issues.md). Its groups are
 the required implementation and commit boundaries for follow-up work.
 
-The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.3+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
+The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.4+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
 
 ## Staged module adoption
 

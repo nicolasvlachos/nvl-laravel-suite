@@ -154,7 +154,7 @@ jobs:
 
 1. Formatting, analysis, manifests and contracts.
 2. PHP 8.4 / Laravel 13 / SQLite.
-3. PHP 8.3 / Laravel 12 / lowest.
+3. PHP 8.4 / Laravel 12 / lowest.
 4. PostgreSQL stateful packages.
 5. Changed-package coverage.
 

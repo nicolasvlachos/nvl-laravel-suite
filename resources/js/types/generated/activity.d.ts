@@ -24,6 +24,7 @@ export type ActivityPurgeQueuedResult = {
 queued: boolean,
 days: number,
 systemOnly: boolean,
+includeImportant: boolean,
 };
 namespace Display {
 export type ActivityCauser = {

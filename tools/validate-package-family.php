@@ -42,6 +42,14 @@ $managementConfiguration = [
     'translations' => ['translations.php', "'enabled' => false"],
     'templates' => ['templates.php', "'enabled' => false"],
 ];
+$packagePhpConstraints = [
+    'activity' => '^8.4',
+];
+$releasedCorrectiveMigrations = [
+    'activity' => [
+        '2026_08_10_123558_add_activitylog_v5_attribute_changes.php',
+    ],
+];
 $requiredFiles = [
     'README.md',
     'LICENSE',
@@ -488,8 +496,10 @@ foreach ($packages as $package) {
 
     $requirements = is_array($manifest['require'] ?? null) ? $manifest['require'] : [];
 
-    if (($requirements['php'] ?? null) !== '^8.3') {
-        $fail($package, 'PHP constraint must be ^8.3');
+    $requiredPhpConstraint = $packagePhpConstraints[$package] ?? '^8.3';
+
+    if (($requirements['php'] ?? null) !== $requiredPhpConstraint) {
+        $fail($package, "PHP constraint must be {$requiredPhpConstraint}");
     }
 
     if (($requirements['laravel/framework'] ?? null) !== '^12.0 || ^13.0') {
@@ -741,14 +751,18 @@ foreach ($packages as $package) {
     }
 
     foreach (selfFiles("{$path}/database/migrations", 'php') as $migrationFile) {
-        if (preg_match(
-            '/_(?:add|alter|backfill|correct|fix|update)_/',
-            basename($migrationFile),
-        ) === 1) {
+        $migrationFilename = basename($migrationFile);
+        $allowedCorrectiveMigrations = $releasedCorrectiveMigrations[$package] ?? [];
+
+        if (! in_array($migrationFilename, $allowedCorrectiveMigrations, true)
+            && preg_match(
+                '/_(?:add|alter|backfill|correct|fix|update)_/',
+                $migrationFilename,
+            ) === 1) {
             $fail(
                 $package,
                 'unpublished package migrations must be consolidated; corrective migration found ['.
-                basename($migrationFile).']',
+                $migrationFilename.']',
             );
         }
     }

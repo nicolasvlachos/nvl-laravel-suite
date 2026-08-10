@@ -5,9 +5,7 @@
             "providers": [
                 "Nvl\\Activity\\Providers\\ActivityServiceProvider"
             ],
-            "autoload_files": {
-                "src/Support/activitylog_compatibility.php": "f0b11362c1649402f33bec83e838868d1628c0c014c88733284e12faf3b648d2"
-            },
+            "autoload_files": [],
             "publish_tags": [
                 "activity-config",
                 "activity-migrations",
@@ -16,8 +14,8 @@
             ],
             "commands": {
                 "Nvl\\Activity\\Console\\Commands\\ActivityDoctorCommand": "nvl:activity:doctor {--strict : Fail for warnings as well as errors} {--format=text : Output format: text or json}",
-                "Nvl\\Activity\\Console\\Commands\\PurgeActivityLogsCommand": "nvl:activity:purge {--days= : Delete logs older than this many days} {--before= : Delete logs created before this absolute date/time} {--after= : Only delete logs created on or after this absolute date/time} {--event=* : Restrict purge to one or more event names} {--log-name=* : Restrict purge to one or more log names} {--subject-type=* : Restrict purge to one or more subject class names} {--subject-id=* : Restrict purge to one or more subject identifiers} {--causer-type=* : Restrict purge to one or more causer class names} {--causer-id=* : Restrict purge to one or more causer identifiers} {--system-only : Only purge system-generated logs (no causer)} {--dry-run : Report count without deleting}",
-                "Nvl\\Activity\\Console\\Commands\\PurgeSystemActivityLogsCommand": "nvl:activity:purge-system {--days= : Delete system logs older than this many days} {--before= : Delete logs created before this absolute date/time} {--after= : Only delete logs created on or after this absolute date/time} {--event=* : Restrict purge to one or more event names} {--log-name=* : Restrict purge to one or more log names} {--subject-type=* : Restrict purge to one or more subject class names} {--subject-id=* : Restrict purge to one or more subject identifiers} {--causer-type=* : Restrict purge to one or more causer class names} {--causer-id=* : Restrict purge to one or more causer identifiers} {--dry-run : Report count without deleting}"
+                "Nvl\\Activity\\Console\\Commands\\PurgeActivityLogsCommand": "nvl:activity:purge {--days= : Delete logs older than this many days} {--before= : Delete logs created before this absolute date/time} {--after= : Only delete logs created on or after this absolute date/time} {--event=* : Restrict purge to one or more event names} {--log-name=* : Restrict purge to one or more log names} {--subject-type=* : Restrict purge to one or more subject class names} {--subject-id=* : Restrict purge to one or more subject identifiers} {--causer-type=* : Restrict purge to one or more causer class names} {--causer-id=* : Restrict purge to one or more causer identifiers} {--system-only : Only purge system-generated logs (no causer)} {--include-important : Explicitly include protected important evidence} {--dry-run : Report count without deleting}",
+                "Nvl\\Activity\\Console\\Commands\\PurgeSystemActivityLogsCommand": "nvl:activity:purge-system {--days= : Delete system logs older than this many days} {--before= : Delete logs created before this absolute date/time} {--after= : Only delete logs created on or after this absolute date/time} {--event=* : Restrict purge to one or more event names} {--log-name=* : Restrict purge to one or more log names} {--subject-type=* : Restrict purge to one or more subject class names} {--subject-id=* : Restrict purge to one or more subject identifiers} {--causer-type=* : Restrict purge to one or more causer class names} {--causer-id=* : Restrict purge to one or more causer identifiers} {--include-important : Explicitly include protected important evidence} {--dry-run : Report count without deleting}"
             },
             "symbols": {
                 "Nvl\\Activity\\Actions\\Activity\\ListActivitiesAction": [
@@ -34,9 +32,10 @@
                 ],
                 "Nvl\\Activity\\Actions\\Activity\\QueueActivityLogPurgeAction": [
                     "final class Nvl\\Activity\\Actions\\Activity\\QueueActivityLogPurgeAction implements Nvl\\Activity\\Contracts\\QueueActivityLogPurgeContract",
-                    "public function execute(int $days, bool $systemOnly=false): void",
+                    "public function execute(int $days, bool $systemOnly=false, bool $includeImportant=false): void",
                     "@param int $days Delete logs older than this many days",
-                    "@param bool $systemOnly Only purge system-generated logs"
+                    "@param bool $systemOnly Only purge system-generated logs",
+                    "@param bool $includeImportant Explicitly include protected important evidence"
                 ],
                 "Nvl\\Activity\\Builders\\ActivityLogBuilder": [
                     "final class Nvl\\Activity\\Builders\\ActivityLogBuilder extends Illuminate\\Database\\Eloquent\\Builder",
@@ -50,6 +49,7 @@
                     "public function olderThan(Carbon\\CarbonInterface $cutoff): static",
                     "public function newerThanOrEqual(Carbon\\CarbonInterface $cutoff): static",
                     "public function whereSystemGenerated(): static",
+                    "public function withoutImportant(): static",
                     "public function whereEvents(array $events): static",
                     "@param list<string> $events",
                     "public function whereLogNames(array $logNames): static",
@@ -74,14 +74,14 @@
                 ],
                 "Nvl\\Activity\\Console\\Commands\\PurgeActivityLogsCommand": [
                     "final class Nvl\\Activity\\Console\\Commands\\PurgeActivityLogsCommand extends Illuminate\\Console\\Command",
-                    "protected mixed $signature=\"nvl:activity:purge\\n        {--days= : Delete logs older than this many days}\\n        {--before= : Delete logs created before this absolute date/time}\\n        {--after= : Only delete logs created on or after this absolute date/time}\\n        {--event=* : Restrict purge to one or more event names}\\n        {--log-name=* : Restrict purge to one or more log names}\\n        {--subject-type=* : Restrict purge to one or more subject class names}\\n        {--subject-id=* : Restrict purge to one or more subject identifiers}\\n        {--causer-type=* : Restrict purge to one or more causer class names}\\n        {--causer-id=* : Restrict purge to one or more causer identifiers}\\n        {--system-only : Only purge system-generated logs (no causer)}\\n        {--dry-run : Report count without deleting}\"",
+                    "protected mixed $signature=\"nvl:activity:purge\\n        {--days= : Delete logs older than this many days}\\n        {--before= : Delete logs created before this absolute date/time}\\n        {--after= : Only delete logs created on or after this absolute date/time}\\n        {--event=* : Restrict purge to one or more event names}\\n        {--log-name=* : Restrict purge to one or more log names}\\n        {--subject-type=* : Restrict purge to one or more subject class names}\\n        {--subject-id=* : Restrict purge to one or more subject identifiers}\\n        {--causer-type=* : Restrict purge to one or more causer class names}\\n        {--causer-id=* : Restrict purge to one or more causer identifiers}\\n        {--system-only : Only purge system-generated logs (no causer)}\\n        {--include-important : Explicitly include protected important evidence}\\n        {--dry-run : Report count without deleting}\"",
                     "protected mixed $description=\"Purge activity log entries older than a given number of days\"",
                     "public function handle(): int",
                     "@return int Exit code"
                 ],
                 "Nvl\\Activity\\Console\\Commands\\PurgeSystemActivityLogsCommand": [
                     "final class Nvl\\Activity\\Console\\Commands\\PurgeSystemActivityLogsCommand extends Illuminate\\Console\\Command",
-                    "protected mixed $signature=\"nvl:activity:purge-system\\n        {--days= : Delete system logs older than this many days}\\n        {--before= : Delete logs created before this absolute date/time}\\n        {--after= : Only delete logs created on or after this absolute date/time}\\n        {--event=* : Restrict purge to one or more event names}\\n        {--log-name=* : Restrict purge to one or more log names}\\n        {--subject-type=* : Restrict purge to one or more subject class names}\\n        {--subject-id=* : Restrict purge to one or more subject identifiers}\\n        {--causer-type=* : Restrict purge to one or more causer class names}\\n        {--causer-id=* : Restrict purge to one or more causer identifiers}\\n        {--dry-run : Report count without deleting}\"",
+                    "protected mixed $signature=\"nvl:activity:purge-system\\n        {--days= : Delete system logs older than this many days}\\n        {--before= : Delete logs created before this absolute date/time}\\n        {--after= : Only delete logs created on or after this absolute date/time}\\n        {--event=* : Restrict purge to one or more event names}\\n        {--log-name=* : Restrict purge to one or more log names}\\n        {--subject-type=* : Restrict purge to one or more subject class names}\\n        {--subject-id=* : Restrict purge to one or more subject identifiers}\\n        {--causer-type=* : Restrict purge to one or more causer class names}\\n        {--causer-id=* : Restrict purge to one or more causer identifiers}\\n        {--include-important : Explicitly include protected important evidence}\\n        {--dry-run : Report count without deleting}\"",
                     "protected mixed $description=\"Purge system-generated activity logs (no causer) older than a given number of days\"",
                     "public function handle(): int",
                     "@return int Exit code"
@@ -120,9 +120,10 @@
                 ],
                 "Nvl\\Activity\\Contracts\\QueueActivityLogPurgeContract": [
                     "interface Nvl\\Activity\\Contracts\\QueueActivityLogPurgeContract",
-                    "public abstract function execute(int $days, bool $systemOnly=false): void",
+                    "public abstract function execute(int $days, bool $systemOnly=false, bool $includeImportant=false): void",
                     "@param int $days Delete logs older than this many days",
-                    "@param bool $systemOnly Only purge system-generated logs"
+                    "@param bool $systemOnly Only purge system-generated logs",
+                    "@param bool $includeImportant Explicitly include protected important evidence"
                 ],
                 "Nvl\\Activity\\Contracts\\TranslatesToActivity": [
                     "interface Nvl\\Activity\\Contracts\\TranslatesToActivity",
@@ -193,7 +194,9 @@
                     "public readonly int $days",
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"boolean\")]",
                     "public readonly bool $systemOnly",
-                    "public function __construct(#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"boolean\")] bool $queued, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"number\")] int $days, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"boolean\")] bool $systemOnly): mixed",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"boolean\")]",
+                    "public readonly bool $includeImportant",
+                    "public function __construct(#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"boolean\")] bool $queued, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"number\")] int $days, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"boolean\")] bool $systemOnly, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"boolean\")] bool $includeImportant=false): mixed",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
                     "@throws Exception",
@@ -762,7 +765,8 @@
                     "final class Nvl\\Activity\\Events\\ActivityLogPurgeQueuedEvent",
                     "public readonly int $days",
                     "public readonly bool $systemOnly",
-                    "public function __construct(int $days, bool $systemOnly): mixed",
+                    "public readonly bool $includeImportant",
+                    "public function __construct(int $days, bool $systemOnly, bool $includeImportant=false): mixed",
                     "public static function dispatch(mixed ...$arguments): mixed",
                     "@param mixed ...$arguments",
                     "@return mixed",
@@ -915,10 +919,11 @@
                     "final class Nvl\\Activity\\Http\\Requests\\PurgeActivityLogsRequest extends Nvl\\Activity\\Http\\Requests\\ActivityFormRequest",
                     "public function authorize(): bool",
                     "public function bodyParameters(): array",
-                    "@return array<string, array{description: string, example: int}>",
+                    "@return array<string, array{description: string, example: int|bool}>",
                     "public function rules(): array",
                     "@return array<string, ValidationRule|array<mixed>|string>",
-                    "public function days(): int"
+                    "public function days(): int",
+                    "public function includeImportant(): bool"
                 ],
                 "Nvl\\Activity\\Jobs\\PurgeActivityLogsJob": [
                     "final class Nvl\\Activity\\Jobs\\PurgeActivityLogsJob implements Illuminate\\Contracts\\Queue\\ShouldQueue",
@@ -945,6 +950,7 @@
                     "public function __construct(int $days, bool $systemOnly=false, ?Nvl\\Activity\\Support\\ActivityPurgeCriteria $criteria=null): mixed",
                     "@param int $days Delete entries older than this many days",
                     "@param bool $systemOnly Only delete system-originated entries",
+                    "@param ActivityPurgeCriteria|null $criteria Immutable serialized purge filters",
                     "public function handle(): void",
                     "public function backoff(): array",
                     "@return list<int>",
@@ -1382,20 +1388,21 @@
                     "public readonly ?string $before",
                     "public readonly ?string $after",
                     "public readonly bool $systemOnly",
+                    "public readonly bool $includeImportant",
                     "public readonly array $events",
                     "public readonly array $logNames",
                     "public readonly array $subjectTypes",
                     "public readonly array $subjectIds",
                     "public readonly array $causerTypes",
                     "public readonly array $causerIds",
-                    "public function __construct(?int $days=null, ?string $before=null, ?string $after=null, bool $systemOnly=false, array $events=[], array $logNames=[], array $subjectTypes=[], array $subjectIds=[], array $causerTypes=[], array $causerIds=[]): mixed",
+                    "public function __construct(?int $days=null, ?string $before=null, ?string $after=null, bool $systemOnly=false, bool $includeImportant=false, array $events=[], array $logNames=[], array $subjectTypes=[], array $subjectIds=[], array $causerTypes=[], array $causerIds=[]): mixed",
                     "@param list<string> $events",
                     "@param list<string> $logNames",
                     "@param list<string> $subjectTypes",
                     "@param list<string> $subjectIds",
                     "@param list<string> $causerTypes",
                     "@param list<string> $causerIds",
-                    "public static function fromDays(int $days, bool $systemOnly=false): self",
+                    "public static function fromDays(int $days, bool $systemOnly=false, bool $includeImportant=false): self",
                     "public static function fromConsoleOptions(array $options, bool $forceSystemOnly=false, ?int $defaultDays=null): self",
                     "@param array<string, mixed> $options",
                     "public function cutoff(): Carbon\\CarbonImmutable",
@@ -1415,10 +1422,6 @@
                     "@param Model|null $causer The causer model",
                     "@param array<string, mixed> $properties Stored activity metadata",
                     "@return array{id: string|int|null, name: string|null, email: string|null}"
-                ],
-                "Nvl\\Activity\\Support\\LogOptionsCompatibility": [
-                    "final class Nvl\\Activity\\Support\\LogOptionsCompatibility",
-                    "public static function dontLogEmptyChanges(Spatie\\Activitylog\\Support\\LogOptions $logOptions): Spatie\\Activitylog\\Support\\LogOptions"
                 ],
                 "Nvl\\Activity\\Support\\ModelActivityMappingResolver": [
                     "final class Nvl\\Activity\\Support\\ModelActivityMappingResolver",
@@ -1508,7 +1511,8 @@
                 "routes/api.php": "965311282c9a30c957a089af4e0952b70173cad1f1e3a0b0f7cc4f6ea938edde"
             },
             "migrations": {
-                "database/migrations/2026_07_25_090858_create_activity_log_table.php": "05c4463a52bcac6d6ea811a74f50536be37a39ad17d0b0d8f0e371c121eb161f"
+                "database/migrations/2026_07_25_090858_create_activity_log_table.php": "22cfeb0ad128e80c33aa63b27fc6a377ecb44cf6df10b60dc8e347ece09a3a95",
+                "database/migrations/2026_08_10_123558_add_activitylog_v5_attribute_changes.php": "1e346542e74ecdc46b3d02b6538dc7e435df746a5016045082002412f62de98e"
             }
         },
         "auth": {

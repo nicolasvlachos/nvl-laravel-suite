@@ -58,6 +58,31 @@ it('keeps Composer update hooks independent of optional development tools', func
         ->not->toContain('@php artisan boost:update --ansi');
 });
 
+it('enforces Activitylog v5 and its PHP 8.4 runtime floor', function (): void {
+    $root = dirname(__DIR__, 2);
+    $suiteManifest = json_decode(
+        file_get_contents($root.'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $activityManifest = json_decode(
+        file_get_contents($root.'/packages/nvl/activity/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+    $lowestSteps = $workflow['jobs']['laravel12-lowest']['steps'] ?? [];
+    $setupPhp = collect($lowestSteps)->firstWhere('uses', SUITE_SETUP_PHP_ACTION);
+
+    expect($suiteManifest['require']['php'] ?? null)->toBe('^8.4')
+        ->and($activityManifest['require']['php'] ?? null)->toBe('^8.4')
+        ->and($suiteManifest['require']['spatie/laravel-activitylog'] ?? null)->toBe('^5.0')
+        ->and($activityManifest['require']['spatie/laravel-activitylog'] ?? null)->toBe('^5.0')
+        ->and($suiteManifest['autoload']['files'] ?? [])->toBe([])
+        ->and($activityManifest['autoload']['files'] ?? [])->toBe([])
+        ->and(is_array($setupPhp) ? ($setupPhp['with']['php-version'] ?? null) : null)->toBe('8.4');
+});
+
 it('gives clean-runner integration tests a deterministic non-production application key', function (): void {
     $configuration = simplexml_load_file(dirname(__DIR__, 2).'/phpunit.xml');
 
