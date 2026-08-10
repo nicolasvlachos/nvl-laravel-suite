@@ -23,7 +23,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | Finished | `88d68c9` |
 | G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Finished | `d7f1a32` |
 | G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Finished | `f88cba0` |
-| G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Not started | — |
+| G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Finished | `bca980b` |
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Not started | — |
 | G06 | Auth schema and principal adoption | 4 | `feat(auth): …` | Not started | — |
 | G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Not started | — |
@@ -31,7 +31,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **37**.
+Total open issues: **33**.
 
 ## Consumer adoption evidence
 
@@ -220,11 +220,12 @@ Total open issues: **37**.
 
 ### G04 — Data, TypeScript, and CSV consumer contracts
 
-- Status: not started
+- Status: **Finished**
+- Implementation commit: `bca980b`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `fix(data): …`
 
-#### [ ] G04-01 — Settings generator strictness documented for a newer release is absent in 1.0.1
+#### [x] G04-01 — Settings generator strictness documented for a newer release is absent in 1.0.1
 
 - Area: `nvl:data:types:generate` CLI contract and release guidance
 - Impact: medium
@@ -232,8 +233,11 @@ Total open issues: **37**.
 - Consumer risk: consumers following the newer instructions get an immediate CLI error and may assume type generation itself is broken.
 - Expected package change: version the instructions explicitly, expose the option in the next stable release, and have the command help/report identify the minimum suite version supporting strict warning failure.
 - Current workaround: KPO runs the 1.0.1 generator without the unavailable flag and uses `nvl:data:types:check`, TypeScript, and lint verification as separate gates.
+- Resolution: Both generation and freshness-check commands now expose the explicit `--fail-on-warning` contract, identify suite 1.0.2 as its minimum version in command help, and retain warning-free output as the default behavior. Release and package guidance now distinguish the 1.0.1 invocation from the 1.0.2-and-later strict invocation.
+- Resolving implementation commit: `bca980b`
+- Release target: `1.0.2`
 
-#### [ ] G04-02 — CSV query export rejects correctly typed concrete Eloquent builders
+#### [x] G04-02 — CSV query export rejects correctly typed concrete Eloquent builders
 
 - Area: `Nvl\Csv\Services\CSVExport::fromQuery()` PHPDoc/static-analysis contract
 - Impact: medium
@@ -241,8 +245,11 @@ Total open issues: **37**.
 - Consumer risk: direct package adoption introduces false-positive static-analysis failures or encourages consumers to erase query model types before export.
 - Expected package change: make the method generic, for example `@template TModel of Model` with `@param Builder<TModel> $query`, and carry that template through any stored builder property or downstream query callbacks.
 - Current workaround: KPO widens only the variable passed to the package boundary with an explicit `Builder<Model>` PHPDoc. No local CSV implementation remains.
+- Resolution: `CSVExport::fromQuery()` now declares a method-level model template and accepts `Builder<TModel>` directly. A maximum-level PHPStan type fixture verifies that a concrete Eloquent builder crosses the package boundary without type erasure.
+- Resolving implementation commit: `bca980b`
+- Release target: `1.0.2`
 
-#### [ ] G04-03 — Mail Notifications does not register its public delivery-status enum for TypeScript generation
+#### [x] G04-03 — Mail Notifications does not register its public delivery-status enum for TypeScript generation
 
 - Area: Mail Notifications public DTO integration with NVL Data strict TypeScript generation
 - Impact: medium
@@ -250,8 +257,11 @@ Total open issues: **37**.
 - Consumer risk: strict generation rejects an otherwise valid package-typed read projection, encouraging consumers to weaken the PHP type or disable fail-on-warning behavior.
 - Expected package change: register public Mail Notifications enums as package TypeScript sources, or ship validated package-owned replacements/literal definitions that NVL Data loads automatically when the module is enabled.
 - Current workaround: KPO retains the package enum in PHP and applies a property-level `LiteralTypeScriptType` union at the host DTO boundary.
+- Resolution: Mail Notifications now registers its package source with NVL Data whenever the source registry is available, without forcing Data onto standalone consumers. The package-family catalog explicitly owns TypeScript-source membership, and strict generation emits a validated `MailDeliveryStatus` declaration.
+- Resolving implementation commit: `bca980b`
+- Release target: `1.0.2`
 
-#### [ ] G04-04 — Generated TypeScript artifacts conflict with standard lint/format checks
+#### [x] G04-04 — Generated TypeScript artifacts conflict with standard lint/format checks
 
 - Area: NVL Data split writer and generated declaration integration
 - Impact: low
@@ -259,6 +269,9 @@ Total open issues: **37**.
 - Consumer risk: a clean generated contract set fails normal ESLint/Prettier checks, encouraging consumers to edit integrity-protected output, disable rules globally, or format files that `nvl:data:types:check` will immediately report as stale.
 - Expected package change: either emit lint/format-compatible declarations when that preserves deterministic global namespace semantics, provide official ESLint flat-config and `.prettierignore` fragments for every generated output path, or document the exact exclusions alongside setup.
 - Current workaround: KPO excludes the NVL entrypoint and generated scope directory from ESLint and Prettier while continuing to verify their exact generator-owned content with `nvl:data:types:check` and `tsc --noEmit`.
+- Resolution: Data now publishes canonical ESLint flat-config and Prettier ignore fragments for the generator-owned entrypoint, scope directory, and integrity manifest. Package, upgrade, skill, and suite documentation give the exact publish tag and integration paths while keeping `nvl:data:types:check` and `tsc --noEmit` as the authoritative gates.
+- Resolving implementation commit: `bca980b`
+- Release target: `1.0.2`
 
 ### G05 — Mail Notifications adoption and administrative reads
 
