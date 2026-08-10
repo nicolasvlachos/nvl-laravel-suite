@@ -20,6 +20,10 @@ name: string,
 abilities: string[],
 expiresAt: string | null,
 };
+export type ApplyRoleTemplateData = {
+template: string,
+roleName: string | null,
+};
 export type ConfirmPasswordData = {
 password: string,
 };
@@ -128,6 +132,12 @@ preferences: Record<string, any>,
 roles: string[],
 permissions: string[],
 emailVerified: boolean,
+};
+export type SyncUserPermissionsData = {
+permissions: string[],
+};
+export type SyncUserRolesData = {
+roles: string[],
 };
 export type UpdateClientData = {
 name: string,
