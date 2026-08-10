@@ -29,9 +29,9 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G07 | Authentication and onboarding security | 10 | `fix(auth): …` | Finished | `14be433`, `12c6d0d` |
 | G08 | RBAC and principal lifecycle system transitions | 7 | `feat(auth-rbac): …` | Finished | `c2a85e4` |
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Finished | `779bd07` |
-| G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
+| G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Finished | `d6c4f0e` |
 
-Total open issues: **3**.
+Total open issues: **0**.
 
 ## Consumer adoption evidence
 
@@ -687,11 +687,12 @@ Total open issues: **3**.
 
 ### G10 — Activity adoption, compatibility, and retention safety
 
-- Status: not started
+- Status: **Finished**
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `fix(activity): …`
+- Implementation commit: `d6c4f0e`
 
-#### [ ] G10-01 — Activity package migration cannot adopt its canonical existing table
+#### [x] G10-01 — Activity package migration cannot adopt its canonical existing table
 
 - Area: `2026_07_25_090858_create_activity_log_table.php` and migration publishing guidance
 - Impact: high
@@ -699,8 +700,11 @@ Total open issues: **3**.
 - Consumer risk: following the normal enable-and-migrate path fails before a later bridge migration can inspect or align existing data.
 - Expected package change: provide a documented migration-baseline/adoption command or a package-owned adoption migration path that can certify and register an existing canonical table without making rollback destructive.
 - Current workaround: KPO stages a non-canonical legacy table immediately before the vendor timestamp, lets the unmodified vendor migration create `activity_log`, then copies and reconciles the staged rows immediately afterward. Current canonical installations no-op through the bridge. No KPO Activity table definition or parallel runtime remains.
+- Resolution: the canonical baseline migration now certifies the existing table's columns, identifiers, primary key, JSON storage, and indexes before Laravel records it as executed. Created and adopted audit storage is forward-only during rollback, and the following package bridge safely adds the v5 change column without deleting evidence.
+- Resolving implementation commit: `d6c4f0e`
+- Release target: `1.0.2`
 
-#### [ ] G10-02 — Activitylog v5 adoption can be an implicit breaking consumer upgrade
+#### [x] G10-02 — Activitylog v5 adoption can be an implicit breaking consumer upgrade
 
 - Area: root Composer constraints and installation/upgrade guidance
 - Impact: high
@@ -708,8 +712,11 @@ Total open issues: **3**.
 - Consumer risk: an otherwise routine suite update can break all model activity writes at runtime with a missing-column error and can break host source loading through removed v4 namespaces.
 - Expected package change: document the full v4-to-v5 consumer migration in the release/installation guidance and add a preflight diagnostic for the `attribute_changes` column. Consider preventing an implicit major upgrade unless the consumer explicitly requires Activitylog v5.
 - Current workaround: KPO explicitly adopted Activitylog v5, stages the legacy table so the package migration creates the canonical v5 schema, copies the historical rows back with reconciliation, updates host imports, and keeps a read fallback for historical v4 change data stored in `properties`.
+- Resolution: the suite and Activity manifests now require only `spatie/laravel-activitylog:^5.0` and PHP 8.4+, the v4 namespace/autoload shims are removed, Doctor requires major version 5 and the JSON `attribute_changes` column, and installation/upgrade/release guidance documents the explicit dependency, namespace, schema, and historical-read transition.
+- Resolving implementation commit: `d6c4f0e`
+- Release target: `1.0.2`
 
-#### [ ] G10-03 — Activity purge ignores importance and can delete protected business evidence
+#### [x] G10-03 — Activity purge ignores importance and can delete protected business evidence
 
 - Area: Activity purge criteria and retention semantics
 - Impact: high
@@ -717,6 +724,9 @@ Total open issues: **3**.
 - Consumer risk: a consumer can correctly mark security, identity, payment, or compliance history as important and still irreversibly delete it through the package's documented purge UI/API.
 - Expected package change: exclude `important` records by default and require an explicit, auditable opt-in to purge them, or add a validated importance criterion with a safe default. Doctor and documentation should state the effective retention policy.
 - Current workaround: KPO records the package semantics in tests and limits purge access to its verified admin scope. The package should own the retention fix rather than KPO reintroducing a parallel purge implementation.
+- Resolution: all general, system-only, API, CLI, and scheduled purge paths now exclude important activity by default. Explicit `include_important=true` or `--include-important` opt-in propagates through immutable criteria, queued DTOs, events, criteria summaries, and job logs, while Doctor and the operating guidance state the effective protection policy.
+- Resolving implementation commit: `d6c4f0e`
+- Release target: `1.0.2`
 
 ## Resolved
 
