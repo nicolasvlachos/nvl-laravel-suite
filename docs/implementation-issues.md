@@ -21,7 +21,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | Group | Scope | Issues | Commit prefix | Status | Implementation commit |
 |---|---|---:|---|---|---|
 | G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | Finished | `88d68c9` |
-| G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | In progress | — |
+| G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Finished | `d7f1a32` |
 | G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Not started | — |
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Not started | — |
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Not started | — |
@@ -31,7 +31,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G09 | Media storage, delivery, mutation, and adoption | 7 | `fix(media): …` | Not started | — |
 | G10 | Activity adoption, compatibility, and retention safety | 3 | `fix(activity): …` | Not started | — |
 
-Total open issues: **45**.
+Total open issues: **41**.
 
 ## Consumer adoption evidence
 
@@ -110,12 +110,12 @@ Total open issues: **45**.
 
 ### G02 — Templates and Content adoption and rendering
 
-- Status: in progress
-- Implementation commit: pending
+- Status: **Finished**
+- Implementation commit: `d7f1a32`
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `feat(templates): …`
 
-#### [ ] G02-01 — Templates migration silently accepts incompatible same-name tables and can collide after staging
+#### [x] G02-01 — Templates migration silently accepts incompatible same-name tables and can collide after staging
 
 - Area: Templates migrations and installation preflight
 - Impact: high
@@ -123,8 +123,11 @@ Total open issues: **45**.
 - Consumer risk: the package can report a successful migration against an incompatible schema, or an otherwise correct staged adoption can fail partway through with an index-name collision.
 - Expected package change: fail closed when a same-name table lacks the canonical schema, add this validation to Doctor/preflight, and document that staged legacy tables must shed schema-wide named indexes before package creation. A first-party staging/adoption command should handle this per supported database driver.
 - Current workaround: KPO renames the three legacy tables before the package timestamp, enumerates and drops every non-primary legacy index, lets the unmodified package migrations create the canonical schema, reconciles all data, and removes staging.
+- Resolution: Templates creator migrations now fail closed on existing canonical names. A pre-creator compatibility migration and the Templates Doctor validate required columns, exact named-index definitions, primary keys, foreign-key targets, and delete rules. The staged adoption command inventories declared tables and explicitly removes their non-primary named indexes before canonical creation.
+- Resolving implementation commit: `d7f1a32`
+- Release target: `1.0.2`
 
-#### [ ] G02-02 — Templates and Content lack a first-party adoption workflow
+#### [x] G02-02 — Templates and Content lack a first-party adoption workflow
 
 - Area: Templates/Content installation and legacy import guidance
 - Impact: high
@@ -132,8 +135,11 @@ Total open issues: **45**.
 - Consumer risk: consumers retain parallel storage, fork package migrations, lose localized values/assets, or invent timestamp-sensitive destructive bridges without reconciliation guarantees.
 - Expected package change: provide one staged adoption surface with schema inventory, explicit key/scope maps, locale validation, asset-to-Media mapping, idempotent Action-backed writes, count reconciliation, and a fail-loud finalization report. Templates should adopt Content's fail-closed conflict posture.
 - Current workaround: KPO uses two forward-only host migrations solely for staging and data adoption. Non-empty legacy asset storage fails closed until each alias is imported into NVL Media; no local runtime table or model remains.
+- Resolution: `nvl:templates:adopt` now provides a bounded versioned manifest, read-only schema/data plan, explicit source-to-target key and scope maps, locale and Content value validation, complete Media mapping, staging-index preparation, idempotent Action-backed writes, and exact post-write reconciliation. Non-empty source asset counts without one available Media mapping per entry fail closed.
+- Resolving implementation commit: `d7f1a32`
+- Release target: `1.0.2`
 
-#### [ ] G02-03 — Class templates cannot hydrate complete Content scopes through a dedicated application read contract
+#### [x] G02-03 — Class templates cannot hydrate complete Content scopes through a dedicated application read contract
 
 - Area: class-template compatibility API and Content application surface
 - Impact: medium
@@ -141,8 +147,11 @@ Total open issues: **45**.
 - Consumer risk: each host writes its own precedence, pagination, locale, publication, and definition-resolution adapter; templates can silently omit content beyond the page boundary.
 - Expected package change: expose a bounded, non-request-paginated scope-resolution contract for internal rendering, with ordered scope fallback, locale selection, visibility/status enforcement, deterministic limits, and explicit overflow failure. Allow `scope in [...]` where appropriate.
 - Current workaround: KPO's narrow `TemplateContentResolver` uses only the public Content façade, queries each governed scope with its supported equality filter, rejects overflow, and supplies the resulting map to the package class template.
+- Resolution: Content now exposes `resolveScopes()` with ordered first-match fallback, locale-aware values, published/public enforcement, trusted actor query scoping, deterministic ordering, configurable scope and row bounds, and a `limit + 1` overflow exception. The block catalog's allowlisted `scope` filter also supports `in`.
+- Resolving implementation commit: `d7f1a32`
+- Release target: `1.0.2`
 
-#### [ ] G02-04 — Templates has no first-party NVL Media asset resolver
+#### [x] G02-04 — Templates has no first-party NVL Media asset resolver
 
 - Area: Templates asset resolution and Media integration
 - Impact: medium
@@ -150,6 +159,9 @@ Total open issues: **45**.
 - Consumer risk: every suite consumer must write alias/path resolution glue or fall back to source filesystem assets; legacy template asset adoption has no canonical destination mapping API.
 - Expected package change: provide an opt-in Media-backed resolver with registered collections/aliases, authorization-safe URLs or local render paths, revision-aware resolution, and an adoption helper for legacy aliases.
 - Current workaround: KPO's two currently used logos are source-controlled and registered through the package asset guard. The legacy asset table was empty; adoption fails closed if that assumption is not true.
+- Resolution: Templates now ships an opt-in NVL Media resolver and validated alias registry with deterministic scope/type collections, safe local-path or Media URL delivery, exact revision pins, current-variation checks, and a controlled source-alias adoption helper. Missing, unavailable, or stale Media mappings throw instead of silently falling back.
+- Resolving implementation commit: `d7f1a32`
+- Release target: `1.0.2`
 
 ### G03 — Settings adoption, keys, audit context, and validation
 
