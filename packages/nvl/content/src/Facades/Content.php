@@ -18,6 +18,8 @@ use Nvl\Content\Data\ContentDefinitionMigrationResultData;
 use Nvl\Content\Data\ContentDefinitionSyncPlanData;
 use Nvl\Content\Data\ContentEditorData;
 use Nvl\Content\Data\ContentFieldPresetData;
+use Nvl\Content\Data\ContentScopeData;
+use Nvl\Content\Data\ContentScopeResolutionData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Data\Mutations\UpdateContentBlockData;
@@ -34,6 +36,7 @@ use Nvl\Filterable\Data\FilterSet;
  * @method static Collection<int, ContentFieldPresetData> presets(ContentActorData $actor)
  * @method static LengthAwarePaginator<int, ContentBlock> blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)
  * @method static ContentBlock block(ContentBlock|string $block, ContentActorData $actor)
+ * @method static ContentScopeResolutionData resolveScopes(list<ContentScopeData> $scopes, string $locale, ContentActorData $actor, ?int $limit = null, bool $publicOnly = true)
  * @method static ContentDefinitionSyncPlanData syncDefinitions(ContentActorData $actor, bool $dryRun = false)
  * @method static ContentDefinitionMigrationPlanData planDefinitionMigrations(ContentActorData $actor, ?string $definition = null, ?int $limit = null)
  * @method static ContentDefinitionMigrationResultData applyDefinitionMigrations(ContentDefinitionMigrationPlanData $plan, ContentActorData $actor)

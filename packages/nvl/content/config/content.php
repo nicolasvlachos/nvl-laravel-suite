@@ -128,6 +128,11 @@ return [
     'rendering' => [
         'default_view' => 'nvl-content::blocks.default',
         'strict_views' => true,
+        'scope_resolution' => [
+            'limit' => 250,
+            'maximum_limit' => 1_000,
+            'maximum_scopes' => 25,
+        ],
     ],
 
     'view_publishing' => [

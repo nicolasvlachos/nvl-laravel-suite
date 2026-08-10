@@ -14,6 +14,9 @@ Module-level implementation history remains available in each
 - Separated automatic vendor migration loading from host-owned published
   migrations across Auth, Activity, Comments, Media, and Mail Notifications,
   including timestamp-aware publishing and strict duplicate-owner diagnostics.
+- Added fail-closed Templates schema ownership checks, a staged
+  Templates/Content/Media adoption workflow, bounded Content scope resolution,
+  and an opt-in revision-aware Media asset resolver for class templates.
 
 ## [1.0.1] - 2026-08-09
 

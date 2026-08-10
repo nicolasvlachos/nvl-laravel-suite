@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Templates\Console\AdoptTemplatesCommand;
 use Nvl\Templates\Console\PublishTemplateViewsCommand;
 use Nvl\Templates\Console\RecoverTemplateRendersCommand;
 use Nvl\Templates\Console\SyncTemplateDefinitionsCommand;
@@ -17,6 +18,7 @@ use Nvl\Templates\Contracts\TemplateAuthorization;
 use Nvl\Templates\Contracts\TemplateOwnerResolver;
 use Nvl\Templates\Contracts\TemplatePayloadValidator;
 use Nvl\Templates\Contracts\TemplateRenderer;
+use Nvl\Templates\Data\MediaTemplateAssetData;
 use Nvl\Templates\Data\TemplateDefinitionData;
 use Nvl\Templates\Models\Template;
 use Nvl\Templates\Models\TemplateVersion;
@@ -24,6 +26,8 @@ use Nvl\Templates\Pdf\Contracts\PdfServiceInterface;
 use Nvl\Templates\Pdf\PdfService;
 use Nvl\Templates\Services\ConfiguredTemplateAuthorization;
 use Nvl\Templates\Services\ConfiguredTemplatePayloadValidator;
+use Nvl\Templates\Services\MediaTemplateAssetRegistry;
+use Nvl\Templates\Services\MediaTemplateAssetResolver;
 use Nvl\Templates\Services\NullTemplateAssetResolver;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
@@ -59,9 +63,18 @@ final class TemplatesServiceProvider extends ServiceProvider
             ConfiguredTemplatePayloadValidator::class,
         );
         $this->app->bindIf(PdfServiceInterface::class, PdfService::class);
+        $assetDriver = config('templates.assets.driver', 'null');
+
+        if (! is_string($assetDriver) || ! in_array($assetDriver, ['null', 'media'], true)) {
+            throw new InvalidArgumentException('templates.assets.driver must be null or media.');
+        }
+
+        $this->app->singleton(MediaTemplateAssetRegistry::class);
         $this->app->bindIf(
             TemplateAssetResolver::class,
-            NullTemplateAssetResolver::class,
+            $assetDriver === 'media'
+                ? MediaTemplateAssetResolver::class
+                : NullTemplateAssetResolver::class,
         );
         $this->app->singleton(TemplateDefinitionRegistry::class);
         $this->app->singleton(TemplateRendererRegistry::class);
@@ -79,6 +92,7 @@ final class TemplatesServiceProvider extends ServiceProvider
         TemplateOwnerRegistry $owners,
         ContentOwnerRegistrar $contentOwners,
     ): void {
+        $assets = $this->app->make(MediaTemplateAssetRegistry::class);
         $typeScriptSources->register(__DIR__.'/..', 'nvl/templates');
         $this->registerRenderers($renderers);
         $this->loadViewsFrom(
@@ -87,6 +101,7 @@ final class TemplatesServiceProvider extends ServiceProvider
         );
         $this->registerDefinitions($definitions);
         $this->registerOwners($owners);
+        $this->registerMediaAssets($assets);
         $registeredContentOwner = $contentOwners->registered(
             TemplateVersion::CONTENT_OWNER_TYPE,
         );
@@ -117,6 +132,7 @@ final class TemplatesServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                AdoptTemplatesCommand::class,
                 SyncTemplateDefinitionsCommand::class,
                 TemplatesDoctorCommand::class,
                 PublishTemplateViewsCommand::class,
@@ -234,6 +250,67 @@ final class TemplatesServiceProvider extends ServiceProvider
             }
 
             $registry->register($alias, $resolver);
+        }
+    }
+
+    private function registerMediaAssets(MediaTemplateAssetRegistry $registry): void
+    {
+        $configured = config('templates.assets.media.aliases', []);
+
+        if (! is_array($configured)) {
+            throw new InvalidArgumentException('templates.assets.media.aliases must be an array.');
+        }
+
+        foreach ($configured as $key => $asset) {
+            if (! is_string($key) || ! is_array($asset)) {
+                throw new InvalidArgumentException(
+                    'Every configured template Media alias must be a keyed object.',
+                );
+            }
+
+            $unknown = array_diff(array_keys($asset), [
+                'media_id',
+                'scope',
+                'type',
+                'variation',
+                'delivery',
+                'expected_revision',
+            ]);
+
+            if ($unknown !== []) {
+                throw new InvalidArgumentException(
+                    "Template Media alias [{$key}] contains unknown option [".
+                    (string) reset($unknown).'].',
+                );
+            }
+
+            $mediaId = $asset['media_id'] ?? null;
+            $scope = $asset['scope'] ?? 'default';
+            $type = $asset['type'] ?? 'image';
+            $variation = $asset['variation'] ?? '';
+            $delivery = $asset['delivery'] ?? 'path';
+            $expectedRevision = $asset['expected_revision'] ?? null;
+
+            if (! is_string($mediaId)
+                || ! is_string($scope)
+                || ! is_string($type)
+                || ! is_string($variation)
+                || ! is_string($delivery)
+                || ($expectedRevision !== null && ! is_int($expectedRevision))) {
+                throw new InvalidArgumentException(
+                    "Template Media alias [{$key}] contains invalid values.",
+                );
+            }
+
+            $registry->register(new MediaTemplateAssetData(
+                key: $key,
+                mediaId: $mediaId,
+                scope: $scope,
+                type: $type,
+                variation: $variation,
+                delivery: $delivery,
+                expectedRevision: $expectedRevision,
+            ));
         }
     }
 

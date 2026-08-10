@@ -4,6 +4,13 @@ All notable changes to `nvl/templates` are documented here.
 
 ## [Unreleased]
 
+- Added a versioned staged-adoption command with schema inventory, explicit
+  key/scope/locale/Media maps, staging-index preparation, Action-backed writes,
+  idempotent reconciliation, and fail-closed asset counts.
+- Added a compatibility preflight migration and expanded Doctor checks for
+  every canonical Templates column and named index.
+- Added an opt-in revision-aware NVL Media asset resolver, scoped alias
+  registry, and source-alias adoption helper for class templates.
 - Added consumer contract coverage for opt-in HTTP management/rendering, bounded JSON Schema validation, PDF configuration, and distribution hygiene.
 - Added source-controlled definitions, renderer and owner registries.
 - Added UUID template, translation, version, assignment, and render schemas.

@@ -181,7 +181,11 @@ final class ContentBlock extends Model implements TranslatableModel
             filters: [
                 new FilterDefinition('definition', 'definition_id'),
                 new FilterDefinition('key', 'key'),
-                new FilterDefinition('scope', 'scope'),
+                new FilterDefinition(
+                    alias: 'scope',
+                    column: 'scope',
+                    operators: [FilterOperator::Equals, FilterOperator::In],
+                ),
                 new FilterDefinition('scope_key', 'scope_key'),
                 new FilterDefinition(
                     alias: 'status',

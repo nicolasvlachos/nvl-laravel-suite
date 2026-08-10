@@ -32,8 +32,15 @@ share one pipeline:
 - Use `ContentAccessor` and `AssetAccessor` in class-template Blade views.
 - Supply persisted copy through `withComposition()` and keep binary ownership
   in Media.
-- Bind `TemplateAssetResolver` for frame, sticker, or scoped asset handles.
+- Prefer the opt-in Media resolver and registered revision-aware aliases for
+  frame, sticker, or scoped asset handles; bind `TemplateAssetResolver` only
+  for an application-specific ownership source.
+- Use `Content::resolveScopes()` for bounded ordered class-template copy. Do
+  not page the HTTP-style block catalog or query Content models directly.
 - Keep local assets under configured roots; exact-allowlist every remote host.
+- Use the versioned `nvl:templates:adopt` manifest for legacy key/scope/locale
+  and Media alias mapping. Plan first, prepare named staging indexes, migrate,
+  apply, and require exact reconciliation before removing staging.
 - Treat raw header/footer HTML as trusted source only. Stored definitions use
   header/footer view names.
 - Keep PDF image diagnostics disabled outside explicitly enabled debug

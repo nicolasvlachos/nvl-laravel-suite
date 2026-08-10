@@ -21,6 +21,11 @@ return [
         'enabled' => true,
     ],
 
+    'adoption' => [
+        'maximum_manifest_bytes' => 1_048_576,
+        'maximum_records' => 10_000,
+    ],
+
     'authorization' => [
         'class' => ConfiguredTemplateAuthorization::class,
     ],
@@ -122,6 +127,22 @@ return [
             'allowed_local_roots' => [resource_path(), storage_path('app')],
             'maximum_bytes' => 5_242_880,
             'maximum_inline_bytes' => 2_097_152,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Class-template asset aliases
+    |--------------------------------------------------------------------------
+    |
+    | The null driver preserves the dependency-free default. The media driver
+    | resolves explicit aliases through NVL Media using safe URLs or local paths.
+    |
+    */
+    'assets' => [
+        'driver' => 'null',
+        'media' => [
+            'aliases' => [],
         ],
     ],
 

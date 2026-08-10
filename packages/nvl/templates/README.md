@@ -401,6 +401,57 @@ Asset inputs fail closed:
 - frame, sticker, and scoped asset handles are resolved through
   `TemplateAssetResolver`; the default resolver returns no assets.
 
+Templates also ships an opt-in NVL Media resolver. Aliases are source
+controlled, collection-like scopes remain deterministic, and an exact Media
+revision can be pinned:
+
+```php
+'assets' => [
+    'driver' => 'media',
+    'media' => [
+        'aliases' => [
+            'brand-logo' => [
+                'media_id' => '0198f51d-7f5b-7000-8000-000000000001',
+                'scope' => 'document',
+                'type' => 'logo',
+                'delivery' => 'path', // path or url
+                'expected_revision' => 3,
+            ],
+        ],
+    ],
+],
+```
+
+`path` requires a local Media disk and the resulting file must remain under
+`templates.compatibility.assets.allowed_local_roots`. `url` uses Media's
+public or signed-private delivery and still obeys the Templates remote-resource
+policy. Missing Media, stale revisions, and unavailable named variations throw
+`TemplateResolutionException`. `MediaTemplateAssetRegistry::registerAdoptionAliases()`
+is available for controlled in-process legacy alias maps; durable mappings
+belong in configuration.
+
+Class renderers that need complete localized copy can resolve ordered Content
+scope fallback without request pagination:
+
+```php
+use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentScopeData;
+use Nvl\Content\Facades\Content;
+
+$copy = Content::resolveScopes([
+    new ContentScopeData('site', 'tenant-a'),
+    new ContentScopeData('site', 'default'),
+], 'bg', ContentActorData::system(), limit: 250);
+
+$template->withContent($copy->values);
+```
+
+The first scope wins for duplicate block keys. Reads include only published
+blocks, are public-only by default, apply the consumer authorization query
+scope, use Content's locale fallback, sort deterministically, and query
+`limit + 1` so incomplete reads fail with `ContentScopeOverflowException`.
+The Content block catalog also permits the allowlisted `scope in [...]` filter.
+
 `BasePdfTemplate` retains fluent paper, orientation, margin, metadata,
 numbering, protection, watermark, header/footer, frame, sticker, variant,
 generation, preview, download, and storage methods. `EngineConfig::setTempDir`
@@ -700,6 +751,7 @@ replace Action authorization.
 | Key | Purpose |
 | --- | --- |
 | `connection`, `tables.*`, `migrations.enabled` | Database adoption and storage |
+| `adoption.*` | Adoption manifest byte and record bounds |
 | `authorization.class` | Stored-template policy adapter |
 | `routes.management.*`, `routes.render.*` | Optional API prefixes, names, and middleware |
 | `definitions` | Source-controlled database implementation definitions |
@@ -710,6 +762,7 @@ replace Action authorization.
 | `views.*` | Namespace and guarded default/custom publication paths |
 | `rendering.*` | Queue, retries, leases, recovery, payload retention, and private output |
 | `compatibility.assets.*` | Class-template local/inline asset roots and byte limits |
+| `assets.driver`, `assets.media.aliases` | Null or NVL Media-backed class-template aliases |
 | `pdf.temp_path`, `pdf.allowed_temp_roots` | mPDF workspace boundary |
 | `pdf.allow_debug_image_errors` | Explicit debug-only image diagnostics gate |
 | `pdf.remote_assets.*`, `pdf.data_images.*` | Resource policy |
@@ -726,6 +779,10 @@ php artisan nvl:templates:doctor --strict --format=json
 php artisan nvl:templates:doctor --scope=core --strict
 php artisan nvl:templates:doctor --scope=database --strict
 
+php artisan nvl:templates:adopt storage/adoption/templates.json --format=json
+php artisan nvl:templates:adopt storage/adoption/templates.json --prepare --format=json
+php artisan nvl:templates:adopt storage/adoption/templates.json --apply --format=json
+
 php artisan nvl:templates:sync --dry-run
 php artisan nvl:templates:sync --format=json
 php artisan nvl:templates:renders:recover --format=json
@@ -740,7 +797,8 @@ php artisan nvl:content:doctor --strict --format=json
 php artisan queue:work --queue=default
 ```
 
-The Templates doctor does not mutate state. It checks tables, bindings,
+The Templates doctor does not mutate state. It checks canonical tables,
+columns, named index definitions, primary keys, and foreign-key delete rules plus bindings,
 registered renderers/definitions/owners, bundled/default views, configured
 limits, mPDF availability, temporary-path containment, durable-render columns,
 queue lease/timeout/retry configuration, Content-definition registration, and
@@ -763,7 +821,76 @@ rendering without the package tables.
 ## Upgrade and adoption
 
 This package has no supported pre-1.0 package release. Applications adopting
-another template system should:
+another template system should use the versioned `nvl:templates:adopt`
+manifest. The command defaults to a read-only plan: it inventories canonical
+and declared staging schemas, validates explicit legacy-to-target key and scope
+maps, validates locales, verifies every declared asset already maps to an
+available NVL Media row, and reports exact expected counts. A manifest must
+declare `legacy_asset_count`; a non-empty legacy asset set without one mapping
+per row fails closed.
+
+Use this staged sequence:
+
+1. Disable `templates.migrations.enabled` while a conflicting canonical table
+   name is still owned by the legacy system.
+2. Rename legacy tables to explicit staging names and list them under
+   `staging_tables` in the manifest.
+3. Run the command without options and inspect the JSON inventory and mapping
+   plan.
+4. Run `--prepare` to drop every non-primary, non-SQLite-autoindex named index
+   from only those declared staging tables. This prevents SQLite schema-wide
+   index-name collisions when canonical migrations run.
+5. Enable and run package migrations. The compatibility preflight rejects any
+   unowned or structurally incomplete canonical Templates table.
+6. Run `--apply`. Template and Content writes use their public Actions,
+   optimistic revisions, publication rules, and locale/value validation.
+7. Re-run `--apply`; every entry must report `unchanged`. Copy the returned
+   `media_aliases` map into `templates.assets.media.aliases`, validate output,
+   then remove staging in a separate forward-only host migration.
+
+The apply phase is restart-safe and reconciles target counts, but it may span
+different configured database connections and therefore is deliberately not
+presented as one cross-database transaction.
+
+A minimal manifest is:
+
+```json
+{
+  "version": 1,
+  "staging_tables": ["legacy_templates", "legacy_template_assets"],
+  "legacy_asset_count": 1,
+  "templates": [
+    {
+      "legacy_key": "legacy-welcome",
+      "key": "welcome",
+      "translations": {"en": {"title": "Welcome"}}
+    }
+  ],
+  "content": [
+    {
+      "legacy_key": "legacy-welcome-copy",
+      "legacy_scope": "legacy-site",
+      "legacy_scope_key": "main",
+      "definition": "template-copy",
+      "key": "welcome-copy",
+      "scope": "site",
+      "scope_key": "main",
+      "translations": {"en": {"text": "Welcome"}},
+      "publish": true
+    }
+  ],
+  "assets": [
+    {
+      "legacy_alias": "logo",
+      "key": "brand-logo",
+      "media_id": "0198f51d-7f5b-7000-8000-000000000001",
+      "expected_revision": 1
+    }
+  ]
+}
+```
+
+Applications should then:
 
 1. move executable views into source control;
 2. define reusable Content blocks for strings, tables, repeaters, rich text,

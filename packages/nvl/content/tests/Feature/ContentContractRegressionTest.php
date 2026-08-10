@@ -25,6 +25,7 @@ use Nvl\Content\Content as ContentEngine;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentBlockQueryScope;
 use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentScopeData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Data\Mutations\UpdateContentBlockData;
@@ -34,6 +35,7 @@ use Nvl\Content\Enums\ContentPlacementEvent;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Events\ContentPlacementChanged;
+use Nvl\Content\Exceptions\ContentScopeOverflowException;
 use Nvl\Content\Facades\Content;
 use Nvl\Content\FieldTypes\ReferenceFieldTypeAdapter;
 use Nvl\Content\FieldTypes\RichTextFieldTypeAdapter;
@@ -167,6 +169,86 @@ it('provides block reads through the same canonical application surface', functi
 
     expect(Content::block($block->id, $actor)->is($block))->toBeTrue()
         ->and(Content::blocks(FilterSet::none(), $actor)->total())->toBe(1);
+});
+
+it('resolves complete localized content through ordered bounded scope fallback', function (): void {
+    $actor = ContentActorData::system();
+
+    $fallback = Content::createBlock(
+        new CreateContentBlockData(
+            definition: 'hero',
+            key: 'heading',
+            scope: 'site',
+            scopeKey: 'default',
+            translations: [
+                'en' => ['title' => 'Fallback heading'],
+                'bg' => ['title' => 'Заглавие по подразбиране'],
+            ],
+        ),
+        $actor,
+    );
+    Content::publishBlock($fallback, $fallback->revision, $actor);
+
+    $specific = Content::createBlock(
+        new CreateContentBlockData(
+            definition: 'hero',
+            key: 'heading',
+            scope: 'site',
+            scopeKey: 'tenant-a',
+            translations: [
+                'en' => ['title' => 'Specific heading'],
+                'bg' => ['title' => 'Специфично заглавие'],
+            ],
+        ),
+        $actor,
+    );
+    Content::publishBlock($specific, $specific->revision, $actor);
+
+    $private = Content::createBlock(
+        new CreateContentBlockData(
+            definition: 'hero',
+            key: 'private-note',
+            scope: 'site',
+            scopeKey: 'tenant-a',
+            visibility: ContentVisibility::Private,
+            translations: ['en' => ['title' => 'Private note']],
+        ),
+        $actor,
+    );
+    Content::publishBlock($private, $private->revision, $actor);
+
+    Content::createBlock(
+        new CreateContentBlockData(
+            definition: 'hero',
+            key: 'draft-note',
+            scope: 'site',
+            scopeKey: 'tenant-a',
+            translations: ['en' => ['title' => 'Draft note']],
+        ),
+        $actor,
+    );
+
+    $scopes = [
+        new ContentScopeData('site', 'tenant-a'),
+        new ContentScopeData('site', 'default'),
+    ];
+    $resolved = Content::resolveScopes($scopes, 'bg', $actor);
+    $includingPrivate = Content::resolveScopes(
+        $scopes,
+        'en',
+        $actor,
+        publicOnly: false,
+    );
+
+    expect($resolved->values)->toHaveKeys(['heading'])
+        ->and($resolved->values['heading']['title'])->toBe('Специфично заглавие')
+        ->and($resolved->sources)->toBe(['heading' => 'site:tenant-a'])
+        ->and($resolved->matched)->toBe(2)
+        ->and($includingPrivate->values)->toHaveKeys(['heading', 'private-note'])
+        ->and(fn () => Content::resolveScopes($scopes, 'en', $actor, limit: 1))
+        ->toThrow(ContentScopeOverflowException::class)
+        ->and(ContentBlock::filterSchema()->filter('scope')?->operators)
+        ->toContain(FilterOperator::In);
 });
 
 it('returns one complete typed editor bootstrap for a consumer-owned UI', function (): void {

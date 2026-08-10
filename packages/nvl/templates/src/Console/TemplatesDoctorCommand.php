@@ -19,6 +19,7 @@ use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
 use Nvl\Templates\Services\TemplateRendererRegistry;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Templates\Support\TemplatesSchemaContract;
 
 /**
  * Performs non-mutating core, database, route, and queue diagnostics.
@@ -163,15 +164,15 @@ final class TemplatesDoctorCommand extends Command
         $schema = Schema::connection(TemplatesConfiguration::connection());
         $checks = [];
 
-        foreach ([
-            'templates',
-            'templates_i18n',
-            'template_versions',
-            'template_assignments',
-            'template_renders',
-        ] as $key) {
+        foreach (array_keys(TemplatesSchemaContract::tables()) as $key) {
             $table = TemplatesConfiguration::table($key);
             $checks["table.{$key}"] = $schema->hasTable($table);
+            $issues = $checks["table.{$key}"]
+                ? TemplatesSchemaContract::issues($schema, $key)
+                : ['columns' => ['table missing'], 'indexes' => ['table missing'], 'constraints' => ['table missing']];
+            $checks["columns.{$key}.canonical"] = $issues['columns'] === [];
+            $checks["indexes.{$key}.canonical"] = $issues['indexes'] === [];
+            $checks["constraints.{$key}.canonical"] = $issues['constraints'] === [];
         }
 
         $renderTable = TemplatesConfiguration::table('template_renders');

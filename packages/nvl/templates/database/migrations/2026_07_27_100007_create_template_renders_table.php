@@ -18,7 +18,9 @@ return new class extends Migration
         $tableName = TemplatesConfiguration::table('template_renders');
 
         if ($schema->hasTable($tableName)) {
-            return;
+            throw new LogicException(
+                "Template renders table [{$tableName}] already exists; disable templates.migrations.enabled during controlled schema adoption.",
+            );
         }
 
         $schema->create($tableName, function (Blueprint $table): void {

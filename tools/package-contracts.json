@@ -7015,6 +7015,12 @@
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionVersionGuard $definitionVersions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, int $expectedRevision, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock"
                 ],
+                "Nvl\\Content\\Actions\\ResolveContentScopesAction": [
+                    "final readonly class Nvl\\Content\\Actions\\ResolveContentScopesAction",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentLocalePolicy $locales, Nvl\\Content\\Services\\ContentLocalizedValues $localizedValues): mixed",
+                    "public function execute(array $scopes, string $locale, Nvl\\Content\\Data\\ContentActorData $actor, ?int $limit=null, bool $publicOnly=true): Nvl\\Content\\Data\\ContentScopeResolutionData",
+                    "@param list<ContentScopeData> $scopes"
+                ],
                 "Nvl\\Content\\Actions\\RestoreContentBlockAction": [
                     "final readonly class Nvl\\Content\\Actions\\RestoreContentBlockAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions): mixed",
@@ -7075,13 +7081,15 @@
                 ],
                 "Nvl\\Content\\Content": [
                     "final readonly class Nvl\\Content\\Content",
-                    "public function __construct(Nvl\\Content\\Actions\\ListContentDefinitionsAction $listDefinitions, Nvl\\Content\\Actions\\ListContentPresetsAction $listPresets, Nvl\\Content\\Actions\\ListContentBlocksAction $listBlocks, Nvl\\Content\\Actions\\GetContentBlockAction $getBlock, Nvl\\Content\\Actions\\SyncContentDefinitionsAction $syncDefinitions, Nvl\\Content\\Actions\\PlanContentDefinitionMigrationsAction $planDefinitionMigrations, Nvl\\Content\\Actions\\ApplyContentDefinitionMigrationsAction $applyDefinitionMigrations, Nvl\\Content\\Actions\\ListContentGroupsAction $listGroups, Nvl\\Content\\Actions\\ListContentPlacementsAction $listPlacements, Nvl\\Content\\Actions\\CreateContentBlockAction $createBlock, Nvl\\Content\\Actions\\UpdateContentBlockAction $updateBlock, Nvl\\Content\\Actions\\PublishContentBlockAction $publishBlock, Nvl\\Content\\Actions\\ArchiveContentBlockAction $archiveBlock, Nvl\\Content\\Actions\\DeleteContentBlockAction $deleteBlock, Nvl\\Content\\Actions\\RestoreContentBlockAction $restoreBlock, Nvl\\Content\\Actions\\PlaceContentBlockAction $placeBlock, Nvl\\Content\\Actions\\UpdateContentPlacementAction $updatePlacement, Nvl\\Content\\Actions\\DeleteContentPlacementAction $deletePlacement, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentRenderer $renderer, Nvl\\Content\\Services\\ContentSnapshotService $snapshots): mixed",
+                    "public function __construct(Nvl\\Content\\Actions\\ListContentDefinitionsAction $listDefinitions, Nvl\\Content\\Actions\\ListContentPresetsAction $listPresets, Nvl\\Content\\Actions\\ListContentBlocksAction $listBlocks, Nvl\\Content\\Actions\\GetContentBlockAction $getBlock, Nvl\\Content\\Actions\\SyncContentDefinitionsAction $syncDefinitions, Nvl\\Content\\Actions\\PlanContentDefinitionMigrationsAction $planDefinitionMigrations, Nvl\\Content\\Actions\\ApplyContentDefinitionMigrationsAction $applyDefinitionMigrations, Nvl\\Content\\Actions\\ListContentGroupsAction $listGroups, Nvl\\Content\\Actions\\ListContentPlacementsAction $listPlacements, Nvl\\Content\\Actions\\CreateContentBlockAction $createBlock, Nvl\\Content\\Actions\\UpdateContentBlockAction $updateBlock, Nvl\\Content\\Actions\\PublishContentBlockAction $publishBlock, Nvl\\Content\\Actions\\ArchiveContentBlockAction $archiveBlock, Nvl\\Content\\Actions\\DeleteContentBlockAction $deleteBlock, Nvl\\Content\\Actions\\RestoreContentBlockAction $restoreBlock, Nvl\\Content\\Actions\\PlaceContentBlockAction $placeBlock, Nvl\\Content\\Actions\\UpdateContentPlacementAction $updatePlacement, Nvl\\Content\\Actions\\DeleteContentPlacementAction $deletePlacement, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentRenderer $renderer, Nvl\\Content\\Services\\ContentSnapshotService $snapshots, Nvl\\Content\\Actions\\ResolveContentScopesAction $resolveScopes): mixed",
                     "public function definitions(Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentDefinitionData>",
                     "public function presets(Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentFieldPresetData>",
                     "public function blocks(Nvl\\Filterable\\Data\\FilterSet $filters, Nvl\\Content\\Data\\ContentActorData $actor, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, ContentBlock>",
+                    "public function resolveScopes(array $scopes, string $locale, Nvl\\Content\\Data\\ContentActorData $actor, ?int $limit=null, bool $publicOnly=true): Nvl\\Content\\Data\\ContentScopeResolutionData",
+                    "@param list<ContentScopeData> $scopes",
                     "public function block(Nvl\\Content\\Models\\ContentBlock|string $block, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock",
                     "public function syncDefinitions(Nvl\\Content\\Data\\ContentActorData $actor, bool $dryRun=false): Nvl\\Content\\Data\\ContentDefinitionSyncPlanData",
                     "public function planDefinitionMigrations(Nvl\\Content\\Data\\ContentActorData $actor, ?string $definition=null, ?int $limit=null): Nvl\\Content\\Data\\ContentDefinitionMigrationPlanData",
@@ -7765,6 +7773,28 @@
                     "public static function translatedMessages(string $namespace): array",
                     "@param string $namespace Translation namespace, such as 'articles::articles'",
                     "@return array<string, mixed>"
+                ],
+                "Nvl\\Content\\Data\\ContentScopeData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Content\\Data\\ContentScopeData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $scope",
+                    "public readonly string $scopeKey",
+                    "public function __construct(string $scope, string $scopeKey): mixed"
+                ],
+                "Nvl\\Content\\Data\\ContentScopeResolutionData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Content\\Data\\ContentScopeResolutionData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $locale",
+                    "#[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentScopeData\")]",
+                    "public readonly array $scopes",
+                    "public readonly array $values",
+                    "public readonly array $sources",
+                    "public readonly int $matched",
+                    "public readonly int $limit",
+                    "public function __construct(string $locale, #[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentScopeData\")] array $scopes, array $values, array $sources, int $matched, int $limit): mixed",
+                    "@param list<ContentScopeData> $scopes",
+                    "@param array<string, array<string, mixed>> $values",
+                    "@param array<string, string> $sources"
                 ],
                 "Nvl\\Content\\Data\\Mutations\\CreateContentBlockData": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
@@ -8587,6 +8617,9 @@
                 "Nvl\\Content\\Exceptions\\ContentException": [
                     "class Nvl\\Content\\Exceptions\\ContentException extends Nvl\\Support\\Exceptions\\BusinessException"
                 ],
+                "Nvl\\Content\\Exceptions\\ContentScopeOverflowException": [
+                    "final class Nvl\\Content\\Exceptions\\ContentScopeOverflowException extends Nvl\\Content\\Exceptions\\ContentException"
+                ],
                 "Nvl\\Content\\Exceptions\\InvalidContentException": [
                     "final class Nvl\\Content\\Exceptions\\InvalidContentException extends Nvl\\Content\\Exceptions\\ContentException",
                     "public static function fromInvalidArgument(InvalidArgumentException $exception): self"
@@ -8601,6 +8634,7 @@
                     "@method static Collection<int, ContentFieldPresetData> presets(ContentActorData $actor)",
                     "@method static LengthAwarePaginator<int, ContentBlock> blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)",
                     "@method static ContentBlock block(ContentBlock|string $block, ContentActorData $actor)",
+                    "@method static ContentScopeResolutionData resolveScopes(list<ContentScopeData> $scopes, string $locale, ContentActorData $actor, ?int $limit = null, bool $publicOnly = true)",
                     "@method static ContentDefinitionSyncPlanData syncDefinitions(ContentActorData $actor, bool $dryRun = false)",
                     "@method static ContentDefinitionMigrationPlanData planDefinitionMigrations(ContentActorData $actor, ?string $definition = null, ?int $limit = null)",
                     "@method static ContentDefinitionMigrationResultData applyDefinitionMigrations(ContentDefinitionMigrationPlanData $plan, ContentActorData $actor)",
@@ -9562,7 +9596,7 @@
                 ]
             },
             "configuration": {
-                "config/content.php": "ef2694c0670c65c486becd326c633e19c6228613c4e6fd65c740bf050d6fc813"
+                "config/content.php": "8ff32bd27fbafd9672a4b05daf6cd46eaf3057f9258210aab2ddbe3338d61e52"
             },
             "routes": {
                 "routes/api.php": "0422e5dede95fceef9759de0e8a8f1dd60b0d704615a3729a2914961ab4d6200"
@@ -27761,12 +27795,20 @@
                 "templates-views"
             ],
             "commands": {
+                "Nvl\\Templates\\Console\\AdoptTemplatesCommand": "nvl:templates:adopt {manifest : Absolute or application-relative JSON manifest path} {--prepare : Drop collision-prone non-primary indexes from declared staging tables} {--apply : Apply idempotent Template and Content writes and register Media aliases} {--format=text : Output text or json}",
                 "Nvl\\Templates\\Console\\PublishTemplateViewsCommand": "nvl:templates:views:publish {--path= : Absolute or application-relative destination} {--force : Replace existing files}",
                 "Nvl\\Templates\\Console\\RecoverTemplateRendersCommand": "nvl:templates:renders:recover {--format=text}",
                 "Nvl\\Templates\\Console\\SyncTemplateDefinitionsCommand": "nvl:templates:sync {--dry-run} {--format=text}",
                 "Nvl\\Templates\\Console\\TemplatesDoctorCommand": "nvl:templates:doctor {--strict : Return failure when a required check is unhealthy} {--scope=all : Inspect core, database, or all capabilities} {--format=text : Output text or json}"
             },
             "symbols": {
+                "Nvl\\Templates\\Actions\\AdoptTemplatesAction": [
+                    "final readonly class Nvl\\Templates\\Actions\\AdoptTemplatesAction",
+                    "public function __construct(Nvl\\Templates\\Actions\\CreateTemplateAction $createTemplate, Nvl\\Templates\\Actions\\UpdateTemplateAction $updateTemplate, Nvl\\Content\\Actions\\CreateContentBlockAction $createBlock, Nvl\\Content\\Actions\\UpdateContentBlockAction $updateBlock, Nvl\\Content\\Actions\\PublishContentBlockAction $publishBlock, Nvl\\Templates\\Services\\TemplateAdoptionManifest $manifests, Nvl\\Templates\\Services\\TemplateAdoptionSchema $schemas, Nvl\\Templates\\Services\\MediaTemplateAssetRegistry $assets): mixed",
+                    "public function execute(array $manifest, bool $prepare=false, bool $apply=false): array",
+                    "@param array<array-key, mixed> $manifest",
+                    "@return array<string, mixed>"
+                ],
                 "Nvl\\Templates\\Actions\\AssignTemplateAction": [
                     "final readonly class Nvl\\Templates\\Actions\\AssignTemplateAction",
                     "public function __construct(Nvl\\Templates\\Contracts\\TemplateAuthorization $authorization, Nvl\\Templates\\Services\\TemplateOwnerRegistry $owners, Nvl\\Templates\\Services\\TemplateDefinitionRegistry $definitions, Nvl\\Templates\\Services\\TemplateContentGuard $guard, Nvl\\Templates\\Services\\TemplateVersionResolver $versions): mixed",
@@ -27856,6 +27898,12 @@
                     "public function __construct(Nvl\\Templates\\Contracts\\TemplateAuthorization $authorization, Nvl\\Templates\\Services\\TemplateContentGuard $guard): mixed",
                     "public function execute(Nvl\\Templates\\Models\\TemplateVersion|string $version, Nvl\\Templates\\Data\\Mutations\\UpdateTemplateVersionData $data, Nvl\\Templates\\Data\\TemplateActorData $actor): Nvl\\Templates\\Models\\TemplateVersion"
                 ],
+                "Nvl\\Templates\\Console\\AdoptTemplatesCommand": [
+                    "final class Nvl\\Templates\\Console\\AdoptTemplatesCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:templates:adopt\\n        {manifest : Absolute or application-relative JSON manifest path}\\n        {--prepare : Drop collision-prone non-primary indexes from declared staging tables}\\n        {--apply : Apply idempotent Template and Content writes and register Media aliases}\\n        {--format=text : Output text or json}\"",
+                    "protected mixed $description=\"Plan or apply staged adoption into NVL Templates, Content, and Media\"",
+                    "public function handle(Nvl\\Templates\\Actions\\AdoptTemplatesAction $adopt): int"
+                ],
                 "Nvl\\Templates\\Console\\PublishTemplateViewsCommand": [
                     "final class Nvl\\Templates\\Console\\PublishTemplateViewsCommand extends Illuminate\\Console\\Command",
                     "protected mixed $signature=\"nvl:templates:views:publish\\n        {--path= : Absolute or application-relative destination}\\n        {--force : Replace existing files}\"",
@@ -27907,6 +27955,18 @@
                 "Nvl\\Templates\\Contracts\\TemplateRenderer": [
                     "interface Nvl\\Templates\\Contracts\\TemplateRenderer",
                     "public abstract function render(Nvl\\Templates\\Rendering\\TemplateRenderContext $context): Nvl\\Templates\\Data\\RenderedTemplateData"
+                ],
+                "Nvl\\Templates\\Data\\MediaTemplateAssetData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Templates\\Data\\MediaTemplateAssetData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $key",
+                    "public readonly string $mediaId",
+                    "public readonly string $scope",
+                    "public readonly string $type",
+                    "public readonly string $variation",
+                    "public readonly string $delivery",
+                    "public readonly ?int $expectedRevision",
+                    "public function __construct(string $key, string $mediaId, string $scope=\"default\", string $type=\"image\", string $variation=\"\", string $delivery=\"path\", ?int $expectedRevision=null): mixed"
                 ],
                 "Nvl\\Templates\\Data\\Mutations\\AssignTemplateData": [
                     "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -29501,6 +29561,26 @@
                     "@param array<string, mixed> $schema",
                     "@param array<string, mixed> $payload"
                 ],
+                "Nvl\\Templates\\Services\\MediaTemplateAssetRegistry": [
+                    "final class Nvl\\Templates\\Services\\MediaTemplateAssetRegistry",
+                    "public function __construct(Nvl\\Templates\\Services\\TemplateAssetGuard $guard): mixed",
+                    "public function register(Nvl\\Templates\\Data\\MediaTemplateAssetData $asset): void",
+                    "public function validate(Nvl\\Templates\\Data\\MediaTemplateAssetData $asset): void",
+                    "public function registerAdoptionAliases(array $aliases, string $scope=\"adoption\", string $type=\"image\", string $delivery=\"path\"): void",
+                    "@param array<array-key, mixed> $aliases",
+                    "public function get(string $key): ?Nvl\\Templates\\Data\\MediaTemplateAssetData",
+                    "public function scope(string $scope, ?string $type=null): array",
+                    "@return array<string, MediaTemplateAssetData>",
+                    "public function all(): array",
+                    "@return array<string, MediaTemplateAssetData>"
+                ],
+                "Nvl\\Templates\\Services\\MediaTemplateAssetResolver": [
+                    "final readonly class Nvl\\Templates\\Services\\MediaTemplateAssetResolver implements Nvl\\Templates\\Contracts\\TemplateAssetResolver",
+                    "public function __construct(Nvl\\Templates\\Services\\MediaTemplateAssetRegistry $assets, Nvl\\Templates\\Services\\TemplateAssetGuard $guard): mixed",
+                    "public function resolve(string $key): ?string",
+                    "public function scope(string $scope, ?string $type=null): array",
+                    "@return array<string, string>"
+                ],
                 "Nvl\\Templates\\Services\\NullTemplateAssetResolver": [
                     "final class Nvl\\Templates\\Services\\NullTemplateAssetResolver implements Nvl\\Templates\\Contracts\\TemplateAssetResolver",
                     "public function resolve(string $key): ?string",
@@ -29541,6 +29621,24 @@
                     "public function __construct(Nvl\\Templates\\Services\\TemplateContentGuard $guard, Nvl\\Templates\\Services\\TemplateDefinitionRegistry $definitions, Nvl\\Templates\\Contracts\\TemplatePayloadValidator $payloadValidator, Nvl\\Templates\\Services\\TemplateLocaleResolver $locales, Nvl\\Templates\\Services\\TemplateVersionResolver $versions, Nvl\\Content\\Content $content, Nvl\\Templates\\Services\\StoredTemplateOptionsFactory $optionsFactory): mixed",
                     "public function resolve(Nvl\\Templates\\Models\\Template $template, Nvl\\Templates\\Data\\Mutations\\RenderTemplateData $data, Nvl\\Templates\\Data\\TemplateActorData $actor): Nvl\\Templates\\Rendering\\ResolvedStoredTemplateRender",
                     "public function resolveDurable(Nvl\\Templates\\Models\\TemplateRender $render): Nvl\\Templates\\Rendering\\ResolvedStoredTemplateRender"
+                ],
+                "Nvl\\Templates\\Services\\TemplateAdoptionManifest": [
+                    "final readonly class Nvl\\Templates\\Services\\TemplateAdoptionManifest",
+                    "public function __construct(Nvl\\Templates\\Services\\TemplateDefinitionRegistry $templateDefinitions, Nvl\\Content\\Services\\ContentDefinitionRegistry $contentDefinitions, Nvl\\Content\\Services\\ContentScopeRegistry $contentScopes, Nvl\\Content\\Services\\ContentLocalePolicy $locales, Nvl\\Content\\Services\\ContentPatch $contentPatch, Nvl\\Content\\Validation\\ContentValueValidator $contentValues, Nvl\\Templates\\Services\\TemplateContentGuard $templateGuard, Nvl\\Templates\\Services\\MediaTemplateAssetRegistry $assets): mixed",
+                    "public function normalize(array $manifest): array",
+                    "@param array<array-key, mixed> $manifest",
+                    "@return NormalizedManifest"
+                ],
+                "Nvl\\Templates\\Services\\TemplateAdoptionSchema": [
+                    "final class Nvl\\Templates\\Services\\TemplateAdoptionSchema",
+                    "public function inventory(string $connection, array $stagingTables): array",
+                    "@param list<string> $stagingTables",
+                    "@return SchemaInventory",
+                    "public function assertCanonical(array $inventory): void",
+                    "@param array<string, CanonicalTable> $inventory",
+                    "public function prepare(string $connection, array $tables): array",
+                    "@param list<string> $tables",
+                    "@return list<array{table: string, index: string, operation: string}>"
                 ],
                 "Nvl\\Templates\\Services\\TemplateAssetGuard": [
                     "final class Nvl\\Templates\\Services\\TemplateAssetGuard",
@@ -29770,6 +29868,13 @@
                     "public static function middleware(string $group): array",
                     "@return list<string>"
                 ],
+                "Nvl\\Templates\\Support\\TemplatesSchemaContract": [
+                    "final class Nvl\\Templates\\Support\\TemplatesSchemaContract",
+                    "public static function tables(): array",
+                    "@return array<string, array{",
+                    "public static function issues(Illuminate\\Database\\Schema\\Builder $schema, string $alias): array",
+                    "@return array{columns: list<string>, indexes: list<string>, constraints: list<string>}"
+                ],
                 "Nvl\\Templates\\Support\\View\\AssetAccessor": [
                     "final readonly class Nvl\\Templates\\Support\\View\\AssetAccessor",
                     "public function __construct(Nvl\\Templates\\Templates\\BaseTemplate $template): mixed",
@@ -29957,17 +30062,18 @@
                 ]
             },
             "configuration": {
-                "config/templates.php": "c243d08d9f2da53867a25c3bf046b1b216d36ad1db565de98e803694ab9284c3"
+                "config/templates.php": "d812502aa8cec76fc029e6f62784830cde31e8cd46d38fbc1c2eb5f9c0d28fc9"
             },
             "routes": {
                 "routes/api.php": "530c3bc4cd6845ea4554cb63147dca7cf0f96eac15d4438515a8411a3a429471"
             },
             "migrations": {
-                "database/migrations/2026_07_27_100001_create_templates_table.php": "2c6e6251bf8d1e58a2a52395fe992701eff94971e3753f81dfcc2c5b04d377b1",
-                "database/migrations/2026_07_27_100002_create_templates_i18n_table.php": "a47a6a79a554b919f7c01424fc09a6a25801adcf2a189cab21db781770345186",
-                "database/migrations/2026_07_27_100003_create_template_versions_table.php": "3c09c7f16ac6b0ede3ce88368dc37f0a7afcaa50181417d68e7dca148743421d",
-                "database/migrations/2026_07_27_100006_create_template_assignments_table.php": "fda9c37799fdb05f8429d5566be31e87279af7047df28bfc2ace0c15ca429c26",
-                "database/migrations/2026_07_27_100007_create_template_renders_table.php": "e7342fc1987340e80c34057d82f80d7d3f6865b7448c58df263e97cde0fe67bb"
+                "database/migrations/2026_07_27_100000_assert_template_schema_compatibility.php": "a0f273d8040755d8ca24e4732faf8d918d07a6de07de9dbe73c9496080cfd9ef",
+                "database/migrations/2026_07_27_100001_create_templates_table.php": "155ee7bcec6ecd771652e2f288640095de1f13c0e18bdb86bcbe60080430bd62",
+                "database/migrations/2026_07_27_100002_create_templates_i18n_table.php": "8987a620f5b1b1f43251885d7eb68eb8865bcbdd71eaff04ca00af876a63b291",
+                "database/migrations/2026_07_27_100003_create_template_versions_table.php": "0ed45e668a443e147f8e801bbe10ca433628e428d3030e7af6c11f68aecca695",
+                "database/migrations/2026_07_27_100006_create_template_assignments_table.php": "b07caf0ab18dd2708bace56a7e1f4f6c344806dfc64ad35a40a78721b32d2c8e",
+                "database/migrations/2026_07_27_100007_create_template_renders_table.php": "89c69168d5605fabcd3c88fc3d8f1638cef4e2c6b03e5c781de2d23360ec22aa"
             }
         },
         "translatable": {

@@ -4,6 +4,9 @@ All notable changes to `nvl/content` are documented here.
 
 ## 1.0.0 - Unreleased
 
+- Adds a bounded non-paginated scope-resolution contract with ordered fallback,
+  locale resolution, publication/visibility enforcement, explicit overflow,
+  authorization query scoping, and `scope in [...]` catalog filtering.
 - Adds source-controlled block definitions and deterministic synchronization.
 - Adds localized blocks, scoped reuse, placements, trees, revisions, and optimistic concurrency.
 - Adds built-in and custom field adapters, JSON Schema validation, safe rich text, media and reference fields.

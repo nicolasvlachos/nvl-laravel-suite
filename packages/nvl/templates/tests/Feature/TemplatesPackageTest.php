@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\GenericUser;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +23,7 @@ use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Data\Mutations\UpdateContentBlockData;
 use Nvl\Content\Enums\ContentMutationMode;
+use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ContentSnapshotService;
 use Nvl\Filterable\Data\FilterSet;
@@ -48,6 +51,7 @@ use Nvl\Templates\Actions\UnassignTemplateAction;
 use Nvl\Templates\Actions\UpdateTemplateAction;
 use Nvl\Templates\Actions\UpdateTemplateVersionAction;
 use Nvl\Templates\Contracts\TemplateAuthorization;
+use Nvl\Templates\Data\MediaTemplateAssetData;
 use Nvl\Templates\Data\Mutations\AssignTemplateData;
 use Nvl\Templates\Data\Mutations\CreateTemplateData;
 use Nvl\Templates\Data\Mutations\CreateTemplateVersionData;
@@ -76,6 +80,8 @@ use Nvl\Templates\Models\TemplateVersion;
 use Nvl\Templates\Providers\TemplatesServiceProvider;
 use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\ConfiguredTemplatePayloadValidator;
+use Nvl\Templates\Services\MediaTemplateAssetRegistry;
+use Nvl\Templates\Services\MediaTemplateAssetResolver;
 use Nvl\Templates\Services\PdfHtmlGuard;
 use Nvl\Templates\Services\PdfTemporaryDirectoryResolver;
 use Nvl\Templates\Services\SafeFilesystemPathResolver;
@@ -311,6 +317,43 @@ it('installs its composition schema with management routes disabled', function (
         '--strict' => true,
         '--format' => 'json',
     ])->assertSuccessful()->expectsOutputToContain('"output.disk": true');
+});
+
+it('fails closed for unowned canonical tables and reports missing named indexes', function (): void {
+    $creator = '2026_07_27_100001_create_templates_table';
+    $record = DB::table('migrations')->where('migration', $creator)->first();
+    expect($record)->not->toBeNull();
+    DB::table('migrations')->where('migration', $creator)->delete();
+    $preflight = require __DIR__.'/../../database/migrations/2026_07_27_100000_assert_template_schema_compatibility.php';
+    $exception = null;
+
+    try {
+        $preflight->up();
+    } catch (Throwable $throwable) {
+        $exception = $throwable;
+    } finally {
+        DB::table('migrations')->insert((array) $record);
+    }
+
+    expect($exception)->toBeInstanceOf(LogicException::class)
+        ->and($exception?->getMessage())->toContain('already exists without package creator');
+
+    Schema::table('templates', function (Blueprint $table): void {
+        $table->dropIndex('templates_status_updated_idx');
+    });
+
+    try {
+        $this->artisan('nvl:templates:doctor', [
+            '--scope' => 'database',
+            '--strict' => true,
+            '--format' => 'json',
+        ])->assertFailed()
+            ->expectsOutputToContain('"indexes.templates.canonical": false');
+    } finally {
+        Schema::table('templates', function (Blueprint $table): void {
+            $table->index(['status', 'updated_at'], 'templates_status_updated_idx');
+        });
+    }
 });
 
 it('honors configured pagination and loads complete management aggregates', function (): void {
@@ -808,6 +851,149 @@ it('uses Content media fields instead of a template asset table', function (): v
 
     expect(MediaAssociation::query()->where('associable_id', $block->id)->count())->toBe(1)
         ->and($composition->value('body.logo'))->toBeInstanceOf(PublicMedia::class);
+});
+
+it('resolves revision-aware class-template aliases through NVL Media', function (): void {
+    $media = Media::factory()->create([
+        'mime_type' => 'image/png',
+        'extension' => 'png',
+        'type' => MediaType::IMAGE,
+        'is_public' => true,
+        'visibility' => MediaVisibility::Public,
+        'status' => MediaLifecycleStatus::Available,
+        'revision' => 3,
+    ]);
+    $path = app(MediaPathResolver::class)->mediaPath($media);
+    Storage::disk('public')->put(
+        $path,
+        (string) base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+            true,
+        ),
+    );
+    $absolutePath = Storage::disk('public')->path($path);
+    config()->set(
+        'templates.compatibility.assets.allowed_local_roots',
+        [dirname($absolutePath, 3)],
+    );
+    $registry = app(MediaTemplateAssetRegistry::class);
+    $registry->register(new MediaTemplateAssetData(
+        key: 'brand-logo',
+        mediaId: $media->id,
+        scope: 'document',
+        type: 'logo',
+        expectedRevision: 3,
+    ));
+    $registry->register(new MediaTemplateAssetData(
+        key: 'stale-logo',
+        mediaId: $media->id,
+        expectedRevision: 2,
+    ));
+    $registry->registerAdoptionAliases(['legacy-logo' => $media->id]);
+    $resolver = app(MediaTemplateAssetResolver::class);
+
+    expect($resolver->resolve('brand-logo'))->toBe($absolutePath)
+        ->and($resolver->scope('document', 'logo'))
+        ->toBe(['brand-logo' => $absolutePath])
+        ->and($resolver->scope('adoption'))
+        ->toBe(['legacy-logo' => $absolutePath])
+        ->and($resolver->resolve('unknown'))->toBeNull()
+        ->and(fn () => $resolver->resolve('stale-logo'))
+        ->toThrow(TemplateResolutionException::class);
+});
+
+it('plans prepares applies and reconciles an idempotent staged adoption manifest', function (): void {
+    Schema::create('legacy_template_assets', function (Blueprint $table): void {
+        $table->id();
+        $table->string('alias');
+        $table->index('alias', 'template_assets_alias_index');
+    });
+    $media = Media::factory()->create([
+        'status' => MediaLifecycleStatus::Available,
+        'revision' => 4,
+    ]);
+    $manifestPath = storage_path('framework/testing/templates-adoption.json');
+    File::ensureDirectoryExists(dirname($manifestPath));
+    File::put($manifestPath, (string) json_encode([
+        'version' => 1,
+        'staging_tables' => ['legacy_template_assets'],
+        'legacy_asset_count' => 1,
+        'templates' => [[
+            'legacy_key' => 'legacy-welcome',
+            'key' => 'welcome',
+            'translations' => [
+                'en' => ['title' => 'Adopted welcome'],
+                'bg' => ['title' => 'Приветствие'],
+            ],
+        ]],
+        'content' => [[
+            'legacy_key' => 'legacy-welcome-copy',
+            'legacy_scope' => 'legacy-global',
+            'legacy_scope_key' => 'legacy',
+            'definition' => 'template-copy',
+            'key' => 'welcome-copy',
+            'scope' => 'global',
+            'scope_key' => '*',
+            'translations' => [
+                'en' => ['text' => 'Adopted copy'],
+                'bg' => ['text' => 'Приет текст'],
+            ],
+            'publish' => true,
+        ]],
+        'assets' => [[
+            'legacy_alias' => 'legacy-logo',
+            'key' => 'adopted-logo',
+            'media_id' => $media->id,
+            'scope' => 'document',
+            'type' => 'logo',
+            'expected_revision' => 4,
+        ]],
+    ], JSON_THROW_ON_ERROR));
+
+    $this->artisan('nvl:templates:adopt', [
+        'manifest' => $manifestPath,
+        '--format' => 'json',
+    ])->assertSuccessful()
+        ->expectsOutputToContain('"mode": "plan"');
+    expect(collect(Schema::getIndexes('legacy_template_assets'))->pluck('name'))
+        ->toContain('template_assets_alias_index');
+
+    $this->artisan('nvl:templates:adopt', [
+        'manifest' => $manifestPath,
+        '--prepare' => true,
+        '--format' => 'json',
+    ])->assertSuccessful()
+        ->expectsOutputToContain('"operation": "dropped"');
+
+    expect(collect(Schema::getIndexes('legacy_template_assets'))->pluck('name'))
+        ->not->toContain('template_assets_alias_index')
+        ->and(Template::query()->where('key', 'welcome')->count())->toBe(0);
+
+    $this->artisan('nvl:templates:adopt', [
+        'manifest' => $manifestPath,
+        '--apply' => true,
+        '--format' => 'json',
+    ])->assertSuccessful()
+        ->expectsOutputToContain('"healthy": true');
+
+    expect(Template::query()->where('key', 'welcome')->count())->toBe(1)
+        ->and(ContentBlock::query()
+            ->where('scope', 'global')
+            ->where('scope_key', '*')
+            ->where('key', 'welcome-copy')
+            ->where('status', ContentStatus::Published->value)
+            ->count())->toBe(1)
+        ->and(app(MediaTemplateAssetRegistry::class)->get('adopted-logo')?->mediaId)
+        ->toBe($media->id);
+
+    $this->artisan('nvl:templates:adopt', [
+        'manifest' => $manifestPath,
+        '--apply' => true,
+        '--format' => 'json',
+    ])->assertSuccessful()
+        ->expectsOutputToContain('"unchanged": 1');
+
+    File::delete($manifestPath);
 });
 
 it('renders a bounded source-controlled PDF and validates its payload schema', function (): void {

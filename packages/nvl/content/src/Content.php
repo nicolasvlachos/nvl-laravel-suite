@@ -21,6 +21,7 @@ use Nvl\Content\Actions\ListContentPresetsAction;
 use Nvl\Content\Actions\PlaceContentBlockAction;
 use Nvl\Content\Actions\PlanContentDefinitionMigrationsAction;
 use Nvl\Content\Actions\PublishContentBlockAction;
+use Nvl\Content\Actions\ResolveContentScopesAction;
 use Nvl\Content\Actions\RestoreContentBlockAction;
 use Nvl\Content\Actions\SyncContentDefinitionsAction;
 use Nvl\Content\Actions\UpdateContentBlockAction;
@@ -35,6 +36,8 @@ use Nvl\Content\Data\ContentDefinitionSyncPlanData;
 use Nvl\Content\Data\ContentEditorData;
 use Nvl\Content\Data\ContentFieldPresetData;
 use Nvl\Content\Data\ContentPlacementData;
+use Nvl\Content\Data\ContentScopeData;
+use Nvl\Content\Data\ContentScopeResolutionData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Data\Mutations\UpdateContentBlockData;
@@ -74,6 +77,7 @@ final readonly class Content
         private ContentOwnerRegistry $owners,
         private ContentRenderer $renderer,
         private ContentSnapshotService $snapshots,
+        private ResolveContentScopesAction $resolveScopes,
     ) {}
 
     /**
@@ -107,6 +111,27 @@ final readonly class Content
         int $perPage = 25,
     ): LengthAwarePaginator {
         return $this->listBlocks->execute($filters, $actor, $perPage);
+    }
+
+    /**
+     * Resolve complete localized values through ordered scope fallback.
+     *
+     * @param  list<ContentScopeData>  $scopes
+     */
+    public function resolveScopes(
+        array $scopes,
+        string $locale,
+        ContentActorData $actor,
+        ?int $limit = null,
+        bool $publicOnly = true,
+    ): ContentScopeResolutionData {
+        return $this->resolveScopes->execute(
+            $scopes,
+            $locale,
+            $actor,
+            $limit,
+            $publicOnly,
+        );
     }
 
     /**

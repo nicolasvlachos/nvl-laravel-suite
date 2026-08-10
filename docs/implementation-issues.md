@@ -21,7 +21,7 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | Group | Scope | Issues | Commit prefix | Status | Implementation commit |
 |---|---|---:|---|---|---|
 | G01 | Suite migration ownership and release workflow | 1 | `fix(suite): …` | Finished | `88d68c9` |
-| G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | Not started | — |
+| G02 | Templates and Content adoption and rendering | 4 | `feat(templates): …` | In progress | — |
 | G03 | Settings adoption, keys, audit context, and validation | 4 | `feat(settings): …` | Not started | — |
 | G04 | Data, TypeScript, and CSV consumer contracts | 4 | `fix(data): …` | Not started | — |
 | G05 | Mail Notifications adoption and administrative reads | 2 | `feat(mail-notifications): …` | Not started | — |
@@ -110,7 +110,8 @@ Total open issues: **45**.
 
 ### G02 — Templates and Content adoption and rendering
 
-- Status: not started
+- Status: in progress
+- Implementation commit: pending
 - Commit boundary: keep implementation, tests, documentation, and contract updates for this group together; do not mix unrelated groups.
 - Commit subject prefix: `feat(templates): …`
 
