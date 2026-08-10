@@ -329,6 +329,38 @@ it('always scopes management lists to one explicit site', function (): void {
         ->and($pages->items()[0]->id)->toBe($default->id);
 });
 
+it('keeps localized navigation queries independent of page count', function (): void {
+    $measure = static function (): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $navigation = app(GetNavigationAction::class)->execute(
+            'default',
+            'en',
+            PageActorData::anonymous(),
+        );
+        $queryCount = count(DB::getQueryLog());
+        $navigation->toArray();
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount);
+        DB::disableQueryLog();
+
+        return $queryCount;
+    };
+
+    createTestPage('pages.query-1', 'query-1');
+    $singleQueryCount = $measure();
+
+    foreach (range(2, 25) as $index) {
+        createTestPage("pages.query-{$index}", "query-{$index}");
+    }
+
+    $populatedQueryCount = $measure();
+
+    expect($singleQueryCount)->toBeLessThanOrEqual(2)
+        ->and($populatedQueryCount)->toBe($singleQueryCount);
+});
+
 it('resolves only resources admitted by the handler query', function (): void {
     $page = createTestPage(
         'pages.records',
