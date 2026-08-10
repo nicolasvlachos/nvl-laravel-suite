@@ -191,38 +191,48 @@ it('can attach media to the integration model using isolated package actions', f
 });
 
 it('keeps eager-loaded reference owner reads within a constant query budget', function (): void {
-    foreach (range(1, 25) as $index) {
+    $measure = static function (): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $models = IntegrationTestModel::query()
+            ->with([
+                'categories',
+                'comments',
+                'contentPlacements',
+                'media',
+                'metafields',
+                'seoProfiles',
+            ])
+            ->get();
+        $queryCount = count(DB::getQueryLog());
+
+        foreach ($models as $model) {
+            $model->categories->count();
+            $model->comments->count();
+            $model->contentPlacements->count();
+            $model->media->count();
+            $model->metafields->count();
+            $model->seoProfiles->count();
+        }
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount);
+        DB::disableQueryLog();
+
+        return $queryCount;
+    };
+
+    IntegrationTestModel::create(['name' => 'Reference owner 1']);
+    $singleQueryCount = $measure();
+
+    foreach (range(2, 25) as $index) {
         IntegrationTestModel::create(['name' => "Reference owner {$index}"]);
     }
 
-    DB::flushQueryLog();
-    DB::enableQueryLog();
+    $populatedQueryCount = $measure();
 
-    $models = IntegrationTestModel::query()
-        ->with([
-            'categories',
-            'comments',
-            'contentPlacements',
-            'media',
-            'metafields',
-            'seoProfiles',
-        ])
-        ->get();
-
-    $queryCount = count(DB::getQueryLog());
-
-    foreach ($models as $model) {
-        $model->categories->count();
-        $model->comments->count();
-        $model->contentPlacements->count();
-        $model->media->count();
-        $model->metafields->count();
-        $model->seoProfiles->count();
-    }
-
-    expect($models)->toHaveCount(25)
-        ->and($queryCount)->toBeLessThanOrEqual(7)
-        ->and(DB::getQueryLog())->toHaveCount($queryCount);
+    expect($singleQueryCount)->toBeLessThanOrEqual(7)
+        ->and($populatedQueryCount)->toBe($singleQueryCount);
 });
 
 it('passes every available package doctor in strict machine-readable mode', function (string $command): void {
