@@ -37,15 +37,15 @@ test('duplicate form action clones the form with reset counters', function (): v
     ]);
 
     $duplicate = app(DuplicateFormAction::class)->execute($form, 'Signup Form Copy');
+    $localizedContent = $duplicate->localizedContent();
 
     expect($duplicate->displayName())->toBe('Signup Form Copy')
         ->and($duplicate->displayDescription())->toBe('Collect account details.')
-        ->and($duplicate->localizedContent())->toBe([
-            'name' => 'Signup Form',
-            'description' => 'Collect account details.',
-            'submit_button_label' => 'Create account',
-            'content' => ['fields' => [['type' => 'email']]],
-        ])
+        ->and($localizedContent)->toHaveCount(4)
+        ->and($localizedContent['name'])->toBe('Signup Form')
+        ->and($localizedContent['description'])->toBe('Collect account details.')
+        ->and($localizedContent['submit_button_label'])->toBe('Create account')
+        ->and($localizedContent['content'])->toBe(['fields' => [['type' => 'email']]])
         ->and($duplicate->translations->sole()->submit_button_label)->toBe('Create account')
         ->and($duplicate->handle)->not->toBe($form->handle)
         ->and($duplicate->status->value)->toBe('draft')

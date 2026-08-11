@@ -140,6 +140,10 @@ abstract class TestCase extends Orchestra
             'template-tests',
             __DIR__.'/Fixtures/views',
         );
+    }
+
+    protected function defineDatabaseMigrationsAfterDatabaseRefreshed(): void
+    {
         Schema::create('template_test_owners', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');

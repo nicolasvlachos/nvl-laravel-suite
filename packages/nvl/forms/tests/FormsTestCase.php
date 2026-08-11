@@ -41,17 +41,18 @@ abstract class FormsTestCase extends Orchestra
         parent::setUp();
 
         Gate::define('manage-forms', static fn ($user): bool => $user !== null);
+    }
 
-        if (! Schema::hasTable('test_forms_users')) {
-            Schema::create('test_forms_users', function (Blueprint $table) {
-                $table->id();
-                $table->string('name');
-                $table->string('email')->unique();
-                $table->string('password');
-                $table->string('account_type')->default('user');
-                $table->timestamps();
-            });
-        }
+    protected function defineDatabaseMigrationsAfterDatabaseRefreshed(): void
+    {
+        Schema::create('test_forms_users', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->string('account_type')->default('user');
+            $table->timestamps();
+        });
     }
 
     /**

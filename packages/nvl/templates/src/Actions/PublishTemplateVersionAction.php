@@ -18,6 +18,7 @@ use Nvl\Templates\Events\TemplateChanged;
 use Nvl\Templates\Exceptions\StaleTemplateException;
 use Nvl\Templates\Models\Template;
 use Nvl\Templates\Models\TemplateVersion;
+use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
@@ -68,10 +69,12 @@ final readonly class PublishTemplateVersionAction
                 }
 
                 $definition = $this->definitions->get($template->key);
+                $canonicalJson = new CanonicalJson;
 
                 if ($template->status !== TemplateStatus::Active
                     || $template->renderer !== $definition->renderer
-                    || $template->schema !== $definition->schema) {
+                    || $canonicalJson->digest($template->schema)
+                        !== $canonicalJson->digest($definition->schema)) {
                     throw new InvalidArgumentException(
                         "Template [{$template->key}] must be active and synchronized before publication.",
                     );

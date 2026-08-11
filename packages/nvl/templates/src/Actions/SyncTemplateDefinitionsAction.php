@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Nvl\Templates\Data\TemplateDefinitionSyncData;
 use Nvl\Templates\Enums\TemplateStatus;
 use Nvl\Templates\Models\Template;
+use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
@@ -28,6 +29,7 @@ final readonly class SyncTemplateDefinitionsAction
     {
         return DB::connection(TemplatesConfiguration::connection())
             ->transaction(function () use ($dryRun): Collection {
+                $canonicalJson = new CanonicalJson;
                 $registered = $this->definitions->all();
                 $registeredKeys = array_keys($registered);
                 $stored = Template::query()
@@ -41,7 +43,8 @@ final readonly class SyncTemplateDefinitionsAction
                     $operation = ! $template instanceof Template
                         ? 'create'
                         : ($template->renderer !== $definition->renderer
-                            || $template->schema !== $definition->schema
+                            || $canonicalJson->digest($template->schema)
+                                !== $canonicalJson->digest($definition->schema)
                             || $template->status === TemplateStatus::Archived
                                 ? 'update'
                                 : 'unchanged');

@@ -11,6 +11,13 @@ Module-level implementation history remains available in each
 
 ### Changed
 
+- Hardened package consumption across PostgreSQL, MySQL, MariaDB, and SQLite,
+  including exact foreign-key adoption, connection-aware media ordering,
+  portable settings diagnostics, canonical JSON comparisons, and UTC database
+  session defaults.
+- Expanded package-quality coverage with isolated databases for every package
+  and integration suite across PostgreSQL, MySQL 8.4, and MariaDB 12.1,
+  including the Translatable package and portable fixture lifecycles.
 - Completed the 20-package consumption contract: all public publish tags are
   tracked and rehearsed, stateful migrations use Laravel's timestamp-aware
   publication API, package skills are natively discoverable by Laravel Boost,

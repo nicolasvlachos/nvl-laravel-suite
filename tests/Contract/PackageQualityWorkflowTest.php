@@ -96,7 +96,7 @@ it('gives clean-runner integration tests a deterministic non-production applicat
         ->and((string) $testingKey['force'])->toBe('true');
 });
 
-it('runs five routine gates without scheduled fan-out', function (): void {
+it('runs six routine gates without scheduled fan-out', function (): void {
     $root = dirname(__DIR__, 2);
     $qualityWorkflowPath = $root.'/.github/workflows/package-quality.yml';
     $releaseWorkflowPath = $root.'/.github/workflows/package-release.yml';
@@ -113,6 +113,7 @@ it('runs five routine gates without scheduled fan-out', function (): void {
         'current-tests',
         'laravel12-lowest',
         'postgresql',
+        'mysql-family',
         'changed-coverage',
     ])
         ->and($workflow['on'])->not->toHaveKey('schedule')
@@ -236,7 +237,7 @@ it('keeps routine quality focused on formatting analysis manifests and contracts
         );
 });
 
-it('tests the current stack Laravel 12 lowest and PostgreSQL exactly once', function (): void {
+it('tests the current stack Laravel 12 lowest and every supported database family', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
@@ -245,6 +246,7 @@ it('tests the current stack Laravel 12 lowest and PostgreSQL exactly once', func
     $currentCommands = workflowCommands($jobs['current-tests'] ?? []);
     $lowestCommands = workflowCommands($jobs['laravel12-lowest'] ?? []);
     $postgresCommands = workflowCommands($jobs['postgresql'] ?? []);
+    $mysqlCommands = workflowCommands($jobs['mysql-family'] ?? []);
 
     expect($currentCommands)->toContain(
         '"laravel/framework:^13.0"',
@@ -262,9 +264,29 @@ it('tests the current stack Laravel 12 lowest and PostgreSQL exactly once', func
         ->and($jobs['postgresql']['services']['postgres']['image'] ?? null)->toBe('postgres:17')
         ->and($postgresCommands)->toContain(
             'for package in activity auth comments content',
+            'translatable translations',
+            'database="nvl_package_test_${package//-/_}"',
             'composer test:integration',
         )
-        ->not->toContain('mysql');
+        ->not->toContain('mysql')
+        ->and($jobs['mysql-family']['strategy']['matrix']['include'] ?? [])->toBe([
+            [
+                'name' => 'MySQL 8.4',
+                'image' => 'mysql:8.4',
+                'connection' => 'mysql',
+            ],
+            [
+                'name' => 'MariaDB 12.1',
+                'image' => 'mariadb:12.1',
+                'connection' => 'mariadb',
+            ],
+        ])
+        ->and($mysqlCommands)->toContain(
+            'for package in activity auth comments content',
+            'translatable translations',
+            'database="nvl_package_test_${package//-/_}"',
+            'DB_DATABASE=nvl_package_test_integration composer test:integration',
+        );
 });
 
 it('collects coverage only for packages changed by the event', function (): void {
@@ -293,7 +315,7 @@ it('collects coverage only for packages changed by the event', function (): void
         ->and($coverage)->not->toHaveKey('strategy');
 });
 
-it('publishes one clean suite tag only after all five routine gates pass', function (): void {
+it('publishes one clean suite tag only after all six routine gates pass', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();

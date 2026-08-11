@@ -54,7 +54,7 @@ it('runs the complete Comments suite against PostgreSQL', function (): void {
     expect(commentsWorkflowString($job, 'name'))->toBe('PostgreSQL stateful packages')
         ->and(commentsWorkflowString($service, 'image'))->toBe('postgres:17')
         ->and($serviceEnvironment)->toBe([
-            'POSTGRES_DB' => 'nvl_mail_notifications_test_ci',
+            'POSTGRES_DB' => 'nvl_package_test_admin',
             'POSTGRES_USER' => 'nvl',
             'POSTGRES_PASSWORD' => 'nvl',
         ])
@@ -63,11 +63,16 @@ it('runs the complete Comments suite against PostgreSQL', function (): void {
             'DB_CONNECTION' => 'pgsql',
             'DB_HOST' => '127.0.0.1',
             'DB_PORT' => 5432,
-            'DB_DATABASE' => 'nvl_mail_notifications_test_ci',
             'DB_USERNAME' => 'nvl',
             'DB_PASSWORD' => 'nvl',
         ])
-        ->and($command)->toContain('for package in activity auth comments content');
+        ->and($stepEnvironment)->not->toHaveKey('DB_DATABASE')
+        ->and($command)->toContain(
+            'for package in activity auth comments content',
+            'database="nvl_package_test_${package//-/_}"',
+            'DB_DATABASE="$database" vendor/bin/pest',
+            'DB_DATABASE=nvl_package_test_integration composer test:integration',
+        );
 });
 
 it('does not retain the multi-package release rehearsal', function (): void {

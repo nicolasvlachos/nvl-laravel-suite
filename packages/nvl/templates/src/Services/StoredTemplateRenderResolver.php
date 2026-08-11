@@ -185,9 +185,11 @@ final readonly class StoredTemplateRenderResolver
     private function definition(Template $template): TemplateDefinitionData
     {
         $definition = $this->definitions->get($template->key);
+        $canonicalJson = new CanonicalJson;
 
         if ($template->renderer !== $definition->renderer
-            || $template->schema !== $definition->schema) {
+            || $canonicalJson->digest($template->schema)
+                !== $canonicalJson->digest($definition->schema)) {
             throw new TemplateResolutionException(
                 "Template [{$template->key}] is stale; synchronize its source definition.",
             );

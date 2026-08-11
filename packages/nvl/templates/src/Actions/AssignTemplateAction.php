@@ -16,6 +16,7 @@ use Nvl\Templates\Events\TemplateChanged;
 use Nvl\Templates\Exceptions\StaleTemplateException;
 use Nvl\Templates\Models\Template;
 use Nvl\Templates\Models\TemplateAssignment;
+use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
@@ -63,10 +64,12 @@ final readonly class AssignTemplateAction
                 ->transaction(function () use ($actor, $data, $templateId): TemplateAssignment {
                     $template = Template::query()->lockForUpdate()->findOrFail($templateId);
                     $definition = $this->definitions->get($template->key);
+                    $canonicalJson = new CanonicalJson;
 
                     if ($template->status !== TemplateStatus::Active
                         || $template->renderer !== $definition->renderer
-                        || $template->schema !== $definition->schema) {
+                        || $canonicalJson->digest($template->schema)
+                            !== $canonicalJson->digest($definition->schema)) {
                         throw new InvalidArgumentException(
                             "Template [{$template->key}] must be active and synchronized before assignment.",
                         );

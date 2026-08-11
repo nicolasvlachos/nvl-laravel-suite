@@ -94,6 +94,7 @@ return [
         'settings',
         'taxonomy',
         'templates',
+        'translatable',
         'translations',
     ],
     'stateful' => [

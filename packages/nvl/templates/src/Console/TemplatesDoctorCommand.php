@@ -14,6 +14,7 @@ use Nvl\Templates\Contracts\TemplateAuthorization;
 use Nvl\Templates\Data\TemplateActorData;
 use Nvl\Templates\Enums\TemplateStatus;
 use Nvl\Templates\Models\Template;
+use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\PdfTemporaryDirectoryResolver;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
@@ -47,6 +48,7 @@ final class TemplatesDoctorCommand extends Command
         Factory $views,
         Content $content,
     ): int {
+        $canonicalJson = new CanonicalJson;
         $format = $this->option('format');
         $scope = $this->option('scope');
 
@@ -80,7 +82,7 @@ final class TemplatesDoctorCommand extends Command
         if ($scope === 'all' || $scope === 'database') {
             $required = [
                 ...$required,
-                ...$this->databaseChecks($definitions, $content),
+                ...$this->databaseChecks($definitions, $content, $canonicalJson),
             ];
         }
 
@@ -160,6 +162,7 @@ final class TemplatesDoctorCommand extends Command
     private function databaseChecks(
         TemplateDefinitionRegistry $definitions,
         Content $content,
+        CanonicalJson $canonicalJson,
     ): array {
         $schema = Schema::connection(TemplatesConfiguration::connection());
         $checks = [];
@@ -187,7 +190,7 @@ final class TemplatesDoctorCommand extends Command
             ]);
         $tablesHealthy = ! in_array(false, $checks, true);
         $checks['definitions.synchronized'] = $tablesHealthy
-            && $this->definitionsAreSynchronized($definitions);
+            && $this->definitionsAreSynchronized($definitions, $canonicalJson);
         $checks['definitions.content'] = $this->contentDefinitionsAreRegistered(
             $definitions,
             $content,
@@ -278,6 +281,7 @@ final class TemplatesDoctorCommand extends Command
 
     private function definitionsAreSynchronized(
         TemplateDefinitionRegistry $definitions,
+        CanonicalJson $canonicalJson,
     ): bool {
         $registered = $definitions->all();
         $stored = Template::query()->get()->keyBy('key');
@@ -287,7 +291,8 @@ final class TemplatesDoctorCommand extends Command
 
             if (! $template instanceof Template
                 || $template->renderer !== $definition->renderer
-                || $template->schema !== $definition->schema
+                || $canonicalJson->digest($template->schema)
+                    !== $canonicalJson->digest($definition->schema)
                 || $template->status === TemplateStatus::Archived) {
                 return false;
             }

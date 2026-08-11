@@ -137,11 +137,11 @@ final class TranslationExportService
         $resolved = TranslationEntry::query()
             ->where('scope_type', $scope->type->value)
             ->where('scope_name', $scope->name)
-            ->distinct()
             ->orderBy('locale')
             ->pluck('locale')
             ->filter(static fn (mixed $value): bool => is_string($value) && $value !== '')
             ->map(fn (string $locale): string => $this->paths->locale($locale))
+            ->uniqueStrict()
             ->values()
             ->all();
 

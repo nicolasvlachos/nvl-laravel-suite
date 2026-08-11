@@ -62,10 +62,8 @@ abstract class TestCase extends Orchestra
         ]);
     }
 
-    protected function setUp(): void
+    protected function defineDatabaseMigrationsAfterDatabaseRefreshed(): void
     {
-        parent::setUp();
-
         Schema::create('seo_test_owners', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');

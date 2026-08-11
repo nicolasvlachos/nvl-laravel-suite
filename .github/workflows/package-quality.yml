@@ -126,7 +126,7 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_DB: nvl_mail_notifications_test_ci
+          POSTGRES_DB: nvl_package_test_admin
           POSTGRES_USER: nvl
           POSTGRES_PASSWORD: nvl
         ports:
@@ -154,20 +154,119 @@ jobs:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
-          DB_DATABASE: nvl_mail_notifications_test_ci
           DB_USERNAME: nvl
           DB_PASSWORD: nvl
           PGTZ: UTC
+        shell: bash
         run: |
-          for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates translations; do
-            vendor/bin/pest \
+          set -euo pipefail
+          for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates translatable translations; do
+            database="nvl_package_test_${package//-/_}"
+            DATABASE_NAME="$database" php -r '
+              $database = getenv("DATABASE_NAME");
+              if (! is_string($database) || preg_match("/^nvl_package_test_[a-z_]+$/", $database) !== 1) {
+                  throw new RuntimeException("Unsafe test database name.");
+              }
+              $pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=nvl_package_test_admin", "nvl", "nvl");
+              $pdo->exec("CREATE DATABASE \"{$database}\"");
+            '
+            DB_DATABASE="$database" vendor/bin/pest \
               --test-directory="packages/nvl/$package/tests" \
               --configuration="packages/nvl/$package/phpunit.xml.dist" \
               --bootstrap=vendor/autoload.php \
               --compact \
               "packages/nvl/$package/tests"
           done
-          composer test:integration
+          DATABASE_NAME=nvl_package_test_integration php -r '
+            $database = getenv("DATABASE_NAME");
+            if ($database !== "nvl_package_test_integration") {
+                throw new RuntimeException("Unsafe integration test database name.");
+            }
+            $pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=nvl_package_test_admin", "nvl", "nvl");
+            $pdo->exec("CREATE DATABASE \"{$database}\"");
+          '
+          DB_DATABASE=nvl_package_test_integration composer test:integration
+
+  mysql-family:
+    name: ${{ matrix.name }} stateful packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: MySQL 8.4
+            image: mysql:8.4
+            connection: mysql
+          - name: MariaDB 12.1
+            image: mariadb:12.1
+            connection: mariadb
+
+    services:
+      database:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_HOST: '%'
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_ROOT_HOST: '%'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_mysql, zip
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - name: Stateful package tests
+        env:
+          DB_CONNECTION: ${{ matrix.connection }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates translatable translations; do
+            database="nvl_package_test_${package//-/_}"
+            DATABASE_NAME="$database" php -r '
+              $database = getenv("DATABASE_NAME");
+              if (! is_string($database) || preg_match("/^nvl_package_test_[a-z_]+$/", $database) !== 1) {
+                  throw new RuntimeException("Unsafe test database name.");
+              }
+              $pdo = new PDO("mysql:host=127.0.0.1;port=3306", "root", "root");
+              $pdo->exec("CREATE DATABASE `{$database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            '
+            DB_DATABASE="$database" vendor/bin/pest \
+              --test-directory="packages/nvl/$package/tests" \
+              --configuration="packages/nvl/$package/phpunit.xml.dist" \
+              --bootstrap=vendor/autoload.php \
+              --compact \
+              "packages/nvl/$package/tests"
+          done
+          DATABASE_NAME=nvl_package_test_integration php -r '
+            $database = getenv("DATABASE_NAME");
+            if ($database !== "nvl_package_test_integration") {
+                throw new RuntimeException("Unsafe integration test database name.");
+            }
+            $pdo = new PDO("mysql:host=127.0.0.1;port=3306", "root", "root");
+            $pdo->exec("CREATE DATABASE `{$database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+          '
+          DB_DATABASE=nvl_package_test_integration composer test:integration
 
   changed-coverage:
     name: Changed-package coverage
