@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Services\ConfiguredPageAuthorization;
 use Nvl\Pages\Services\ConfiguredPageRequestContextResolver;
 use Nvl\Pages\Services\ConfiguredPageUrlGenerator;
@@ -10,9 +11,9 @@ return [
     'connection' => null,
 
     'tables' => [
-        'pages' => 'pages',
-        'pages_i18n' => 'pages_i18n',
-        'page_tree_locks' => 'page_tree_locks',
+        'pages' => PagesTables::Pages,
+        'pages_i18n' => PagesTables::I18n,
+        'page_tree_locks' => PagesTables::TreeLocks,
     ],
 
     'migrations' => [

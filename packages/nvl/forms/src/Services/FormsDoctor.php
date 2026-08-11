@@ -41,9 +41,9 @@ final readonly class FormsDoctor
     private function schemaChecks(): array
     {
         $requirements = [
-            FormsTables::FORMS => ['id', 'handle', 'revision', 'status'],
-            FormsTables::FORM_I18N => ['id', 'form_id', 'locale', 'name', 'content'],
-            FormsTables::FORM_ENTRIES => [
+            FormsTables::Forms => ['id', 'handle', 'revision', 'status'],
+            FormsTables::I18n => ['id', 'form_id', 'locale', 'name', 'content'],
+            FormsTables::Entries => [
                 'id',
                 'form_id',
                 'submission_data',
@@ -54,7 +54,7 @@ final readonly class FormsDoctor
                 'redacted_at',
                 'anonymized_at',
             ],
-            FormsTables::FORM_SUBMISSION_RECEIPTS => [
+            FormsTables::SubmissionReceipts => [
                 'id',
                 'form_id',
                 'idempotency_key',
@@ -63,9 +63,9 @@ final readonly class FormsDoctor
                 'state',
                 'result_id',
             ],
-            FormsTables::ALLOWED_ORIGINS => ['id', 'form_id', 'origin', 'is_active'],
-            FormsTables::FORM_ANALYTICS => ['id', 'form_id', 'event_type'],
-            FormsTables::FORM_RATE_LIMITS => ['id', 'form_id', 'ip_address'],
+            FormsTables::AllowedOrigins => ['id', 'form_id', 'origin', 'is_active'],
+            FormsTables::Analytics => ['id', 'form_id', 'event_type'],
+            FormsTables::RateLimits => ['id', 'form_id', 'ip_address'],
         ];
         $checks = [];
 
@@ -134,8 +134,8 @@ final readonly class FormsDoctor
                 }
             }
 
-            if (Schema::hasColumn(FormsTables::FORM_ENTRIES, 'spam_score')) {
-                $type = Schema::getColumnType(FormsTables::FORM_ENTRIES, 'spam_score', true);
+            if (Schema::hasColumn(FormsTables::Entries, 'spam_score')) {
+                $type = Schema::getColumnType(FormsTables::Entries, 'spam_score', true);
                 $numeric = str_contains(strtolower($type), 'int');
                 $checks[] = $this->check(
                     'schema.type.form_entries.spam_score',
@@ -258,32 +258,32 @@ final readonly class FormsDoctor
     private function requiredIndexes(string $table): array
     {
         return match ($table) {
-            FormsTables::FORMS => [
+            FormsTables::Forms => [
                 ['columns' => ['handle'], 'unique' => true],
                 ['columns' => ['status'], 'unique' => false],
             ],
-            FormsTables::FORM_I18N => [
+            FormsTables::I18n => [
                 ['columns' => ['form_id', 'locale'], 'unique' => true],
             ],
-            FormsTables::FORM_ENTRIES => [
+            FormsTables::Entries => [
                 ['columns' => ['form_id', 'created_at'], 'unique' => false],
                 ['columns' => ['form_id', 'idempotency_key'], 'unique' => true],
                 ['columns' => ['form_id', 'registration_fingerprint'], 'unique' => true],
             ],
-            FormsTables::FORM_SUBMISSION_RECEIPTS => [
+            FormsTables::SubmissionReceipts => [
                 ['columns' => ['form_id', 'idempotency_key'], 'unique' => true],
                 ['columns' => ['form_id', 'registration_fingerprint'], 'unique' => true],
                 ['columns' => ['state', 'updated_at'], 'unique' => false],
             ],
-            FormsTables::ALLOWED_ORIGINS => [
+            FormsTables::AllowedOrigins => [
                 ['columns' => ['form_id', 'origin'], 'unique' => true],
                 ['columns' => ['form_id', 'is_active'], 'unique' => false],
             ],
-            FormsTables::FORM_ANALYTICS => [
+            FormsTables::Analytics => [
                 ['columns' => ['form_id', 'event_type'], 'unique' => false],
                 ['columns' => ['form_id', 'created_at'], 'unique' => false],
             ],
-            FormsTables::FORM_RATE_LIMITS => [
+            FormsTables::RateLimits => [
                 ['columns' => ['form_id', 'ip_address'], 'unique' => true],
             ],
             default => [],
@@ -296,12 +296,12 @@ final readonly class FormsDoctor
     private function requiredForeignKeys(string $table): array
     {
         return match ($table) {
-            FormsTables::FORM_I18N,
-            FormsTables::FORM_ENTRIES,
-            FormsTables::FORM_SUBMISSION_RECEIPTS,
-            FormsTables::ALLOWED_ORIGINS,
-            FormsTables::FORM_ANALYTICS,
-            FormsTables::FORM_RATE_LIMITS => [['form_id']],
+            FormsTables::I18n,
+            FormsTables::Entries,
+            FormsTables::SubmissionReceipts,
+            FormsTables::AllowedOrigins,
+            FormsTables::Analytics,
+            FormsTables::RateLimits => [['form_id']],
             default => [],
         };
     }

@@ -11,14 +11,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable(FormsTables::FORM_SUBMISSION_RECEIPTS)) {
+        if (Schema::hasTable(FormsTables::SubmissionReceipts)) {
             return;
         }
 
-        Schema::create(FormsTables::FORM_SUBMISSION_RECEIPTS, function (Blueprint $table) {
+        Schema::create(FormsTables::SubmissionReceipts, function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('form_id')
-                ->constrained(FormsTables::FORMS)
+                ->constrained(FormsTables::Forms)
                 ->cascadeOnDelete();
             $table->string('idempotency_key', 128)->nullable();
             $table->string('payload_digest', 64);
@@ -35,6 +35,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(FormsTables::FORM_SUBMISSION_RECEIPTS);
+        Schema::dropIfExists(FormsTables::SubmissionReceipts);
     }
 };

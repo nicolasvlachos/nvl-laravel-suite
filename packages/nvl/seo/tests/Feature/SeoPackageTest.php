@@ -26,6 +26,7 @@ use Nvl\Seo\Data\SeoProfileQuery;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Data\StructuredDataNodeData;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\StructuredDataType;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Exceptions\SeoPathConflictException;
@@ -92,8 +93,8 @@ function seoPayload(array $overrides = []): SeoProfilePayload
 }
 
 it('registers migrations, type sources, and centralized translation management', function (): void {
-    expect(Schema::hasTable('seo_profiles'))->toBeTrue()
-        ->and(Schema::hasTable('seo_profiles_i18n'))->toBeTrue()
+    expect(Schema::hasTable(SeoTables::Profiles))->toBeTrue()
+        ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()
         ->and(app(TranslationResourceRegistry::class)->has('seo.profiles'))->toBeTrue()
         ->and(collect(app(TypeScriptSourceRegistry::class)->all())
             ->contains(fn (string $path): bool => str_ends_with($path, '/packages/nvl/seo/src')))
@@ -409,7 +410,7 @@ it('deletes profiles and cascades localized rows', function (): void {
 
     expect(app(DeleteSeoProfileAction::class)->execute($profile))->toBeTrue()
         ->and(SeoProfile::query()->count())->toBe(0)
-        ->and(DB::table('seo_profiles_i18n')->count())->toBe(0);
+        ->and(DB::table(SeoTables::I18n)->count())->toBe(0);
 });
 
 it('rejects stale profile writes and excludes archived profiles from runtime resolution', function (): void {

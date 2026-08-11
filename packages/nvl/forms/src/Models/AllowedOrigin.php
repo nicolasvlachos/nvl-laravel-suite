@@ -38,7 +38,7 @@ class AllowedOrigin extends Model
 
     use HasUuids;
 
-    protected $table = FormsTables::ALLOWED_ORIGINS;
+    protected $table = FormsTables::AllowedOrigins;
 
     /**
      * The attributes that are mass assignable.

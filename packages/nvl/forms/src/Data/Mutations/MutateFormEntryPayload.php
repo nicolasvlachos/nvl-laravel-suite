@@ -137,7 +137,7 @@ class MutateFormEntryPayload extends Data
     public static function rules(): array
     {
         return [
-            'formId' => ['required', 'uuid', 'exists:'.FormsTables::FORMS.',id'],
+            'formId' => ['required', 'uuid', 'exists:'.FormsTables::Forms.',id'],
             'subject' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'firstName' => ['nullable', 'string', 'max:100'],

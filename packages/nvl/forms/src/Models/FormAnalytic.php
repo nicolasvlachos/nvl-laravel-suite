@@ -37,7 +37,7 @@ class FormAnalytic extends Model
     use FormAnalyticFilters;
     use HasUuids;
 
-    protected $table = FormsTables::FORM_ANALYTICS;
+    protected $table = FormsTables::Analytics;
 
     /**
      * The attributes that are mass assignable.

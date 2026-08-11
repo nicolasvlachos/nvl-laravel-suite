@@ -9,15 +9,25 @@ namespace Nvl\Templates\Definitions\Tables;
  */
 final class TemplatesTables
 {
-    public const string TEMPLATES = 'templates';
+    public const string Templates = 'templates';
 
-    public const string TEMPLATES_I18N = 'templates_i18n';
+    public const string I18n = 'templates_i18n';
 
-    public const string TEMPLATE_VERSIONS = 'template_versions';
+    public const string Versions = 'template_versions';
 
-    public const string TEMPLATE_ASSIGNMENTS = 'template_assignments';
+    public const string Assignments = 'template_assignments';
 
-    public const string TEMPLATE_RENDERS = 'template_renders';
+    public const string Renders = 'template_renders';
+
+    public const string TEMPLATES = self::Templates;
+
+    public const string TEMPLATES_I18N = self::I18n;
+
+    public const string TEMPLATE_VERSIONS = self::Versions;
+
+    public const string TEMPLATE_ASSIGNMENTS = self::Assignments;
+
+    public const string TEMPLATE_RENDERS = self::Renders;
 
     /**
      * Return a configured package table name.

@@ -22,7 +22,7 @@ test('delete form entry action removes entry and updates counters', function ():
     $deleted = app(DeleteFormEntryAction::class)->execute($entry);
 
     expect($deleted)->toBeTrue();
-    $this->assertDatabaseMissing(FormsTables::FORM_ENTRIES, ['id' => $entry->id]);
+    $this->assertDatabaseMissing(FormsTables::Entries, ['id' => $entry->id]);
     Event::assertDispatched(FormEntryChangedEvent::class);
 
     $form->refresh();

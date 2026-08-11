@@ -51,7 +51,7 @@ final readonly class TranslationsDoctor
     private function schemaChecks(): array
     {
         $tables = [
-            TranslationsTables::TRANSLATION_ENTRIES => [
+            TranslationsTables::Entries => [
                 'columns' => [
                     'id', 'identity_hash', 'scope_type', 'scope_name', 'locale', 'format', 'group',
                     'key', 'value', 'source_hash', 'is_missing', 'revision', 'sync_status',
@@ -60,11 +60,11 @@ final readonly class TranslationsDoctor
                 ],
                 'identity' => true,
             ],
-            TranslationsTables::TRANSLATION_SCAN_RUNS => [
+            TranslationsTables::ScanRuns => [
                 'columns' => ['id', 'scanned_at', 'files', 'hits', 'created_at', 'updated_at'],
                 'identity' => false,
             ],
-            TranslationsTables::TRANSLATION_USAGES => [
+            TranslationsTables::Usages => [
                 'columns' => [
                     'id', 'identity_hash', 'scan_id', 'scope_type', 'scope_name', 'format',
                     'full_key', 'file_path', 'line', 'last_seen_at', 'created_at', 'updated_at',

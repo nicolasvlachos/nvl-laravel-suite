@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Pages\Services;
 
 use Illuminate\Support\Facades\DB;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Support\PagesConfiguration;
 
 /**
@@ -18,7 +19,7 @@ final class PageTreeLock
     public function acquire(string $site): void
     {
         $connection = DB::connection(PagesConfiguration::connection());
-        $table = PagesConfiguration::table('page_tree_locks', 'page_tree_locks');
+        $table = PagesConfiguration::table(PagesTables::TreeLocks, PagesTables::TreeLocks);
 
         $connection->table($table)->insertOrIgnore(['site' => $site]);
         $connection->table($table)

@@ -88,7 +88,7 @@ test('public routes reject unavailable forms before submission', function (): vo
             'error' => trans('forms::forms/messages.api.form_unavailable'),
         ]);
 
-    $this->assertDatabaseCount(FormsTables::FORM_ENTRIES, 0);
+    $this->assertDatabaseCount(FormsTables::Entries, 0);
 });
 
 test('render endpoint responds with not found when form is missing', function (): void {
@@ -147,7 +147,7 @@ test('submit endpoint validates payloads and returns errors', function (): void 
     $response->assertStatus(422)
         ->assertJsonValidationErrors(['email']);
 
-    $this->assertDatabaseCount(FormsTables::FORM_ENTRIES, 0);
+    $this->assertDatabaseCount(FormsTables::Entries, 0);
 });
 
 test('submit endpoint handles rate limit violations gracefully', function (): void {
@@ -193,7 +193,7 @@ test('submit endpoint handles rate limit violations gracefully', function (): vo
             'error' => trans('forms::forms/shared.messages.error.rate_limit_exceeded'),
         ]);
 
-    $this->assertDatabaseCount(FormsTables::FORM_ENTRIES, 0);
+    $this->assertDatabaseCount(FormsTables::Entries, 0);
 });
 
 test('submit endpoint blocks custom handlers when rate limit is exceeded', function (): void {

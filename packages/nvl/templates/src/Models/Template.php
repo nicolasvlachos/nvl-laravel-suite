@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Enums\TemplateStatus;
 use Nvl\Templates\Support\TemplatesConfiguration;
 use Nvl\Translatable\Contracts\TranslatableModel;
@@ -61,7 +62,7 @@ final class Template extends Model implements TranslatableModel
 
     public function getTable(): string
     {
-        return TemplatesConfiguration::table('templates');
+        return TemplatesConfiguration::table(TemplatesTables::Templates);
     }
 
     public function getConnectionName(): ?string

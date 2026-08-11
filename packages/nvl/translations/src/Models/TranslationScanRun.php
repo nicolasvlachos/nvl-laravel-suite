@@ -23,7 +23,7 @@ final class TranslationScanRun extends Model
 {
     use HasUuids;
 
-    protected $table = TranslationsTables::TRANSLATION_SCAN_RUNS;
+    protected $table = TranslationsTables::ScanRuns;
 
     protected $dateFormat = 'Y-m-d H:i:s.u';
 

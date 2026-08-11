@@ -72,7 +72,7 @@ class Form extends Model implements TranslatableModel
     /**
      * @var string The database table name
      */
-    protected $table = FormsTables::FORMS;
+    protected $table = FormsTables::Forms;
 
     /**
      * The attributes that are mass assignable.

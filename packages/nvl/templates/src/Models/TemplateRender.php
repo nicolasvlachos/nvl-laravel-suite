@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Nvl\Media\Contracts\HasMedia;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Traits\InteractsWithMedia;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Enums\TemplateRenderStatus;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
@@ -101,7 +102,7 @@ final class TemplateRender extends Model implements HasMedia
      */
     public function getTable(): string
     {
-        return TemplatesConfiguration::table('template_renders');
+        return TemplatesConfiguration::table(TemplatesTables::Renders);
     }
 
     /**

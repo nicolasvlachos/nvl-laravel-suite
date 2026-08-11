@@ -7,6 +7,7 @@ use Nvl\Forms\Actions\Form\CreateFormAction;
 use Nvl\Forms\Actions\Form\TransformFormDataForRenderAction;
 use Nvl\Forms\Actions\Form\UpdateFormAction;
 use Nvl\Forms\Data\Mutations\MutateFormPayload;
+use Nvl\Forms\Definitions\Tables\FormsTables;
 use Nvl\Forms\Enums\FormType;
 use Nvl\Forms\Enums\Resolvement;
 use Nvl\Forms\Models\Form;
@@ -117,5 +118,5 @@ test('form factory stores localized content only in dedicated rows', function ()
         ->and($translation->content)->toMatchArray([
             'fields' => ['email' => ['label' => 'Имейл']],
         ])
-        ->and(Schema::hasColumn('forms', 'translations'))->toBeFalse();
+        ->and(Schema::hasColumn(FormsTables::Forms, 'translations'))->toBeFalse();
 });

@@ -7,6 +7,7 @@ namespace Nvl\Templates\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
 /**
@@ -28,7 +29,7 @@ final class TemplateTranslation extends Model
 
     public function getTable(): string
     {
-        return TemplatesConfiguration::table('templates_i18n');
+        return TemplatesConfiguration::table(TemplatesTables::I18n);
     }
 
     public function getConnectionName(): ?string

@@ -252,17 +252,25 @@ it('rejects raw writes to tables owned by another package', function (): void {
     $root = dirname(__DIR__, 2);
     $family = require $root.'/tools/package-family.php';
     $tableOwners = [];
+    $tableReferences = [];
 
     foreach ($family['packages'] as $package) {
-        $migrationPaths = glob($root.'/packages/nvl/'.$package.'/database/migrations/*.php') ?: [];
+        $namespace = str_replace(' ', '', ucwords(str_replace('-', ' ', $package)));
+        $class = "Nvl\\{$namespace}\\Definitions\\Tables\\{$namespace}Tables";
 
-        foreach ($migrationPaths as $migrationPath) {
-            $source = (string) file_get_contents($migrationPath);
-            preg_match_all('/Schema::create\([\'\"]([^\'\"]+)[\'\"]/', $source, $matches);
+        if (! class_exists($class)) {
+            continue;
+        }
 
-            foreach ($matches[1] ?? [] as $table) {
-                $tableOwners[$table] = $package;
+        $reflection = new ReflectionClass($class);
+
+        foreach ($reflection->getConstants() as $name => $table) {
+            if (! is_string($table) || preg_match('/^[A-Z][A-Za-z0-9]*$/D', $name) !== 1) {
+                continue;
             }
+
+            $tableOwners[$table] = $package;
+            $tableReferences[$reflection->getShortName().'::'.$name] = $table;
         }
     }
 
@@ -281,20 +289,29 @@ it('rejects raw writes to tables owned by another package', function (): void {
 
             $source = (string) file_get_contents($file->getPathname());
             preg_match_all(
-                '/DB::table\([\'\"]([^\'\"]+)[\'\"]\)/',
+                '/DB::table\((?:[\'\"]([^\'\"]+)[\'\"]|([A-Z][A-Za-z0-9]*Tables)::([A-Z][A-Za-z0-9]*))\)/',
                 $source,
                 $matches,
-                PREG_OFFSET_CAPTURE,
+                PREG_SET_ORDER | PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL,
             );
 
-            foreach ($matches[1] ?? [] as [$table, $offset]) {
+            foreach ($matches as $match) {
+                $reference = $match[2][0] !== null && $match[3][0] !== null
+                    ? $match[2][0].'::'.$match[3][0]
+                    : null;
+                $table = $match[1][0] ?? ($reference !== null ? ($tableReferences[$reference] ?? null) : null);
+
+                if (! is_string($table)) {
+                    continue;
+                }
+
                 $owner = $tableOwners[$table] ?? null;
 
                 if (! is_string($owner) || $owner === $package) {
                     continue;
                 }
 
-                $chain = substr($source, (int) $offset, 800);
+                $chain = substr($source, (int) $match[0][1], 800);
                 $writes = preg_match('/->(?:insert|insertOrIgnore|upsert|update|delete)\s*\(/', $chain) === 1;
 
                 expect($writes)->toBeFalse();

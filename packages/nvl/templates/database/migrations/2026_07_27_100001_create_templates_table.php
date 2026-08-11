@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
 return new class extends Migration
@@ -15,7 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         $schema = Schema::connection(TemplatesConfiguration::connection());
-        $tableName = TemplatesConfiguration::table('templates');
+        $tableName = TemplatesConfiguration::table(TemplatesTables::Templates);
 
         if ($schema->hasTable($tableName)) {
             throw new LogicException(
@@ -43,6 +44,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::connection(TemplatesConfiguration::connection())
-            ->dropIfExists(TemplatesConfiguration::table('templates'));
+            ->dropIfExists(TemplatesConfiguration::table(TemplatesTables::Templates));
     }
 };

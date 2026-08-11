@@ -12,6 +12,7 @@ use Mpdf\Mpdf;
 use Nvl\Content\Content;
 use Nvl\Templates\Contracts\TemplateAuthorization;
 use Nvl\Templates\Data\TemplateActorData;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Enums\TemplateStatus;
 use Nvl\Templates\Models\Template;
 use Nvl\Templates\Services\CanonicalJson;
@@ -178,7 +179,7 @@ final class TemplatesDoctorCommand extends Command
             $checks["constraints.{$key}.canonical"] = $issues['constraints'] === [];
         }
 
-        $renderTable = TemplatesConfiguration::table('template_renders');
+        $renderTable = TemplatesConfiguration::table(TemplatesTables::Renders);
         $checks['columns.template_renders.durable'] = $checks['table.template_renders']
             && $schema->hasColumns($renderTable, [
                 'processing_token',

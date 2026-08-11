@@ -55,7 +55,7 @@ class FormEntry extends Model
 
     private bool $idempotentReplay = false;
 
-    protected $table = FormsTables::FORM_ENTRIES;
+    protected $table = FormsTables::Entries;
 
     /**
      * The attributes that are mass assignable.

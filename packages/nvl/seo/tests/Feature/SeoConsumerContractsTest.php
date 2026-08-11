@@ -21,6 +21,7 @@ use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
 use Nvl\Seo\Data\SeoImage;
 use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Data\StructuredDataNodeData;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Exceptions\SeoPathConflictException;
@@ -345,11 +346,11 @@ it('reports invalid consumer configuration through the doctor contract', functio
             'target' => '/destination',
         ]),
     );
-    DB::table('seo_profiles')->where('id', $profile->id)->update([
+    DB::table(SeoTables::Profiles)->where('id', $profile->id)->update([
         'revision' => 0,
         'status' => 'invalid',
     ]);
-    DB::table('seo_redirects')->where('id', $redirect->id)->update([
+    DB::table(SeoTables::Redirects)->where('id', $redirect->id)->update([
         'source_hash' => 'short',
     ]);
     config()->set([

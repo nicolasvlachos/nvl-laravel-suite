@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Translations\Definitions\Tables\TranslationsTables;
 
 return new class extends Migration
 {
@@ -13,7 +14,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('translation_entries', function (Blueprint $table): void {
+        Schema::create(TranslationsTables::Entries, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('identity_hash', 64)->unique();
             $table->string('scope_type', 32);
@@ -54,6 +55,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('translation_entries');
+        Schema::dropIfExists(TranslationsTables::Entries);
     }
 };

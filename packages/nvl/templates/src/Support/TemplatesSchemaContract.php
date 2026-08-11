@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Templates\Support;
 
 use Illuminate\Database\Schema\Builder;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 
 /**
  * Defines and inspects the frozen canonical Templates schema ownership contract.
@@ -22,7 +23,7 @@ final class TemplatesSchemaContract
     public static function tables(): array
     {
         return [
-            'templates' => [
+            TemplatesTables::Templates => [
                 'creator' => '2026_07_27_100001_create_templates_table',
                 'columns' => ['id', 'key', 'renderer', 'status', 'schema', 'metadata', 'revision', 'created_at', 'updated_at'],
                 'indexes' => [
@@ -33,7 +34,7 @@ final class TemplatesSchemaContract
                 ],
                 'foreign_keys' => [],
             ],
-            'templates_i18n' => [
+            TemplatesTables::I18n => [
                 'creator' => '2026_07_27_100002_create_templates_i18n_table',
                 'columns' => ['id', 'template_id', 'locale', 'title', 'description', 'created_at', 'updated_at'],
                 'indexes' => [
@@ -42,12 +43,12 @@ final class TemplatesSchemaContract
                 ],
                 'foreign_keys' => [[
                     'columns' => ['template_id'],
-                    'target' => 'templates',
+                    'target' => TemplatesTables::Templates,
                     'foreign_columns' => ['id'],
                     'on_delete' => 'cascade',
                 ]],
             ],
-            'template_versions' => [
+            TemplatesTables::Versions => [
                 'creator' => '2026_07_27_100003_create_template_versions_table',
                 'columns' => ['id', 'template_id', 'version', 'status', 'metadata', 'content_snapshot', 'content_hash', 'revision', 'published_by_type', 'published_by', 'published_at', 'created_at', 'updated_at'],
                 'indexes' => [
@@ -57,12 +58,12 @@ final class TemplatesSchemaContract
                 ],
                 'foreign_keys' => [[
                     'columns' => ['template_id'],
-                    'target' => 'templates',
+                    'target' => TemplatesTables::Templates,
                     'foreign_columns' => ['id'],
                     'on_delete' => 'cascade',
                 ]],
             ],
-            'template_assignments' => [
+            TemplatesTables::Assignments => [
                 'creator' => '2026_07_27_100006_create_template_assignments_table',
                 'columns' => ['id', 'template_id', 'template_version_id', 'owner_type', 'owner_id', 'profile', 'settings', 'revision', 'created_at', 'updated_at'],
                 'indexes' => [
@@ -72,19 +73,19 @@ final class TemplatesSchemaContract
                 'foreign_keys' => [
                     [
                         'columns' => ['template_id'],
-                        'target' => 'templates',
+                        'target' => TemplatesTables::Templates,
                         'foreign_columns' => ['id'],
                         'on_delete' => 'cascade',
                     ],
                     [
                         'columns' => ['template_version_id'],
-                        'target' => 'template_versions',
+                        'target' => TemplatesTables::Versions,
                         'foreign_columns' => ['id'],
                         'on_delete' => 'set null',
                     ],
                 ],
             ],
-            'template_renders' => [
+            TemplatesTables::Renders => [
                 'creator' => '2026_07_27_100007_create_template_renders_table',
                 'columns' => ['id', 'template_id', 'template_version_id', 'template_assignment_id', 'locale', 'profile', 'settings', 'status', 'idempotency_key', 'payload_digest', 'payload', 'requested_by_type', 'requested_by', 'output_name', 'output_mime_type', 'failure', 'attempts', 'dispatch_generation', 'processing_token', 'lease_expires_at', 'started_at', 'completed_at', 'failed_at', 'created_at', 'updated_at'],
                 'indexes' => [
@@ -97,19 +98,19 @@ final class TemplatesSchemaContract
                 'foreign_keys' => [
                     [
                         'columns' => ['template_id'],
-                        'target' => 'templates',
+                        'target' => TemplatesTables::Templates,
                         'foreign_columns' => ['id'],
                         'on_delete' => 'cascade',
                     ],
                     [
                         'columns' => ['template_version_id'],
-                        'target' => 'template_versions',
+                        'target' => TemplatesTables::Versions,
                         'foreign_columns' => ['id'],
                         'on_delete' => 'cascade',
                     ],
                     [
                         'columns' => ['template_assignment_id'],
-                        'target' => 'template_assignments',
+                        'target' => TemplatesTables::Assignments,
                         'foreign_columns' => ['id'],
                         'on_delete' => 'set null',
                     ],

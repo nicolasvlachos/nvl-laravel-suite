@@ -16,16 +16,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable(FormsTables::ALLOWED_ORIGINS)) {
+        if (Schema::hasTable(FormsTables::AllowedOrigins)) {
             return;
         }
 
-        Schema::create(FormsTables::ALLOWED_ORIGINS, function (Blueprint $table) {
+        Schema::create(FormsTables::AllowedOrigins, function (Blueprint $table) {
             $table->uuid('id')->primary();
 
             $table->foreignUuid('form_id')
                 ->comment('Reference to the parent form')
-                ->constrained(FormsTables::FORMS)
+                ->constrained(FormsTables::Forms)
                 ->onDelete('cascade');
 
             $table->string('origin')
@@ -65,7 +65,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists(FormsTables::ALLOWED_ORIGINS);
+        Schema::dropIfExists(FormsTables::AllowedOrigins);
         Schema::enableForeignKeyConstraints();
     }
 };

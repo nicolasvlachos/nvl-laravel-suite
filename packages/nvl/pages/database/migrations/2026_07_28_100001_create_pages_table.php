@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 
 return new class extends Migration
 {
@@ -15,7 +16,7 @@ return new class extends Migration
     {
         $connection = config('pages.connection');
         $schema = Schema::connection(is_string($connection) ? $connection : null);
-        $tableName = (string) config('pages.tables.pages', 'pages');
+        $tableName = (string) config('pages.tables.pages', PagesTables::Pages);
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -64,6 +65,6 @@ return new class extends Migration
     {
         $connection = config('pages.connection');
         Schema::connection(is_string($connection) ? $connection : null)
-            ->dropIfExists((string) config('pages.tables.pages', 'pages'));
+            ->dropIfExists((string) config('pages.tables.pages', PagesTables::Pages));
     }
 };

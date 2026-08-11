@@ -183,14 +183,14 @@ class AllowedOriginPayload extends Data
         ?string $allowedOriginId,
         ?string $formId,
     ): array {
-        $uniqueRule = Rule::unique(FormsTables::ALLOWED_ORIGINS, 'origin')->ignore($allowedOriginId);
+        $uniqueRule = Rule::unique(FormsTables::AllowedOrigins, 'origin')->ignore($allowedOriginId);
 
         if (is_string($formId) && $formId !== '') {
             $uniqueRule = $uniqueRule->where(static fn (QueryBuilder $query) => $query->where('form_id', $formId));
         }
 
         return [
-            'formId' => ['sometimes', 'uuid', 'exists:'.FormsTables::FORMS.',id'],
+            'formId' => ['sometimes', 'uuid', 'exists:'.FormsTables::Forms.',id'],
             'origin' => ['required', 'string', 'max:255', new AllowedOriginExpressionRule, $uniqueRule],
             'isActive' => ['boolean'],
             'description' => ['nullable', 'string', 'max:500'],

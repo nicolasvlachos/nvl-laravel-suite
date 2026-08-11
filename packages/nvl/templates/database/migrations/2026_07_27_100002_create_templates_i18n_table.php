@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
 return new class extends Migration
@@ -15,7 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         $schema = Schema::connection(TemplatesConfiguration::connection());
-        $tableName = TemplatesConfiguration::table('templates_i18n');
+        $tableName = TemplatesConfiguration::table(TemplatesTables::I18n);
 
         if ($schema->hasTable($tableName)) {
             throw new LogicException(
@@ -33,7 +34,7 @@ return new class extends Migration
 
             $table->foreign('template_id')
                 ->references('id')
-                ->on(TemplatesConfiguration::table('templates'))
+                ->on(TemplatesConfiguration::table(TemplatesTables::Templates))
                 ->cascadeOnDelete();
             $table->unique(['template_id', 'locale'], 'templates_i18n_owner_locale_unique');
             $table->index(['locale', 'title'], 'templates_i18n_locale_title_idx');
@@ -46,6 +47,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::connection(TemplatesConfiguration::connection())
-            ->dropIfExists(TemplatesConfiguration::table('templates_i18n'));
+            ->dropIfExists(TemplatesConfiguration::table(TemplatesTables::I18n));
     }
 };

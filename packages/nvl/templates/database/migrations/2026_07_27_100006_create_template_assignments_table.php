@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
 return new class extends Migration
@@ -15,7 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         $schema = Schema::connection(TemplatesConfiguration::connection());
-        $tableName = TemplatesConfiguration::table('template_assignments');
+        $tableName = TemplatesConfiguration::table(TemplatesTables::Assignments);
 
         if ($schema->hasTable($tableName)) {
             throw new LogicException(
@@ -36,11 +37,11 @@ return new class extends Migration
 
             $table->foreign('template_id')
                 ->references('id')
-                ->on(TemplatesConfiguration::table('templates'))
+                ->on(TemplatesConfiguration::table(TemplatesTables::Templates))
                 ->cascadeOnDelete();
             $table->foreign('template_version_id')
                 ->references('id')
-                ->on(TemplatesConfiguration::table('template_versions'))
+                ->on(TemplatesConfiguration::table(TemplatesTables::Versions))
                 ->nullOnDelete();
             $table->unique(
                 ['owner_type', 'owner_id', 'profile'],
@@ -59,6 +60,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::connection(TemplatesConfiguration::connection())
-            ->dropIfExists(TemplatesConfiguration::table('template_assignments'));
+            ->dropIfExists(TemplatesConfiguration::table(TemplatesTables::Assignments));
     }
 };

@@ -16,11 +16,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable(FormsTables::FORMS)) {
+        if (Schema::hasTable(FormsTables::Forms)) {
             return;
         }
 
-        Schema::create(FormsTables::FORMS, function (Blueprint $table) {
+        Schema::create(FormsTables::Forms, function (Blueprint $table) {
             $table->uuid('id')->primary();
 
             $table->string('handle')->unique()
@@ -112,7 +112,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists(FormsTables::FORMS);
+        Schema::dropIfExists(FormsTables::Forms);
         Schema::enableForeignKeyConstraints();
     }
 };

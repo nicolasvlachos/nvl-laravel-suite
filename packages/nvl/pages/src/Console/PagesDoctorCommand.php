@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Nvl\Pages\Contracts\PageAuthorization;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Enums\PageStatus;
 use Nvl\Pages\Models\Page;
@@ -38,9 +39,9 @@ final class PagesDoctorCommand extends Command
         PageAuthorization $authorization,
     ): int {
         $schema = Schema::connection(PagesConfiguration::connection());
-        $pages = PagesConfiguration::table('pages', 'pages');
-        $i18n = PagesConfiguration::table('pages_i18n', 'pages_i18n');
-        $treeLocks = PagesConfiguration::table('page_tree_locks', 'page_tree_locks');
+        $pages = PagesConfiguration::table(PagesTables::Pages, PagesTables::Pages);
+        $i18n = PagesConfiguration::table(PagesTables::I18n, PagesTables::I18n);
+        $treeLocks = PagesConfiguration::table(PagesTables::TreeLocks, PagesTables::TreeLocks);
         $publicRoutesEnabled = (bool) config('pages.routes.public.enabled', false);
         $managementRoutesEnabled = (bool) config('pages.routes.management.enabled', false);
         $checks = [

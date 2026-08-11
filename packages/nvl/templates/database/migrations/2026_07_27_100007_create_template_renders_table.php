@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
 return new class extends Migration
@@ -15,7 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         $schema = Schema::connection(TemplatesConfiguration::connection());
-        $tableName = TemplatesConfiguration::table('template_renders');
+        $tableName = TemplatesConfiguration::table(TemplatesTables::Renders);
 
         if ($schema->hasTable($tableName)) {
             throw new LogicException(
@@ -51,15 +52,15 @@ return new class extends Migration
 
             $table->foreign('template_id')
                 ->references('id')
-                ->on(TemplatesConfiguration::table('templates'))
+                ->on(TemplatesConfiguration::table(TemplatesTables::Templates))
                 ->cascadeOnDelete();
             $table->foreign('template_version_id')
                 ->references('id')
-                ->on(TemplatesConfiguration::table('template_versions'))
+                ->on(TemplatesConfiguration::table(TemplatesTables::Versions))
                 ->cascadeOnDelete();
             $table->foreign('template_assignment_id')
                 ->references('id')
-                ->on(TemplatesConfiguration::table('template_assignments'))
+                ->on(TemplatesConfiguration::table(TemplatesTables::Assignments))
                 ->nullOnDelete();
             $table->index(['status', 'created_at'], 'template_renders_status_created_idx');
             $table->index(
@@ -83,6 +84,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::connection(TemplatesConfiguration::connection())
-            ->dropIfExists(TemplatesConfiguration::table('template_renders'));
+            ->dropIfExists(TemplatesConfiguration::table(TemplatesTables::Renders));
     }
 };

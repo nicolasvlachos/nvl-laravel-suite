@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Media\Models\Media;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
 /**
@@ -118,7 +119,13 @@ final class TemplateAdoptionSchema
         $media = Schema::connection($mediaConnection);
         $inventory = [];
 
-        foreach (['templates', 'templates_i18n', 'template_versions', 'template_assignments', 'template_renders'] as $alias) {
+        foreach ([
+            TemplatesTables::Templates,
+            TemplatesTables::I18n,
+            TemplatesTables::Versions,
+            TemplatesTables::Assignments,
+            TemplatesTables::Renders,
+        ] as $alias) {
             $inventory["templates.{$alias}"] = [
                 'connection' => $templateConnection,
                 'exists' => $templates->hasTable(TemplatesConfiguration::table($alias)),

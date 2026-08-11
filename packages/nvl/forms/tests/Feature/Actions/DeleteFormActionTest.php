@@ -13,7 +13,7 @@ test('delete form action removes a form without dependencies', function (): void
     $result = app(DeleteFormAction::class)->execute($form);
 
     expect($result)->toBeTrue();
-    $this->assertSoftDeleted(FormsTables::FORMS, ['id' => $form->id]);
+    $this->assertSoftDeleted(FormsTables::Forms, ['id' => $form->id]);
 });
 
 test('delete form action throws when form has entries', function (): void {

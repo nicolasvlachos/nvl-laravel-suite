@@ -230,7 +230,7 @@ class MutateFormPayload extends Data
         $presenceRule = $updating ? 'sometimes' : 'required';
 
         return [
-            'handle' => ['nullable', 'string', 'max:255', Rule::unique(FormsTables::FORMS, 'handle')->ignore($formId)],
+            'handle' => ['nullable', 'string', 'max:255', Rule::unique(FormsTables::Forms, 'handle')->ignore($formId)],
             'translations' => [$presenceRule, 'array', new SupportedLocaleMapRule],
             'translations.*' => ['nullable', 'array'],
             'translations.*.name' => ['nullable', 'string', 'max:255'],

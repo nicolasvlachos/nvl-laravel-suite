@@ -16,6 +16,7 @@ use LogicException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Traits\HasContent;
 use Nvl\Metafields\Traits\HasMetafields;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Enums\PageStatus;
 use Nvl\Pages\Support\PagePath;
@@ -108,7 +109,7 @@ final class Page extends Model implements ContentOwner, TranslatableModel
      */
     public function getTable(): string
     {
-        return PagesConfiguration::table('pages', 'pages');
+        return PagesConfiguration::table(PagesTables::Pages, PagesTables::Pages);
     }
 
     /**

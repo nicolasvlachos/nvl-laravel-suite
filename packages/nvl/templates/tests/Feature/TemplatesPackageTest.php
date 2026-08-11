@@ -64,6 +64,7 @@ use Nvl\Templates\Data\TemplateActorData;
 use Nvl\Templates\Data\TemplateManagementData;
 use Nvl\Templates\Data\TemplateOptions;
 use Nvl\Templates\Data\TemplateRenderData;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Enums\PdfOrientation;
 use Nvl\Templates\Enums\PdfPageSize;
 use Nvl\Templates\Enums\TemplateAbility;
@@ -255,12 +256,12 @@ it('places class-template page numbering in the requested header or footer', fun
 });
 
 it('installs its composition schema with management routes disabled', function (): void {
-    expect(Schema::hasTable('templates'))->toBeTrue()
-        ->and(Schema::hasTable('templates_i18n'))->toBeTrue()
-        ->and(Schema::hasTable('template_versions'))->toBeTrue()
-        ->and(Schema::hasColumn('template_versions', 'content_snapshot'))->toBeTrue()
-        ->and(Schema::hasTable('template_assignments'))->toBeTrue()
-        ->and(Schema::hasTable('template_renders'))->toBeTrue()
+    expect(Schema::hasTable(TemplatesTables::Templates))->toBeTrue()
+        ->and(Schema::hasTable(TemplatesTables::I18n))->toBeTrue()
+        ->and(Schema::hasTable(TemplatesTables::Versions))->toBeTrue()
+        ->and(Schema::hasColumn(TemplatesTables::Versions, 'content_snapshot'))->toBeTrue()
+        ->and(Schema::hasTable(TemplatesTables::Assignments))->toBeTrue()
+        ->and(Schema::hasTable(TemplatesTables::Renders))->toBeTrue()
         ->and(Schema::hasTable('template_versions_i18n'))->toBeFalse()
         ->and(Schema::hasTable('template_assets'))->toBeFalse()
         ->and(Route::has('nvl.templates.management.index'))->toBeFalse()
@@ -338,7 +339,7 @@ it('fails closed for unowned canonical tables and reports missing named indexes'
     expect($exception)->toBeInstanceOf(LogicException::class)
         ->and($exception?->getMessage())->toContain('already exists without package creator');
 
-    Schema::table('templates', function (Blueprint $table): void {
+    Schema::table(TemplatesTables::Templates, function (Blueprint $table): void {
         $table->dropIndex('templates_status_updated_idx');
     });
 
@@ -350,7 +351,7 @@ it('fails closed for unowned canonical tables and reports missing named indexes'
         ])->assertFailed()
             ->expectsOutputToContain('"indexes.templates.canonical": false');
     } finally {
-        Schema::table('templates', function (Blueprint $table): void {
+        Schema::table(TemplatesTables::Templates, function (Blueprint $table): void {
             $table->index(['status', 'updated_at'], 'templates_status_updated_idx');
         });
     }

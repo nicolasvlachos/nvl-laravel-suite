@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 
 return new class extends Migration
 {
@@ -15,7 +16,7 @@ return new class extends Migration
     {
         $connection = config('pages.connection');
         $schema = Schema::connection(is_string($connection) ? $connection : null);
-        $tableName = (string) config('pages.tables.pages_i18n', 'pages_i18n');
+        $tableName = (string) config('pages.tables.pages_i18n', PagesTables::I18n);
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -34,7 +35,7 @@ return new class extends Migration
             $table->index(['locale', 'title'], 'pages_i18n_locale_title_index');
             $table->foreign('page_id')
                 ->references('id')
-                ->on((string) config('pages.tables.pages', 'pages'))
+                ->on((string) config('pages.tables.pages', PagesTables::Pages))
                 ->cascadeOnDelete();
         });
     }
@@ -46,6 +47,6 @@ return new class extends Migration
     {
         $connection = config('pages.connection');
         Schema::connection(is_string($connection) ? $connection : null)
-            ->dropIfExists((string) config('pages.tables.pages_i18n', 'pages_i18n'));
+            ->dropIfExists((string) config('pages.tables.pages_i18n', PagesTables::I18n));
     }
 };

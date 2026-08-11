@@ -39,7 +39,7 @@ final class TranslationEntry extends Model
     use HasUuids;
     use TranslationEntryFilters;
 
-    protected $table = TranslationsTables::TRANSLATION_ENTRIES;
+    protected $table = TranslationsTables::Entries;
 
     /**
      * @var array<string, mixed>

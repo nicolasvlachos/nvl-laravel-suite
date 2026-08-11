@@ -163,7 +163,7 @@ class FormRateLimitPayload extends Data
     public static function rules(): array
     {
         return [
-            'formId' => ['required', 'uuid', 'exists:'.FormsTables::FORMS.',id'],
+            'formId' => ['required', 'uuid', 'exists:'.FormsTables::Forms.',id'],
             'ipAddress' => ['required', 'ip'],
             'submissionCount' => ['sometimes', 'integer', 'min:0'],
             'windowStart' => ['required', 'date'],

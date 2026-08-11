@@ -16,16 +16,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable(FormsTables::FORM_RATE_LIMITS)) {
+        if (Schema::hasTable(FormsTables::RateLimits)) {
             return;
         }
 
-        Schema::create(FormsTables::FORM_RATE_LIMITS, function (Blueprint $table) {
+        Schema::create(FormsTables::RateLimits, function (Blueprint $table) {
             $table->uuid('id')->primary();
 
             $table->foreignUuid('form_id')
                 ->comment('Reference to the parent form')
-                ->constrained(FormsTables::FORMS)
+                ->constrained(FormsTables::Forms)
                 ->onDelete('cascade');
 
             $table->ipAddress('ip_address')
@@ -69,7 +69,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists(FormsTables::FORM_RATE_LIMITS);
+        Schema::dropIfExists(FormsTables::RateLimits);
         Schema::enableForeignKeyConstraints();
     }
 };

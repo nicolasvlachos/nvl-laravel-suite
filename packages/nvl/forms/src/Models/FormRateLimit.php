@@ -35,7 +35,7 @@ class FormRateLimit extends Model
     use FormRateLimitFilters;
     use HasUuids;
 
-    protected $table = FormsTables::FORM_RATE_LIMITS;
+    protected $table = FormsTables::RateLimits;
 
     /**
      * The attributes that are mass assignable.

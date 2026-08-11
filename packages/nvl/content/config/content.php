@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
+use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Content\Services\ConfiguredContentAuthorization;
 
 return [
     'connection' => null,
 
     'tables' => [
-        'definitions' => 'content_definitions',
-        'blocks' => 'content_blocks',
-        'blocks_i18n' => 'content_blocks_i18n',
-        'placements' => 'content_placements',
-        'revisions' => 'content_revisions',
+        'definitions' => ContentTables::Definitions,
+        'blocks' => ContentTables::Blocks,
+        'blocks_i18n' => ContentTables::BlocksI18n,
+        'placements' => ContentTables::Placements,
+        'revisions' => ContentTables::Revisions,
     ],
 
     'migrations' => [

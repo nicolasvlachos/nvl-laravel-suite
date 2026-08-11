@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Rendering\BladeTemplateRenderer;
 use Nvl\Templates\Rendering\MpdfTemplateRenderer;
 use Nvl\Templates\Services\ConfiguredTemplateAuthorization;
@@ -10,11 +11,11 @@ return [
     'connection' => null,
 
     'tables' => [
-        'templates' => 'templates',
-        'templates_i18n' => 'templates_i18n',
-        'template_versions' => 'template_versions',
-        'template_assignments' => 'template_assignments',
-        'template_renders' => 'template_renders',
+        'templates' => TemplatesTables::Templates,
+        'templates_i18n' => TemplatesTables::I18n,
+        'template_versions' => TemplatesTables::Versions,
+        'template_assignments' => TemplatesTables::Assignments,
+        'template_renders' => TemplatesTables::Renders,
     ],
 
     'migrations' => [

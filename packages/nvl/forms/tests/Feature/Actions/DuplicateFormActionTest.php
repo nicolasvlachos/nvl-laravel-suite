@@ -55,7 +55,7 @@ test('duplicate form action clones the form with reset counters', function (): v
 
     Event::assertDispatched(FormChangedEvent::class);
 
-    $this->assertDatabaseHas(FormsTables::ALLOWED_ORIGINS, [
+    $this->assertDatabaseHas(FormsTables::AllowedOrigins, [
         'form_id' => $duplicate->id,
         'origin' => $origin->origin,
         'usage_count' => 0,

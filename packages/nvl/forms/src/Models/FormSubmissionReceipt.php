@@ -34,7 +34,7 @@ final class FormSubmissionReceipt extends Model
 
     use HasUuids;
 
-    protected $table = FormsTables::FORM_SUBMISSION_RECEIPTS;
+    protected $table = FormsTables::SubmissionReceipts;
 
     /**
      * @var list<string>

@@ -161,7 +161,7 @@ class FormAnalyticPayload extends Data
     public static function rules(): array
     {
         return [
-            'formId' => ['required', 'uuid', 'exists:'.FormsTables::FORMS.',id'],
+            'formId' => ['required', 'uuid', 'exists:'.FormsTables::Forms.',id'],
             'eventType' => ['required', Rule::enum(FormAnalyticEventType::class)],
             'origin' => ['nullable', 'string', 'max:255'],
             'ipAddress' => ['nullable', 'ip'],

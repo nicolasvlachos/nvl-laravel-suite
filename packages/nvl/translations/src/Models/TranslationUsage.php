@@ -30,7 +30,7 @@ final class TranslationUsage extends Model
 {
     use HasUuids;
 
-    protected $table = TranslationsTables::TRANSLATION_USAGES;
+    protected $table = TranslationsTables::Usages;
 
     /**
      * @var list<string>

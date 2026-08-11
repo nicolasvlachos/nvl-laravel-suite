@@ -33,7 +33,7 @@ test('persist form entry action stores legitimate submissions and updates counte
     expect($result['entry'])->toBeInstanceOf(FormEntry::class)
         ->and($result['form']->submissions_count)->toBe(1);
 
-    $this->assertDatabaseHas(FormsTables::FORM_ENTRIES, [
+    $this->assertDatabaseHas(FormsTables::Entries, [
         'id' => $result['entry']->id,
         'form_id' => $form->id,
         'is_spam' => false,

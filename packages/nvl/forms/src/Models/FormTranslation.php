@@ -26,7 +26,7 @@ final class FormTranslation extends Model
 {
     use HasUuids;
 
-    public const string TABLE = FormsTables::FORM_I18N;
+    public const string TABLE = FormsTables::I18n;
 
     protected $table = self::TABLE;
 

@@ -24,6 +24,7 @@ use Nvl\Seo\Data\Import\SeoImportRecordData;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
 use Nvl\Seo\Data\SitemapEntry;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Events\SeoProfileChanged;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Exceptions\SeoRedirectLoopException;
@@ -411,6 +412,7 @@ it('publishes sitemap xml to immutable filesystem artifacts and clears them atom
     config()->set('seo.sitemap.disk', 'seo-artifacts');
     $cache = app(SitemapCache::class);
     $namespace = $cache->namespace('default');
+
     $artifact = "nvl-seo/sitemaps/{$namespace}/chunk-1.xml";
 
     $this->artisan('nvl:seo:sitemap:warm')
@@ -545,23 +547,23 @@ it('rolls package migrations back cleanly and fails loudly on an occupied table'
     $this->artisan('migrate:rollback', ['--step' => 4, '--force' => true])
         ->assertSuccessful();
 
-    expect(Schema::hasTable('seo_profiles'))->toBeFalse()
-        ->and(Schema::hasTable('seo_profiles_i18n'))->toBeFalse()
-        ->and(Schema::hasTable('seo_redirects'))->toBeFalse();
+    expect(Schema::hasTable(SeoTables::Profiles))->toBeFalse()
+        ->and(Schema::hasTable(SeoTables::I18n))->toBeFalse()
+        ->and(Schema::hasTable(SeoTables::Redirects))->toBeFalse();
 
-    Schema::create('seo_profiles', function (Blueprint $table): void {
+    Schema::create(SeoTables::Profiles, function (Blueprint $table): void {
         $table->uuid('id')->primary();
     });
 
     expect(fn () => $this->artisan('migrate', ['--force' => true])->run())
         ->toThrow(QueryException::class, 'already exists');
 
-    Schema::drop('seo_profiles');
+    Schema::drop(SeoTables::Profiles);
 
     $this->artisan('migrate', ['--force' => true])
         ->assertSuccessful();
 
-    expect(Schema::hasTable('seo_profiles'))->toBeTrue()
-        ->and(Schema::hasTable('seo_profiles_i18n'))->toBeTrue()
-        ->and(Schema::hasTable('seo_redirects'))->toBeTrue();
+    expect(Schema::hasTable(SeoTables::Profiles))->toBeTrue()
+        ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()
+        ->and(Schema::hasTable(SeoTables::Redirects))->toBeTrue();
 });

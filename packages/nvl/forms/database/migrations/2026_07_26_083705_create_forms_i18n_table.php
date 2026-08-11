@@ -11,14 +11,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable(FormsTables::FORM_I18N)) {
+        if (Schema::hasTable(FormsTables::I18n)) {
             return;
         }
 
-        Schema::create(FormsTables::FORM_I18N, function (Blueprint $table) {
+        Schema::create(FormsTables::I18n, function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('form_id')
-                ->constrained(FormsTables::FORMS)
+                ->constrained(FormsTables::Forms)
                 ->cascadeOnDelete();
             $table->string('locale', 35);
             $table->string('name')->nullable();
@@ -36,6 +36,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(FormsTables::FORM_I18N);
+        Schema::dropIfExists(FormsTables::I18n);
     }
 };

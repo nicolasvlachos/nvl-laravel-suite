@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\Fluent\AssertableJson;
+use Nvl\Forms\Definitions\Tables\FormsTables;
 use Nvl\Forms\Enums\FormStatus;
 use Nvl\Forms\Enums\FormType;
 use Nvl\Forms\Enums\Resolvement;
@@ -110,7 +111,7 @@ test('canonical forms api routes cover crud and duplication', function (): void 
         ->assertOk()
         ->assertJsonPath('data.deleted', true);
 
-    $this->assertSoftDeleted('forms', ['id' => $createdId]);
+    $this->assertSoftDeleted(FormsTables::Forms, ['id' => $createdId]);
 });
 
 test('suggestions endpoint returns matching forms', function (): void {

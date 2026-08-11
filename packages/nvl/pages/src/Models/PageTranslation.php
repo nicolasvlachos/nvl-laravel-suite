@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Support\PagesConfiguration;
 
 /**
@@ -41,7 +42,7 @@ final class PageTranslation extends Model
      */
     public function getTable(): string
     {
-        return PagesConfiguration::table('pages_i18n', 'pages_i18n');
+        return PagesConfiguration::table(PagesTables::I18n, PagesTables::I18n);
     }
 
     /**
