@@ -16,8 +16,11 @@ Module-level implementation history remains available in each
   portable settings diagnostics, canonical JSON comparisons, and UTC database
   session defaults.
 - Expanded package-quality coverage with isolated databases for every package
-  and integration suite across PostgreSQL, MySQL 8.4, and MariaDB 12.1,
+  and integration suite across PostgreSQL, MySQL 8.4, and MariaDB 12.3,
   including the Translatable package and portable fixture lifecycles.
+- Corrected stateful CI database naming for destructive concurrency tests,
+  adopted MariaDB's official readiness probe, and made changed-line coverage
+  failures report their exact uncovered source lines.
 - Completed the 20-package consumption contract: all public publish tags are
   tracked and rehearsed, stateful migrations use Laravel's timestamp-aware
   publication API, package skills are natively discoverable by Laravel Boost,

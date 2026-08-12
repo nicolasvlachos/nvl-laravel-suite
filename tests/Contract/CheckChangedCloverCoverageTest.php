@@ -64,7 +64,11 @@ PHP;
             ->and($covered->getOutput())->toContain('100.00% (1/1)')
             ->and($uncovered->getExitCode())->toBe(1)
             ->and($uncovered->getOutput().$uncovered->getErrorOutput())
-            ->toContain('0.00% (0/1)', 'threshold was not met');
+            ->toContain(
+                '0.00% (0/1)',
+                'threshold was not met',
+                'Uncovered changed lines in [package/src/Example.php]: 10.',
+            );
     } finally {
         $filesystem->remove($repository);
     }

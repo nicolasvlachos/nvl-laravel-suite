@@ -265,7 +265,7 @@ it('tests the current stack Laravel 12 lowest and every supported database famil
         ->and($postgresCommands)->toContain(
             'for package in activity auth comments content',
             'translatable translations',
-            'database="nvl_package_test_${package//-/_}"',
+            'database="nvl_${package//-/_}_test_ci"',
             'composer test:integration',
         )
         ->not->toContain('mysql')
@@ -274,17 +274,21 @@ it('tests the current stack Laravel 12 lowest and every supported database famil
                 'name' => 'MySQL 8.4',
                 'image' => 'mysql:8.4',
                 'connection' => 'mysql',
+                'health_command' => 'mysqladmin ping -h 127.0.0.1 -uroot -proot --silent',
             ],
             [
-                'name' => 'MariaDB 12.1',
-                'image' => 'mariadb:12.1',
+                'name' => 'MariaDB 12.3',
+                'image' => 'mariadb:12.3',
                 'connection' => 'mariadb',
+                'health_command' => 'healthcheck.sh --connect --innodb_initialized',
             ],
         ])
+        ->and($jobs['mysql-family']['services']['database']['options'] ?? null)
+        ->toContain('--health-cmd="${{ matrix.health_command }}"')
         ->and($mysqlCommands)->toContain(
             'for package in activity auth comments content',
             'translatable translations',
-            'database="nvl_package_test_${package//-/_}"',
+            'database="nvl_${package//-/_}_test_ci"',
             'DB_DATABASE=nvl_package_test_integration composer test:integration',
         );
 });

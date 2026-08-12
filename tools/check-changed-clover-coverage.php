@@ -168,6 +168,8 @@ foreach ($report->xpath('//file') ?: [] as $file) {
 
 $executableChangedLines = 0;
 $coveredChangedLines = 0;
+/** @var array<string, list<int>> $uncoveredChangedLines */
+$uncoveredChangedLines = [];
 
 foreach ($changedLines as $file => $lines) {
     if (! array_key_exists($file, $coverageByFile)) {
@@ -185,7 +187,11 @@ foreach ($changedLines as $file => $lines) {
 
         if ($coverageByFile[$file][$lineNumber] > 0) {
             $coveredChangedLines++;
+
+            continue;
         }
+
+        $uncoveredChangedLines[$file][] = $lineNumber;
     }
 }
 
@@ -206,6 +212,22 @@ printf(
 
 if ($percentage < $minimumLinePercentage) {
     fwrite(STDERR, "Changed-line coverage threshold was not met.\n");
+
+    foreach ($uncoveredChangedLines as $file => $lineNumbers) {
+        $relativePath = ltrim(
+            substr($file, strlen($repositoryRoot)),
+            DIRECTORY_SEPARATOR,
+        );
+
+        fwrite(
+            STDERR,
+            sprintf(
+                "Uncovered changed lines in [%s]: %s.\n",
+                $relativePath,
+                implode(', ', $lineNumbers),
+            ),
+        );
+    }
 
     exit(1);
 }

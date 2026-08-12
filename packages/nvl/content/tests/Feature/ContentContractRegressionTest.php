@@ -249,6 +249,20 @@ it('resolves complete localized content through ordered bounded scope fallback',
         ->toThrow(ContentScopeOverflowException::class)
         ->and(ContentBlock::filterSchema()->filter('scope')?->operators)
         ->toContain(FilterOperator::In);
+
+    $invalidResolutions = [
+        static fn () => Content::resolveScopes([], 'en', $actor),
+        static fn () => Content::resolveScopes([new ContentScopeData('Invalid', 'tenant-a')], 'en', $actor),
+        static fn () => Content::resolveScopes([
+            new ContentScopeData('site', 'tenant-a'),
+            new ContentScopeData('site', 'tenant-a'),
+        ], 'en', $actor),
+        static fn () => Content::resolveScopes($scopes, 'en', $actor, limit: 0),
+    ];
+
+    foreach ($invalidResolutions as $invalidResolution) {
+        expect($invalidResolution)->toThrow(InvalidArgumentException::class);
+    }
 });
 
 it('returns one complete typed editor bootstrap for a consumer-owned UI', function (): void {

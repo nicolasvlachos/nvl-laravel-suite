@@ -161,10 +161,10 @@ jobs:
         run: |
           set -euo pipefail
           for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates translatable translations; do
-            database="nvl_package_test_${package//-/_}"
+            database="nvl_${package//-/_}_test_ci"
             DATABASE_NAME="$database" php -r '
               $database = getenv("DATABASE_NAME");
-              if (! is_string($database) || preg_match("/^nvl_package_test_[a-z_]+$/", $database) !== 1) {
+              if (! is_string($database) || preg_match("/^nvl_[a-z_]+_test_ci$/", $database) !== 1) {
                   throw new RuntimeException("Unsafe test database name.");
               }
               $pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=nvl_package_test_admin", "nvl", "nvl");
@@ -199,9 +199,11 @@ jobs:
           - name: MySQL 8.4
             image: mysql:8.4
             connection: mysql
-          - name: MariaDB 12.1
-            image: mariadb:12.1
+            health_command: mysqladmin ping -h 127.0.0.1 -uroot -proot --silent
+          - name: MariaDB 12.3
+            image: mariadb:12.3
             connection: mariadb
+            health_command: healthcheck.sh --connect --innodb_initialized
 
     services:
       database:
@@ -214,7 +216,7 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-cmd="${{ matrix.health_command }}"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -242,10 +244,10 @@ jobs:
         run: |
           set -euo pipefail
           for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates translatable translations; do
-            database="nvl_package_test_${package//-/_}"
+            database="nvl_${package//-/_}_test_ci"
             DATABASE_NAME="$database" php -r '
               $database = getenv("DATABASE_NAME");
-              if (! is_string($database) || preg_match("/^nvl_package_test_[a-z_]+$/", $database) !== 1) {
+              if (! is_string($database) || preg_match("/^nvl_[a-z_]+_test_ci$/", $database) !== 1) {
                   throw new RuntimeException("Unsafe test database name.");
               }
               $pdo = new PDO("mysql:host=127.0.0.1;port=3306", "root", "root");
