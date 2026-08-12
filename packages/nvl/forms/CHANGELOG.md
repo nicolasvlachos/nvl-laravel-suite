@@ -4,6 +4,8 @@ All notable changes to `nvl/forms` are documented here.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-12
+
 - Serializes atomic submission-counter timestamps through Eloquent's
   connection-aware date format for PostgreSQL, MySQL, MariaDB, and SQLite.
 - Consolidated every pre-release form schema addition into the clean-install create migrations.
@@ -20,7 +22,7 @@ All notable changes to `nvl/forms` are documented here.
 - Removed unused form secrets, handler-token middleware, presentation/lookup services, and inert configuration.
 - Stored spam score numerically and expanded the doctor to inspect indexes, foreign keys, bindings, route security, gates, and signing readiness.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-08-08
 
 - Added headless localized form definitions and secure public submissions.
 - Added revision checks, idempotency, payload bounds, trusted timing, origins, throttling, and spam contracts.

@@ -4,6 +4,8 @@ All notable changes to `nvl/templates` are documented here.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-12
+
 - Added a versioned staged-adoption command with schema inventory, explicit
   key/scope/locale/Media maps, staging-index preparation, Action-backed writes,
   idempotent reconciliation, and fail-closed asset counts.
@@ -90,6 +92,6 @@ All notable changes to `nvl/templates` are documented here.
   header/footer HTML and hardened PDF resource scanning for quoted whitespace
   and escaped URL payloads.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-08-08
 
 - Initial coordinated package-family release for Laravel 12–13.

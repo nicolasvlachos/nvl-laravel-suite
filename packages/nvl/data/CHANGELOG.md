@@ -4,6 +4,8 @@ All notable changes to `nvl/data` are documented here.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-12
+
 - Added the versioned `--fail-on-warning` generation/check CLI contract while
   retaining warning-free output as the default.
 - Added publishable ESLint flat-config and Prettier-ignore fragments for every
@@ -27,7 +29,7 @@ All notable changes to `nvl/data` are documented here.
 - Added `nvl-data.php` to Laravel's conventional `config` publish group.
 - Removed the obsolete `RecordTypeScriptType` compatibility processor.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-08-08
 
 - Added the package-family DTO and persistence-transform boundary.
 - Added typed pagination DTOs and deterministic source registration.

@@ -1,13 +1,13 @@
 # Changelog
 
-## Unreleased
-
-- Exclude test and static-analysis infrastructure from production release archives.
-- Expand consumer, management API, diagnostics, structured-data, and failure-boundary coverage to enforce the package CI thresholds.
-
 All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
+
+## [1.0.2] - 2026-08-12
+
+- Exclude test and static-analysis infrastructure from production release archives.
+- Expand consumer, management API, diagnostics, structured-data, and failure-boundary coverage to enforce the package CI thresholds.
 
 - Preserved non-default scopes across sitemap index/chunk routes behind an
   explicit public scope allowlist.
@@ -29,7 +29,7 @@ All notable changes to `nvl/seo` are documented here.
 - Rejected unknown management and localized mutation fields instead of
   silently discarding misspelled input.
 
-## [1.0.0] - 2026-07-29
+## [1.0.0] - 2026-08-08
 
 - Added localized SEO profiles, owner and route resolution, canonical and hreflang output.
 - Added Open Graph, Twitter cards, bounded JSON-LD, robots, sitemap indexes, and cache invalidation.

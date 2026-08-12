@@ -4,6 +4,8 @@ All notable changes to `nvl/csv` are documented here.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-12
+
 - Made `CSVExport::fromQuery()` generic over its concrete Eloquent model so
   invariant `Builder<ConsumerModel>` types pass maximum-level PHPStan.
 - Excluded tests, static-analysis configuration, coverage output, and test-run
@@ -13,7 +15,7 @@ All notable changes to `nvl/csv` are documented here.
 - Corrected UTF-32 BOM detection, boolean and JSON cast/validation consistency, exact date validation, UTC ISO output, and legacy-encoding BOM behavior.
 - Improved logical-record delimiter detection, sampled large-file quality scoring, inferred export headings, common PHP value serialization, and chunked-array memory use.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-08-08
 
 - Ported the complete `App\Lib\CSV` callable surface to `Nvl\Csv`.
 - Added typed analysis, options, progress, import, and export Data objects with generated TypeScript registration.

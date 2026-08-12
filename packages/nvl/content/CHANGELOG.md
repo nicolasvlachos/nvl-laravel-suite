@@ -2,7 +2,9 @@
 
 All notable changes to `nvl/content` are documented here.
 
-## 1.0.0 - Unreleased
+## [Unreleased]
+
+## [1.0.2] - 2026-08-12
 
 - Normalizes MariaDB `longtext` JSON columns and string `NULL` defaults during
   portable schema diagnostics.
@@ -26,6 +28,8 @@ All notable changes to `nvl/content` are documented here.
   field-level fallback while preserving base Media, links, layout, and stable
   repeater structure across live and snapshot rendering.
 - Adds headless DTO rendering, Blade components, optional APIs, doctor and publishing commands.
+
+## [1.0.0] - 2026-08-08
 - Adds bounded immutable composition snapshots with canonical integrity hashes
   and current Media/reference resolution for publishing consumers.
 - Shares Translatable's exact locale fallback chain for live and snapshot

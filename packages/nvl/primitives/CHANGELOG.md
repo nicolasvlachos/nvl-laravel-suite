@@ -4,12 +4,14 @@ All notable changes to `nvl/primitives` are documented here.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-12
+
 - Fixed fixed-currency decimal casts for SQLite `DECIMAL` hydration while continuing to reject floating-point input.
 - Removed tests and static-analysis configuration from release archives.
 - Added the `primitives-translations` publish tag for the bundled English and
   Bulgarian validation catalogs.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-08-08
 
 - Added immutable validated value objects, Laravel casts, validation rules, and DTOs.
 - Added exact money arithmetic, allocation, explicit rounding and currency contracts, directed conversion rates, deterministic formatting, and canonical minor-unit storage.

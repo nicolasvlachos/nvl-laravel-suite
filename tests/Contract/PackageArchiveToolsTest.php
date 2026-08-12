@@ -12,6 +12,99 @@ use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
+require_once dirname(__DIR__, 2).'/tools/check-release-changelogs.php';
+
+it('keeps v1.0.3 release history under dated suite and changed-package headings', function (): void {
+    $root = dirname(__DIR__, 2);
+    $version = '1.0.3';
+    $v102Packages = [
+        'activity',
+        'auth',
+        'comments',
+        'content',
+        'csv',
+        'data',
+        'forms',
+        'mail-notifications',
+        'media',
+        'metafields',
+        'pages',
+        'primitives',
+        'seo',
+        'settings',
+        'taxonomy',
+        'templates',
+        'translatable',
+        'translations',
+    ];
+    $rootChangelog = file_get_contents($root.'/CHANGELOG.md');
+    $authChangelog = file_get_contents($root.'/packages/nvl/auth/CHANGELOG.md');
+    $mediaChangelog = file_get_contents($root.'/packages/nvl/media/CHANGELOG.md');
+
+    expect($rootChangelog)->toBeString()
+        ->toContain("## [{$version}] - 2026-08-12")
+        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.3/i')
+        ->and($authChangelog)->toBeString()
+        ->toContain("## [{$version}] - 2026-08-12")
+        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.3/i')
+        ->and($mediaChangelog)->toBeString()
+        ->toContain("## [{$version}] - 2026-08-12")
+        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.3/i')
+        ->and(releaseChangelogSection($rootChangelog, 'Unreleased'))
+        ->toContain('mass-assignable attributes')
+        ->not->toContain('missing Auth corrective migration')
+        ->and(releaseChangelogSection($authChangelog, 'Unreleased'))
+        ->toContain('$fillable')
+        ->not->toContain('v1.0.1 Auth create-migration schema')
+        ->and(releaseChangelogSection($mediaChangelog, 'Unreleased'))
+        ->toContain('missing-binary incident recovery runbook')
+        ->not->toContain('global media-hash uniqueness constraint');
+
+    foreach ($v102Packages as $package) {
+        expect(file_get_contents($root.'/packages/nvl/'.$package.'/CHANGELOG.md'))
+            ->toContain('## [1.0.2] - 2026-08-12');
+    }
+});
+
+it('rejects a release whose notes remain under Unreleased or omit a changed package', function (): void {
+    $workspace = sys_get_temp_dir().'/nvl-release-changelog-'.bin2hex(random_bytes(8));
+    $filesystem = new Filesystem;
+
+    try {
+        $filesystem->mkdir($workspace.'/tools');
+        $filesystem->mkdir($workspace.'/packages/nvl/auth');
+        file_put_contents($workspace.'/tools/package-family.php', <<<'PHP'
+<?php
+
+return ['packages' => ['auth']];
+PHP);
+        file_put_contents($workspace.'/CHANGELOG.md', <<<'MARKDOWN'
+# Changelog
+
+## [Unreleased]
+
+- Shipped but not archived.
+
+## [1.2.3] - 2026-08-12
+MARKDOWN);
+        file_put_contents($workspace.'/packages/nvl/auth/CHANGELOG.md', <<<'MARKDOWN'
+# Changelog
+
+## [Unreleased]
+
+## [1.2.2] - 2026-08-01
+MARKDOWN);
+
+        expect(releaseChangelogErrors($workspace, '1.2.3', ['auth']))
+            ->toContain(
+                'Release changelog [suite] must leave [Unreleased] blank when publishing [1.2.3].',
+                'Release changelog [auth] has no dated [1.2.3] heading.',
+            );
+    } finally {
+        $filesystem->remove($workspace);
+    }
+});
+
 it('declares the repository root as the only installable package', function (): void {
     $manifest = suiteArchiveManifest();
 

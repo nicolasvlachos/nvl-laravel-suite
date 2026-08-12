@@ -10,6 +10,8 @@ The executable contracts are:
 - `.github/workflows/package-quality.yml` for pull-request and `main` checks.
 - `.github/workflows/package-release.yml` for immutable version tags and GitHub
   Releases.
+- `tools/check-release-changelogs.php` for the requested suite version and every
+  package changed since the preceding stable source.
 - `tests/Contract/PackageQualityWorkflowTest.php` for the workflow invariants.
 
 If this guide and a workflow disagree, stop and update them together. Do not
@@ -188,13 +190,16 @@ The workflow performs the complete publication transaction:
 
 1. Validates the default branch and semantic version.
 2. Reruns all five routine quality gates.
-3. Builds exactly one versioned Composer ZIP.
-4. Rejects development-only paths and unexpected archive contents.
-5. Installs that exact ZIP into a clean Laravel 13 application.
-6. Verifies discovery, configuration and route caches, migrations, publish
+3. Requires a dated version heading in the suite and every changed module,
+   rejects future-target wording, and requires release-ready `Unreleased`
+   sections to be blank.
+4. Builds exactly one versioned Composer ZIP.
+5. Rejects development-only paths and unexpected archive contents.
+6. Installs that exact ZIP into a clean Laravel 13 application.
+7. Verifies discovery, configuration and route caches, migrations, publish
    tags, strict doctor commands, and the Composer security audit.
-7. Creates and pushes the annotated clean `vX.Y.Z` tag.
-8. Creates the GitHub Release and attaches the verified ZIP.
+8. Creates and pushes the annotated clean `vX.Y.Z` tag.
+9. Creates the GitHub Release and attaches the verified ZIP.
 
 No tag is created when validation, quality, or archive verification fails.
 

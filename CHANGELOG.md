@@ -11,18 +11,34 @@ Module-level implementation history remains available in each
 
 ### Fixed
 
+- Preserved application-defined mass-assignable attributes on Auth principal
+  subclasses while retaining the complete configured canonical field map.
+
+### Changed
+
+- Documented scheduler ownership, canonical Mail Notifications configuration,
+  SQLite adoption constraints, sensitive Auth profile confirmation, and Media
+  missing-binary incident recovery.
+- Added release-time changelog validation for the suite and every package
+  changed since the preceding stable source.
+
+## [1.0.3] - 2026-08-12
+
+### Fixed
+
 - Added the missing Auth corrective migration for invitation context hashes and
   paired challenge credentials, including v1.0.1/v1.0.2 upgrade rehearsal,
-  feature-aware schema repair, and strict column/index diagnostics. This fix is
-  targeted for v1.0.3 without changing the existing v1.0.2 tag.
+  feature-aware schema repair, and strict column/index diagnostics.
+- Made Composer dependency installation retry bounded transient TLS failures
+  with a pinned toolchain and release-safe exponential backoff.
+
+## [1.0.2] - 2026-08-12
 
 ### Changed
 
 - Completed local parity for every stateful CI database job, including
   MariaDB-native JSON metadata, nullable schema defaults, portable Forms
-  submission timestamps, connection-aware Auth assertions, and retry-bounded
-  Composer downloads with a pinned toolchain and release-safe exponential
-  backoff for transient TLS failures.
+  submission timestamps, and connection-aware Auth assertions.
 - Hardened package consumption across PostgreSQL, MySQL, MariaDB, and SQLite,
   including exact foreign-key adoption, connection-aware media ordering,
   portable settings diagnostics, canonical JSON comparisons, and UTC database

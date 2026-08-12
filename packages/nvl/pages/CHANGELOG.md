@@ -2,7 +2,9 @@
 
 All notable changes to `nvl/pages` are documented here.
 
-## 1.0.0 - Unreleased
+## [Unreleased]
+
+## [1.0.2] - 2026-08-12
 
 - Added UUID page hierarchies with a strict four-level ceiling.
 - Added dedicated `pages_i18n` localized copy through Translatable.
@@ -22,3 +24,5 @@ All notable changes to `nvl/pages` are documented here.
 - Scoped sitemap delegation to matching SEO profiles that can emit an entry.
 - Bounded management translation copy and positions for portable persistence.
 - Excluded development-only files from release archives.
+
+## [1.0.0] - 2026-08-08

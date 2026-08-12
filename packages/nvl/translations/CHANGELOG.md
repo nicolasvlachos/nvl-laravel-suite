@@ -2,7 +2,9 @@
 
 All notable changes to `nvl/translations` are documented here.
 
-## Unreleased
+## [Unreleased]
+
+## [1.0.2] - 2026-08-12
 
 - Excluded development-only tests and static-analysis configuration from
   release archives and removed obsolete empty package directories.
@@ -16,7 +18,7 @@ All notable changes to `nvl/translations` are documented here.
 - Blocked exports after incomplete authoritative reads and aligned `changed_since_import` with durable synchronization state.
 - Tightened API list shapes, required update values, command option validation, doctor checks, configuration typing, path normalization, and catalog query indexes.
 
-## [1.0.0] - 2026-07-29
+## [1.0.0] - 2026-08-08
 
 - Added authoritative PHP and JSON language-file scanning and database workspace synchronization.
 - Added case-sensitive SHA-256 catalog identities with unrestricted long keys and exact UTF-8 string/null value fidelity.

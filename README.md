@@ -67,6 +67,52 @@ When package discovery itself must be disabled, register
 `Nvl\Auth\Providers\AuthServiceProvider`. Auth also registers its Data
 foundation defensively, so direct Auth-only registration remains supported.
 
+### Scheduler ownership
+
+Scheduler ownership is explicit and feature-gated:
+
+- Activity registers `nvl:activity:purge-system` itself only when
+  `activity.retention.schedule.enabled=true`.
+- Mail Notifications never chooses a cadence. When
+  `mail-notifications.scheduling.enabled=true`, the host schedules both bounded
+  processing commands.
+- Media reconciliation is diagnostic and must not be automated as cleanup.
+  When `media.multipart.enabled=true`, the host schedules multipart pruning.
+
+```php
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('nvl:mail-notifications:process-scheduled')
+    ->everyMinute()
+    ->onOneServer()
+    ->withoutOverlapping();
+
+Schedule::command('nvl:mail-notifications:recover-scheduled')
+    ->everyMinute()
+    ->onOneServer()
+    ->withoutOverlapping();
+
+Schedule::command('nvl:media:multipart:prune')
+    ->everyFiveMinutes()
+    ->onOneServer()
+    ->withoutOverlapping();
+```
+
+Only install the Mail Notifications entries when scheduling is enabled and the
+Media entry when multipart is enabled. Readiness checks apply their matching
+schedule requirements only when that feature is enabled. Copy current package
+command names from these guides; never restore removed host command names.
+
+### SQLite adoption constraints
+
+SQLite may rebuild a table while a host adoption migration drops and restores
+foreign keys. That rebuild can discard enum-style `CHECK` constraints or
+equivalent triggers. A corrective adoption migration must restore the final
+schema contract: the original create-migration values plus every later status
+expansion, not merely the original list. Prove the rebuilt schema by asserting
+that an invalid raw status write throws `QueryException` and that every current
+enum case remains writable, including later additions such as `expired`.
+
 ## Composer installation
 
 Install a stable suite release from [Packagist](https://packagist.org/packages/nvl/laravel-suite):

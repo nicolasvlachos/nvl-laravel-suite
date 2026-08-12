@@ -14,6 +14,7 @@ parameters:
         - tools/fixtures/activity-production-consumer/app
         - tools/fixtures/suite-release-consumer/app
         - tools/check-package-contracts.php
+        - tools/check-release-changelogs.php
         - packages/nvl/activity/src
         - packages/nvl/activity/database/factories
         - packages/nvl/activity/database/seeders
