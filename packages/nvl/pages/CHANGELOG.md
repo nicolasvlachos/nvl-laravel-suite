@@ -4,6 +4,12 @@ All notable changes to `nvl/pages` are documented here.
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-08-12
+
+### Changed
+
+- Released unchanged under the suite's shared version.
+
 ## [1.0.2] - 2026-08-12
 
 - Added UUID page hierarchies with a strict four-level ceiling.

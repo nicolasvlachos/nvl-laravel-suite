@@ -81,6 +81,11 @@ jobs:
               | awk -F/ 'NF >= 4 {print $3}' \
               | sort -u
           )
+          : > /tmp/nvl-release-changed-packages
+          if ((${#changed_packages[@]})); then
+            printf '%s\n' "${changed_packages[@]}" \
+              > /tmp/nvl-release-changed-packages
+          fi
           php tools/check-release-changelogs.php \
             "$PACKAGE_VERSION" "${changed_packages[@]}"
 
@@ -112,6 +117,12 @@ jobs:
             exit 1
           fi
           unzip -q "$archive" -d /tmp/nvl-suite-artifact
+          mapfile -t changed_packages \
+            < /tmp/nvl-release-changed-packages
+          php tools/check-release-changelogs.php \
+            "$PACKAGE_VERSION" \
+            --root=/tmp/nvl-suite-artifact \
+            "${changed_packages[@]}"
 
       - name: Rehearse Auth upgrade from v1.0.1
         shell: bash
@@ -210,6 +221,24 @@ jobs:
           php artisan config:cache
           php artisan route:cache
           php artisan migrate --force
+          php -r '
+          require "vendor/autoload.php";
+          $app = require "bootstrap/app.php";
+          $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+          $principal = new class extends Nvl\Auth\Models\User {
+              protected $fillable = ["host_reference"];
+          };
+          $principal->fill([
+              "host_reference" => "preserved",
+              "name" => "Package Principal",
+              "unlisted_extension" => "blocked",
+          ]);
+          if ($principal->host_reference !== "preserved"
+              || $principal->name !== "Package Principal"
+              || $principal->unlisted_extension !== null) {
+              throw new RuntimeException("The archive does not preserve host principal fillable fields safely.");
+          }
+          '
           publish_tags=/tmp/nvl-publish-tags
           jq -r '.suite.publish_tags[], .packages[].publish_tags[]' \
             "$GITHUB_WORKSPACE/tools/package-contracts.json" \

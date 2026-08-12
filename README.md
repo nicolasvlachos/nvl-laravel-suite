@@ -102,6 +102,8 @@ Only install the Mail Notifications entries when scheduling is enabled and the
 Media entry when multipart is enabled. Readiness checks apply their matching
 schedule requirements only when that feature is enabled. Copy current package
 command names from these guides; never restore removed host command names.
+Laravel's scheduler mutex cache must be a shared lock store across every node;
+both `onOneServer()` and `withoutOverlapping()` depend on that shared backend.
 
 ### SQLite adoption constraints
 

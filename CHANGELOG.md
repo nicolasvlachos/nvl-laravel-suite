@@ -9,6 +9,8 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-08-12
+
 ### Fixed
 
 - Preserved application-defined mass-assignable attributes on Auth principal
@@ -19,8 +21,15 @@ Module-level implementation history remains available in each
 - Documented scheduler ownership, canonical Mail Notifications configuration,
   SQLite adoption constraints, sensitive Auth profile confirmation, and Media
   missing-binary incident recovery.
-- Added release-time changelog validation for the suite and every package
-  changed since the preceding stable source.
+- Added release-time changelog validation for the suite, every module, and the
+  materialized release archive.
+
+## [1.0.4] - 2026-08-12
+
+### Changed
+
+- Published the preceding stable suite archive. The intended consumer-hardening
+  changes were not present in that distribution and ship in v1.0.5.
 
 ## [1.0.3] - 2026-08-12
 

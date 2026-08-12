@@ -14,55 +14,52 @@ use Symfony\Component\Yaml\Yaml;
 
 require_once dirname(__DIR__, 2).'/tools/check-release-changelogs.php';
 
-it('keeps v1.0.3 release history under dated suite and changed-package headings', function (): void {
+it('keeps v1.0.5 release history under dated suite and every package heading', function (): void {
     $root = dirname(__DIR__, 2);
-    $version = '1.0.3';
-    $v102Packages = [
-        'activity',
-        'auth',
-        'comments',
-        'content',
-        'csv',
-        'data',
-        'forms',
-        'mail-notifications',
-        'media',
-        'metafields',
-        'pages',
-        'primitives',
-        'seo',
-        'settings',
-        'taxonomy',
-        'templates',
-        'translatable',
-        'translations',
-    ];
+    $version = '1.0.5';
+    $catalog = require $root.'/tools/package-family.php';
     $rootChangelog = file_get_contents($root.'/CHANGELOG.md');
     $authChangelog = file_get_contents($root.'/packages/nvl/auth/CHANGELOG.md');
     $mediaChangelog = file_get_contents($root.'/packages/nvl/media/CHANGELOG.md');
+    $filterableChangelog = file_get_contents($root.'/packages/nvl/filterable/CHANGELOG.md');
+    $supportChangelog = file_get_contents($root.'/packages/nvl/support/CHANGELOG.md');
 
     expect($rootChangelog)->toBeString()
         ->toContain("## [{$version}] - 2026-08-12")
-        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.3/i')
+        ->toContain('## [1.0.4] - 2026-08-12')
+        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.5/i')
         ->and($authChangelog)->toBeString()
         ->toContain("## [{$version}] - 2026-08-12")
-        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.3/i')
+        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.5/i')
         ->and($mediaChangelog)->toBeString()
         ->toContain("## [{$version}] - 2026-08-12")
-        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.3/i')
-        ->and(releaseChangelogSection($rootChangelog, 'Unreleased'))
-        ->toContain('mass-assignable attributes')
-        ->not->toContain('missing Auth corrective migration')
-        ->and(releaseChangelogSection($authChangelog, 'Unreleased'))
+        ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.5/i')
+        ->and(trim((string) releaseChangelogSection($rootChangelog, 'Unreleased')))
+        ->toBe('')
+        ->and(releaseChangelogSection($rootChangelog, $version))
+        ->toContain('mass-assignable attributes', 'SQLite adoption constraints')
+        ->and(trim((string) releaseChangelogSection($authChangelog, 'Unreleased')))
+        ->toBe('')
+        ->and(releaseChangelogSection($authChangelog, $version))
         ->toContain('$fillable')
-        ->not->toContain('v1.0.1 Auth create-migration schema')
-        ->and(releaseChangelogSection($mediaChangelog, 'Unreleased'))
+        ->and(trim((string) releaseChangelogSection($mediaChangelog, 'Unreleased')))
+        ->toBe('')
+        ->and(releaseChangelogSection($mediaChangelog, $version))
         ->toContain('missing-binary incident recovery runbook')
-        ->not->toContain('global media-hash uniqueness constraint');
+        ->and($filterableChangelog)->toBeString()
+        ->toContain('## [1.0.0] - 2026-08-08')
+        ->not->toContain('## [1.0.0] - Unreleased')
+        ->and($supportChangelog)->toBeString()
+        ->toContain('## [1.0.0] - 2026-08-08')
+        ->not->toContain('## [1.0.0] - Unreleased');
 
-    foreach ($v102Packages as $package) {
-        expect(file_get_contents($root.'/packages/nvl/'.$package.'/CHANGELOG.md'))
-            ->toContain('## [1.0.2] - 2026-08-12');
+    foreach ($catalog['packages'] as $package) {
+        $contents = file_get_contents($root.'/packages/nvl/'.$package.'/CHANGELOG.md');
+
+        expect($contents)->toBeString()
+            ->toContain("## [{$version}] - 2026-08-12")
+            ->not->toMatch('/^## \[\d+\.\d+\.\d+\] - Unreleased$/m')
+            ->and(trim((string) releaseChangelogSection($contents, 'Unreleased')))->toBe('');
     }
 });
 
@@ -92,13 +89,14 @@ MARKDOWN);
 
 ## [Unreleased]
 
-## [1.2.2] - 2026-08-01
+## [1.2.3] - Unreleased
 MARKDOWN);
 
         expect(releaseChangelogErrors($workspace, '1.2.3', ['auth']))
             ->toContain(
                 'Release changelog [suite] must leave [Unreleased] blank when publishing [1.2.3].',
                 'Release changelog [auth] has no dated [1.2.3] heading.',
+                'Release changelog [auth] contains a stable version dated [Unreleased].',
             );
     } finally {
         $filesystem->remove($workspace);
@@ -295,6 +293,72 @@ it('ships every module and the central provider in the archive', function (): vo
                 ),
             ))->not->toBe([]);
         }
+    } finally {
+        expect($workspace)->toBeDirectory();
+    }
+});
+
+it('validates release changelogs from the materialized suite archive', function (): void {
+    [$workspace, $archive] = suiteArchiveBuild();
+    $extracted = sys_get_temp_dir().'/nvl-suite-changelog-'.bin2hex(random_bytes(8));
+    $filesystem = new Filesystem;
+
+    try {
+        $filesystem->mkdir($extracted);
+        $zip = new ZipArchive;
+
+        expect($zip->open($archive))->toBeTrue()
+            ->and($zip->extractTo($extracted))->toBeTrue();
+
+        $zip->close();
+
+        $catalog = require dirname(__DIR__, 2).'/tools/package-family.php';
+
+        expect(releaseChangelogErrors($extracted, '1.0.5', $catalog['packages']))->toBe([]);
+    } finally {
+        $filesystem->remove($extracted);
+        expect($workspace)->toBeDirectory();
+    }
+});
+
+it('ships the scheduler, SQLite, and Media recovery contracts in the archive', function (): void {
+    [$workspace, $archive] = suiteArchiveBuild();
+
+    try {
+        $rootReadme = suiteArchiveRead($archive, 'README.md');
+        $activityReadme = suiteArchiveRead($archive, 'packages/nvl/activity/README.md');
+        $mailReadme = suiteArchiveRead($archive, 'packages/nvl/mail-notifications/README.md');
+        $mediaCommands = suiteArchiveRead($archive, 'packages/nvl/media/docs/commands.md');
+
+        expect($rootReadme)->toContain(
+            'nvl:activity:purge-system',
+            'nvl:mail-notifications:process-scheduled',
+            'nvl:mail-notifications:recover-scheduled',
+            'nvl:media:multipart:prune',
+            'onOneServer()',
+            'withoutOverlapping()',
+            'shared lock store',
+            'SQLite adoption constraints',
+            'QueryException',
+            '`expired`',
+        )
+            ->and($activityReadme)->toContain(
+                'registers `nvl:activity:purge-system`',
+                'same canonical shared lock backend',
+            )
+            ->and($mailReadme)->toContain(
+                'The package never registers them or chooses their cadence',
+                'one shared lock store',
+            )
+            ->and($mediaCommands)->toContain(
+                'nvl:media:doctor --strict --format=json',
+                'nvl:media:reconcile --production --orphans',
+                'original object whenever possible',
+                'never update a persisted path directly',
+                'explicit business decision',
+                'Never automate',
+                '`nvl:media:reconcile --cleanup-orphans` as a replacement',
+            );
     } finally {
         expect($workspace)->toBeDirectory();
     }

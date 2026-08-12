@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Validate release notes for the suite and every changed package.
+ * Validate release notes for the suite, every changed package, and the full
+ * package-family changelog state.
  *
  * @param  list<string>  $changedPackages
  * @return list<string>
@@ -11,7 +12,10 @@ declare(strict_types=1);
 function releaseChangelogErrors(string $root, string $version, array $changedPackages): array
 {
     $errors = [];
-    $catalog = require $root.'/tools/package-family.php';
+    $catalogPath = is_file($root.'/tools/package-family.php')
+        ? $root.'/tools/package-family.php'
+        : __DIR__.'/package-family.php';
+    $catalog = require $catalogPath;
 
     if (! is_array($catalog) || ! isset($catalog['packages']) || ! is_array($catalog['packages'])) {
         return ['The package catalog does not contain a package list.'];
@@ -35,9 +39,14 @@ function releaseChangelogErrors(string $root, string $version, array $changedPac
 
     $changelogs = ['suite' => $root.'/CHANGELOG.md'];
 
-    foreach (array_values(array_intersect($changedPackages, $knownPackages)) as $package) {
+    foreach ($knownPackages as $package) {
         $changelogs[$package] = $root.'/packages/nvl/'.$package.'/CHANGELOG.md';
     }
+
+    $requiresCurrentHeading = array_fill_keys([
+        'suite',
+        ...array_values(array_intersect($changedPackages, $knownPackages)),
+    ], true);
 
     foreach ($changelogs as $name => $path) {
         if (! is_file($path)) {
@@ -54,7 +63,8 @@ function releaseChangelogErrors(string $root, string $version, array $changedPac
             continue;
         }
 
-        if (preg_match('/^## \['.preg_quote($version, '/').'\] - \d{4}-\d{2}-\d{2}$/m', $contents) !== 1) {
+        if (isset($requiresCurrentHeading[$name])
+            && preg_match('/^## \['.preg_quote($version, '/').'\] - \d{4}-\d{2}-\d{2}$/m', $contents) !== 1) {
             $errors[] = "Release changelog [{$name}] has no dated [{$version}] heading.";
         }
 
@@ -64,6 +74,13 @@ function releaseChangelogErrors(string $root, string $version, array $changedPac
             $errors[] = "Release changelog [{$name}] has no [Unreleased] heading.";
         } elseif (trim($unreleased) !== '') {
             $errors[] = "Release changelog [{$name}] must leave [Unreleased] blank when publishing [{$version}].";
+        }
+
+        if (preg_match(
+            '/^## \[(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\] - Unreleased$/m',
+            $contents,
+        ) === 1) {
+            $errors[] = "Release changelog [{$name}] contains a stable version dated [Unreleased].";
         }
 
         if (preg_match(
@@ -107,8 +124,24 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
     }
 
     $changedPackages = [];
+    $root = dirname(__DIR__);
 
-    foreach (array_slice($arguments, 2) as $package) {
+    foreach (array_slice($arguments, 2) as $argument) {
+        if (is_string($argument) && str_starts_with($argument, '--root=')) {
+            $candidateRoot = substr($argument, strlen('--root='));
+
+            if ($candidateRoot === '' || ! is_dir($candidateRoot)) {
+                fwrite(STDERR, "The release changelog root must be an existing directory.\n");
+                exit(2);
+            }
+
+            $root = $candidateRoot;
+
+            continue;
+        }
+
+        $package = $argument;
+
         if (! is_string($package) || trim($package) === '') {
             fwrite(STDERR, "Changed package names must be non-empty strings.\n");
             exit(2);
@@ -122,7 +155,7 @@ if (isset($_SERVER['SCRIPT_FILENAME'])
         exit(2);
     }
 
-    $errors = releaseChangelogErrors(dirname(__DIR__), $version, $changedPackages);
+    $errors = releaseChangelogErrors($root, $version, $changedPackages);
 
     if ($errors !== []) {
         fwrite(STDERR, implode(PHP_EOL, $errors).PHP_EOL);
