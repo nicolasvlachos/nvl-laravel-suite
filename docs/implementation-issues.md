@@ -39,21 +39,22 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G17 | Capability-based presets | 1 | `feat(suite): …` | Finished | `988f8e7` |
 | G18 | Adoption, upgrades, and diagnostics | 1 | `feat(suite): …` | Finished | `988f8e7` |
 | G19 | Package consumption and publishable-resource integrity | 4 | `fix(suite): …` | Finished | `4944f36` |
-| G20 | Auth v1.0.3 corrective migration and upgrade rehearsal | 1 | `fix(auth): …` | In progress | — |
+| G20 | Auth v1.0.3 corrective migration and upgrade rehearsal | 1 | `fix(auth): …` | Finished | `bcb67c3` |
 
-Total open issues: **1**.
+Total open issues: **0**.
 
 ## Open implementation groups
 
 ### G20 — Auth v1.0.3 corrective migration and upgrade rehearsal
 
-- Status: **In progress**
+- Status: **Finished**
+- Implementation commit: `bcb67c3`
 - Commit boundary: keep the migration chronology repair, schema/Doctor changes,
   regressions, release rehearsal, documentation, and contract inventory in one
   implementation commit.
 - Commit subject prefix: `fix(auth): …`
 
-#### [~] G20-01 — Auth v1.0.2 omitted its corrective delivery-context migration
+#### [x] G20-01 — Auth v1.0.2 omitted its corrective delivery-context migration
 
 - Area: Auth migrations, feature-aware schema repair, Doctor, and release gates
 - Impact: critical
@@ -66,6 +67,13 @@ Total open issues: **1**.
   forward-only corrective migration, repair incomplete enabled-feature tables,
   verify both indexes in Doctor, preserve existing rows, and rehearse an actual
   v1.0.1-to-candidate clean-consumer upgrade on SQLite and PostgreSQL.
+- Resolution: the Auth creator again omits both post-v1.0.1 columns; the new
+  forward-only corrective migration adds their exact named indexes without
+  changing historical rows. Schema planning and strict Doctor detect incomplete
+  enabled-feature tables, and the release workflow now upgrades an affected
+  v1.0.1 consumer with both features enabled before asserting every repaired
+  column and index.
+- Resolving implementation commit: `bcb67c3`
 - Current workaround: consumers must add the two nullable columns and their
   named indexes in a host migration before using v1.0.2 passwordless and
   invitation delivery flows.
