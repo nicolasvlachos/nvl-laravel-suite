@@ -1526,7 +1526,7 @@
                 "routes/api.php": "965311282c9a30c957a089af4e0952b70173cad1f1e3a0b0f7cc4f6ea938edde"
             },
             "migrations": {
-                "database/migrations/2026_07_25_090858_create_activity_log_table.php": "3a156a12b58ef3032209957707ce70ae32b007110483590b6d6ea99a7bd35415",
+                "database/migrations/2026_07_25_090858_create_activity_log_table.php": "4675fdcf393f36c00c0dbbecbc5bd411c324ecfd3664810cc180cd4f4f1e3b54",
                 "database/migrations/2026_08_10_123558_add_activitylog_v5_attribute_changes.php": "9fa3e052500ae7a13022d58608f7886eb088e3fdd27910b9d340bcdab5085b76"
             }
         },

@@ -4,6 +4,8 @@ All notable changes to `nvl/forms` are documented here.
 
 ## [Unreleased]
 
+- Serializes atomic submission-counter timestamps through Eloquent's
+  connection-aware date format for PostgreSQL, MySQL, MariaDB, and SQLite.
 - Consolidated every pre-release form schema addition into the clean-install create migrations.
 - Standardized the localized-content table as `forms_i18n`.
 - Made form mutation DTO validation independent from requests, route bindings, and database reads.

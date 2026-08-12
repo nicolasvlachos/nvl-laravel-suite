@@ -4,6 +4,8 @@ All notable changes to `nvl/content` are documented here.
 
 ## 1.0.0 - Unreleased
 
+- Normalizes MariaDB `longtext` JSON columns and string `NULL` defaults during
+  portable schema diagnostics.
 - Adds a bounded non-paginated scope-resolution contract with ordered fallback,
   locale resolution, publication/visibility enforcement, explicit overflow,
   authorization query scoping, and `scope in [...]` catalog filtering.

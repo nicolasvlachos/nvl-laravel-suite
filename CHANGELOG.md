@@ -11,6 +11,10 @@ Module-level implementation history remains available in each
 
 ### Changed
 
+- Completed local parity for every stateful CI database job, including
+  MariaDB-native JSON metadata, nullable schema defaults, portable Forms
+  submission timestamps, connection-aware Auth assertions, and retry-bounded
+  Composer downloads.
 - Hardened package consumption across PostgreSQL, MySQL, MariaDB, and SQLite,
   including exact foreign-key adoption, connection-aware media ordering,
   portable settings diagnostics, canonical JSON comparisons, and UTC database

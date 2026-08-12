@@ -48,9 +48,7 @@ final class RecordFormSubmissionAction
                 ? $form
                 : Form::findOrFail($form);
 
-            // Format with offset — increment() bypasses cast set() for extras,
-            // so the query builder would strip the timezone from raw Carbon.
-            $nowFormatted = now()->format('Y-m-d H:i:sP');
+            $nowFormatted = $formModel->fromDateTime(now());
             $extra = ['last_used_at' => $nowFormatted];
             if ($formModel->first_used_at === null) {
                 $extra['first_used_at'] = $nowFormatted;

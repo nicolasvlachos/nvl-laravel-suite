@@ -361,7 +361,7 @@ final class ContentDoctorCommand extends Command
             'uuid' => ['uuid', 'varchar', 'char', 'bpchar'],
             'string' => ['varchar', 'char', 'bpchar'],
             'text' => ['text'],
-            'json' => ['json', 'jsonb', 'text'],
+            'json' => ['json', 'jsonb', 'longtext', 'text'],
             'boolean' => ['boolean', 'bool', 'tinyint'],
             'integer' => ['integer', 'int', 'int4', 'int8', 'bigint'],
             'timestamp' => ['datetime', 'timestamp', 'timestamptz'],
@@ -378,8 +378,9 @@ final class ContentDoctorCommand extends Command
         mixed $actual,
         bool|int|string|null $expected,
     ): bool {
-        if ($actual === null || $expected === null) {
-            return $actual === null && $expected === null;
+        if ($expected === null) {
+            return $actual === null
+                || (is_string($actual) && strtolower(trim($actual)) === 'null');
         }
 
         $normalized = $this->normalizeColumnDefault($actual);
