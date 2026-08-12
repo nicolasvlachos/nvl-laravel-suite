@@ -58,9 +58,9 @@ jobs:
           php-version: '8.4'
           extensions: ctype, curl, dom, fileinfo, filter, gd, iconv, intl, json, libxml, mbstring, pdo_sqlite, tokenizer, xmlwriter, zip
           coverage: none
-          tools: composer:v2
+          tools: composer:2.10.2
 
-      - run: composer install --no-interaction --prefer-dist
+      - run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
 
       - name: Build and inspect the suite archive
         shell: bash
@@ -97,7 +97,7 @@ jobs:
           PACKAGE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          composer create-project \
+          bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" create-project \
             --no-interaction \
             --no-dev \
             --prefer-dist \
@@ -105,7 +105,7 @@ jobs:
             /tmp/nvl-auth-upgrade-consumer
           cd /tmp/nvl-auth-upgrade-consumer
           composer config repositories.nvl-v1 vcs https://github.com/nicolasvlachos/nvl-laravel-suite.git
-          composer require \
+          bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" require \
             --no-interaction \
             --update-no-dev \
             --with-all-dependencies \
@@ -130,7 +130,7 @@ jobs:
             --arg version "$PACKAGE_VERSION" \
             '{type:"path",url:$url,options:{symlink:false,versions:{"nvl/laravel-suite":$version}}}')"
           composer config repositories.nvl-candidate "$repository_config"
-          composer require \
+          bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" require \
             --no-interaction \
             --update-no-dev \
             --with-all-dependencies \
@@ -155,7 +155,7 @@ jobs:
           PACKAGE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          composer create-project \
+          bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" create-project \
             --no-interaction \
             --no-dev \
             --prefer-dist \
@@ -167,7 +167,7 @@ jobs:
             --arg version "$PACKAGE_VERSION" \
             '{type:"path",url:$url,options:{symlink:false,versions:{"nvl/laravel-suite":$version}}}')"
           composer config repositories.nvl "$repository_config"
-          composer require \
+          bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" require \
             --no-interaction \
             --update-no-dev \
             --with-all-dependencies \
@@ -251,7 +251,7 @@ jobs:
               QUEUE_CONNECTION=database DB_QUEUE_RETRY_AFTER=960 \
               php artisan "$doctor" --strict --format=json
           done < "$expected_doctors"
-          composer audit --locked --no-interaction
+          bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" audit --locked --no-interaction
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

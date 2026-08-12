@@ -21,7 +21,8 @@ Module-level implementation history remains available in each
 - Completed local parity for every stateful CI database job, including
   MariaDB-native JSON metadata, nullable schema defaults, portable Forms
   submission timestamps, connection-aware Auth assertions, and retry-bounded
-  Composer downloads.
+  Composer downloads with a pinned toolchain and release-safe exponential
+  backoff for transient TLS failures.
 - Hardened package consumption across PostgreSQL, MySQL, MariaDB, and SQLite,
   including exact foreign-key adoption, connection-aware media ordering,
   portable settings diagnostics, canonical JSON comparisons, and UTC database

@@ -29,16 +29,11 @@ jobs:
           php-version: '8.4'
           extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, simplexml, zip
           coverage: none
-          tools: composer:v2
+          tools: composer:2.10.2
 
       - name: Install dependencies
         shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            composer install --no-interaction --prefer-dist && exit 0
-            [[ "$attempt" -eq 3 ]] && exit 1
-            sleep $((attempt * 5))
-          done
+        run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
 
       - name: Repository contract tests
         run: vendor/bin/pest --compact tests/Contract
@@ -79,7 +74,7 @@ jobs:
           php-version: '8.4'
           extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, zip
           coverage: none
-          tools: composer:v2
+          tools: composer:2.10.2
 
       - name: Select Laravel 13
         run: |
@@ -90,12 +85,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            composer update --no-interaction --prefer-dist --with-all-dependencies && exit 0
-            [[ "$attempt" -eq 3 ]] && exit 1
-            sleep $((attempt * 5))
-          done
+        run: bash tools/retry-composer.sh update --no-interaction --prefer-dist --with-all-dependencies
 
       - name: Complete test suite
         run: composer test
@@ -113,7 +103,7 @@ jobs:
           php-version: '8.4'
           extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, zip
           coverage: none
-          tools: composer:v2
+          tools: composer:2.10.2
 
       - name: Select Laravel 12
         run: |
@@ -124,12 +114,7 @@ jobs:
 
       - name: Install lowest supported dependencies
         shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            composer update --no-interaction --prefer-dist --with-all-dependencies --prefer-lowest && exit 0
-            [[ "$attempt" -eq 3 ]] && exit 1
-            sleep $((attempt * 5))
-          done
+        run: bash tools/retry-composer.sh update --no-interaction --prefer-dist --with-all-dependencies --prefer-lowest
 
       - name: Compatibility tests
         run: |
@@ -164,16 +149,11 @@ jobs:
           php-version: '8.4'
           extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_pgsql, zip
           coverage: none
-          tools: composer:v2
+          tools: composer:2.10.2
 
       - name: Install dependencies
         shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            composer install --no-interaction --prefer-dist && exit 0
-            [[ "$attempt" -eq 3 ]] && exit 1
-            sleep $((attempt * 5))
-          done
+        run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
 
       - name: Stateful package tests
         env:
@@ -255,16 +235,11 @@ jobs:
           php-version: '8.4'
           extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_mysql, zip
           coverage: none
-          tools: composer:v2
+          tools: composer:2.10.2
 
       - name: Install dependencies
         shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            composer install --no-interaction --prefer-dist && exit 0
-            [[ "$attempt" -eq 3 ]] && exit 1
-            sleep $((attempt * 5))
-          done
+        run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
 
       - name: Stateful package tests
         env:
@@ -347,17 +322,12 @@ jobs:
           extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, simplexml, zip
           coverage: pcov
           ini-values: pcov.directory=${{ github.workspace }}/packages/nvl
-          tools: composer:v2
+          tools: composer:2.10.2
 
       - name: Install dependencies
         if: steps.changes.outputs.packages != '[]'
         shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            composer install --no-interaction --prefer-dist && exit 0
-            [[ "$attempt" -eq 3 ]] && exit 1
-            sleep $((attempt * 5))
-          done
+        run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
 
       - name: Enforce changed-package coverage
         if: steps.changes.outputs.packages != '[]'

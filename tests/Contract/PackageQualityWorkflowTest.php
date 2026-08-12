@@ -9,6 +9,7 @@ const SUITE_CHECKOUT_ACTION = 'actions/checkout@3d3c42e5aac5ba805825da76410c1812
 const SUITE_SETUP_PHP_ACTION = 'shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240';
 const SUITE_UPLOAD_ARTIFACT_ACTION = 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a';
 const SUITE_DOWNLOAD_ARTIFACT_ACTION = 'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c';
+const SUITE_COMPOSER_TOOL = 'composer:2.10.2';
 
 it('defines one installable suite package for every internal module', function (): void {
     $root = dirname(__DIR__, 2);
@@ -209,6 +210,136 @@ it('pins every third-party action to an immutable commit', function (): void {
     }
 });
 
+it('pins Composer and retries dependency downloads without weakening TLS', function (): void {
+    $root = dirname(__DIR__, 2);
+    $retryScript = $root.'/tools/retry-composer.sh';
+    $retrySource = file_get_contents($retryScript);
+
+    expect($retryScript)->toBeFile()
+        ->and($retrySource)->toBeString()->toContain(
+            'COMPOSER_RETRY_DELAYS_SECONDS:-15 30 60 120 180',
+            '"$composer_binary" "$@"',
+        )->not->toContain(
+            'disable-tls',
+            'secure-http false',
+            'source-fallback true',
+        );
+
+    foreach (['package-quality.yml', 'package-release.yml'] as $filename) {
+        $workflow = Yaml::parseFile($root.'/.github/workflows/'.$filename);
+
+        expect($workflow)->toBeArray();
+
+        foreach ($workflow['jobs'] ?? [] as $job) {
+            foreach ($job['steps'] ?? [] as $step) {
+                if (($step['uses'] ?? null) === SUITE_SETUP_PHP_ACTION) {
+                    expect($step['with']['tools'] ?? null)->toBe(SUITE_COMPOSER_TOOL);
+                }
+            }
+        }
+    }
+
+    $qualitySource = file_get_contents($root.'/.github/workflows/package-quality.yml');
+    $releaseSource = file_get_contents($root.'/.github/workflows/package-release.yml');
+
+    expect($qualitySource)->toBeString()->toContain(
+        'bash tools/retry-composer.sh install',
+        'bash tools/retry-composer.sh update',
+    )->not->toContain('for attempt in 1 2 3')
+        ->and($releaseSource)->toBeString()->toContain(
+            'bash tools/retry-composer.sh install',
+            'bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" create-project',
+            'bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" require',
+            'bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" audit',
+        );
+});
+
+it('preserves Composer arguments and the final failure code across retries', function (): void {
+    $root = dirname(__DIR__, 2);
+    $temporaryDirectory = sys_get_temp_dir().'/nvl-composer-retry-'.bin2hex(random_bytes(8));
+    $fakeComposer = $temporaryDirectory.'/composer';
+    $counter = $temporaryDirectory.'/counter';
+    $arguments = $temporaryDirectory.'/arguments';
+
+    mkdir($temporaryDirectory, 0700, true);
+    file_put_contents($fakeComposer, <<<'BASH'
+#!/usr/bin/env bash
+set -u
+count=0
+if [[ -f "$FAKE_COMPOSER_COUNTER" ]]; then
+  read -r count < "$FAKE_COMPOSER_COUNTER"
+fi
+count="$(( count + 1 ))"
+printf '%s' "$count" > "$FAKE_COMPOSER_COUNTER"
+printf '%s\n' "$*" >> "$FAKE_COMPOSER_ARGUMENTS"
+if [[ "$count" -lt "$FAKE_COMPOSER_SUCCEED_AT" ]]; then
+  exit 60
+fi
+BASH);
+    chmod($fakeComposer, 0700);
+
+    try {
+        $successful = new Process([
+            'bash',
+            $root.'/tools/retry-composer.sh',
+            'install',
+            '--no-interaction',
+            '--prefer-dist',
+        ]);
+        $successful->setEnv([
+            'COMPOSER_BINARY' => $fakeComposer,
+            'COMPOSER_RETRY_DELAYS_SECONDS' => '0 0',
+            'FAKE_COMPOSER_COUNTER' => $counter,
+            'FAKE_COMPOSER_ARGUMENTS' => $arguments,
+            'FAKE_COMPOSER_SUCCEED_AT' => '3',
+        ]);
+        $successful->run();
+
+        expect($successful->isSuccessful())->toBeTrue()
+            ->and(file_get_contents($counter))->toBe('3')
+            ->and(file($arguments, FILE_IGNORE_NEW_LINES))->toBe([
+                'install --no-interaction --prefer-dist',
+                'install --no-interaction --prefer-dist',
+                'install --no-interaction --prefer-dist',
+            ])
+            ->and($successful->getErrorOutput())->toContain(
+                'Composer attempt 1/3 failed; retrying in 0s.',
+                'Composer attempt 2/3 failed; retrying in 0s.',
+            );
+
+        file_put_contents($counter, '0');
+        file_put_contents($arguments, '');
+
+        $failed = new Process([
+            'bash',
+            $root.'/tools/retry-composer.sh',
+            'install',
+        ]);
+        $failed->setEnv([
+            'COMPOSER_BINARY' => $fakeComposer,
+            'COMPOSER_RETRY_DELAYS_SECONDS' => '0',
+            'FAKE_COMPOSER_COUNTER' => $counter,
+            'FAKE_COMPOSER_ARGUMENTS' => $arguments,
+            'FAKE_COMPOSER_SUCCEED_AT' => '3',
+        ]);
+        $failed->run();
+
+        expect($failed->getExitCode())->toBe(60)
+            ->and(file_get_contents($counter))->toBe('2')
+            ->and($failed->getErrorOutput())->toContain(
+                'Composer failed after 2 attempts.',
+            );
+    } finally {
+        foreach ([$fakeComposer, $counter, $arguments] as $path) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        rmdir($temporaryDirectory);
+    }
+});
+
 it('keeps routine quality focused on formatting analysis manifests and contracts', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
@@ -360,7 +491,7 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
             'php artisan nvl:auth:doctor --strict --format=json',
             'schema.nvl_auth_invitations.index.nvl_auth_invitations_context_hash_index',
             'schema.nvl_auth_challenges.index.nvl_auth_challenges_secondary_secret_hash_unique',
-            'composer audit --locked --no-interaction',
+            'retry-composer.sh" audit --locked --no-interaction',
         )
         ->not->toContain(
             'for directory in packages/nvl/*; do',
