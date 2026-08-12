@@ -420,6 +420,7 @@ $coverageCommands = is_array($coverageSteps)
 
 foreach ([
     'git diff --name-only "$base_sha...HEAD" -- packages/nvl',
+    '$4 == "src" && $NF ~ /\.php$/',
     '[[ -f "packages/nvl/$package/composer.json" ]]',
     '--test-directory="packages/nvl/$package/tests"',
     'check-changed-clover-coverage.php',

@@ -424,7 +424,7 @@ it('tests the current stack Laravel 12 lowest and every supported database famil
         );
 });
 
-it('collects coverage only for packages changed by the event', function (): void {
+it('collects coverage only for packages with changed PHP source', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
@@ -435,6 +435,7 @@ it('collects coverage only for packages changed by the event', function (): void
 
     expect($commands)->toContain(
         'git diff --name-only "$base_sha...HEAD" -- packages/nvl',
+        '$4 == "src" && $NF ~ /\.php$/',
         '[[ -f "packages/nvl/$package/composer.json" ]]',
         "jq -R -s -c 'split(\"\\n\") | map(select(length > 0))'",
         'while IFS= read -r package; do',

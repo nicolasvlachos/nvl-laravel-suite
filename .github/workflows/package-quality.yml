@@ -303,7 +303,7 @@ jobs:
           fi
           packages_json="$({
             git diff --name-only "$base_sha...HEAD" -- packages/nvl \
-              | awk -F/ '$1 == "packages" && $2 == "nvl" && NF >= 4 { print $3 }' \
+              | awk -F/ '$1 == "packages" && $2 == "nvl" && $4 == "src" && $NF ~ /\.php$/ { print $3 }' \
               | sort -u \
               | while IFS= read -r package; do
                   if [[ -f "packages/nvl/$package/composer.json" ]]; then
@@ -313,7 +313,7 @@ jobs:
           } | jq -R -s -c 'split("\n") | map(select(length > 0))')"
           echo "base-sha=$base_sha" >> "$GITHUB_OUTPUT"
           echo "packages=$packages_json" >> "$GITHUB_OUTPUT"
-          echo "Changed packages: $packages_json"
+          echo "Changed source packages: $packages_json"
 
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         if: steps.changes.outputs.packages != '[]'
