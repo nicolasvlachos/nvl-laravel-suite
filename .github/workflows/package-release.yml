@@ -91,6 +91,64 @@ jobs:
           fi
           unzip -q "$archive" -d /tmp/nvl-suite-artifact
 
+      - name: Rehearse Auth upgrade from v1.0.1
+        shell: bash
+        env:
+          PACKAGE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          composer create-project \
+            --no-interaction \
+            --no-dev \
+            --prefer-dist \
+            "laravel/laravel:^13.0" \
+            /tmp/nvl-auth-upgrade-consumer
+          cd /tmp/nvl-auth-upgrade-consumer
+          composer config repositories.nvl-v1 vcs https://github.com/nicolasvlachos/nvl-laravel-suite.git
+          composer require \
+            --no-interaction \
+            --update-no-dev \
+            --with-all-dependencies \
+            "nvl/laravel-suite:1.0.1"
+          cp \
+            "$GITHUB_WORKSPACE/tools/fixtures/suite-release-consumer/app/Providers/AppServiceProvider.php" \
+            app/Providers/AppServiceProvider.php
+          cp \
+            "$GITHUB_WORKSPACE/tools/fixtures/suite-release-consumer/config/nvl-release-consumer.php" \
+            config/nvl-release-consumer.php
+          cp .env.example .env
+          touch database/database.sqlite
+          php artisan key:generate
+          export QUEUE_CONNECTION=database
+          export DB_QUEUE_RETRY_AFTER=960
+          export NVL_AUTH_INVITATIONS_ENABLED=true
+          export NVL_AUTH_MAGIC_LINKS_ENABLED=true
+          php artisan migrate --force
+          composer config --unset repositories.nvl-v1
+          repository_config="$(jq -nc \
+            --arg url /tmp/nvl-suite-artifact \
+            --arg version "$PACKAGE_VERSION" \
+            '{type:"path",url:$url,options:{symlink:false,versions:{"nvl/laravel-suite":$version}}}')"
+          composer config repositories.nvl-candidate "$repository_config"
+          composer require \
+            --no-interaction \
+            --update-no-dev \
+            --with-all-dependencies \
+            "nvl/laravel-suite:$PACKAGE_VERSION"
+          test ! -L vendor/nvl/laravel-suite
+          php artisan migrate --force
+          doctor_json="$(APP_ENV=testing MAIL_MAILER=array \
+            QUEUE_CONNECTION=database DB_QUEUE_RETRY_AFTER=960 \
+            php artisan nvl:auth:doctor --strict --format=json)"
+          printf '%s\n' "$doctor_json"
+          jq -e '
+            .ready == true
+            and any(.checks[]; .name == "schema.nvl_auth_invitations.columns" and .passed == true)
+            and any(.checks[]; .name == "schema.nvl_auth_invitations.index.nvl_auth_invitations_context_hash_index" and .passed == true)
+            and any(.checks[]; .name == "schema.nvl_auth_challenges.columns" and .passed == true)
+            and any(.checks[]; .name == "schema.nvl_auth_challenges.index.nvl_auth_challenges_secondary_secret_hash_unique" and .passed == true)
+          ' <<< "$doctor_json"
+
       - name: Install and exercise the suite archive
         shell: bash
         env:

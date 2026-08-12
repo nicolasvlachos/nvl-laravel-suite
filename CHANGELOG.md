@@ -9,6 +9,13 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+### Fixed
+
+- Added the missing Auth corrective migration for invitation context hashes and
+  paired challenge credentials, including v1.0.1/v1.0.2 upgrade rehearsal,
+  feature-aware schema repair, and strict column/index diagnostics. This fix is
+  targeted for v1.0.3 without changing the existing v1.0.2 tag.
+
 ### Changed
 
 - Completed local parity for every stateful CI database job, including

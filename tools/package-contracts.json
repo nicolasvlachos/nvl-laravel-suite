@@ -5089,7 +5089,7 @@
                     "final readonly class Nvl\\Auth\\Services\\AuthSchemaManager",
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
                     "public function execute(bool $apply=false): array",
-                    "@return array{mode: 'apply'|'plan', required: list<string>, existing: list<string>, missing: list<string>, created: list<string>}",
+                    "@return array{mode: 'apply'|'plan', required: list<string>, existing: list<string>, missing: list<string>, outdated: array<string, list<string>>, missing_indexes: array<string, list<string>>, created: list<string>}",
                     "public function requiredTables(): array",
                     "@return list<string>"
                 ],
@@ -5543,7 +5543,8 @@
             },
             "migrations": {
                 "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "6b8d465f4405d4a802c3b8d8346fd33749ab974550dcf9dc2937145b1df6cf35",
-                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "b8d4469298f4239382535656ebda0b20e951212f17afed77d2e47d375ffc466d"
+                "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "0f45180492a77baba154ffdaf9bc53fedc1413b4873f3d4c756f0e413b7e7d8c",
+                "database/migrations/2026_08_12_000000_add_auth_delivery_context_columns.php": "764d05d47efe24d564e39515b18125e9e2e7c8eb818b5dfc7c2ac4ab5505e253"
             }
         },
         "comments": {

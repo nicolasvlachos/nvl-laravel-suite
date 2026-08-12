@@ -39,8 +39,37 @@ The issue descriptions below preserve the source report's area, impact, finding,
 | G17 | Capability-based presets | 1 | `feat(suite): …` | Finished | `988f8e7` |
 | G18 | Adoption, upgrades, and diagnostics | 1 | `feat(suite): …` | Finished | `988f8e7` |
 | G19 | Package consumption and publishable-resource integrity | 4 | `fix(suite): …` | Finished | `4944f36` |
+| G20 | Auth v1.0.3 corrective migration and upgrade rehearsal | 1 | `fix(auth): …` | In progress | — |
 
-Total open issues: **0**.
+Total open issues: **1**.
+
+## Open implementation groups
+
+### G20 — Auth v1.0.3 corrective migration and upgrade rehearsal
+
+- Status: **In progress**
+- Commit boundary: keep the migration chronology repair, schema/Doctor changes,
+  regressions, release rehearsal, documentation, and contract inventory in one
+  implementation commit.
+- Commit subject prefix: `fix(auth): …`
+
+#### [~] G20-01 — Auth v1.0.2 omitted its corrective delivery-context migration
+
+- Area: Auth migrations, feature-aware schema repair, Doctor, and release gates
+- Impact: critical
+- Finding: v1.0.2 mutated the original Auth create migration to add invitation
+  context and paired-challenge hash columns but shipped no later migration for
+  databases already migrated on v1.0.1.
+- Consumer risk: upgraded applications can deploy runtime code that reads and
+  writes columns their recorded migration history never created.
+- Expected package change: restore the v1.0.1 baseline, add an idempotent
+  forward-only corrective migration, repair incomplete enabled-feature tables,
+  verify both indexes in Doctor, preserve existing rows, and rehearse an actual
+  v1.0.1-to-candidate clean-consumer upgrade on SQLite and PostgreSQL.
+- Current workaround: consumers must add the two nullable columns and their
+  named indexes in a host migration before using v1.0.2 passwordless and
+  invitation delivery flows.
+- Release target: `1.0.3`; do not alter the existing `v1.0.2` tag.
 
 ## Consumer adoption evidence
 

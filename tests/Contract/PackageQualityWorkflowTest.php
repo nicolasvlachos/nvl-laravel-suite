@@ -352,6 +352,14 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
             'compgen -G "database/migrations/*_$suffix"',
             "echo 'NVL_RELEASE_PUBLISHED_MIGRATIONS=true' >> .env",
             'rm -f database/database.sqlite',
+            '"nvl/laravel-suite:1.0.1"',
+            'export NVL_AUTH_INVITATIONS_ENABLED=true',
+            'export NVL_AUTH_MAGIC_LINKS_ENABLED=true',
+            'composer config --unset repositories.nvl-v1',
+            'composer config repositories.nvl-candidate "$repository_config"',
+            'php artisan nvl:auth:doctor --strict --format=json',
+            'schema.nvl_auth_invitations.index.nvl_auth_invitations_context_hash_index',
+            'schema.nvl_auth_challenges.index.nvl_auth_challenges_secondary_secret_hash_unique',
             'composer audit --locked --no-interaction',
         )
         ->not->toContain(

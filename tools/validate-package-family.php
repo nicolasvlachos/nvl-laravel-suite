@@ -49,6 +49,9 @@ $releasedCorrectiveMigrations = [
     'activity' => [
         '2026_08_10_123558_add_activitylog_v5_attribute_changes.php',
     ],
+    'auth' => [
+        '2026_08_12_000000_add_auth_delivery_context_columns.php',
+    ],
 ];
 $requiredFiles = [
     'README.md',
