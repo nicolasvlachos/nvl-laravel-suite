@@ -7,6 +7,10 @@
         "publish_tags": [
             "suite-config"
         ],
+        "commands": {
+            "Nvl\\Suite\\Console\\Commands\\SuiteConfigurationCommand": "nvl:suite:configuration {--profile= : Compare effective modules with an installation profile} {--format=text : Output format: text or json}",
+            "Nvl\\Suite\\Console\\Commands\\SuiteDoctorCommand": "nvl:suite:doctor {--strict : Treat package warnings as failures} {--production : Enforce production-only deployment requirements} {--format=text : Output format: text or json}"
+        },
         "configuration": {
             "config/nvl-suite.php": "70a33b5eafd48496cb8ec7f2dab95468dbc36af06575303f59d2366e4f50d0ed"
         }

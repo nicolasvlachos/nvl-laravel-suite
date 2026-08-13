@@ -290,7 +290,7 @@ jobs:
           expected_doctors=/tmp/nvl-expected-doctors
           available_doctors=/tmp/nvl-available-doctors
           jq -r \
-            '.packages[].commands // {} | to_entries[] | .value | split(" ")[0] | select(endswith(":doctor"))' \
+            '((.suite.commands // {}), (.packages[].commands // {})) | to_entries[] | .value | split(" ")[0] | select(endswith(":doctor"))' \
             "$GITHUB_WORKSPACE/tools/package-contracts.json" \
             | sort -u > "$expected_doctors"
           php artisan list --raw \

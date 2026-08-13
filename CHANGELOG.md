@@ -26,6 +26,8 @@ Module-level implementation history remains available in each
 
 - Aligned Mail Notifications' global CI coverage floor with its measured 88%
   baseline while retaining the 90% changed-line requirement for new source.
+- Included root suite commands in the generated public contract so clean archive
+  consumers discover and execute `nvl:suite:doctor` with every module Doctor.
 
 ### Changed
 

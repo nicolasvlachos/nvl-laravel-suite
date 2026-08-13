@@ -489,9 +489,31 @@ function contractPublishTags(string $packagePath): array
  */
 function contractSuite(string $root): array
 {
+    $commands = [];
+    $basePath = "{$root}/src";
+
+    foreach (contractPhpFiles($basePath) as $file) {
+        $className = contractClassName('Nvl\\Suite\\', $basePath, $file);
+        $reflection = contractReflection($className);
+
+        if (! $reflection instanceof ReflectionClass || ! $reflection->isSubclassOf(Command::class)) {
+            continue;
+        }
+
+        $signature = $reflection->getDefaultProperties()['signature'] ?? null;
+
+        if (is_string($signature)) {
+            $commands[$className] = preg_replace('/\s+/', ' ', trim($signature))
+                ?? trim($signature);
+        }
+    }
+
+    ksort($commands);
+
     return [
         'providers' => [SuiteServiceProvider::class],
         'publish_tags' => contractPublishTags($root),
+        'commands' => $commands,
         'configuration' => [
             'config/nvl-suite.php' => contractPhpHash("{$root}/config/nvl-suite.php"),
         ],

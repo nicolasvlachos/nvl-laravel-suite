@@ -489,6 +489,8 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
             'compgen -G "database/migrations/*_$suffix"',
             "echo 'NVL_RELEASE_PUBLISHED_MIGRATIONS=true' >> .env",
             'rm -f database/database.sqlite',
+            '.suite.commands // {}',
+            'diff -u "$expected_doctors" "$available_doctors"',
             '"nvl/laravel-suite:1.0.1"',
             'export NVL_AUTH_INVITATIONS_ENABLED=true',
             'export NVL_AUTH_MAGIC_LINKS_ENABLED=true',
