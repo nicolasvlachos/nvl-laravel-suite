@@ -441,6 +441,7 @@ it('collects coverage only for packages with changed PHP source', function (): v
         'while IFS= read -r package; do',
         '--test-directory="packages/nvl/$package/tests"',
         '--exclude-testsuite=infrastructure',
+        'mail-notifications) minimum_line=88',
         'check-clover-coverage.php',
         'check-changed-clover-coverage.php',
     )

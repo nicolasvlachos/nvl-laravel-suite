@@ -209,23 +209,12 @@ data. Adoption runs before application traffic switches to package APIs, then
 Doctor/reconciliation runs before legacy storage is removed. Dependency order is
 Translatable/Media/Content before packages that compose those capabilities.
 
-| Package | Migration/adoption owner | Diagnostic and reconciliation |
-|---|---|---|
-| Activity | Package schema; documented existing-table/Spatie v5 bridge | `nvl:activity:doctor`; bounded purge commands |
-| Auth | Package identity schema; `nvl:auth:adopt-principals` for the supported principal format | `nvl:auth:doctor`; schema/features/prune operations |
-| Comments | Package schema; fail-closed application-owned bridge for legacy comment formats | `nvl:comments:doctor`; dry-run reconciliation |
-| Content | Package schema; application-owned value bridge plus package definition migration Actions | `nvl:content:doctor`; definition plan/sync/migrate |
-| Forms | Package schema; application-owned fail-closed bridge because form vocabularies are domain-specific | `nvl:forms:doctor` |
-| Mail Notifications | Package schema; versioned legacy tracker manifest and adoption command | `nvl:mail-notifications:doctor`; retention/anonymization/recovery operations |
-| Media | Package schema; first-party Spatie adoption command | `nvl:media:doctor`; storage reconciliation, regeneration, and disk migration |
-| Metafields | Package schema; application-owned definition/value mapping | `nvl:metafields:doctor` |
-| Pages | Package schema; application-owned page/resource mapping | `nvl:pages:doctor` |
-| SEO | Package schema; import source/action is the supported adoption API | `nvl:seo:doctor`; sitemap warm/clear and redirect prune |
-| Settings | Package schema; versioned adoption manifest and command | `nvl:settings:doctor`; sync/validate/cache/clear |
-| Taxonomy | Package schema; application-owned vocabulary/term mapping | `nvl:taxonomy:doctor`; rebuild and dry-run prune |
-| Templates | Package schema; versioned staged adoption command | `nvl:templates:doctor`; sync and stale-render recovery |
-| Translatable | Owning domain owns explicit translation schema; typed-definition migration is application-owned | `nvl:translatable:doctor`; resource gather |
-| Translations | Package editable catalog; file import/sync is the supported adoption path | `nvl:translations:doctor`; scan/status/export/prune |
+The canonical [suite adoption matrix](adoption-matrix.md) covers migration
+ownership, queues, scheduler entries, replaceable contracts, registered aliases,
+generated TypeScript, and Doctor availability for all twenty modules.
+`nvl:suite:configuration` renders the effective application state from the same
+runtime catalog, and `nvl:suite:doctor --strict` aggregates every enabled package
+Doctor.
 
 Stateless packages (`support`, `data`, `csv`, `filterable`, and `primitives`)
 have explicit `N/A` operational classifications. Their `UPGRADING.md` files

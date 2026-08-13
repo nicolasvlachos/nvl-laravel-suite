@@ -348,6 +348,7 @@ jobs:
 
             case "$package" in
               auth) minimum_line=74 ;;
+              mail-notifications) minimum_line=88 ;;
               media) minimum_line=82 ;;
               metafields) minimum_line=67 ;;
               pages) minimum_line=80 ;;

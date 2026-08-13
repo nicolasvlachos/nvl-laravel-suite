@@ -62,6 +62,29 @@ automatically registers its transitive NVL dependencies in canonical order; it
 does not enable unrelated modules. For example, enabling only `auth` registers
 `data` followed by `auth`.
 
+Use the documented [installation profiles](docs/installation-profiles.md) for
+auth-only, content-platform, communications, or full-suite adoption. The
+[suite adoption matrix](docs/adoption-matrix.md) records migration ownership,
+queues, scheduler entries, replaceable contracts, aliases, TypeScript output,
+and Doctor coverage for every module.
+
+Inspect the effective runtime without dumping arbitrary configuration or
+secrets, then run every enabled package Doctor through the root readiness gate:
+
+```bash
+php artisan nvl:suite:configuration --profile=auth-only
+php artisan nvl:suite:configuration --format=json
+php artisan nvl:suite:doctor --strict
+php artisan nvl:suite:doctor --production --strict --format=json
+```
+
+The configuration report shows requested and dependency-enabled modules,
+loaded providers, migration ownership, resolved boundary implementations,
+registered aliases, queue responsibilities, scheduler status, TypeScript
+participation, and Doctor commands. Production Doctor mode also rejects debug
+mode, a missing application key, and missing host scheduler entries required by
+enabled Mail Notifications or Media features.
+
 When package discovery itself must be disabled, register
 `Nvl\Data\Providers\DataServiceProvider` before
 `Nvl\Auth\Providers\AuthServiceProvider`. Auth also registers its Data

@@ -3844,6 +3844,28 @@
                     "@param mixed ...$arguments",
                     "@return \\Illuminate\\Broadcasting\\PendingBroadcast"
                 ],
+                "Nvl\\Auth\\Events\\InvitationAccepted": [
+                    "final class Nvl\\Auth\\Events\\InvitationAccepted implements Illuminate\\Contracts\\Events\\ShouldDispatchAfterCommit",
+                    "public readonly string $invitationId",
+                    "public readonly string $type",
+                    "public readonly string $purpose",
+                    "public readonly Nvl\\Auth\\ValueObjects\\SubjectReference $subject",
+                    "public function __construct(string $invitationId, string $type, string $purpose, Nvl\\Auth\\ValueObjects\\SubjectReference $subject): mixed",
+                    "public static function dispatch(mixed ...$arguments): mixed",
+                    "@param mixed ...$arguments",
+                    "@return mixed",
+                    "public static function dispatchIf(mixed $boolean, mixed ...$arguments): mixed",
+                    "@param bool $boolean",
+                    "@param mixed ...$arguments",
+                    "@return mixed",
+                    "public static function dispatchUnless(mixed $boolean, mixed ...$arguments): mixed",
+                    "@param bool $boolean",
+                    "@param mixed ...$arguments",
+                    "@return mixed",
+                    "public static function broadcast(mixed ...$arguments): mixed",
+                    "@param mixed ...$arguments",
+                    "@return \\Illuminate\\Broadcasting\\PendingBroadcast"
+                ],
                 "Nvl\\Auth\\Events\\PrincipalChanged": [
                     "final class Nvl\\Auth\\Events\\PrincipalChanged implements Illuminate\\Contracts\\Events\\ShouldDispatchAfterCommit",
                     "public readonly string $userId",
@@ -16594,15 +16616,40 @@
                     "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization, Nvl\\MailNotifications\\Services\\MailNotificationReadQueryBuilder $queries): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery $filters): Nvl\\MailNotifications\\ValueObjects\\MailNotificationStatistics"
                 ],
+                "Nvl\\MailNotifications\\Actions\\GetScheduledMailStatisticsAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\GetScheduledMailStatisticsAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\ScheduledMailReadAuthorization $authorization, Nvl\\MailNotifications\\Services\\ScheduledMailReadQueryBuilder $queries): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadQuery $filters): Nvl\\MailNotifications\\ValueObjects\\ScheduledMailStatistics"
+                ],
                 "Nvl\\MailNotifications\\Actions\\ListMailNotificationsAction": [
                     "final readonly class Nvl\\MailNotifications\\Actions\\ListMailNotificationsAction",
                     "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization, Nvl\\MailNotifications\\Services\\MailNotificationReadQueryBuilder $queries): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery $filters): Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadPage"
                 ],
+                "Nvl\\MailNotifications\\Actions\\ListMailNotificationsForNotifiableAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\ListMailNotificationsForNotifiableAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization, Nvl\\MailNotifications\\Services\\MailNotificationNotifiableTypeRegistry $notifiableTypes, Nvl\\MailNotifications\\Services\\MailNotificationReadQueryBuilder $queries): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\NotifiableReference $notifiable, ?Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadQuery $filters=null): Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadPage"
+                ],
+                "Nvl\\MailNotifications\\Actions\\ListScheduledMailMessagesAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\ListScheduledMailMessagesAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\ScheduledMailReadAuthorization $authorization, Nvl\\MailNotifications\\Services\\ScheduledMailReadQueryBuilder $queries): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadQuery $filters): Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadPage"
+                ],
                 "Nvl\\MailNotifications\\Actions\\ShowMailNotificationAction": [
                     "final readonly class Nvl\\MailNotifications\\Actions\\ShowMailNotificationAction",
                     "public function __construct(Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $authorization): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $id): Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadData"
+                ],
+                "Nvl\\MailNotifications\\Actions\\ShowMailNotificationByProviderMessageAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\ShowMailNotificationByProviderMessageAction",
+                    "public function __construct(Nvl\\MailNotifications\\Services\\ProviderRegistry $providers, Nvl\\MailNotifications\\Actions\\ShowMailNotificationAction $show): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\MailNotifications\\ValueObjects\\ProviderMessageId $messageId): Nvl\\MailNotifications\\ValueObjects\\MailNotificationReadData"
+                ],
+                "Nvl\\MailNotifications\\Actions\\ShowScheduledMailMessageAction": [
+                    "final readonly class Nvl\\MailNotifications\\Actions\\ShowScheduledMailMessageAction",
+                    "public function __construct(Nvl\\MailNotifications\\Contracts\\ScheduledMailReadAuthorization $authorization): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $id): Nvl\\MailNotifications\\ValueObjects\\ScheduledMailDetailData"
                 ],
                 "Nvl\\MailNotifications\\Actions\\SuggestMailNotificationsAction": [
                     "final readonly class Nvl\\MailNotifications\\Actions\\SuggestMailNotificationsAction",
@@ -16744,6 +16791,10 @@
                     "public abstract function sync(Nvl\\MailNotifications\\ValueObjects\\RemoteWebhookSyncOptions $options): Nvl\\MailNotifications\\ValueObjects\\RemoteWebhookManagementResult",
                     "public abstract function remove(Nvl\\MailNotifications\\ValueObjects\\RemoteWebhookRemoveOptions $options): Nvl\\MailNotifications\\ValueObjects\\RemoteWebhookManagementResult"
                 ],
+                "Nvl\\MailNotifications\\Contracts\\ScheduledMailReadAuthorization": [
+                    "interface Nvl\\MailNotifications\\Contracts\\ScheduledMailReadAuthorization",
+                    "public abstract function authorize(Nvl\\MailNotifications\\Enums\\ScheduledMailReadAbility $ability, Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\MailNotifications\\Models\\ScheduledMailMessage $message=null): void"
+                ],
                 "Nvl\\MailNotifications\\Contracts\\ScheduledMessageFactory": [
                     "interface Nvl\\MailNotifications\\Contracts\\ScheduledMessageFactory",
                     "public const string TAG=\"mail-notifications.scheduled-message-factories\"",
@@ -16880,6 +16931,17 @@
                     "public const mixed View=Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility::View=view",
                     "public const mixed Statistics=Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility::Statistics=statistics",
                     "public const mixed Suggest=Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility::Suggest=suggest",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\MailNotifications\\Enums\\ScheduledMailReadAbility": [
+                    "enum Nvl\\MailNotifications\\Enums\\ScheduledMailReadAbility implements BackedEnum, UnitEnum: string",
+                    "public const mixed List=Nvl\\MailNotifications\\Enums\\ScheduledMailReadAbility::List=list",
+                    "public const mixed View=Nvl\\MailNotifications\\Enums\\ScheduledMailReadAbility::View=view",
+                    "public const mixed Statistics=Nvl\\MailNotifications\\Enums\\ScheduledMailReadAbility::Statistics=statistics",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -17526,6 +17588,10 @@
                     "final class Nvl\\MailNotifications\\Services\\ConfiguredMailNotificationReadAuthorization implements Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization",
                     "public function authorize(Nvl\\MailNotifications\\Enums\\MailNotificationReadAbility $ability, Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\MailNotifications\\Models\\MailNotification $notification=null): void"
                 ],
+                "Nvl\\MailNotifications\\Services\\ConfiguredScheduledMailReadAuthorization": [
+                    "final class Nvl\\MailNotifications\\Services\\ConfiguredScheduledMailReadAuthorization implements Nvl\\MailNotifications\\Contracts\\ScheduledMailReadAuthorization",
+                    "public function authorize(Nvl\\MailNotifications\\Enums\\ScheduledMailReadAbility $ability, Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\MailNotifications\\Models\\ScheduledMailMessage $message=null): void"
+                ],
                 "Nvl\\MailNotifications\\Services\\DatabaseTrackingLifecycle": [
                     "final readonly class Nvl\\MailNotifications\\Services\\DatabaseTrackingLifecycle implements Nvl\\MailNotifications\\Contracts\\TrackingLifecycle",
                     "public function __construct(Nvl\\MailNotifications\\Contracts\\SensitiveDataRedactor $redactor, Nvl\\MailNotifications\\Services\\MailTrackingEventDispatcher $events, Nvl\\MailNotifications\\Services\\MailNotificationNotifiableTypeRegistry $notifiableTypes, Nvl\\MailNotifications\\Services\\SensitiveStorageCodec $sensitiveStorage): mixed",
@@ -17598,7 +17664,7 @@
                 ],
                 "Nvl\\MailNotifications\\Services\\MailNotificationsDoctor": [
                     "final readonly class Nvl\\MailNotifications\\Services\\MailNotificationsDoctor",
-                    "public function __construct(Nvl\\MailNotifications\\Services\\TrackingEligibility $eligibility, Nvl\\MailNotifications\\Services\\SymfonyMessageIdResolver $messageIds, Nvl\\MailNotifications\\Services\\ProviderRegistry $providers, Nvl\\MailNotifications\\Services\\RemoteWebhookManagerRegistry $remoteWebhooks, Nvl\\MailNotifications\\Services\\MailNotificationNotifiableTypeRegistry $notifiableTypes, Nvl\\MailNotifications\\Services\\WebhookProcessor $webhooks, Nvl\\MailNotifications\\Contracts\\TrackingLifecycle $lifecycle, Nvl\\MailNotifications\\Contracts\\SensitiveDataRedactor $redactor, Nvl\\MailNotifications\\Services\\MailTestingInterceptor $testing, Nvl\\MailNotifications\\Services\\ScheduledMailReadiness $scheduledMail, Nvl\\MailNotifications\\Services\\MailRetentionConfiguration $retention, Nvl\\MailNotifications\\Services\\MailAnonymizationConfiguration $anonymization, Nvl\\MailNotifications\\Services\\SensitiveStorageCodec $sensitiveStorage, Illuminate\\Database\\Migrations\\Migrator $migrator): mixed",
+                    "public function __construct(Nvl\\MailNotifications\\Services\\TrackingEligibility $eligibility, Nvl\\MailNotifications\\Services\\SymfonyMessageIdResolver $messageIds, Nvl\\MailNotifications\\Services\\ProviderRegistry $providers, Nvl\\MailNotifications\\Services\\RemoteWebhookManagerRegistry $remoteWebhooks, Nvl\\MailNotifications\\Services\\MailNotificationNotifiableTypeRegistry $notifiableTypes, Nvl\\MailNotifications\\Services\\WebhookProcessor $webhooks, Nvl\\MailNotifications\\Contracts\\TrackingLifecycle $lifecycle, Nvl\\MailNotifications\\Contracts\\SensitiveDataRedactor $redactor, Nvl\\MailNotifications\\Services\\MailTestingInterceptor $testing, Nvl\\MailNotifications\\Services\\ScheduledMailReadiness $scheduledMail, Nvl\\MailNotifications\\Services\\MailRetentionConfiguration $retention, Nvl\\MailNotifications\\Services\\MailAnonymizationConfiguration $anonymization, Nvl\\MailNotifications\\Services\\SensitiveStorageCodec $sensitiveStorage, Illuminate\\Database\\Migrations\\Migrator $migrator, ?Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization $readAuthorization=null, ?Nvl\\MailNotifications\\Contracts\\ScheduledMailReadAuthorization $scheduledReadAuthorization=null): mixed",
                     "public function inspect(): array",
                     "@return list<MailNotificationsDoctorCheck>"
                 ],
@@ -17711,9 +17777,15 @@
                     "public function __construct(Nvl\\MailNotifications\\Services\\ScheduledMailConfiguration $configuration, Nvl\\MailNotifications\\Services\\ScheduledMessageFactoryRegistry $factories, Nvl\\MailNotifications\\Services\\ScheduledMailClaimer $claimer, Nvl\\MailNotifications\\Services\\ScheduledMailFinalizer $finalizer, Illuminate\\Contracts\\Mail\\Factory $mail, Nvl\\MailNotifications\\Services\\ScheduledMailInputGuard $input): mixed",
                     "public function process(?int $limit=null): int"
                 ],
+                "Nvl\\MailNotifications\\Services\\ScheduledMailReadQueryBuilder": [
+                    "final readonly class Nvl\\MailNotifications\\Services\\ScheduledMailReadQueryBuilder",
+                    "public function __construct(Nvl\\MailNotifications\\Services\\MailNotificationNotifiableTypeRegistry $notifiableTypes): mixed",
+                    "public function build(Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadQuery $filters): Illuminate\\Database\\Eloquent\\Builder",
+                    "@return Builder<ScheduledMailMessage>"
+                ],
                 "Nvl\\MailNotifications\\Services\\ScheduledMailReadiness": [
                     "final readonly class Nvl\\MailNotifications\\Services\\ScheduledMailReadiness",
-                    "public function __construct(Nvl\\MailNotifications\\Services\\ScheduledMailConfiguration $configuration, Nvl\\MailNotifications\\Services\\MailRetentionConfiguration $retention, Nvl\\MailNotifications\\Services\\MailAnonymizationConfiguration $anonymization, Closure $factories): mixed",
+                    "public function __construct(Nvl\\MailNotifications\\Services\\ScheduledMailConfiguration $configuration, Nvl\\MailNotifications\\Services\\MailRetentionConfiguration $retention, Nvl\\MailNotifications\\Services\\MailAnonymizationConfiguration $anonymization, Closure $factories, ?Illuminate\\Console\\Scheduling\\Schedule $schedule=null): mixed",
                     "@param Closure(): ScheduledMessageFactoryRegistry $factories",
                     "public function inspect(): array",
                     "@return list<MailNotificationsDoctorCheck>"
@@ -18146,6 +18218,92 @@
                     "@param array<string, mixed> $payload",
                     "@param array<string, mixed> $metadata"
                 ],
+                "Nvl\\MailNotifications\\ValueObjects\\ScheduledMailDetailData": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\ScheduledMailDetailData",
+                    "public const array COLUMNS=[\"id\",\"factory_alias\",\"payload_version\",\"to_recipients\",\"status\",\"scheduled_for\",\"available_at\",\"attempts\",\"max_attempts\",\"sent_at\",\"failed_at\",\"cancelled_at\",\"created_at\",\"last_attempt_at\",\"notifiable_type\",\"notifiable_id\",\"redacted_at\",\"updated_at\"]",
+                    "public readonly string $id",
+                    "public readonly string $factoryAlias",
+                    "public readonly int $payloadVersion",
+                    "public readonly ?Nvl\\MailNotifications\\ValueObjects\\Recipient $primaryRecipient",
+                    "public readonly Nvl\\MailNotifications\\Enums\\ScheduledMailStatus $status",
+                    "public readonly Carbon\\CarbonImmutable $scheduledFor",
+                    "public readonly Carbon\\CarbonImmutable $availableAt",
+                    "public readonly int $attempts",
+                    "public readonly int $maxAttempts",
+                    "public readonly ?Carbon\\CarbonImmutable $lastAttemptAt",
+                    "public readonly ?string $notifiableType",
+                    "public readonly ?string $notifiableId",
+                    "public readonly ?Carbon\\CarbonImmutable $sentAt",
+                    "public readonly ?Carbon\\CarbonImmutable $failedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $cancelledAt",
+                    "public readonly ?Carbon\\CarbonImmutable $redactedAt",
+                    "public readonly Carbon\\CarbonImmutable $createdAt",
+                    "public readonly Carbon\\CarbonImmutable $updatedAt",
+                    "public function __construct(string $id, string $factoryAlias, int $payloadVersion, ?Nvl\\MailNotifications\\ValueObjects\\Recipient $primaryRecipient, Nvl\\MailNotifications\\Enums\\ScheduledMailStatus $status, Carbon\\CarbonImmutable $scheduledFor, Carbon\\CarbonImmutable $availableAt, int $attempts, int $maxAttempts, ?Carbon\\CarbonImmutable $lastAttemptAt, ?string $notifiableType, ?string $notifiableId, ?Carbon\\CarbonImmutable $sentAt, ?Carbon\\CarbonImmutable $failedAt, ?Carbon\\CarbonImmutable $cancelledAt, ?Carbon\\CarbonImmutable $redactedAt, Carbon\\CarbonImmutable $createdAt, Carbon\\CarbonImmutable $updatedAt): mixed",
+                    "public static function fromModel(Nvl\\MailNotifications\\Models\\ScheduledMailMessage $message): self",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\ScheduledMailListData": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\ScheduledMailListData",
+                    "public const array COLUMNS=[\"id\",\"factory_alias\",\"payload_version\",\"to_recipients\",\"status\",\"scheduled_for\",\"available_at\",\"attempts\",\"max_attempts\",\"sent_at\",\"failed_at\",\"cancelled_at\",\"created_at\"]",
+                    "public readonly string $id",
+                    "public readonly string $factoryAlias",
+                    "public readonly int $payloadVersion",
+                    "public readonly ?Nvl\\MailNotifications\\ValueObjects\\Recipient $primaryRecipient",
+                    "public readonly Nvl\\MailNotifications\\Enums\\ScheduledMailStatus $status",
+                    "public readonly Carbon\\CarbonImmutable $scheduledFor",
+                    "public readonly Carbon\\CarbonImmutable $availableAt",
+                    "public readonly int $attempts",
+                    "public readonly int $maxAttempts",
+                    "public readonly ?Carbon\\CarbonImmutable $sentAt",
+                    "public readonly ?Carbon\\CarbonImmutable $failedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $cancelledAt",
+                    "public readonly Carbon\\CarbonImmutable $createdAt",
+                    "public function __construct(string $id, string $factoryAlias, int $payloadVersion, ?Nvl\\MailNotifications\\ValueObjects\\Recipient $primaryRecipient, Nvl\\MailNotifications\\Enums\\ScheduledMailStatus $status, Carbon\\CarbonImmutable $scheduledFor, Carbon\\CarbonImmutable $availableAt, int $attempts, int $maxAttempts, ?Carbon\\CarbonImmutable $sentAt, ?Carbon\\CarbonImmutable $failedAt, ?Carbon\\CarbonImmutable $cancelledAt, Carbon\\CarbonImmutable $createdAt): mixed",
+                    "public static function fromModel(Nvl\\MailNotifications\\Models\\ScheduledMailMessage $message): self",
+                    "public static function primaryRecipient(Nvl\\MailNotifications\\Models\\ScheduledMailMessage $message): ?Nvl\\MailNotifications\\ValueObjects\\Recipient",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadPage": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadPage",
+                    "public readonly array $items",
+                    "public readonly int $currentPage",
+                    "public readonly int $lastPage",
+                    "public readonly int $perPage",
+                    "public readonly int $total",
+                    "public function __construct(array $items, int $currentPage, int $lastPage, int $perPage, int $total): mixed",
+                    "@param list<ScheduledMailListData> $items",
+                    "public function toArray(): array",
+                    "@return array{data: list<array<string, mixed>>, meta: array{current_page: int, last_page: int, per_page: int, total: int}}"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadQuery": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\ScheduledMailReadQuery",
+                    "public readonly ?string $factoryAlias",
+                    "public readonly string $direction",
+                    "public readonly ?Nvl\\MailNotifications\\Enums\\ScheduledMailStatus $status",
+                    "public readonly ?Nvl\\MailNotifications\\ValueObjects\\NotifiableReference $notifiable",
+                    "public readonly ?Carbon\\CarbonImmutable $from",
+                    "public readonly ?Carbon\\CarbonImmutable $to",
+                    "public readonly bool $dueOnly",
+                    "public readonly string $sort",
+                    "public readonly int $page",
+                    "public readonly int $perPage",
+                    "public function __construct(?Nvl\\MailNotifications\\Enums\\ScheduledMailStatus $status=null, ?string $factoryAlias=null, ?Nvl\\MailNotifications\\ValueObjects\\NotifiableReference $notifiable=null, ?Carbon\\CarbonImmutable $from=null, ?Carbon\\CarbonImmutable $to=null, bool $dueOnly=false, string $sort=\"scheduled_for\", string $direction=\"asc\", int $page=1, int $perPage=25): mixed"
+                ],
+                "Nvl\\MailNotifications\\ValueObjects\\ScheduledMailStatistics": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\ScheduledMailStatistics",
+                    "public readonly int $total",
+                    "public readonly array $statuses",
+                    "public readonly int $due",
+                    "public readonly array $recent",
+                    "public function __construct(int $total, array $statuses, int $due, array $recent): mixed",
+                    "@param array<string, int> $statuses",
+                    "@param list<ScheduledMailListData> $recent",
+                    "public function toArray(): array",
+                    "@return array{total: int, statuses: array<string, int>, due: int, recent: list<array<string, mixed>>}"
+                ],
                 "Nvl\\MailNotifications\\ValueObjects\\ScheduledMessageData": [
                     "final readonly class Nvl\\MailNotifications\\ValueObjects\\ScheduledMessageData",
                     "public readonly Carbon\\CarbonImmutable $scheduledFor",
@@ -18255,7 +18413,7 @@
                 ]
             },
             "configuration": {
-                "config/mail-notifications.php": "d531ede203001fff12b0c1467886db9b56cc7ce508a3d69525723aef008ae099"
+                "config/mail-notifications.php": "a641d9febd384714602c1bc60df694c41d115e2126548b550972fe575efb767e"
             },
             "routes": [],
             "migrations": {

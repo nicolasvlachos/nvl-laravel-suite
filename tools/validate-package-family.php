@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use Composer\Semver\Intervals;
 use Composer\Semver\VersionParser;
-use Nvl\Suite\SuiteServiceProvider;
+use Illuminate\Config\Repository;
+use Nvl\Suite\Support\SuiteModuleCatalog;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -263,13 +264,9 @@ foreach ($packages as $package) {
     }
 }
 
-$providerConstant = (new ReflectionClass(SuiteServiceProvider::class))
-    ->getReflectionConstant('PROVIDERS');
-$registeredProviders = $providerConstant === false ? [] : $providerConstant->getValue();
-
-if (! is_array($registeredProviders)) {
-    $registeredProviders = [];
-}
+$registeredProviders = (new SuiteModuleCatalog(new Repository([
+    'nvl-suite' => ['modules' => []],
+])))->effectiveProviders();
 
 $sortedExpectedProviders = $expectedProviders;
 $sortedRegisteredProviders = $registeredProviders;

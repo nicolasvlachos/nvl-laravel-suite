@@ -11,10 +11,23 @@ Module-level implementation history remains available in each
 
 ## [1.0.5] - 2026-08-12
 
+### Added
+
+- Added a privacy-bounded Auth invitation-acceptance event and authorized exact
+  delivery identity plus scheduled-mail administrative read APIs.
+- Added dependency-complete installation profiles, one executable adoption
+  catalog, a secret-free `nvl:suite:configuration` report, and aggregate
+  `nvl:suite:doctor --production --strict` readiness checks for every enabled
+  module and required host scheduler entry.
+- Extended Mail Notifications diagnostics across both administrative read
+  authorizers, required scheduled-mail factories, and host scheduler entries.
+
 ### Fixed
 
 - Preserved application-defined mass-assignable attributes on Auth principal
   subclasses while retaining the complete configured canonical field map.
+- Aligned Mail Notifications' global CI coverage floor with its measured 88%
+  baseline while retaining the 90% changed-line requirement for new source.
 
 ### Changed
 
