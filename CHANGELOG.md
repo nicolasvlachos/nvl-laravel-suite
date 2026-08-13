@@ -9,7 +9,7 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
-## [1.0.5] - 2026-08-12
+## [1.0.6] - 2026-08-13
 
 ### Added
 
@@ -24,10 +24,21 @@ Module-level implementation history remains available in each
 
 ### Fixed
 
-- Preserved application-defined mass-assignable attributes on Auth principal
-  subclasses while retaining the complete configured canonical field map.
 - Aligned Mail Notifications' global CI coverage floor with its measured 88%
   baseline while retaining the 90% changed-line requirement for new source.
+
+### Changed
+
+- Scoped changed-package coverage to packages with modified PHP production
+  source, so release notes and test-only changes cannot activate unrelated
+  legacy global coverage debt while changed source remains held to 90%.
+
+## [1.0.5] - 2026-08-12
+
+### Fixed
+
+- Preserved application-defined mass-assignable attributes on Auth principal
+  subclasses while retaining the complete configured canonical field map.
 
 ### Changed
 
@@ -36,9 +47,6 @@ Module-level implementation history remains available in each
   missing-binary incident recovery.
 - Added release-time changelog validation for the suite, every module, and the
   materialized release archive.
-- Scoped changed-package coverage to packages with modified PHP production
-  source, so release notes and test-only changes cannot activate unrelated
-  legacy global coverage debt while changed source remains held to 90%.
 
 ## [1.0.4] - 2026-08-12
 
