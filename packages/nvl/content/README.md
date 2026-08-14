@@ -13,7 +13,7 @@
 | Configuration | `config/content.php` |
 
 `nvl/content` is a headless, schema-driven content-block engine for Laravel
-12–13 on PHP 8.3–8.4. It provides reusable, translatable blocks, typed fields,
+12–13 on PHP 8.4+. It provides reusable, translatable blocks, typed fields,
 validated structured data, semantic rich-content presets, generated JSON
 Schemas, typed render projections, model-backed owner placements, named
 composition groups, trees and regions, Media and model references, immutable

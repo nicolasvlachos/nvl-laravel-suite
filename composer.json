@@ -206,6 +206,10 @@
         "dependencies:check": "@php package-dependency-audit.php",
         "contracts:check": "@php tools/check-package-contracts.php",
         "contracts:update": "@php tools/check-package-contracts.php --update",
+        "types:check": [
+            "@php artisan nvl:data:types:check --fail-on-warning",
+            "npm run types:check"
+        ],
         "skills:sync": "@php tools/sync-suite-skills.php",
         "packages:validate": "@php tools/validate-package-family.php",
         "dev": [
@@ -222,6 +226,7 @@
             "@dependencies:check",
             "@packages:validate",
             "@contracts:check",
+            "@types:check",
             "@test"
         ],
         "test": [
@@ -230,6 +235,7 @@
             "@test:packages"
         ],
         "test:integration": "@php -d memory_limit=1G vendor/bin/pest --compact tests/Feature/Integration",
+        "test:media-production": "NVL_MEDIA_PRODUCTION_INTEGRATION=true vendor/bin/pest --test-directory=packages/nvl/media/tests --configuration=packages/nvl/media/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/media/tests/Integration/ProductionStackTest.php",
         "test:packages": "for package_dir in packages/nvl/*; do vendor/bin/pest --test-directory=\"$package_dir/tests\" --configuration=\"$package_dir/phpunit.xml.dist\" --bootstrap=vendor/autoload.php --compact \"$package_dir/tests\" || exit $?; done",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

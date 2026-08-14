@@ -30,7 +30,7 @@ It does not own users, settings, authorization, controllers, application routes,
 
 ## Requirements and installation
 
-- PHP 8.3+
+- PHP 8.4+
 - Laravel 12–13
 - `ext-mbstring`, `ext-json`, and `ext-ctype`
 - optional `ext-intl` for locale-aware money formatting

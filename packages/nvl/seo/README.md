@@ -34,7 +34,7 @@ It does not own an admin UI, application roles/policies, content routing, analyt
 
 ## Requirements and installation
 
-- PHP 8.3+
+- PHP 8.4+
 - Laravel 12–13
 - `nvl/translatable` 1.x
 - `nvl/data` 1.x

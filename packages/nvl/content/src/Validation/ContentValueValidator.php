@@ -16,6 +16,7 @@ use Nvl\Content\Services\ContentFieldTypeRegistry;
 use Nvl\Content\Services\ContentLocalePolicy;
 use Nvl\Content\Services\ContentLocalizedValues;
 use Nvl\Content\Services\ContentRenderResources;
+use Nvl\Content\Services\ContentValueRenderer;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 
@@ -24,13 +25,22 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final readonly class ContentValueValidator
 {
+    private ContentValueRenderer $renderer;
+
     public function __construct(
         private ContentFieldTypeRegistry $fieldTypes,
         private ContentFieldPresetRegistry $presets,
         private ContentSchemaValidator $schemas,
         private ContentLocalePolicy $locales,
         private ContentLocalizedValues $localizedValues,
-    ) {}
+        ?ContentValueRenderer $renderer = null,
+    ) {
+        $this->renderer = $renderer ?? new ContentValueRenderer(
+            $this->fieldTypes,
+            $this->presets,
+            $this->locales,
+        );
+    }
 
     /**
      * @param  array<string, mixed>  $values
@@ -136,32 +146,17 @@ final readonly class ContentValueValidator
         bool $publicOnly = false,
         ?string $group = null,
     ): array {
-        $rendered = [];
-        $context = new ContentValidationContext(
-            actor: $actor,
-            locale: $this->locales->assertSupported($locale),
-            path: '',
-            visibility: $visibility,
-            resources: $resources,
-            owner: $owner,
-            publicOnly: $publicOnly,
-            group: $group,
+        return $this->renderer->render(
+            $schema,
+            $values,
+            $actor,
+            $locale,
+            $visibility,
+            $resources,
+            $owner,
+            $publicOnly,
+            $group,
         );
-
-        foreach ($schema->fields as $field) {
-            if (! array_key_exists($field->key, $values)) {
-                continue;
-            }
-
-            $rendered[$field->key] = $this->renderField(
-                $field,
-                $values[$field->key],
-                $context->nested($field->key),
-                1,
-            );
-        }
-
-        return $rendered;
     }
 
     /**
@@ -387,62 +382,6 @@ final readonly class ContentValueValidator
                 $localized,
             );
         }
-    }
-
-    private function renderField(
-        ContentFieldDefinition $field,
-        mixed $value,
-        ContentValidationContext $context,
-        int $depth,
-    ): mixed {
-        $this->assertDepth($depth, $context);
-
-        if ($value !== null && $field->type === 'object' && is_array($value)) {
-            $value = $this->renderObject(
-                $field,
-                ContentArrays::stringMap($value, "rendered content {$context->path}"),
-                $context,
-                $depth,
-            );
-        } elseif ($value !== null
-            && in_array($field->type, ['repeater', 'table'], true)
-            && is_array($value)) {
-            $value = array_map(
-                fn (mixed $row, int $index): mixed => is_array($row)
-                    ? $this->renderObject(
-                        $field,
-                        ContentArrays::stringMap(
-                            $row,
-                            "rendered content row {$context->path}.{$index}",
-                        ),
-                        $context->nested((string) $index),
-                        $depth,
-                    )
-                    : $row,
-                $value,
-                array_keys($value),
-            );
-        } elseif ($value !== null
-            && $field->type === 'list'
-            && is_array($value)
-            && $field->item !== null) {
-            $value = array_map(
-                fn (mixed $item, int $index): mixed => $this->renderField(
-                    $field->item,
-                    $item,
-                    $context->nested((string) $index),
-                    $depth + 1,
-                ),
-                $value,
-                array_keys($value),
-            );
-        }
-
-        $rendered = $this->fieldTypes->get($field->type)->render($value, $field, $context);
-
-        return $field->preset !== null
-            ? $this->presets->get($field->preset)->render($rendered, $field, $context)
-            : $rendered;
     }
 
     /**
@@ -738,38 +677,6 @@ final readonly class ContentValueValidator
         }
 
         return $normalized;
-    }
-
-    /**
-     * @param  array<string, mixed>  $values
-     * @return array<string, mixed>
-     */
-    private function renderObject(
-        ContentFieldDefinition $parent,
-        array $values,
-        ContentValidationContext $context,
-        int $depth,
-    ): array {
-        $rendered = [];
-
-        if (isset($values['_key']) && is_string($values['_key'])) {
-            $rendered['_key'] = $values['_key'];
-        }
-
-        foreach ($parent->fields as $field) {
-            if (! array_key_exists($field->key, $values)) {
-                continue;
-            }
-
-            $rendered[$field->key] = $this->renderField(
-                $field,
-                $values[$field->key],
-                $context->nested($field->key),
-                $depth + 1,
-            );
-        }
-
-        return $rendered;
     }
 
     /**

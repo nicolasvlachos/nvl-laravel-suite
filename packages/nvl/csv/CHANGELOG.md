@@ -4,6 +4,18 @@ All notable changes to `nvl/csv` are documented here.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-08-13
+
+### Fixed
+
+- Added explicit import transaction connection selection so whole-import and
+  batch rollback guarantees apply to non-default Laravel connections.
+
+### Changed
+
+- Extracted connection-aware transaction ownership from the stateful importer
+  into a focused internal runner without changing the fluent import API.
+
 ## [1.0.5] - 2026-08-12
 
 ### Changed

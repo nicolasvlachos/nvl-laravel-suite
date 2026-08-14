@@ -4,6 +4,13 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-08-13
+
+### Changed
+
+- Extracted recursive normalized-value rendering into a focused renderer while
+  retaining the validator's existing rendering entry point for compatibility.
+
 ## [1.0.5] - 2026-08-12
 
 ### Changed

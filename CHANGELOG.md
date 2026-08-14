@@ -21,6 +21,8 @@ Module-level implementation history remains available in each
   module and required host scheduler entry.
 - Extended Mail Notifications diagnostics across both administrative read
   authorizers, required scheduled-mail factories, and host scheduler entries.
+- Added local generated-TypeScript freshness and compiler enforcement plus an
+  explicit PostgreSQL, Redis, and S3-compatible Media production-stack proof.
 
 ### Fixed
 
@@ -28,12 +30,22 @@ Module-level implementation history remains available in each
   baseline while retaining the 90% changed-line requirement for new source.
 - Included root suite commands in the generated public contract so clean archive
   consumers discover and execute `nvl:suite:doctor` with every module Doctor.
+- Made CSV whole-import and batch transactions use an explicitly selected
+  Laravel connection, including rollback coverage on a secondary connection.
+- Regenerated the missing scheduled-mail read-ability TypeScript contract,
+  refreshed the audited Node lockfile, and aligned runtime documentation with
+  the suite's PHP 8.4 requirement.
+- Made the default database queue visibility timeout compatible with the strict
+  Activity Doctor's 900-second purge-job contract.
 
 ### Changed
 
 - Scoped changed-package coverage to packages with modified PHP production
   source, so release notes and test-only changes cannot activate unrelated
   legacy global coverage debt while changed source remains held to 90%.
+- Routed Comments and Media reads out of HTTP controllers, separated recursive
+  Content rendering from value validation, and isolated CSV transaction
+  ownership behind focused service boundaries.
 
 ## [1.0.5] - 2026-08-12
 

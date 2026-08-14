@@ -6841,12 +6841,13 @@
                 ],
                 "Nvl\\Comments\\Http\\Controllers\\CommentAttachmentAssetController": [
                     "final class Nvl\\Comments\\Http\\Controllers\\CommentAttachmentAssetController extends Illuminate\\Routing\\Controller",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentAttachmentAssetResponder $assets, Nvl\\Media\\Services\\MediaConfiguredVariationService $variations): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentAttachmentAssetResponder $assets, Nvl\\Media\\Services\\MediaQueryService $mediaQueries, Nvl\\Media\\Services\\MediaConfiguredVariationService $variations): mixed",
                     "public function asset(Illuminate\\Http\\Request $request, string $association): Symfony\\Component\\HttpFoundation\\BinaryFileResponse|Symfony\\Component\\HttpFoundation\\StreamedResponse|Illuminate\\Http\\Response",
                     "public function thumbnail(Illuminate\\Http\\Request $request, string $association): Symfony\\Component\\HttpFoundation\\BinaryFileResponse|Symfony\\Component\\HttpFoundation\\StreamedResponse|Illuminate\\Http\\Response"
                 ],
                 "Nvl\\Comments\\Http\\Controllers\\CommentsManagementController": [
                     "final class Nvl\\Comments\\Http\\Controllers\\CommentsManagementController extends Illuminate\\Routing\\Controller",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
                     "public function index(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, Nvl\\Comments\\Actions\\ListModerationCommentsAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function reports(Illuminate\\Http\\Request $request, string $comment, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, Nvl\\Comments\\Actions\\ListCommentReportsAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections, Nvl\\Comments\\Services\\CommentTargetLocator $targets): Illuminate\\Http\\JsonResponse",
                     "public function targetReports(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, Nvl\\Comments\\Actions\\ListTargetCommentReportsAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
@@ -6861,6 +6862,7 @@
                 ],
                 "Nvl\\Comments\\Http\\Controllers\\MemberCommentsController": [
                     "final class Nvl\\Comments\\Http\\Controllers\\MemberCommentsController extends Illuminate\\Routing\\Controller",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Media\\Services\\MediaQueryService $mediaQueries): mixed",
                     "public function index(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, Nvl\\Comments\\Actions\\ListCommentsAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function store(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Comments\\Actions\\CreateCommentAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function show(Illuminate\\Http\\Request $request, string $comment, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Comments\\Actions\\GetCommentAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections, Nvl\\Comments\\Services\\CommentTargetLocator $targets): Illuminate\\Http\\JsonResponse",
@@ -6877,6 +6879,7 @@
                 ],
                 "Nvl\\Comments\\Http\\Controllers\\PublicCommentsController": [
                     "final class Nvl\\Comments\\Http\\Controllers\\PublicCommentsController extends Illuminate\\Routing\\Controller",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Media\\Services\\MediaQueryService $mediaQueries): mixed",
                     "public function index(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, Nvl\\Comments\\Actions\\ListCommentsAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function store(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Comments\\Actions\\CreateCommentAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function show(string $comment, Nvl\\Comments\\Actions\\GetCommentAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections, Nvl\\Comments\\Services\\CommentTargetLocator $targets): Illuminate\\Http\\JsonResponse",
@@ -10059,6 +10062,13 @@
                     "public function capture(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor, bool $publishing=false): Nvl\\Content\\Data\\ContentCompositionSnapshotData",
                     "public function render(Nvl\\Content\\Data\\ContentCompositionSnapshotData $snapshot, string $locale, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\RenderedContentCompositionData"
                 ],
+                "Nvl\\Content\\Services\\ContentValueRenderer": [
+                    "final readonly class Nvl\\Content\\Services\\ContentValueRenderer",
+                    "public function __construct(Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentLocalePolicy $locales): mixed",
+                    "public function render(Nvl\\Content\\Schema\\ContentSchema $schema, array $values, Nvl\\Content\\Data\\ContentActorData $actor, string $locale, Nvl\\Content\\Enums\\ContentVisibility $visibility, ?Nvl\\Content\\Services\\ContentRenderResources $resources=null, ?Illuminate\\Database\\Eloquent\\Model $owner=null, bool $publicOnly=false, ?string $group=null): array",
+                    "@param array<string, mixed> $values",
+                    "@return array<string, mixed>"
+                ],
                 "Nvl\\Content\\Support\\ContentActorFactory": [
                     "final class Nvl\\Content\\Support\\ContentActorFactory",
                     "public function fromRequest(Illuminate\\Http\\Request $request): Nvl\\Content\\Data\\ContentActorData"
@@ -10138,7 +10148,7 @@
                 ],
                 "Nvl\\Content\\Validation\\ContentValueValidator": [
                     "final readonly class Nvl\\Content\\Validation\\ContentValueValidator",
-                    "public function __construct(Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentLocalePolicy $locales, Nvl\\Content\\Services\\ContentLocalizedValues $localizedValues): mixed",
+                    "public function __construct(Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentLocalePolicy $locales, Nvl\\Content\\Services\\ContentLocalizedValues $localizedValues, ?Nvl\\Content\\Services\\ContentValueRenderer $renderer=null): mixed",
                     "public function validate(Nvl\\Content\\Schema\\ContentSchema $schema, array $values, array $translations, Nvl\\Content\\Data\\ContentActorData $actor, Nvl\\Content\\Enums\\ContentVisibility $visibility, bool $publishing=false, ?Illuminate\\Database\\Eloquent\\Model $owner=null, ?string $group=null, bool $resolveExternal=true): Nvl\\Content\\Validation\\ValidatedContentValues",
                     "@param array<string, mixed> $values",
                     "@param array<string, array<string, mixed>> $translations",
@@ -11805,6 +11815,9 @@
                     "public function withTransaction(bool $use=true): self",
                     "@param bool $use True to use transactions, false to disable",
                     "@return self Returns this instance for method chaining",
+                    "public function onConnection(?string $connection): self",
+                    "@param string|null $connection Configured Laravel connection name, or null for the default connection",
+                    "@return self Returns this instance for method chaining",
                     "public function detectDuplicates(string $field): self",
                     "@param string $field CSV field name to monitor for duplicates",
                     "@return self Returns this instance for method chaining",
@@ -11887,6 +11900,13 @@
                     "public function getStatistics(): array",
                     "@return array<string, mixed> Complete memory statistics and configuration",
                     "@throws DivisionByZeroError If percentage calculation encounters invalid limits"
+                ],
+                "Nvl\\Csv\\Support\\CSVTransactionRunner": [
+                    "final readonly class Nvl\\Csv\\Support\\CSVTransactionRunner",
+                    "public function import(?string $connection, Closure $operation): Nvl\\Csv\\ValueObjects\\CSVImportResult",
+                    "@param Closure(): CSVImportResult $operation",
+                    "public function batch(?string $connection, Closure $operation): void",
+                    "@param Closure(): void $operation"
                 ],
                 "Nvl\\Csv\\Transformers\\CSVTransformer": [
                     "abstract class Nvl\\Csv\\Transformers\\CSVTransformer",
@@ -22295,6 +22315,7 @@
                     "public function filterOptions(?Illuminate\\Contracts\\Auth\\Authenticatable $user=null): array",
                     "@return array{",
                     "public function show(string $id, bool $includeVariations=true): Nvl\\Media\\Models\\Media",
+                    "public function activeAssociation(string $id, string $associableType, string $collection): Nvl\\Media\\Models\\MediaAssociation",
                     "public function usages(string $id): Illuminate\\Support\\Collection",
                     "@return Collection<int, MediaUsage>",
                     "public function findMany(array $ids): Illuminate\\Database\\Eloquent\\Collection",

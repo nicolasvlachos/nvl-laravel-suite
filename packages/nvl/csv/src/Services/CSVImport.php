@@ -10,7 +10,6 @@ use DivisionByZeroError;
 use Error;
 use Exception;
 use Generator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Nvl\Csv\Data\CSVImportOptionsData;
@@ -26,6 +25,7 @@ use Nvl\Csv\Exceptions\CSVMemoryException;
 use Nvl\Csv\Exceptions\CSVParseException;
 use Nvl\Csv\Exceptions\CSVValidationException;
 use Nvl\Csv\Support\CSVMemoryManager;
+use Nvl\Csv\Support\CSVTransactionRunner;
 use Nvl\Csv\ValueObjects\CSVConfiguration;
 use Nvl\Csv\ValueObjects\CSVFieldMapping;
 use Nvl\Csv\ValueObjects\CSVImportResult;
@@ -55,6 +55,8 @@ final class CSVImport
     private ?CSVImportOptionsData $options = null;
 
     private CSVMemoryManager $memoryManager;
+
+    private CSVTransactionRunner $transactions;
 
     /** @var resource|null */
     private $handle = null;
@@ -106,6 +108,8 @@ final class CSVImport
 
     private bool $useTransaction = true;
 
+    private ?string $transactionConnection = null;
+
     private bool $diagnosticsTruncated = false;
 
     /** @var array<string, array<mixed>> */
@@ -124,6 +128,7 @@ final class CSVImport
     {
         $this->configuration = $configuration ?? CSVConfiguration::default();
         $this->memoryManager = new CSVMemoryManager;
+        $this->transactions = new CSVTransactionRunner;
         $this->startTime = microtime(true);
     }
 
@@ -450,6 +455,23 @@ final class CSVImport
     }
 
     /**
+     * Select the database connection that owns import and batch transactions.
+     *
+     * @param  string|null  $connection  Configured Laravel connection name, or null for the default connection
+     * @return self Returns this instance for method chaining
+     */
+    public function onConnection(?string $connection): self
+    {
+        if ($connection !== null && trim($connection) === '') {
+            throw new InvalidArgumentException('CSV transaction connection must be a non-empty string or null.');
+        }
+
+        $this->transactionConnection = $connection;
+
+        return $this;
+    }
+
+    /**
      * Enable duplicate value detection for a specific field.
      *
      * Maintains an index of values seen for the specified field to detect
@@ -522,33 +544,18 @@ final class CSVImport
     {
         $this->validateConfiguration();
         $this->openFile();
-        $transactionStarted = false;
 
         try {
             $this->readHeaders();
             $this->validateHeaders();
 
-            if ($this->useTransaction) {
-                DB::beginTransaction();
-                $transactionStarted = true;
-            }
-
-            $result = $this->processFile();
-
-            if ($transactionStarted) {
-                if ($result->isSuccessful()) {
-                    DB::commit();
-                } else {
-                    DB::rollBack();
-                }
-                $transactionStarted = false;
-            }
-
-            return $result;
+            return $this->useTransaction
+                ? $this->transactions->import(
+                    $this->transactionConnection,
+                    $this->processFile(...),
+                )
+                : $this->processFile();
         } catch (Throwable $e) {
-            if ($transactionStarted) {
-                DB::rollBack();
-            }
             $this->progress = $this->progress?->fail($e->getMessage(), CSVErrorLevelEnum::CRITICAL);
             throw $e;
         } finally {
@@ -1108,8 +1115,11 @@ final class CSVImport
     {
         try {
             if ($this->useTransaction) {
-                DB::transaction(
-                    fn () => $batchProcessor($batch, $batchNumber),
+                $this->transactions->batch(
+                    $this->transactionConnection,
+                    function () use ($batch, $batchNumber, $batchProcessor): void {
+                        $batchProcessor($batch, $batchNumber);
+                    },
                 );
             } else {
                 $batchProcessor($batch, $batchNumber);

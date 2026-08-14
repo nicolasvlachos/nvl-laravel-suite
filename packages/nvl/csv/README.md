@@ -22,7 +22,7 @@ The public namespace is `Nvl\Csv`. Its fluent import/export surface is compatibl
 
 ## Requirements and installation
 
-- PHP 8.3 or newer
+- PHP 8.4 or newer
 - Laravel 12 or 13
 - `ext-filter`, `ext-iconv`, `ext-json`, and `ext-mbstring`
 - `nvl/data:^1.0`
@@ -94,7 +94,7 @@ $result = CSVImport::make()
 
 `fromFile()` accepts an absolute local path. `fromDisk()` reads a Laravel disk stream and does not require the adapter to expose a local path. With no field mappings, rows are returned as header-keyed associative arrays.
 
-`import()` returns `CSVImportResult`. Imports use a database transaction by default. A result containing row failures causes that top-level transaction to roll back; use `withTransaction(false)` when successful rows should be committed independently, or use `stopOnError()` when the first threshold-matching error must stop processing.
+`import()` returns `CSVImportResult`. Imports use a database transaction by default. A result containing row failures causes that top-level transaction to roll back. The transaction owns the default Laravel database connection unless `onConnection('connection-name')` selects another configured connection. Writes performed by callbacks must use that same connection for the import's atomicity guarantee to apply. Use `withTransaction(false)` when successful rows should be committed independently, or use `stopOnError()` when the first threshold-matching error must stop processing.
 
 For pull-based processing:
 
@@ -109,6 +109,7 @@ For bounded synchronous writes:
 ```php
 $result = CSVImport::make()
     ->fromFile($path)
+    ->onConnection('tenant')
     ->batch(500, static function (array $rows, int $batchNumber): void {
         // Each callback is wrapped in its own transaction by default.
     });

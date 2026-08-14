@@ -14,7 +14,7 @@
 
 ## Purpose
 
-`nvl/support` is the smallest foundation in the NVL package family. It provides transport-neutral business exceptions and stable response-code contracts for Laravel 12–13 on PHP 8.3–8.4.
+`nvl/support` is the smallest foundation in the NVL package family. It provides transport-neutral business exceptions and stable response-code contracts for Laravel 12–13 on PHP 8.4+.
 
 It deliberately has no internal NVL dependency, configuration, migrations, models, routes, controllers, DTOs, pagination, TypeScript registry, global state, or consumer-domain helper.
 

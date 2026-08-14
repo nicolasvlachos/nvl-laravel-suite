@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Nvl\Csv\Data\CSVImportOptionsData;
@@ -147,6 +148,42 @@ it('does not roll back a caller transaction when setup fails before its own tran
             DB::rollBack();
         }
     }
+});
+
+it('rolls back import writes on the explicitly selected database connection', function (): void {
+    config()->set('database.connections.csv_import', [
+        'driver' => 'sqlite',
+        'database' => ':memory:',
+        'prefix' => '',
+        'foreign_key_constraints' => true,
+    ]);
+    $connection = DB::connection('csv_import');
+    $connection->getSchemaBuilder()->create('imported_rows', function (Blueprint $table): void {
+        $table->unsignedInteger('external_id');
+    });
+    $path = $this->temporaryCsv("id\n1\n2\n");
+
+    $result = CSVImport::make()
+        ->fromFile($path)
+        ->onConnection('csv_import')
+        ->processRow(function (array $row) use ($connection): void {
+            $connection->table('imported_rows')->insert([
+                'external_id' => (int) $row['id'],
+            ]);
+
+            if ($row['id'] === '2') {
+                throw new Exception('reject the complete import');
+            }
+        })
+        ->import();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and($connection->table('imported_rows')->count())->toBe(0);
+});
+
+it('rejects blank transaction connection names', function (): void {
+    expect(fn (): CSVImport => CSVImport::make()->onConnection('  '))
+        ->toThrow(InvalidArgumentException::class, 'non-empty string or null');
 });
 
 it('honors the configured error threshold when stop on error is enabled', function (): void {

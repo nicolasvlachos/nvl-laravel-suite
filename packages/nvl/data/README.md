@@ -14,7 +14,7 @@
 
 ## Purpose
 
-`nvl/data` is the package family's sole DTO and PHP-to-TypeScript boundary for Laravel 12–13 on PHP 8.3–8.5. It standardizes Spatie Data persistence transforms, pagination, deterministic source registration, declaration generation, integrity manifests, stale checks, and protected artifact delivery.
+`nvl/data` is the package family's sole DTO and PHP-to-TypeScript boundary for Laravel 12–13 on PHP 8.4+. It standardizes Spatie Data persistence transforms, pagination, deterministic source registration, declaration generation, integrity manifests, stale checks, and protected artifact delivery.
 
 It has no internal NVL dependency. It does not own Eloquent models, database transactions, domain validation policy, content localization, or frontend build tooling.
 

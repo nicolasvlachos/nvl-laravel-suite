@@ -247,8 +247,9 @@ composer quality
 
 The root quality gate checks formatting, Larastan/PHPStan at maximum strictness,
 declared module and extension dependencies, suite architecture/distribution
-rules, the frozen public contracts, and the complete Pest suite with a
-1 GB memory limit. The root integration suite is an executable reference
+rules, the frozen public contracts, generated TypeScript freshness and
+compilation, and the complete Pest suite with a 1 GB memory limit. The root
+integration suite is an executable reference
 consumer: one application model composes Activity, Comments, Content, Media,
 Metafields, SEO, and Taxonomy and exercises the shared registries, strict
 doctors, and a constant eager-loading query budget. Module-specific test suites
@@ -337,6 +338,7 @@ Modules that expose DTO or enum contracts register their source paths with the D
 php artisan nvl:data:types:generate --fail-on-warning
 php artisan nvl:data:types:check --fail-on-warning
 php artisan nvl:data:types:manifest
+npm run types:check
 ```
 
 The explicit strict flags are available in suite 1.0.2 and later. Generated

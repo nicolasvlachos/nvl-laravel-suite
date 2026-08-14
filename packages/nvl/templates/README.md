@@ -14,7 +14,7 @@
 
 `nvl/templates` is a composable Laravel 12–13 package for rendering
 source-controlled Blade templates as HTML, PDF, or application-defined output.
-It supports PHP 8.3 and newer.
+It supports PHP 8.4 and newer.
 
 Applications migrating class-based document templates can use the familiar
 surface under `Nvl\Templates\Templates`, `Nvl\Templates\Pdf`, and

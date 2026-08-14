@@ -29,7 +29,7 @@ The database is an editing and synchronization workspace. It is not installed as
 
 ## Requirements and installation
 
-- PHP 8.3+
+- PHP 8.4+
 - Laravel 12 or 13
 - `nvl/data`, `nvl/filterable`, and `nvl/support`
 

@@ -6,7 +6,7 @@ modules, not independently released packages.
 
 ## Development setup
 
-Requirements are PHP 8.3 or newer, Composer 2, and the PHP extensions declared
+Requirements are PHP 8.4 or newer, Composer 2, and the PHP extensions declared
 by the root `composer.json`.
 
 ```bash
