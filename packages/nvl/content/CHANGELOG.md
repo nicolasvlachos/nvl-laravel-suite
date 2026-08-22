@@ -4,10 +4,12 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
-## [1.0.6] - 2026-08-13
+## [1.0.7] - 2026-08-22
 
 ### Changed
 
+- Aligned the documented runtime requirement with the PHP 8.4+ package
+  baseline.
 - Extracted recursive normalized-value rendering into a focused renderer while
   retaining the validator's existing rendering entry point for compatibility.
 

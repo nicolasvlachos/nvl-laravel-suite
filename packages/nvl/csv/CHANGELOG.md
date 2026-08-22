@@ -4,7 +4,7 @@ All notable changes to `nvl/csv` are documented here.
 
 ## [Unreleased]
 
-## [1.0.6] - 2026-08-13
+## [1.0.7] - 2026-08-22
 
 ### Fixed
 
@@ -13,6 +13,8 @@ All notable changes to `nvl/csv` are documented here.
 
 ### Changed
 
+- Aligned the documented runtime requirement with the PHP 8.4+ package
+  baseline.
 - Extracted connection-aware transaction ownership from the stateful importer
   into a focused internal runner without changing the fluent import API.
 
