@@ -9,6 +9,21 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-08-22
+
+### Added
+
+- Added aggregate enabled-module agent-skill publication through the
+  `suite-skills` tag and `nvl:suite:skills:publish` command.
+- Added a versioned Suite ownership manifest with per-file hashes and the
+  read-only `nvl:suite:skills:doctor` drift check.
+
+### Changed
+
+- Made managed skill updates preserve locally modified copies by default and
+  refuse to overwrite unmanaged or application-authored skill directories,
+  including when forced.
+
 ## [1.0.6] - 2026-08-13
 
 ### Added

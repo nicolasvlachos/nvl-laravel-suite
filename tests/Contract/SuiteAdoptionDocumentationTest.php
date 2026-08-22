@@ -62,11 +62,17 @@ it('documents every installation profile and suite diagnostic command', function
 
     expect($profiles)->toContain(
         'nvl:suite:configuration --format=json',
+        'nvl:suite:skills:publish',
+        'nvl:suite:skills:doctor --strict',
         'nvl:suite:doctor --production --strict --format=json',
     )->and($readme)->toContain(
         'docs/installation-profiles.md',
         'docs/adoption-matrix.md',
         'nvl:suite:configuration',
+        'vendor:publish --tag=suite-skills',
+        'nvl:suite:skills:publish',
+        'nvl:suite:skills:doctor --strict',
+        '.agents/skills/.nvl-suite-skills.json',
         'nvl:suite:doctor --production --strict',
     );
 });

@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Nvl\Suite;
 
+use Composer\InstalledVersions;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Nvl\Suite\Console\Commands\SuiteConfigurationCommand;
 use Nvl\Suite\Console\Commands\SuiteDoctorCommand;
+use Nvl\Suite\Console\Commands\SuiteSkillsDoctorCommand;
+use Nvl\Suite\Console\Commands\SuiteSkillsPublishCommand;
 use Nvl\Suite\Services\SuiteConfigurationInspector;
+use Nvl\Suite\Services\SuiteSkillManager;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 
 /**
@@ -30,6 +35,16 @@ final class SuiteServiceProvider extends ServiceProvider
             ),
         );
         $this->app->singleton(SuiteConfigurationInspector::class);
+        $this->app->singleton(
+            SuiteSkillManager::class,
+            static fn (Application $app): SuiteSkillManager => new SuiteSkillManager(
+                filesystem: $app->make(Filesystem::class),
+                catalog: $app->make(SuiteModuleCatalog::class),
+                suiteRoot: dirname(__DIR__),
+                applicationRoot: $app->basePath(),
+                suiteVersion: self::installedSuiteVersion(),
+            ),
+        );
 
         foreach ($this->app->make(SuiteModuleCatalog::class)->effectiveProviders() as $provider) {
             $this->app->register($provider);
@@ -45,11 +60,43 @@ final class SuiteServiceProvider extends ServiceProvider
             dirname(__DIR__).'/config/nvl-suite.php' => config_path('nvl-suite.php'),
         ], 'suite-config');
 
+        $skillPublications = [];
+
+        foreach ($this->app->make(SuiteModuleCatalog::class)->effectiveModules() as $module) {
+            $skill = 'nvl-'.$module;
+            $skillPublications[dirname(__DIR__).'/resources/boost/skills/'.$skill]
+                = base_path('.agents/skills/'.$skill);
+        }
+
+        $this->publishes($skillPublications, 'suite-skills');
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SuiteConfigurationCommand::class,
                 SuiteDoctorCommand::class,
+                SuiteSkillsDoctorCommand::class,
+                SuiteSkillsPublishCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Resolve the installed Composer version recorded in published manifests.
+     */
+    private static function installedSuiteVersion(): string
+    {
+        $rootPackage = InstalledVersions::getRootPackage();
+
+        if ($rootPackage['name'] === SuiteSkillManager::OWNER) {
+            return $rootPackage['pretty_version'];
+        }
+
+        if (InstalledVersions::isInstalled(SuiteSkillManager::OWNER)) {
+            return InstalledVersions::getPrettyVersion(SuiteSkillManager::OWNER)
+                ?? InstalledVersions::getVersion(SuiteSkillManager::OWNER)
+                ?? 'unknown';
+        }
+
+        return 'unknown';
     }
 }

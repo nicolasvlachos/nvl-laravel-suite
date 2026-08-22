@@ -295,8 +295,46 @@ The suite archive mirrors the 20 canonical package skills under its root
 `resources/boost/skills` directory for native dependency discovery. The family
 validator rejects any mirror drift.
 
-To install one module skill without running Boost discovery, publish it into a
-consumer application:
+For a Suite application, publish every effective module skill—including
+transitive module dependencies—with one managed command:
+
+```bash
+php artisan nvl:suite:skills:publish
+```
+
+The command writes `.agents/skills/.nvl-suite-skills.json`. That manifest records
+the owning package, installed Suite version, module, directory, and SHA-256 hash
+of every managed file. Updates follow these ownership rules:
+
+- missing Suite skills are installed;
+- byte-identical existing Suite skills are adopted into the manifest;
+- unmodified manifest-owned skills are updated;
+- locally modified manifest-owned skills stop with a conflict unless
+  `--force` is passed;
+- unmanaged directories are never overwritten, including by `--force`, and
+  unrelated application-authored skills are never inspected or changed.
+
+Check ownership, version, missing skills, local modifications, and packaged
+source drift without writing any files:
+
+```bash
+php artisan nvl:suite:skills:doctor --strict
+php artisan nvl:suite:skills:doctor --strict --format=json
+```
+
+The aggregate Laravel publication tag also resolves only effective modules:
+
+```bash
+php artisan vendor:publish --tag=suite-skills
+```
+
+Laravel's generic publisher cannot generate the application-specific ownership
+manifest. After using the tag for initial materialization, run
+`nvl:suite:skills:publish` once to adopt byte-identical directories. Use the
+managed command—not `vendor:publish --force`—for later updates.
+
+To install one module skill without running Boost discovery or aggregate Suite
+publication, its individual tag remains available:
 
 ```bash
 php artisan vendor:publish --tag=forms-skills

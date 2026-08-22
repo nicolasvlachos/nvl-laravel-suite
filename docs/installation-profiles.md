@@ -14,6 +14,18 @@ The configuration command reports `MATCH` only when the effective enabled
 module set equals the dependency-complete profile. It never prints arbitrary
 configuration values or secrets.
 
+Publish the skills for that same effective module set and verify their
+read-only ownership/content contract with:
+
+```bash
+php artisan nvl:suite:skills:publish
+php artisan nvl:suite:skills:doctor --strict
+```
+
+The publisher manages only directories recorded in
+`.agents/skills/.nvl-suite-skills.json`. It never replaces an unmanaged skill,
+even when `--force` is used.
+
 ## Auth only
 
 Enable `auth`.
@@ -73,6 +85,7 @@ php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
 php artisan nvl:suite:configuration --format=json
+php artisan nvl:suite:skills:doctor --strict --format=json
 php artisan nvl:suite:doctor --production --strict --format=json
 ```
 
