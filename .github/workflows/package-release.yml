@@ -246,7 +246,17 @@ jobs:
           while IFS= read -r tag; do
             php artisan vendor:publish --tag="$tag" --force
           done < "$publish_tags"
+          suite_skills_output=/tmp/nvl-suite-skills-output.json
+          if ! php artisan nvl:suite:skills:publish --format=json > "$suite_skills_output" 2>&1; then
+            cat "$suite_skills_output"
+            exit 1
+          fi
+          if ! php artisan nvl:suite:skills:doctor --strict --format=json > "$suite_skills_output" 2>&1; then
+            cat "$suite_skills_output"
+            exit 1
+          fi
           test -f config/nvl-suite.php
+          test -f .agents/skills/.nvl-suite-skills.json
           test -f nvl-auth.principals.json
           test -f mail-notifications.adoption.json
           test -f nvl-data.eslint.config.js
@@ -297,10 +307,17 @@ jobs:
             | awk '$1 ~ /^nvl:.*:doctor$/ {print $1}' \
             | sort -u > "$available_doctors"
           diff -u "$expected_doctors" "$available_doctors"
+          doctor_output=/tmp/nvl-release-doctor-output.json
           while IFS= read -r doctor; do
-            APP_ENV=testing MAIL_MAILER=array \
+            if [[ "$doctor" == "nvl:suite:skills:doctor" ]]; then
+              continue
+            fi
+            if ! APP_ENV=testing MAIL_MAILER=array \
               QUEUE_CONNECTION=database DB_QUEUE_RETRY_AFTER=960 \
-              php artisan "$doctor" --strict --format=json
+              php artisan "$doctor" --strict --format=json > "$doctor_output" 2>&1; then
+              cat "$doctor_output"
+              exit 1
+            fi
           done < "$expected_doctors"
           bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" audit --locked --no-interaction
 

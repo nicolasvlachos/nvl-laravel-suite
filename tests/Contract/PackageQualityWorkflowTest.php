@@ -530,6 +530,52 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
         );
 });
 
+it('adopts published Suite skills before running release doctors', function (): void {
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
+
+    expect($workflow)->toBeArray();
+
+    $consumerStep = collect($workflow['jobs']['archive']['steps'] ?? [])
+        ->firstWhere('name', 'Install and exercise the suite archive');
+
+    expect($consumerStep)->toBeArray();
+
+    $script = $consumerStep['run'] ?? null;
+
+    expect($script)->toBeString();
+
+    $publicationPosition = mb_strpos($script, 'php artisan nvl:suite:skills:publish --format=json');
+    $doctorLoopPosition = mb_strpos($script, 'while IFS= read -r doctor; do');
+
+    expect($publicationPosition)->toBeInt()
+        ->and($doctorLoopPosition)->toBeInt()
+        ->and($publicationPosition)->toBeLessThan($doctorLoopPosition)
+        ->and($script)->toContain(
+            'php artisan nvl:suite:skills:doctor --strict --format=json',
+            'test -f .agents/skills/.nvl-suite-skills.json',
+            'if [[ "$doctor" == "nvl:suite:skills:doctor" ]]; then',
+        );
+});
+
+it('prints release doctor output only when a doctor fails', function (): void {
+    $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
+
+    expect($workflow)->toBeArray();
+
+    $consumerStep = collect($workflow['jobs']['archive']['steps'] ?? [])
+        ->firstWhere('name', 'Install and exercise the suite archive');
+
+    expect($consumerStep)->toBeArray();
+
+    $script = $consumerStep['run'] ?? null;
+
+    expect($script)->toBeString()->toContain(
+        'doctor_output=/tmp/nvl-release-doctor-output.json',
+        'php artisan "$doctor" --strict --format=json > "$doctor_output" 2>&1; then',
+        'cat "$doctor_output"',
+    );
+});
+
 it('keeps every package workflow shell block syntactically valid', function (): void {
     $root = dirname(__DIR__, 2);
 
