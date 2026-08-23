@@ -1,9 +1,0 @@
-{
-    "namespace": "catalog",
-    "settings": {
-        "page_size": {
-            "type": "int",
-            "default": "not-an-integer"
-        }
-    }
-}
