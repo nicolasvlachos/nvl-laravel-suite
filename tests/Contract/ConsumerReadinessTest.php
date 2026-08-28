@@ -50,6 +50,30 @@ function expectConsumerReadinessEvidence(string $root, string $reference): void
     expect($anchors)->toContain($anchor);
 }
 
+it('keeps one canonical four-class consumer boundary across machine and rendered guidance', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/consumer-readiness.php';
+    $readiness = (string) file_get_contents($root.'/docs/consumer-readiness.md');
+    $adoption = (string) file_get_contents($root.'/docs/adoption-matrix.md');
+    $boundary = [
+        'allowed' => 'Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.',
+        'compatibility_1x' => 'Consumer-initiated package model queries and relation aggregates remain supported only where already documented.',
+        'forbidden' => 'Consumer writes through package models, builders, raw tables, pivots, or storage paths.',
+        'exceptions' => 'Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.',
+    ];
+
+    expect($catalog['consumer_boundary'] ?? null)->toBe($boundary);
+
+    foreach ([$readiness, $adoption] as $document) {
+        expect($document)->toContain(
+            '**Allowed:** '.$boundary['allowed'],
+            '**Compatibility-only in 1.x:** '.$boundary['compatibility_1x'],
+            '**Forbidden:** '.$boundary['forbidden'],
+            '**Explicit exceptions:** '.$boundary['exceptions'],
+        );
+    }
+});
+
 it('catalogs every package and readiness decision exactly once', function (): void {
     $root = dirname(__DIR__, 2);
     $family = require $root.'/tools/package-family.php';
@@ -80,7 +104,11 @@ it('catalogs every package and readiness decision exactly once', function (): vo
         $directModelAccess = $applicationApi['direct_model_access'] ?? null;
 
         expect($symbols)->toBeArray()->not->toBeEmpty()
-            ->and($directModelAccess)->toBeIn(['forbidden', 'declared_trait_query_api']);
+            ->and($directModelAccess)->toBeIn([
+                'compatibility_1x',
+                'explicit_exception',
+                'not_applicable',
+            ]);
 
         foreach ($symbols as $symbol) {
             expect($symbol)->toBeString()->not->toBeEmpty();
@@ -89,7 +117,7 @@ it('catalogs every package and readiness decision exactly once', function (): vo
 
         expectConsumerReadinessEvidence($root, $applicationApi['documentation']);
 
-        if ($directModelAccess === 'declared_trait_query_api') {
+        if ($directModelAccess === 'explicit_exception') {
             expect($applicationApi['rationale'] ?? null)->toBeString()->not->toBeEmpty();
         } else {
             expect($applicationApi['rationale'] ?? null)->toBeNull();
@@ -190,14 +218,26 @@ it('catalogs every package and readiness decision exactly once', function (): vo
     expect($catalogStateful)->toBe($expectedStateful);
 });
 
-it('limits declared model query APIs and built-in presets to reviewed capabilities', function (): void {
+it('limits explicit model query exceptions and built-in presets to reviewed capabilities', function (): void {
     $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $compatibilityPackages = [];
     $directModelPackages = [];
+    $notApplicablePackages = [];
     $presetPackages = [];
 
     foreach ($catalog['packages'] as $package => $policy) {
-        if ($policy['application_api']['direct_model_access'] === 'declared_trait_query_api') {
+        $modelPolicy = $policy['application_api']['direct_model_access'];
+
+        if ($modelPolicy === 'compatibility_1x') {
+            $compatibilityPackages[] = $package;
+        }
+
+        if ($modelPolicy === 'explicit_exception') {
             $directModelPackages[] = $package;
+        }
+
+        if ($modelPolicy === 'not_applicable') {
+            $notApplicablePackages[] = $package;
         }
 
         if ($policy['presets']['status'] === 'pass') {
@@ -205,10 +245,28 @@ it('limits declared model query APIs and built-in presets to reviewed capabiliti
         }
     }
 
+    sort($compatibilityPackages);
     sort($directModelPackages);
+    sort($notApplicablePackages);
     sort($presetPackages);
 
-    expect($directModelPackages)->toBe(['filterable', 'translatable'])
+    expect($compatibilityPackages)->toBe([
+        'activity',
+        'auth',
+        'comments',
+        'content',
+        'forms',
+        'mail-notifications',
+        'media',
+        'metafields',
+        'pages',
+        'seo',
+        'settings',
+        'taxonomy',
+        'templates',
+        'translations',
+    ])->and($directModelPackages)->toBe(['filterable', 'translatable'])
+        ->and($notApplicablePackages)->toBe(['csv', 'data', 'primitives', 'support'])
         ->and($presetPackages)->toBe(['content', 'media']);
 });
 
@@ -245,6 +303,35 @@ it('keeps the rendered matrix aligned with every catalog classification', functi
             $status($policy['presets']),
             $status($policy['operations']),
         ]);
+    }
+});
+
+it('renders every package model policy with its canonical classification', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/consumer-readiness.php';
+    $document = (string) file_get_contents($root.'/docs/consumer-readiness.md');
+    preg_match_all(
+        '/^\| `([^`]+)` \| [^|]+ \| ([^|]+) \|$/m',
+        $document,
+        $rows,
+        PREG_SET_ORDER,
+    );
+    $renderedPolicies = [];
+
+    foreach ($rows as $row) {
+        $renderedPolicies[$row[1]] = trim($row[2]);
+    }
+
+    expect(array_keys($renderedPolicies))->toHaveCount(count($catalog['packages']));
+
+    foreach ($catalog['packages'] as $package => $policy) {
+        $prefix = match ($policy['application_api']['direct_model_access']) {
+            'compatibility_1x' => 'Compatibility-only in 1.x:',
+            'explicit_exception' => 'Explicit exception:',
+            'not_applicable' => 'N/A:',
+        };
+
+        expect($renderedPolicies[$package] ?? null)->toStartWith($prefix);
     }
 });
 

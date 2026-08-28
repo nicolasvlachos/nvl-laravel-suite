@@ -10,6 +10,17 @@ the owning domain supplies its translation table. Optional scheduler entries
 are operational recommendations; feature-gated entries marked required are
 enforced when their feature is enabled.
 
+## Consumer boundary doctrine
+
+- **Allowed:** Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.
+- **Compatibility-only in 1.x:** Consumer-initiated package model queries and relation aggregates remain supported only where already documented.
+- **Forbidden:** Consumer writes through package models, builders, raw tables, pivots, or storage paths.
+- **Explicit exceptions:** Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.
+
+Adoption selects module ownership and operations; it never grants permission to
+bypass these package boundaries. Package-documented facades remain adapters to
+allowed Actions or explicit services.
+
 | Module | Tables and migration ownership | Queues | Scheduler entries | Replaceable/security contracts | Registered aliases | TypeScript | Doctor |
 |---|---|---|---|---|---|---|---|
 | `support` | None | None | None | None | None | No | N/A |

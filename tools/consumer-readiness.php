@@ -92,17 +92,29 @@ $notApplicable = static fn (string $rationale): array => [
  *
  * @return array{
  *     version: int,
+ *     consumer_boundary: array{
+ *         allowed: string,
+ *         compatibility_1x: string,
+ *         forbidden: string,
+ *         exceptions: string
+ *     },
  *     packages: array<string, array<string, mixed>>
  * }
  */
 return [
     'version' => 1,
+    'consumer_boundary' => [
+        'allowed' => 'Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.',
+        'compatibility_1x' => 'Consumer-initiated package model queries and relation aggregates remain supported only where already documented.',
+        'forbidden' => 'Consumer writes through package models, builders, raw tables, pivots, or storage paths.',
+        'exceptions' => 'Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.',
+    ],
     'packages' => [
         'support' => [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [BusinessException::class, ResponseCode::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/support/README.md#purpose',
             ],
@@ -126,7 +138,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [DataTransform::class, GeneratedTypesGenerator::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/data/README.md#dto-and-persistence-transforms',
             ],
@@ -150,7 +162,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ListUsersAction::class, AuthManagementAccess::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/auth/README.md#ownership',
             ],
@@ -174,7 +186,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [CSVImport::class, CSVExport::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/csv/README.md#purpose',
             ],
@@ -198,7 +210,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [Filterable::class, FilterSet::class],
-                'direct_model_access' => 'declared_trait_query_api',
+                'direct_model_access' => 'explicit_exception',
                 'rationale' => 'Filterable intentionally makes an allowlisted model trait and typed FilterSet the public query-composition contract; it owns no package model tables.',
                 'documentation' => 'packages/nvl/filterable/README.md#model-trait',
             ],
@@ -222,7 +234,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [Translatable::class, TranslationWriter::class],
-                'direct_model_access' => 'declared_trait_query_api',
+                'direct_model_access' => 'explicit_exception',
                 'rationale' => 'Translatable intentionally exposes typed traits, definitions, scopes, and model helpers on consumer or domain-owned models; domain mutation workflows remain package-owned Actions.',
                 'documentation' => 'packages/nvl/translatable/README.md#common-model-api',
             ],
@@ -246,7 +258,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [Money::class, LocaleCode::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/primitives/README.md#purpose-and-boundaries',
             ],
@@ -270,7 +282,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [SettingRepository::class, SetSettingAction::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/settings/README.md#typed-actions',
             ],
@@ -302,7 +314,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ActivityLog::class, ActivityReadService::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/activity/README.md#record-structured-activity',
             ],
@@ -326,7 +338,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ResolveTermsAction::class, TaxonomyTree::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/taxonomy/README.md#register-vocabularies-and-owners',
             ],
@@ -350,7 +362,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [MediaLibrary::class, MediaQueryService::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/media/README.md#facade-and-injectable-service-api',
             ],
@@ -382,7 +394,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ListMailNotificationsAction::class, TrackingLifecycle::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/mail-notifications/README.md#administrative-delivery-reads',
             ],
@@ -406,7 +418,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [Content::class, ResolveContentScopesAction::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/content/README.md#public-application-surface-and-dtos',
             ],
@@ -430,7 +442,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ListCommentsAction::class, HasComments::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/comments/README.md#boundaries',
             ],
@@ -454,7 +466,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [RenderTemplateAction::class, ListTemplatesAction::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/templates/README.md#purpose-and-boundaries',
             ],
@@ -478,7 +490,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ListOwnerMetafieldsAction::class, SetMetafieldAction::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/metafields/README.md#querying',
             ],
@@ -502,7 +514,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ResolvePageAction::class, GetNavigationAction::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/pages/README.md#purpose-and-boundaries',
             ],
@@ -526,7 +538,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ImportTranslationsAction::class, TranslationScanService::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/translations/README.md#purpose-and-boundary',
             ],
@@ -550,7 +562,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [GetSeoProfileAction::class, SeoHeadRenderer::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/seo/README.md#resolve-and-render-metadata',
             ],
@@ -582,7 +594,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ListFormsAction::class, CreateFormContract::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/forms/README.md#mutate-safely',
             ],
