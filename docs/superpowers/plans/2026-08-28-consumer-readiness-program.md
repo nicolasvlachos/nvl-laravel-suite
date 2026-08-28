@@ -48,7 +48,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-10 | [x] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | `85f4c0b` |
 | CR-11 | [x] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | `a0c8d61` |
 | CR-12 | [x] | Comments/Settings/SEO seams | Read-seams plan | CR-01 | 1.1/1.2 | `f267556` |
-| CR-13 | [ ] | Content owner editor projection | Pages/Content plan | CR-01 | 1.2 | — |
+| CR-13 | [x] | Content owner editor projection | Pages/Content plan | CR-01 | 1.2 | `aa4c689` |
 | CR-14 | [ ] | Content placement find/replace/reorder | Pages/Content plan | CR-13 | 1.2 | — |
 | CR-15 | [ ] | Page lookup/options/public children | Pages/Content plan | CR-01 | 1.2 | — |
 | CR-16 | [ ] | Page editor/publication composition | Pages/Content plan | CR-12, CR-13, CR-15 | 1.2 | — |
@@ -263,6 +263,26 @@ gate pass. Record the implementation commit beside the task before checking it.
   generated types/`tsc`, public contracts, dependency and package-family
   validation, strict Composer validation/autoloading, readiness evidence, and
   diff hygiene passed. KPO remained read-only; migration stays in CR-21.
+- 2026-08-29 — CR-13 extracted the existing Content editor bootstrap into
+  `GetOwnerContentEditorAction` and added the bounded, Action-only
+  `ListOwnerContentPlacementSummariesAction` in `aa4c689`. Read-only KPO
+  inspection showed its website controller manually eager-loading placements,
+  blocks, definitions, and translations; the package projection now returns
+  that editable graph through an optional nested `ContentBlockData` without
+  changing compatibility placement responses. Editor DTOs expose the validated
+  placement ceiling, deterministic catalogs and placement ordering, and a
+  fixed five-query populated read. Bulk reads accept at most 100 entries,
+  authorize all canonical owners before SQL, preserve serialization-safe
+  `<owner-type>:<owner-id>` keys, enforce bounded hydration, and use the same
+  five queries for one or 25 owners of one morph type. The original 22-argument
+  Content constructor remains callable; the bulk seam stays dependency-injected
+  to preserve package architecture. Content quality passed 118 tests with 820
+  assertions; readiness/skill contracts passed 19 tests with 1,701 assertions.
+  Independent review reported Ready Yes. The exact full `composer test` matrix,
+  root and all-package PHPStan, generated types/`tsc`, public contracts,
+  dependency and package-family validation, strict Composer validation and
+  autoloading, formatting, mirrored skills, and diff hygiene passed. KPO and
+  the original suite checkout remained read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
@@ -281,7 +301,7 @@ build suggestions, options, groups, identifier resolution, or name availability.
 
 ## Milestone 2: release 1.2 editor composition
 
-- [ ] Execute CR-13 and prove constant query count for one and twenty-five placements.
+- [x] Execute CR-13 and prove constant query count for editor and one-to-twenty-five-owner placement projections.
 - [ ] Execute CR-14 and prove owner locking, revision conflicts, ordering, and authorization.
 - [ ] Execute CR-15 and prove site, locale, publication, hierarchy, and result limits.
 - [ ] Execute CR-16 and regenerate the TypeScript contracts.

@@ -27,8 +27,9 @@
 - Create: `packages/nvl/content/src/Actions/GetOwnerContentEditorAction.php`
 - Create: `packages/nvl/content/src/Actions/ListOwnerContentPlacementSummariesAction.php`
 - Modify: `packages/nvl/content/src/Content.php`
-- Modify: `packages/nvl/content/src/Facades/Content.php`
 - Modify: `packages/nvl/content/src/Data/ContentEditorData.php`
+- Modify: `packages/nvl/content/src/Data/ContentPlacementData.php`
+- Modify: `packages/nvl/content/src/Http/ContentResponseData.php`
 - Modify: `packages/nvl/content/tests/Feature/ContentContractRegressionTest.php`
 - Modify: `packages/nvl/content/README.md`
 
@@ -36,7 +37,7 @@
 - Consumes: existing definition, preset, group, placement Actions and `ContentOwnerRegistry`.
 - Produces: `GetOwnerContentEditorAction::execute(Model&ContentOwner $owner, string $group, ContentActorData $actor): ContentEditorData`; existing `Content::editor()` delegates to it, and a bounded bulk placement projection supports editor indexes.
 
-- [ ] **Step 1: Extend the existing editor regression test before extraction**
+- [x] **Step 1: Extend the existing editor regression test before extraction**
 
 ```php
 $editor = app(GetOwnerContentEditorAction::class)->execute(
@@ -52,17 +53,18 @@ expect($editor->ownerType)->toBe('page')
 
 Keep the existing one-versus-twenty-five constant-query assertion and add exact
 ordering for definitions, presets, groups, regions, sort order, and IDs. Add a
-bulk-summary test for one and 25 owners with the same query count, per-owner
-authorization, stable owner-ID keys, and a hard 100-owner limit.
+bulk-summary test for one and 25 owners with the same five-query count,
+per-owner authorization, serialization-safe canonical owner-identity keys,
+and a hard 100-entry limit.
 
-- [ ] **Step 2: Run the regression test and verify the missing Action/field fails**
+- [x] **Step 2: Run the regression test and verify the missing Action/field fails**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/content/phpunit.xml.dist --compact packages/nvl/content/tests/Feature/ContentContractRegressionTest.php`
 
 Expected: FAIL because `GetOwnerContentEditorAction` and `placementLimit` do not
 exist.
 
-- [ ] **Step 3: Move the existing editor composition into the Action**
+- [x] **Step 3: Move the existing editor composition into the Action**
 
 Inject `ListContentDefinitionsAction`, `ListContentPresetsAction`,
 `ListContentGroupsAction`, `ListContentPlacementsAction`, and
@@ -70,7 +72,9 @@ Inject `ListContentDefinitionsAction`, `ListContentPresetsAction`,
 validated `content.placements.maximum_per_group` as `placementLimit`, and map
 every placement through `ContentPlacementData::fromModel()`.
 
-Replace the composition body in `Content::editor()` with:
+Delegate the composition body in `Content::editor()` to the injected Action,
+while preserving direct construction through the original 22-argument service
+constructor:
 
 ```php
 return $this->getOwnerEditor->execute($owner, $group, $actor);
@@ -81,19 +85,23 @@ Keep the facade annotation and all existing callers unchanged.
 Implement
 `ListOwnerContentPlacementSummariesAction::execute(iterable $owners, string
 $group, ContentActorData $actor): array` inside Content. Normalize/deduplicate
-one to 100 persisted `ContentOwner` models, resolve canonical type/ID, authorize
+zero to 100 persisted `ContentOwner` entries, resolve canonical type/ID, authorize
 `ListPlacements` for every owner before the bulk query, group queries by owner
 morph type, eager-load only the block/definition/translation projection, and
-return `array<string, list<ContentPlacementData>>` keyed by owner ID. Empty
-input returns an empty array without querying.
+return `array<string, list<ContentPlacementData>>` keyed by canonical
+`<owner-type>:<owner-id>` identity. The optional placement block DTO exposes
+the constrained block/definition/translation projection without changing
+non-eager placement response shape. Empty input returns an empty array without
+querying. The bulk seam remains an injected Action so the Content service does
+not require a service-locator fallback or a breaking constructor dependency.
 
-- [ ] **Step 4: Document the canonical editor boundary**
+- [x] **Step 4: Document the canonical editor boundary**
 
 Show dependency-injected Action and facade examples. State that
 `Content::placements()` returns documented 1.x identity models for compatibility,
 while new editor UIs use `Content::editor()` or the Action's DTO.
 
-- [ ] **Step 5: Run Content quality and generated-type checks**
+- [x] **Step 5: Run Content quality and generated-type checks**
 
 Run: `php tools/run-package-quality.php content`
 
@@ -105,10 +113,10 @@ Run: `composer types:check`
 
 Expected: PASS with `placementLimit` in the generated contract.
 
-- [ ] **Step 6: Commit CR-13**
+- [x] **Step 6: Commit CR-13** (`aa4c689`)
 
 ```bash
-git add packages/nvl/content/src/Actions/GetOwnerContentEditorAction.php packages/nvl/content/src/Actions/ListOwnerContentPlacementSummariesAction.php packages/nvl/content/src/Content.php packages/nvl/content/src/Facades/Content.php packages/nvl/content/src/Data/ContentEditorData.php packages/nvl/content/tests/Feature/ContentContractRegressionTest.php packages/nvl/content/README.md resources/js/types
+git add packages/nvl/content/src/Actions packages/nvl/content/src/Content.php packages/nvl/content/src/Data/ContentEditorData.php packages/nvl/content/src/Data/ContentPlacementData.php packages/nvl/content/src/Http/ContentResponseData.php packages/nvl/content/tests/Feature/ContentContractRegressionTest.php packages/nvl/content/README.md resources/js/types
 git commit -m "refactor(content): extract editor projection action"
 ```
 
