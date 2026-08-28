@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Nvl\Content\Actions\CreateContentBlockAction;
 use Nvl\Content\Actions\GetContentBlockAction;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
 use Nvl\Content\Actions\ListContentBlocksAction;
+use Nvl\Content\Actions\ListContentPlacementsAction;
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
 use Nvl\Content\Actions\PlaceContentBlockAction;
 use Nvl\Content\Actions\PublishContentBlockAction;
 use Nvl\Content\Actions\SyncContentDefinitionsAction;
@@ -25,6 +28,8 @@ use Nvl\Content\Content as ContentEngine;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentBlockQueryScope;
 use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentBlockData;
+use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Data\ContentScopeData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Data\Mutations\PlaceContentBlockData;
@@ -50,11 +55,13 @@ use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Services\ContentDefinitionLoader;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentLocalizedValues;
+use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPayloadGuard;
 use Nvl\Content\Services\ContentReferenceRegistry;
 use Nvl\Content\Services\ContentRenderResources;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Tests\Fixtures\TestContentOwner;
+use Nvl\Content\Tests\Fixtures\TestIntegerContentOwner;
 use Nvl\Content\Validation\ContentValidationContext;
 use Nvl\Content\Validation\ContentValueValidator;
 use Nvl\Filterable\Data\FilterCriterion;
@@ -87,6 +94,73 @@ it('rebuilds request-aware Content services between container scopes', function 
 
     expect(app(ContentEngine::class))->not->toBe($content)
         ->and(app(ContentLocalizedValues::class))->not->toBe($localizedValues);
+});
+
+it('preserves the Content service constructor and appends its optional editor dependency', function (): void {
+    $parameters = (new ReflectionClass(ContentEngine::class))
+        ->getConstructor()?->getParameters() ?? [];
+
+    expect(array_map(
+        static fn (ReflectionParameter $parameter): string => $parameter->getName(),
+        array_slice($parameters, 0, 22),
+    ))->toBe([
+        'listDefinitions',
+        'listPresets',
+        'listBlocks',
+        'getBlock',
+        'syncDefinitions',
+        'planDefinitionMigrations',
+        'applyDefinitionMigrations',
+        'listGroups',
+        'listPlacements',
+        'createBlock',
+        'updateBlock',
+        'publishBlock',
+        'archiveBlock',
+        'deleteBlock',
+        'restoreBlock',
+        'placeBlock',
+        'updatePlacement',
+        'deletePlacement',
+        'owners',
+        'renderer',
+        'snapshots',
+        'resolveScopes',
+    ])->and(array_map(
+        static fn (ReflectionParameter $parameter): bool => $parameter->isOptional(),
+        array_slice($parameters, 22),
+    ))->toBe([true]);
+});
+
+it('resolves the editor for a Content service built with the legacy constructor', function (): void {
+    $reflection = new ReflectionClass(ContentEngine::class);
+    $parameters = $reflection->getConstructor()?->getParameters() ?? [];
+    $arguments = array_map(
+        static function (ReflectionParameter $parameter): object {
+            $type = $parameter->getType();
+
+            expect($type)->toBeInstanceOf(ReflectionNamedType::class);
+
+            assert($type instanceof ReflectionNamedType);
+
+            return app($type->getName());
+        },
+        array_slice($parameters, 0, 22),
+    );
+    /** @var ContentEngine $content */
+    $content = $reflection->newInstanceArgs($arguments);
+    $owner = TestContentOwner::query()->create(['name' => 'Legacy Content service owner']);
+
+    $editor = $content->editor(
+        $owner,
+        'homepage',
+        ContentActorData::system(),
+    );
+
+    expect($editor->ownerType)->toBe('page')
+        ->and($editor->ownerId)->toBe($owner->id)
+        ->and($editor->group)->toBe('homepage')
+        ->and($editor->placements)->toBe([]);
 });
 
 it('provides model-first grouped compositions through the facade and trait', function (): void {
@@ -267,6 +341,18 @@ it('resolves complete localized content through ordered bounded scope fallback',
 
 it('returns one complete typed editor bootstrap for a consumer-owned UI', function (): void {
     $actor = ContentActorData::system();
+    app(ContentDefinitionRegistry::class)->register(new ContentDefinitionSource(
+        key: 'secondary-editor-schema',
+        name: 'Secondary editor schema',
+        description: null,
+        category: 'content',
+        version: 1,
+        view: null,
+        schema: ['fields' => []],
+        allowedScopes: ['site'],
+        allowedRegions: ['main'],
+        sortOrder: 10,
+    ));
     $owner = TestContentOwner::query()->create(['name' => 'Editor owner']);
     $block = Content::createBlock(
         new CreateContentBlockData(
@@ -286,18 +372,32 @@ it('returns one complete typed editor bootstrap for a consumer-owned UI', functi
         $actor,
     );
 
+    $actionEditor = app(GetOwnerContentEditorAction::class)->execute(
+        $owner,
+        'homepage',
+        $actor,
+    );
     $editor = Content::editor($owner, 'homepage', $actor);
 
     expect($editor->ownerType)->toBe('page')
         ->and($editor->ownerId)->toBe($owner->id)
         ->and($editor->group)->toBe('homepage')
+        ->and($editor->placementLimit)->toBe(1_000)
         ->and($editor->definitions[0]->key)->toBe('hero')
+        ->and(collect($editor->definitions)->pluck('key')->all())
+        ->toBe(['hero', 'secondary-editor-schema'])
         ->and(collect($editor->presets)->pluck('alias')->all())
         ->toBe(['banner', 'button', 'heading', 'image', 'link'])
         ->and($editor->groups)
         ->toBe(['default', 'homepage', 'main', 'primary', 'secondary'])
         ->and($editor->placements)->toHaveCount(1)
-        ->and($editor->placements[0]->id)->toBe($placement->id);
+        ->and($editor->placements[0])->toBeInstanceOf(ContentPlacementData::class)
+        ->and($editor->placements[0]->id)->toBe($placement->id)
+        ->and($editor->placements[0]->block)->toBeInstanceOf(ContentBlockData::class)
+        ->and($editor->placements[0]->block?->definition)->toBe('hero')
+        ->and($editor->placements[0]->block?->translations['en']['title'] ?? null)
+        ->toBe('Editor bootstrap')
+        ->and($actionEditor->toArray())->toBe($editor->toArray());
 });
 
 it('loads the editor bootstrap in a constant query count', function (): void {
@@ -328,7 +428,9 @@ it('loads the editor bootstrap in a constant query count', function (): void {
         try {
             $editor = Content::editor($owner, 'homepage', $actor);
             $queryCount = count(DB::getQueryLog());
-            count($editor->placements);
+            collect($editor->placements)->each(static function (ContentPlacementData $placement): void {
+                $placement->block?->translations;
+            });
 
             expect(DB::getQueryLog())->toHaveCount($queryCount);
 
@@ -351,8 +453,365 @@ it('loads the editor bootstrap in a constant query count', function (): void {
     [$populatedQueryCount, $placementCount] = $measure();
 
     expect($placementCount)->toBe(20)
-        ->and($singleQueryCount)->toBe(2)
+        ->and($singleQueryCount)->toBe(5)
         ->and($populatedQueryCount)->toBe($singleQueryCount);
+});
+
+it('orders editor placements deterministically by region order and id', function (): void {
+    $actor = ContentActorData::system();
+    $owner = TestContentOwner::query()->create(['name' => 'Ordered editor owner']);
+    $block = Content::createBlock(
+        new CreateContentBlockData(
+            definition: 'hero',
+            key: 'ordered-editor-block',
+            scope: 'site',
+            scopeKey: 'main-site',
+            translations: ['en' => ['title' => 'Ordered editor block']],
+        ),
+        $actor,
+    );
+    $sidebar = Content::place(
+        $block,
+        $owner,
+        'homepage',
+        new PlaceContentBlockData(key: 'sidebar', region: 'sidebar', sortOrder: 0),
+        $actor,
+    );
+    $later = Content::place(
+        $block,
+        $owner,
+        'homepage',
+        new PlaceContentBlockData(key: 'later', region: 'main', sortOrder: 10),
+        $actor,
+    );
+    $firstTie = Content::place(
+        $block,
+        $owner,
+        'homepage',
+        new PlaceContentBlockData(key: 'first-tie', region: 'main', sortOrder: 5),
+        $actor,
+    );
+    $secondTie = Content::place(
+        $block,
+        $owner,
+        'homepage',
+        new PlaceContentBlockData(key: 'second-tie', region: 'main', sortOrder: 5),
+        $actor,
+    );
+    $tieIds = [$firstTie->id, $secondTie->id];
+    sort($tieIds);
+
+    $editor = app(GetOwnerContentEditorAction::class)->execute(
+        $owner,
+        'homepage',
+        $actor,
+    );
+
+    expect(collect($editor->placements)->pluck('id')->all())->toBe([
+        ...$tieIds,
+        $later->id,
+        $sidebar->id,
+    ]);
+});
+
+it('bulk loads authorized owner placement summaries at a constant query count', function (): void {
+    $system = ContentActorData::system();
+    $block = Content::createBlock(
+        new CreateContentBlockData(
+            definition: 'hero',
+            key: 'bulk-summary-block',
+            scope: 'site',
+            scopeKey: 'main-site',
+            translations: ['en' => ['title' => 'Bulk summary block']],
+        ),
+        $system,
+    );
+    $owners = collect(range(1, 25))->map(
+        static fn (int $index): TestContentOwner => TestContentOwner::query()->create([
+            'name' => "Bulk owner {$index}",
+        ]),
+    );
+
+    foreach ($owners as $index => $owner) {
+        Content::place(
+            $block,
+            $owner,
+            'homepage',
+            new PlaceContentBlockData(
+                key: "placement-{$index}",
+                region: $index % 2 === 0 ? 'main' : 'sidebar',
+                sortOrder: $index,
+            ),
+            $system,
+        );
+    }
+
+    $authorization = new class implements ContentAuthorization
+    {
+        /** @var list<string> */
+        public array $ownerIds = [];
+
+        /** @var list<bool> */
+        public array $includesBlocks = [];
+
+        public function authorize(
+            ContentAbility $ability,
+            ContentActorData $actor,
+            ?ContentBlock $block = null,
+            ?Model $owner = null,
+            array $context = [],
+        ): void {
+            if ($ability === ContentAbility::ListPlacements && $owner !== null) {
+                $this->ownerIds[] = (string) $owner->getKey();
+                $this->includesBlocks[] = ($context['includes_blocks'] ?? null) === true;
+            }
+        }
+    };
+    app()->instance(ContentAuthorization::class, $authorization);
+    $actor = new ContentActorData('user', 'bulk-editor');
+    $measure = static function (array $owners) use ($actor): array {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $summaries = app(ListOwnerContentPlacementSummariesAction::class)
+                ->execute($owners, 'homepage', $actor);
+
+            return [count(DB::getQueryLog()), $summaries];
+        } finally {
+            DB::disableQueryLog();
+        }
+    };
+
+    [$singleQueryCount, $single] = $measure([$owners[0]]);
+    $authorization->ownerIds = [];
+    $authorization->includesBlocks = [];
+    [$bulkQueryCount, $bulk] = $measure($owners->all());
+
+    expect($single)->toHaveKey('page:'.$owners[0]->id)
+        ->and($single['page:'.$owners[0]->id][0])->toBeInstanceOf(ContentPlacementData::class)
+        ->and($single['page:'.$owners[0]->id][0]->block)->toBeInstanceOf(ContentBlockData::class)
+        ->and($single['page:'.$owners[0]->id][0]->block?->translations['en']['title'] ?? null)
+        ->toBe('Bulk summary block')
+        ->and($bulk)->toHaveCount(25)
+        ->and(array_keys($bulk))->toBe($owners->map(
+            static fn (TestContentOwner $owner): string => 'page:'.$owner->id,
+        )->all())
+        ->and($authorization->ownerIds)->toBe($owners->pluck('id')->all())
+        ->and($authorization->includesBlocks)->toBe(array_fill(0, 25, true))
+        ->and($bulkQueryCount)->toBe($singleQueryCount);
+});
+
+it('uses serialization-safe canonical keys for mixed string and integer owners', function (): void {
+    app(ContentOwnerRegistry::class)->register(
+        'integer-page',
+        TestIntegerContentOwner::class,
+    );
+    TestContentOwner::query()->forceCreate(['id' => '1', 'name' => 'String one']);
+    $stringOwner = TestContentOwner::query()->findOrFail('1');
+    $integerOwner = TestIntegerContentOwner::query()->create(['name' => 'Integer one']);
+
+    expect($integerOwner->getKey())->toBe(1);
+
+    $summaries = app(ListOwnerContentPlacementSummariesAction::class)->execute(
+        [$stringOwner, $integerOwner],
+        'default',
+        ContentActorData::system(),
+    );
+
+    expect(array_keys($summaries))->toBe(['page:1', 'integer-page:1'])
+        ->and(json_encode($summaries, JSON_THROW_ON_ERROR))->toStartWith('{');
+});
+
+it('bounds and short circuits bulk owner placement summaries', function (): void {
+    $actor = ContentActorData::system();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(app(ListOwnerContentPlacementSummariesAction::class)
+            ->execute([], 'homepage', $actor))->toBe([])
+            ->and(DB::getQueryLog())->toBe([]);
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $owners = collect(range(1, 101))->map(
+        static fn (int $index): TestContentOwner => TestContentOwner::query()->create([
+            'name' => "Bounded owner {$index}",
+        ]),
+    );
+
+    expect(fn () => app(ListOwnerContentPlacementSummariesAction::class)
+        ->execute($owners, 'homepage', $actor))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => app(ListOwnerContentPlacementSummariesAction::class)
+        ->execute(array_fill(0, 101, $owners[0]), 'homepage', $actor))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('authorizes every bulk summary owner before querying package or owner storage', function (): void {
+    $owners = collect(range(1, 2))->map(
+        static fn (int $index): TestContentOwner => TestContentOwner::query()->create([
+            'name' => "Denied owner {$index}",
+        ]),
+    );
+    $authorization = new class implements ContentAuthorization
+    {
+        public int $calls = 0;
+
+        public function authorize(
+            ContentAbility $ability,
+            ContentActorData $actor,
+            ?ContentBlock $block = null,
+            ?Model $owner = null,
+            array $context = [],
+        ): void {
+            if ($ability !== ContentAbility::ListPlacements) {
+                return;
+            }
+
+            $this->calls++;
+
+            if ($this->calls === 2) {
+                throw new AuthorizationException;
+            }
+        }
+    };
+    app()->instance(ContentAuthorization::class, $authorization);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => app(ListOwnerContentPlacementSummariesAction::class)->execute(
+            [$owners[0], $owners[0], $owners[1]],
+            'homepage',
+            new ContentActorData('user', 'denied-editor'),
+        ))->toThrow(AuthorizationException::class)
+            ->and($authorization->calls)->toBe(2)
+            ->and(DB::getQueryLog())->toBe([]);
+    } finally {
+        DB::disableQueryLog();
+    }
+});
+
+it('makes placed block disclosure explicit without changing legacy placement context', function (): void {
+    $owner = TestContentOwner::query()->create(['name' => 'Projection policy owner']);
+    $authorization = new class implements ContentAuthorization
+    {
+        /** @var list<array<string, mixed>> */
+        public array $contexts = [];
+
+        public function authorize(
+            ContentAbility $ability,
+            ContentActorData $actor,
+            ?ContentBlock $block = null,
+            ?Model $owner = null,
+            array $context = [],
+        ): void {
+            if ($ability === ContentAbility::ListPlacements) {
+                $this->contexts[] = $context;
+            }
+        }
+    };
+    app()->instance(ContentAuthorization::class, $authorization);
+    $action = app(ListContentPlacementsAction::class);
+    $actor = new ContentActorData('user', 'projection-policy');
+
+    $action->execute($owner, 'homepage', $actor);
+    $action->execute($owner, 'homepage', $actor, includeBlocks: true);
+
+    expect($authorization->contexts)->toBe([
+        ['group' => 'homepage'],
+        ['group' => 'homepage', 'includes_blocks' => true],
+    ]);
+});
+
+it('authorizes editor catalogs before reading placement or block storage', function (): void {
+    $owner = TestContentOwner::query()->create(['name' => 'Denied editor owner']);
+    $authorization = new class implements ContentAuthorization
+    {
+        public function authorize(
+            ContentAbility $ability,
+            ContentActorData $actor,
+            ?ContentBlock $block = null,
+            ?Model $owner = null,
+            array $context = [],
+        ): void {
+            if ($ability === ContentAbility::ListDefinitions) {
+                throw new AuthorizationException;
+            }
+        }
+    };
+    app()->instance(ContentAuthorization::class, $authorization);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => app(GetOwnerContentEditorAction::class)->execute(
+            $owner,
+            'homepage',
+            new ContentActorData('user', 'denied-editor-catalog'),
+        ))->toThrow(AuthorizationException::class)
+            ->and(DB::getQueryLog())->toBe([]);
+    } finally {
+        DB::disableQueryLog();
+    }
+});
+
+it('rejects stale owners and per-owner placement overflow in bulk summaries', function (): void {
+    $actor = ContentActorData::system();
+    $stale = TestContentOwner::query()->create(['name' => 'Stale owner']);
+    TestContentOwner::query()->whereKey($stale->id)->delete();
+
+    expect(fn () => app(ListOwnerContentPlacementSummariesAction::class)
+        ->execute([$stale], 'homepage', $actor))
+        ->toThrow(InvalidArgumentException::class);
+
+    $owner = TestContentOwner::query()->create(['name' => 'Overflow owner']);
+    $block = Content::createBlock(
+        new CreateContentBlockData(
+            definition: 'hero',
+            key: 'overflow-summary-block',
+            scope: 'site',
+            scopeKey: 'main-site',
+            translations: ['en' => ['title' => 'Overflow summary block']],
+        ),
+        $actor,
+    );
+
+    foreach (range(1, 2) as $index) {
+        Content::place(
+            $block,
+            $owner,
+            'homepage',
+            new PlaceContentBlockData(key: "overflow-{$index}"),
+            $actor,
+        );
+    }
+
+    config()->set('content.placements.maximum_per_group', 1);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => app(ListOwnerContentPlacementSummariesAction::class)
+            ->execute([$owner], 'homepage', $actor))
+            ->toThrow(InvalidArgumentException::class);
+        $placementQuery = collect(DB::getQueryLog())->first(
+            static fn (array $query): bool => str_contains(
+                $query['query'],
+                'content_placements',
+            ),
+        );
+
+        expect($placementQuery['query'] ?? null)->toContain('limit 2');
+    } finally {
+        DB::disableQueryLog();
+    }
 });
 
 it('reports persisted placements outside their owner group declaration', function (): void {

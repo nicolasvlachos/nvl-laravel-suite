@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Providers;
 
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
 use Nvl\Content\Console\ContentDoctorCommand;
 use Nvl\Content\Console\MigrateContentDefinitionsCommand;
 use Nvl\Content\Console\PublishContentViewsCommand;
@@ -89,6 +91,11 @@ final class ContentServiceProvider extends ServiceProvider
         $this->app->singleton(ContentReferenceRegistry::class);
         $this->app->singleton(ContentSchemaCompiler::class);
         $this->app->scoped(Content::class);
+        $this->app->when(Content::class)
+            ->needs(GetOwnerContentEditorAction::class)
+            ->give(static fn (Container $container): GetOwnerContentEditorAction => $container->make(
+                GetOwnerContentEditorAction::class,
+            ));
         $this->app->singleton(Validator::class);
     }
 

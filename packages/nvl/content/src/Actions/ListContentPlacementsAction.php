@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Content\Actions;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
@@ -34,26 +35,61 @@ final readonly class ListContentPlacementsAction
         Model&ContentOwner $owner,
         string $group,
         ContentActorData $actor,
+        bool $includeBlocks = false,
     ): Collection {
         $this->owners->assertGroup($owner, $group);
+        $context = ['group' => $group];
+
+        if ($includeBlocks) {
+            $context['includes_blocks'] = true;
+        }
+
         $this->authorization->authorize(
             ContentAbility::ListPlacements,
             $actor,
             owner: $owner,
-            context: ['group' => $group],
+            context: $context,
         );
         $maximum = ContentConfiguration::positiveInteger(
             'content.placements.maximum_per_group',
             1_000,
         );
-        /** @var Collection<int, ContentPlacement> $placements */
-        $placements = $owner->contentPlacements()
+        $query = $owner->contentPlacements()
             ->where('group', $group)
             ->orderBy('region')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->limit($maximum + 1)
-            ->get();
+            ->limit($maximum + 1);
+
+        if ($includeBlocks) {
+            $query->with([
+                'block' => static function (Relation $query): void {
+                    $query->select([
+                        'id',
+                        'definition_id',
+                        'key',
+                        'scope',
+                        'scope_key',
+                        'status',
+                        'visibility',
+                        'values',
+                        'metadata',
+                        'definition_version',
+                        'revision',
+                        'published_at',
+                    ]);
+                },
+                'block.definition' => static function (Relation $query): void {
+                    $query->select(['id', 'key']);
+                },
+                'block.translations' => static function (Relation $query): void {
+                    $query->select(['id', 'content_block_id', 'locale', 'values']);
+                },
+            ]);
+        }
+
+        /** @var Collection<int, ContentPlacement> $placements */
+        $placements = $query->get();
 
         if ($placements->count() > $maximum) {
             throw new InvalidArgumentException(

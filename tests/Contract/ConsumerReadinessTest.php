@@ -7,6 +7,8 @@ use Nvl\Activity\Support\ActivitySubjectReference;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
 use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
@@ -383,6 +385,23 @@ it('publishes stable Comments Settings and SEO consumer seams', function (): voi
         ->toBe('packages/nvl/seo/README.md#owner-centric-profile-reads')
         ->and($catalog['packages']['seo']['performance']['query_tests'])
         ->toContain('packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php');
+});
+
+it('publishes bounded Content editor projections as consumer seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $content = $catalog['packages']['content'];
+
+    expect($content['application_api']['symbols'])
+        ->toContain(
+            GetOwnerContentEditorAction::class,
+            ListOwnerContentPlacementSummariesAction::class,
+        )
+        ->and($content['application_api']['documentation'])
+        ->toBe('packages/nvl/content/README.md#editor-projections')
+        ->and($content['performance']['evidence'])
+        ->toContain('packages/nvl/content/README.md#editor-projections')
+        ->and($content['performance']['query_tests'])
+        ->toContain('packages/nvl/content/tests/Feature/ContentContractRegressionTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {

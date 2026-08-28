@@ -13,6 +13,7 @@ use Nvl\Content\Actions\CreateContentBlockAction;
 use Nvl\Content\Actions\DeleteContentBlockAction;
 use Nvl\Content\Actions\DeleteContentPlacementAction;
 use Nvl\Content\Actions\GetContentBlockAction;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
 use Nvl\Content\Actions\ListContentBlocksAction;
 use Nvl\Content\Actions\ListContentDefinitionsAction;
 use Nvl\Content\Actions\ListContentGroupsAction;
@@ -35,7 +36,6 @@ use Nvl\Content\Data\ContentDefinitionMigrationResultData;
 use Nvl\Content\Data\ContentDefinitionSyncPlanData;
 use Nvl\Content\Data\ContentEditorData;
 use Nvl\Content\Data\ContentFieldPresetData;
-use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Data\ContentScopeData;
 use Nvl\Content\Data\ContentScopeResolutionData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
@@ -78,6 +78,7 @@ final readonly class Content
         private ContentRenderer $renderer,
         private ContentSnapshotService $snapshots,
         private ResolveContentScopesAction $resolveScopes,
+        private ?GetOwnerContentEditorAction $getOwnerEditor = null,
     ) {}
 
     /**
@@ -273,20 +274,15 @@ final readonly class Content
         string $group,
         ContentActorData $actor,
     ): ContentEditorData {
-        $ownerType = $this->owners->type($owner);
-        $ownerId = $this->owners->id($owner);
-
-        return new ContentEditorData(
-            ownerType: $ownerType,
-            ownerId: $ownerId,
-            group: $group,
-            definitions: array_values($this->definitions($actor)->all()),
-            presets: array_values($this->presets($actor)->all()),
-            groups: array_values($this->groups($owner, $actor)->all()),
-            placements: array_values($this->placements($owner, $group, $actor)
-                ->map(ContentPlacementData::fromModel(...))
-                ->all()),
+        $action = $this->getOwnerEditor ?? new GetOwnerContentEditorAction(
+            $this->listDefinitions,
+            $this->listPresets,
+            $this->listGroups,
+            $this->listPlacements,
+            $this->owners,
         );
+
+        return $action->execute($owner, $group, $actor);
     }
 
     /**

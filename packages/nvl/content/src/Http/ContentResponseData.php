@@ -53,6 +53,7 @@ final class ContentResponseData
             'ownerType' => $editor->ownerType,
             'ownerId' => $editor->ownerId,
             'group' => $editor->group,
+            'placementLimit' => $editor->placementLimit,
             'definitions' => array_map(self::definition(...), $editor->definitions),
             'presets' => array_map(self::preset(...), $editor->presets),
             'groups' => $editor->groups,
@@ -86,6 +87,12 @@ final class ContentResponseData
     {
         $data = $placement->toArray();
         $data['overrides'] = self::object($placement->overrides);
+
+        if ($placement->block === null) {
+            unset($data['block']);
+        } else {
+            $data['block'] = self::block($placement->block);
+        }
 
         return $data;
     }

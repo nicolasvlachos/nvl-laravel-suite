@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Data;
 
+use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
+use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
@@ -35,10 +37,16 @@ final class ContentPlacementData extends Data
         #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $overrides,
         public readonly int $revision,
+        #[TypeScriptOptional]
+        public readonly ?ContentBlockData $block = null,
     ) {}
 
     public static function fromModel(ContentPlacement $placement): self
     {
+        $relatedBlock = $placement->relationLoaded('block')
+            ? $placement->getRelation('block')
+            : null;
+
         return new self(
             id: $placement->id,
             blockId: $placement->content_block_id,
@@ -52,6 +60,9 @@ final class ContentPlacementData extends Data
             isVisible: $placement->is_visible,
             overrides: is_array($placement->overrides) ? $placement->overrides : [],
             revision: $placement->revision,
+            block: $relatedBlock instanceof ContentBlock
+                ? ContentBlockData::fromModel($relatedBlock)
+                : null,
         );
     }
 }

@@ -848,6 +848,71 @@ other packages. `Nvl\Content\Facades\Content` is a static proxy to that exact
 surface for concise Laravel application code; it is not a second execution
 path. Every existing-resource transition requires the exact revision.
 
+## Editor projections
+
+New editor UIs should consume the package-owned projection instead of querying
+placement, block, definition, or translation tables themselves. Inject the
+focused Action when editor composition is the caller's only Content concern:
+
+```php
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
+use Nvl\Content\Data\ContentActorData;
+
+$editor = app(GetOwnerContentEditorAction::class)->execute(
+    $page,
+    'homepage',
+    ContentActorData::fromAuthenticatable($user),
+);
+```
+
+Applications already using the canonical service or facade receive the same
+DTO and authorization behavior:
+
+```php
+use Nvl\Content\Facades\Content;
+
+$editor = Content::editor($page, 'homepage', $actor);
+```
+
+`ContentEditorData` contains deterministically ordered definitions, presets,
+declared groups, placement DTOs with their editable `ContentBlockData`, and
+`placementLimit`, the validated `content.placements.maximum_per_group` ceiling
+the UI must enforce. The placed block projection includes its definition key,
+lifecycle state, base values, localized values, metadata, and revisions, so a
+consumer does not navigate `placement.block.definition` or
+`placement.block.translations` itself.
+
+For a page or dashboard index, inject the bounded Action and batch placement
+facts rather than eager-loading Content relations in consumer code:
+
+```php
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
+
+$placementsByOwner = app(ListOwnerContentPlacementSummariesAction::class)
+    ->execute($pages, 'homepage', $actor);
+```
+
+The bulk projection deduplicates and authorizes every owner before storage
+queries, consumes at most 100 persisted owner entries, preserves input identity
+order, and enforces the configured per-group placement ceiling before mapping
+DTOs. Its non-numeric keys use `<owner-type>:<owner-id>`; for example,
+`page:01H...` and `account:42`. This keeps JSON object shape stable for UUID,
+ULID, string, and integer owner IDs and permits different owner types to share
+the same raw ID. Populated reads use five fixed queries for one or 25 owners of
+the same registered type: owner existence, placements, blocks, definitions,
+and translations. Empty input returns `[]` without querying.
+
+The consumer's `ContentAuthorization` adapter must treat
+`ContentAbility::ListPlacements` with `context.includes_blocks=true` as
+permission to disclose the editable blocks placed on that authorized owner.
+The ordinary model-returning placement call keeps its original exact
+`['group' => $group]` context and does not preload blocks.
+
+`Content::placements()` remains a documented 1.x compatibility API returning
+identity-bearing `ContentPlacement` models. New editor and index reads should
+use `Content::editor()`, `GetOwnerContentEditorAction`, or the bounded bulk DTO
+projection so consumers do not own package query graphs or lazy relations.
+
 ## Generated PHP and TypeScript contracts
 
 `nvl/data` is the sole DTO and PHP-to-TypeScript boundary. The Content service
@@ -879,7 +944,8 @@ $editor = $content->editor($page, 'homepage', $actor);
 ```
 
 `ContentEditorData` contains the compiled definitions, semantic presets,
-declared groups, selected group, and revision-bearing placements. A recursive
+declared groups, selected group, the placement ceiling, and revision-bearing
+placements with their complete editable block DTOs. A recursive
 Filament field factory should select a component by `field.preset` first, then
 fall back to `field.type`; nested `fields` and `item` values use that same
 function. The definition JSON Schema remains the client validation contract.

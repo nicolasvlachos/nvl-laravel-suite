@@ -8,6 +8,7 @@ use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
+use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
@@ -36,5 +37,7 @@ final class ContentEditorData extends Data
         public readonly array $groups,
         #[DataCollectionOf(ContentPlacementData::class)]
         public readonly array $placements,
+        #[TypeScriptOptional]
+        public readonly int $placementLimit = 1_000,
     ) {}
 }

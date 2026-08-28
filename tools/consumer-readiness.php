@@ -17,6 +17,8 @@ use Nvl\Comments\Console\CommentsDoctorCommand;
 use Nvl\Comments\Contracts\HasComments;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
 use Nvl\Comments\Definitions\Tables\CommentsTables;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
 use Nvl\Content\Actions\ResolveContentScopesAction;
 use Nvl\Content\Console\ContentDoctorCommand;
 use Nvl\Content\Content;
@@ -502,13 +504,21 @@ return [
         'content' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [Content::class, ResolveContentScopesAction::class],
+                'symbols' => [
+                    Content::class,
+                    GetOwnerContentEditorAction::class,
+                    ListOwnerContentPlacementSummariesAction::class,
+                    ResolveContentScopesAction::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/content/README.md#public-application-surface-and-dtos',
+                'documentation' => 'packages/nvl/content/README.md#editor-projections',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/content/README.md#operational-guidance']),
+                ...$pass([
+                    'packages/nvl/content/README.md#editor-projections',
+                    'packages/nvl/content/README.md#operational-guidance',
+                ]),
                 'query_tests' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
                 'cache' => ['mode' => 'none', 'rationale' => 'Content reads are locale-, scope-, publication-, and actor-sensitive; bounded eager loading avoids invalidation ambiguity.'],
             ],

@@ -7966,6 +7966,11 @@
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock"
                 ],
+                "Nvl\\Content\\Actions\\GetOwnerContentEditorAction": [
+                    "final readonly class Nvl\\Content\\Actions\\GetOwnerContentEditorAction",
+                    "public function __construct(Nvl\\Content\\Actions\\ListContentDefinitionsAction $listDefinitions, Nvl\\Content\\Actions\\ListContentPresetsAction $listPresets, Nvl\\Content\\Actions\\ListContentGroupsAction $listGroups, Nvl\\Content\\Actions\\ListContentPlacementsAction $listPlacements, Nvl\\Content\\Services\\ContentOwnerRegistry $owners): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentEditorData"
+                ],
                 "Nvl\\Content\\Actions\\ListContentBlocksAction": [
                     "final readonly class Nvl\\Content\\Actions\\ListContentBlocksAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Filterable\\Services\\EloquentFilterApplier $filters): mixed",
@@ -7987,7 +7992,7 @@
                 "Nvl\\Content\\Actions\\ListContentPlacementsAction": [
                     "final readonly class Nvl\\Content\\Actions\\ListContentPlacementsAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners): mixed",
-                    "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor, bool $includeBlocks=false): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentPlacement>"
                 ],
                 "Nvl\\Content\\Actions\\ListContentPresetsAction": [
@@ -7995,6 +8000,13 @@
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentSchemaCompiler $compiler, Nvl\\Content\\Services\\ContentJsonSchemaBuilder $jsonSchemas): mixed",
                     "public function execute(Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentFieldPresetData>"
+                ],
+                "Nvl\\Content\\Actions\\ListOwnerContentPlacementSummariesAction": [
+                    "final readonly class Nvl\\Content\\Actions\\ListOwnerContentPlacementSummariesAction",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentIdentityGuard $identities): mixed",
+                    "public function execute(iterable $owners, string $group, Nvl\\Content\\Data\\ContentActorData $actor): array",
+                    "@param iterable<array-key, Model&ContentOwner> $owners",
+                    "@return array<string, list<ContentPlacementData>>"
                 ],
                 "Nvl\\Content\\Actions\\PlaceContentBlockAction": [
                     "final readonly class Nvl\\Content\\Actions\\PlaceContentBlockAction",
@@ -8077,7 +8089,7 @@
                 ],
                 "Nvl\\Content\\Content": [
                     "final readonly class Nvl\\Content\\Content",
-                    "public function __construct(Nvl\\Content\\Actions\\ListContentDefinitionsAction $listDefinitions, Nvl\\Content\\Actions\\ListContentPresetsAction $listPresets, Nvl\\Content\\Actions\\ListContentBlocksAction $listBlocks, Nvl\\Content\\Actions\\GetContentBlockAction $getBlock, Nvl\\Content\\Actions\\SyncContentDefinitionsAction $syncDefinitions, Nvl\\Content\\Actions\\PlanContentDefinitionMigrationsAction $planDefinitionMigrations, Nvl\\Content\\Actions\\ApplyContentDefinitionMigrationsAction $applyDefinitionMigrations, Nvl\\Content\\Actions\\ListContentGroupsAction $listGroups, Nvl\\Content\\Actions\\ListContentPlacementsAction $listPlacements, Nvl\\Content\\Actions\\CreateContentBlockAction $createBlock, Nvl\\Content\\Actions\\UpdateContentBlockAction $updateBlock, Nvl\\Content\\Actions\\PublishContentBlockAction $publishBlock, Nvl\\Content\\Actions\\ArchiveContentBlockAction $archiveBlock, Nvl\\Content\\Actions\\DeleteContentBlockAction $deleteBlock, Nvl\\Content\\Actions\\RestoreContentBlockAction $restoreBlock, Nvl\\Content\\Actions\\PlaceContentBlockAction $placeBlock, Nvl\\Content\\Actions\\UpdateContentPlacementAction $updatePlacement, Nvl\\Content\\Actions\\DeleteContentPlacementAction $deletePlacement, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentRenderer $renderer, Nvl\\Content\\Services\\ContentSnapshotService $snapshots, Nvl\\Content\\Actions\\ResolveContentScopesAction $resolveScopes): mixed",
+                    "public function __construct(Nvl\\Content\\Actions\\ListContentDefinitionsAction $listDefinitions, Nvl\\Content\\Actions\\ListContentPresetsAction $listPresets, Nvl\\Content\\Actions\\ListContentBlocksAction $listBlocks, Nvl\\Content\\Actions\\GetContentBlockAction $getBlock, Nvl\\Content\\Actions\\SyncContentDefinitionsAction $syncDefinitions, Nvl\\Content\\Actions\\PlanContentDefinitionMigrationsAction $planDefinitionMigrations, Nvl\\Content\\Actions\\ApplyContentDefinitionMigrationsAction $applyDefinitionMigrations, Nvl\\Content\\Actions\\ListContentGroupsAction $listGroups, Nvl\\Content\\Actions\\ListContentPlacementsAction $listPlacements, Nvl\\Content\\Actions\\CreateContentBlockAction $createBlock, Nvl\\Content\\Actions\\UpdateContentBlockAction $updateBlock, Nvl\\Content\\Actions\\PublishContentBlockAction $publishBlock, Nvl\\Content\\Actions\\ArchiveContentBlockAction $archiveBlock, Nvl\\Content\\Actions\\DeleteContentBlockAction $deleteBlock, Nvl\\Content\\Actions\\RestoreContentBlockAction $restoreBlock, Nvl\\Content\\Actions\\PlaceContentBlockAction $placeBlock, Nvl\\Content\\Actions\\UpdateContentPlacementAction $updatePlacement, Nvl\\Content\\Actions\\DeleteContentPlacementAction $deletePlacement, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentRenderer $renderer, Nvl\\Content\\Services\\ContentSnapshotService $snapshots, Nvl\\Content\\Actions\\ResolveContentScopesAction $resolveScopes, ?Nvl\\Content\\Actions\\GetOwnerContentEditorAction $getOwnerEditor=null): mixed",
                     "public function definitions(Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentDefinitionData>",
                     "public function presets(Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
@@ -8597,7 +8609,9 @@
                     "public readonly array $groups",
                     "#[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentPlacementData\")]",
                     "public readonly array $placements",
-                    "public function __construct(string $ownerType, string $ownerId, string $group, #[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentDefinitionData\")] array $definitions, #[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentFieldPresetData\")] array $presets, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Array<string>\")] array $groups, #[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentPlacementData\")] array $placements): mixed",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
+                    "public readonly int $placementLimit",
+                    "public function __construct(string $ownerType, string $ownerId, string $group, #[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentDefinitionData\")] array $definitions, #[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentFieldPresetData\")] array $presets, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Array<string>\")] array $groups, #[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\ContentPlacementData\")] array $placements, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] int $placementLimit=1000): mixed",
                     "@param list<ContentDefinitionData> $definitions",
                     "@param list<ContentFieldPresetData> $presets",
                     "@param list<string> $groups",
@@ -8716,7 +8730,9 @@
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, unknown>\")]",
                     "public readonly array $overrides",
                     "public readonly int $revision",
-                    "public function __construct(string $id, string $blockId, string $ownerType, string $ownerId, string $group, string $key, ?string $parentId, string $region, int $sortOrder, bool $isVisible, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, unknown>\")] array $overrides, int $revision): mixed",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
+                    "public readonly ?Nvl\\Content\\Data\\ContentBlockData $block",
+                    "public function __construct(string $id, string $blockId, string $ownerType, string $ownerId, string $group, string $key, ?string $parentId, string $region, int $sortOrder, bool $isVisible, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, unknown>\")] array $overrides, int $revision, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?Nvl\\Content\\Data\\ContentBlockData $block=null): mixed",
                     "@param array<string, mixed> $overrides",
                     "public static function fromModel(Nvl\\Content\\Models\\ContentPlacement $placement): self",
                     "public function toArray(): array",

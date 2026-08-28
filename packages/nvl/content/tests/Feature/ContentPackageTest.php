@@ -997,9 +997,12 @@ it('exposes independently configurable authorized management and public APIs', f
         ->assertJsonPath('data.ownerType', 'page')
         ->assertJsonPath('data.ownerId', $owner->id)
         ->assertJsonPath('data.group', 'main')
+        ->assertJsonPath('data.placementLimit', 1_000)
         ->assertJsonPath('data.definitions.0.key', 'hero')
         ->assertJsonPath('data.presets.0.alias', 'banner')
-        ->assertJsonPath('data.placements.0.id', $placementId);
+        ->assertJsonPath('data.placements.0.id', $placementId)
+        ->assertJsonPath('data.placements.0.block.definition', 'hero')
+        ->assertJsonPath('data.placements.0.block.translations.en.title', 'API title');
     $this->getJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/preview?locale=en")
         ->assertOk()
         ->assertJsonPath('data.blocks.0.key', 'hero');

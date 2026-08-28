@@ -75,8 +75,44 @@ composition snapshots.
   semantic contracts through `Content::presets()`, declared groups through
   `Content::groups()`, and group placement facts through
   `Content::placements()`.
-- Prefer `Content::editor()` when a consumer needs the complete typed
-  definitions/presets/groups/placements bootstrap in one call.
+- Prefer `Content::editor()` or
+  `Nvl\Content\Actions\GetOwnerContentEditorAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group, Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentEditorData` when a
+  consumer needs the complete typed definitions/presets/groups/placements
+  bootstrap. Use `ContentEditorData::placementLimit` as the editor ceiling and
+  `ContentPlacementData::block` for definition, lifecycle, values,
+  translations, metadata, and block revision; do not navigate Eloquent block
+  relations.
+- For bounded indexes, inject
+  `Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction` and call
+  `execute(iterable $owners, string $group, Nvl\Content\Data\ContentActorData
+  $actor): array<string, list<Nvl\Content\Data\ContentPlacementData>>`.
+  Pass zero to 100 persisted owner entries. Empty input performs no query;
+  duplicate canonical identities are collapsed; every unique owner is
+  authorized before SQL; one and 25 owners of one type use the same five-query
+  projection. Read results by the serialization-safe `<owner-type>:<owner-id>`
+  key, such as `page:01H...` or `account:42`.
+- Treat `Nvl\Content\Enums\ContentAbility::ListPlacements` with
+  `context.includes_blocks=true` as disclosure of
+  the placed editable block DTO. Keep this owner-scoped decision explicit in
+  the consumer authorization adapter.
+
+```php
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
+use Nvl\Content\Data\ContentActorData;
+
+$actor = ContentActorData::fromAuthenticatable($user);
+$editor = app(GetOwnerContentEditorAction::class)
+    ->execute($page, 'content', $actor);
+$placementsByOwner = app(ListOwnerContentPlacementSummariesAction::class)
+    ->execute($pages, 'content', $actor);
+$pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
+```
+
+- Treat model-returning `Content::placements()` as a documented 1.x identity
+  compatibility surface. Build new reads from editor or placement-summary DTOs
+  so consumers do not serialize lazy package relations.
 - Remove leaf placements through `Content::deletePlacement()`; never delete
   placed blocks or silently orphan a child tree.
 - Use Patch as the safe update default. Request Replace only when omitted base,
