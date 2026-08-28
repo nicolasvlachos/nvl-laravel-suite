@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Nvl\Suite\Quality\PackageQualityRunner;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
@@ -368,6 +370,17 @@ it('keeps routine quality focused on formatting analysis manifests and contracts
         );
 });
 
+it('exposes the root package quality runner through Composer', function (): void {
+    $manifest = json_decode(
+        file_get_contents(dirname(__DIR__, 2).'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+
+    expect($manifest['scripts']['package:quality'] ?? null)
+        ->toBe('@php tools/run-package-quality.php');
+});
+
 it('tests the current stack Laravel 12 lowest and every supported database family', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
@@ -613,6 +626,251 @@ it('keeps every package workflow shell block syntactically valid', function (): 
     }
 });
 
+it('rejects package names outside the canonical family before starting a process', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+    $errors = '';
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            error: $errors,
+        );
+
+        expect($runner->run(['missing']))->toBe(2)
+            ->and($commands)->toBe([])
+            ->and($errors)->toContain('Unknown package [missing]');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('reports invalid package quality configuration without an uncaught exception', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+    $errors = '';
+    unset($catalog['quality']['packages']['alpha']['analysis_paths']);
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            error: $errors,
+        );
+
+        expect($runner->run(['alpha']))->toBe(2)
+            ->and($commands)->toBe([])
+            ->and($errors)->toContain('Package [nvl/alpha] has no quality analysis paths.');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('runs one package through root binaries with isolated analysis and test caches', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['alpha']))->toBe(0)
+            ->and($commands)->toHaveCount(3)
+            ->and($commands[0])->toMatchArray([
+                'workingDirectory' => $root,
+                'command' => [
+                    $root.'/vendor/bin/pint',
+                    '--test',
+                    '--format',
+                    'agent',
+                    $root.'/packages/nvl/alpha',
+                ],
+            ])
+            ->and($commands[1]['workingDirectory'])->toBe($root)
+            ->and($commands[1]['command'])->toBe([
+                $root.'/vendor/bin/phpstan',
+                'analyse',
+                '--configuration='.$root.'/storage/framework/cache/package-quality/alpha/phpstan.neon',
+                '--no-progress',
+                '--error-format=table',
+                '--memory-limit=3G',
+                $root.'/packages/nvl/alpha/src',
+            ])
+            ->and($commands[2])->toMatchArray([
+                'workingDirectory' => $root,
+                'command' => [
+                    $root.'/vendor/bin/pest',
+                    '--test-directory=packages/nvl/alpha/tests',
+                    '--configuration='.$root.'/packages/nvl/alpha/phpunit.xml.dist',
+                    '--bootstrap='.$root.'/vendor/autoload.php',
+                    '--cache-directory='.$root.'/storage/framework/cache/package-quality/alpha/phpunit',
+                    '--compact',
+                    $root.'/packages/nvl/alpha/tests',
+                ],
+            ]);
+
+        $phpStanConfiguration = file_get_contents(
+            $root.'/storage/framework/cache/package-quality/alpha/phpstan.neon',
+        );
+
+        expect($phpStanConfiguration)->toBeString()->toContain(
+            $root.'/vendor/larastan/larastan/extension.neon',
+            $root.'/vendor/nesbot/carbon/extension.neon',
+            'tmpDir: '.$root.'/storage/framework/cache/package-quality/alpha/phpstan',
+        );
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('runs multiple packages sequentially in the requested order', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha', 'beta']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['beta', 'alpha']))->toBe(0)
+            ->and($commands)->toHaveCount(6)
+            ->and(implode(' ', $commands[0]['command']))->toContain('/beta')
+            ->and(implode(' ', $commands[1]['command']))->toContain('/beta')
+            ->and(implode(' ', $commands[2]['command']))->toContain('/beta')
+            ->and(implode(' ', $commands[3]['command']))->toContain('/alpha')
+            ->and(implode(' ', $commands[4]['command']))->toContain('/alpha')
+            ->and(implode(' ', $commands[5]['command']))->toContain('/alpha');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('stops on the first failed quality step and returns its exit code', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha', 'beta']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            exitCodes: [0, 9],
+        );
+
+        expect($runner->run(['alpha', 'beta']))->toBe(9)
+            ->and($commands)->toHaveCount(2)
+            ->and(implode(' ', $commands[1]['command']))->toContain('/alpha')
+            ->not->toContain('/beta');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('continues the release matrix after failures only when requested', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha', 'beta']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            exitCodes: [0, 9, 0, 0, 0, 0],
+        );
+
+        expect($runner->run(['alpha', 'beta', '--continue-on-error']))->toBe(9)
+            ->and($commands)->toHaveCount(6)
+            ->and(implode(' ', $commands[5]['command']))->toContain('/beta');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('emits value-free JSON without leaking absolute paths or process output', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+    $output = '';
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            output: $output,
+            processOutput: 'sensitive=/absolute/consumer/config',
+        );
+
+        expect($runner->run(['alpha', '--format=json']))->toBe(0);
+
+        $decoded = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+
+        expect($decoded)->toMatchArray([
+            'schema' => 'nvl-package-quality-v1',
+            'status' => 'passed',
+        ])->and($decoded['packages'][0]['package'] ?? null)->toBe('alpha')
+            ->and($decoded['packages'][0]['steps'] ?? [])->toHaveCount(3)
+            ->and($output)->not->toContain($root, 'sensitive=', '/absolute/consumer/config');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('skips Pest when a package has no test directory', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['support'], ['support']);
+    $commands = [];
+    $output = '';
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            output: $output,
+        );
+
+        expect($runner->run(['support']))->toBe(0)
+            ->and($commands)->toHaveCount(2)
+            ->and($output)->toContain('tests: skipped');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('preserves paths containing spaces as individual process arguments', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha'], [], 'nvl suite quality');
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['alpha']))->toBe(0)
+            ->and($commands[0]['command'][0])->toBe($root.'/vendor/bin/pint')
+            ->and($commands[0]['command'][4])->toBe($root.'/packages/nvl/alpha')
+            ->and($commands[2]['command'][6])->toBe($root.'/packages/nvl/alpha/tests');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('leaves unreleased migrations in mutable PHPStan analysis', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $migration = $root.'/packages/nvl/alpha/database/migrations/2099_01_01_000000_create_alpha_table.php';
+    $commands = [];
+
+    try {
+        (new Filesystem)->dumpFile(
+            $migration,
+            "<?php\n\ndeclare(strict_types=1);\n",
+        );
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['alpha']))->toBe(0)
+            ->and($commands[1]['command'])->toContain($migration);
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
 /**
  * Return every shell command declared by a workflow job.
  *
@@ -624,4 +882,118 @@ function workflowCommands(array $job): string
         ->pluck('run')
         ->filter(static fn (mixed $command): bool => is_string($command))
         ->implode("\n");
+}
+
+/**
+ * Create a filesystem fixture and canonical catalog for package-quality tests.
+ *
+ * @param  list<string>  $packages
+ * @param  list<string>  $packagesWithoutTests
+ * @return array{0: string, 1: array<string, mixed>}
+ */
+function createPackageQualityFixture(
+    array $packages,
+    array $packagesWithoutTests = [],
+    string $prefix = 'nvl-package-quality',
+): array {
+    $filesystem = new Filesystem;
+    $root = sys_get_temp_dir().'/'.$prefix.'-'.bin2hex(random_bytes(8));
+    $filesystem->mkdir($root.'/tools');
+    $qualityPackages = [];
+    $contractPackages = [];
+
+    foreach ($packages as $package) {
+        $packageDirectory = $root.'/packages/nvl/'.$package;
+        $filesystem->mkdir($packageDirectory.'/src');
+        $qualityPackages[$package] = [
+            'analysis_paths' => ['src'],
+            'migration_tests' => [],
+        ];
+        $contractPackages[$package] = ['migrations' => []];
+
+        if (! in_array($package, $packagesWithoutTests, true)) {
+            $filesystem->mkdir($packageDirectory.'/tests');
+            $filesystem->dumpFile($packageDirectory.'/phpunit.xml.dist', '<phpunit/>'.PHP_EOL);
+        }
+    }
+
+    $filesystem->dumpFile(
+        $root.'/tools/package-contracts.json',
+        json_encode(
+            ['packages' => $contractPackages],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        ).PHP_EOL,
+    );
+
+    return [
+        $root,
+        [
+            'packages' => $packages,
+            'database_tested' => [],
+            'quality' => [
+                'released_migrations_contract' => 'tools/package-contracts.json',
+                'packages' => $qualityPackages,
+            ],
+        ],
+    ];
+}
+
+/**
+ * Build a package-quality runner with a deterministic fake process executor.
+ *
+ * @param  array<string, mixed>  $catalog
+ * @param  list<array{command: list<string>, workingDirectory: string}>  $commands
+ * @param  list<int>  $exitCodes
+ */
+function packageQualityRunner(
+    string $root,
+    array $catalog,
+    array &$commands,
+    array $exitCodes = [],
+    string &$output = '',
+    string &$error = '',
+    string $processOutput = '',
+): object {
+    $library = dirname(__DIR__, 2).'/tools/package-quality-runner.php';
+
+    expect($library)->toBeFile();
+
+    require_once $library;
+
+    $execute = static function (
+        array $command,
+        string $workingDirectory,
+        Closure $stream,
+    ) use (&$commands, &$exitCodes, $processOutput): int {
+        $commands[] = [
+            'command' => $command,
+            'workingDirectory' => $workingDirectory,
+        ];
+
+        if ($processOutput !== '') {
+            $stream(Process::OUT, $processOutput);
+        }
+
+        return array_shift($exitCodes) ?? 0;
+    };
+
+    return new PackageQualityRunner(
+        root: $root,
+        catalog: $catalog,
+        execute: $execute,
+        writeOutput: static function (string $message) use (&$output): void {
+            $output .= $message;
+        },
+        writeError: static function (string $message) use (&$error): void {
+            $error .= $message;
+        },
+    );
+}
+
+/**
+ * Remove a package-quality filesystem fixture.
+ */
+function removePackageQualityFixture(string $root): void
+{
+    (new Filesystem)->remove($root);
 }

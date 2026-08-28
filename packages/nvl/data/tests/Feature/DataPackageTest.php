@@ -641,6 +641,25 @@ test('its staged generation command publishes an integrity manifest and passes a
     $this->artisan('nvl:data:types:check')->assertSuccessful();
 });
 
+test('its freshness check ignores checkout mtimes when declarations are byte identical', function (): void {
+    config()->set('nvl-data.typescript.source_paths', [__DIR__.'/../Fixtures']);
+
+    app()->forgetInstance(TypeScriptSourceRegistry::class);
+    app()->forgetInstance(TypeScriptConfigurator::class);
+    app()->forgetInstance(TypeScriptTransformerConfig::class);
+
+    $this->artisan('nvl:data:types:generate')->assertSuccessful();
+
+    foreach (app(GeneratedArtifactSet::class)->paths($this->generatedTypesDirectory) as $path) {
+        expect(touch(
+            $this->generatedTypesDirectory.DIRECTORY_SEPARATOR.$path,
+            time() + 60,
+        ))->toBeTrue();
+    }
+
+    $this->artisan('nvl:data:types:check')->assertSuccessful();
+});
+
 test('it restores the prior artifact set when staged publication fails', function (): void {
     writeDataPackagePublication($this->generatedTypesDirectory, [
         'generated.types.d.ts' => "/// <reference path=\"./generated/old.d.ts\" />\n",

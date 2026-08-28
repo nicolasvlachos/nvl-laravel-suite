@@ -40,8 +40,11 @@
 - Create: `tools/run-package-quality.php`
 - Create: `tools/package-quality-runner.php`
 - Modify: `composer.json`
+- Modify: `phpstan.neon.dist`
 - Modify: `tools/package-family.php`
 - Modify: `packages/nvl/auth/phpstan.neon.dist`
+- Modify: `packages/nvl/data/src/Console/Commands/CheckTypesCommand.php`
+- Modify: `packages/nvl/data/tests/Feature/DataPackageTest.php`
 - Create: `tests/Contract/PackageMigrationQualityTest.php`
 - Modify: `tests/Contract/PackageQualityWorkflowTest.php`
 - Modify: `CONTRIBUTING.md`
@@ -56,9 +59,13 @@
 upgrade schema tests passing. An Auth/Comments quality run launched concurrently
 also collided through shared `.temp` state; isolated Comments rerun passes all
 193 tests. CR-00 must resolve both quality-topology defects without editing a
-released migration or suppressing an error baseline.
+released migration or suppressing an error baseline. A clean linked worktree
+also fails `composer types:check` because generated-type manifest freshness
+compares checkout-dependent mtimes even when every declaration byte is
+unchanged; the original checkout passes only while generation-time mtimes are
+preserved.
 
-- [ ] **Step 1: Write failing runner contract tests**
+- [x] **Step 1: Write failing runner contract tests**
 
 Load `tools/package-quality-runner.php` with a temporary fake package family
 plus a fake process executor so tests assert exact commands without recursively
@@ -68,7 +75,11 @@ and paths containing spaces. Assert every process uses the suite root as its
 working directory and root `vendor/bin` binaries, executes packages sequentially,
 and assigns package-specific PHPStan/PHPUnit temp/cache paths.
 
-- [ ] **Step 2: Prove the current package-local command is not the contract**
+Add a Data regression test that changes only generated declaration mtimes and
+proves `nvl:data:types:check` still passes for byte-identical artifacts while
+retaining hash, inventory, symbol, version, source, and revision validation.
+
+- [x] **Step 2: Prove the current package-local command is not the contract**
 
 Record the current failures from:
 
@@ -81,7 +92,7 @@ Expected baseline: Auth fails because `pint` is not resolved; Comments also has
 a package-relative PHPStan include that assumes a standalone package `vendor`.
 Keep this evidence in the implementation log, not in a runtime exception.
 
-- [ ] **Step 3: Make immutable migration verification explicit**
+- [x] **Step 3: Make immutable migration verification explicit**
 
 Do not edit the release-locked Auth migration, add ignores, or create a PHPStan
 baseline. Remove released package migrations from Auth's mutable-code PHPStan
@@ -92,7 +103,7 @@ fresh/upgrade/ownership tests, and participates in the supported database matrix
 The runner analyzes a new/unreleased migration until it becomes release-locked;
 the package-family quality descriptor records that boundary explicitly.
 
-- [ ] **Step 4: Implement the root runner**
+- [x] **Step 4: Implement the root runner**
 
 Resolve package names only through `tools/package-family.php`. For each selected
 package run, in order:
@@ -110,7 +121,7 @@ package family catalog when a package needs non-standard analysis paths; do not
 hardcode package names in the runner. Run packages sequentially by default and
 do not offer package parallelism until every tool has isolated temp/cache paths.
 
-- [ ] **Step 5: Add the root Composer entry and migrate planning/docs commands**
+- [x] **Step 5: Add the root Composer entry and migrate planning/docs commands**
 
 Add `"package:quality": "@php tools/run-package-quality.php"`. Document that
 standalone package archives may still run their package-local Composer scripts,
@@ -118,7 +129,7 @@ whereas the monorepo always uses the root runner. Replace every implementation
 plan's `composer --working-dir=packages/nvl/<package> quality` instruction with
 `php tools/run-package-quality.php <package>`.
 
-- [ ] **Step 6: Verify the runner against the two observed packages**
+- [x] **Step 6: Verify the runner against the two observed packages**
 
 Run:
 
@@ -126,6 +137,7 @@ Run:
 php tools/run-package-quality.php auth comments
 php tools/run-package-quality.php comments auth
 php tools/run-package-quality.php auth comments --format=json
+composer types:check
 php artisan test --compact tests/Contract/PackageQualityWorkflowTest.php tests/Contract/PackageMigrationQualityTest.php
 ```
 

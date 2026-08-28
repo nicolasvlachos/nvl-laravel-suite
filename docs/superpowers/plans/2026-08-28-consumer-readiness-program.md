@@ -86,12 +86,28 @@ gate pass. Record the implementation commit beside the task before checking it.
 
 ## Milestone 0: baseline and branch safety
 
-- [ ] Confirm `git status --short` contains no unowned changes that overlap the first workstream.
-- [ ] Create an isolated worktree using `superpowers:using-git-worktrees` before implementation.
-- [ ] Record baseline output from `composer contracts:check`, `composer types:check`, and the focused suite diagnostics tests.
-- [ ] Confirm KPO's Composer source/version and save the starting KPO strict-test command in the execution log.
+- [x] Confirm `git status --short` contains no unowned changes that overlap the first workstream.
+- [x] Create an isolated worktree using `superpowers:using-git-worktrees` before implementation.
+- [x] Record baseline output from `composer contracts:check`, `composer types:check`, and the focused suite diagnostics tests.
+- [x] Confirm KPO's Composer source/version and save the starting KPO strict-test command in the execution log.
 - [ ] Execute CR-00 and use its root runner for every subsequent package gate.
 - [ ] Execute CR-01 through CR-04 in dependency order.
+
+### Execution log
+
+- 2026-08-28 — CR-00 started from suite checkpoint `57a6b63` on
+  `codex/consumer-readiness` in `.worktrees/consumer-readiness`; the original
+  suite checkout and KPO remained read-only.
+- Baseline `composer contracts:check` and focused suite diagnostics passed.
+  `composer types:check` passed in the original checkout but failed in the clean
+  worktree because generated declaration freshness included checkout mtimes.
+- KPO consumes `nvl/laravel-suite` `v1.0.7` at source reference
+  `983ffbc8a648584a12ee0e3434e78715c6aac478`. Its starting strict backend gate
+  is `composer test`, which clears configuration, runs Pint in check mode, and
+  runs the Laravel test suite.
+- Package-local `composer quality` failed for Auth and Comments because the
+  monorepo child packages do not own an installed toolchain. Root-owned package
+  quality is therefore the supported suite-development contract.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
