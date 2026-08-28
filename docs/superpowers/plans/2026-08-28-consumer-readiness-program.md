@@ -43,7 +43,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-05 | [x] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | `f6329e9` |
 | CR-06 | [x] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | `90e6db0` |
 | CR-07 | [x] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | `85f607d` |
-| CR-08 | [ ] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | — |
+| CR-08 | [x] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | `c70ef1c` |
 | CR-09 | [ ] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | — |
 | CR-10 | [ ] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | — |
 | CR-11 | [ ] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | — |
@@ -178,6 +178,21 @@ gate pass. Record the implementation commit beside the task before checking it.
   mixed-identifier normalization, add/sync assignment, and create-with-roles
   compositions now have package-owned replacements; KPO remained read-only and
   migration stays in the separate post-CR-08 wave.
+- 2026-08-28 — CR-08 added the authorized, identity-free per-role analytics
+  projection in `c70ef1c`. It returns principal totals through the independently
+  configured RBAC principal model and active-column mapping, canonical
+  permission-group aggregates, direct-child/descendant totals with cycle-safe
+  iterative traversal, and the parent name in four queries regardless of one or
+  twenty-five related rows. Roles are canonicalized through the configured
+  subclass and guard before analytics. Activity remains an explicit consumer
+  composition through `ActivityReadService`, using only the authorized identity
+  returned by `ShowRoleAction`. Independent review caught both configured-model
+  boundaries; separate-table principal and cross-model/cross-guard regressions
+  now cover them, and the follow-up review reported no findings. Auth quality
+  passed 161 tests with 2,356 assertions, PHPStan, and Pint; the final complete
+  root/package `composer test` matrix, public contracts, generated types/`tsc`,
+  strict Composer autoloading/validation, and readiness contract passed. KPO
+  remained read-only; endpoint replacement stays in CR-21.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.

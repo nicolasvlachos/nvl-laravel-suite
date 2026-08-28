@@ -361,7 +361,7 @@ git commit -m "feat(auth): add bounded RBAC resolution and assignments"
 - Consumes: CR-05 `RoleAnalyticsData`, Auth role hierarchy, and principal active-attribute mapping.
 - Produces: `ShowRoleAnalyticsAction::execute(Authenticatable $actor, Role|string $role): RoleAnalyticsData`.
 
-- [ ] **Step 1: Write failing analytics and constant-query tests**
+- [x] **Step 1: Write failing analytics and constant-query tests**
 
 ```php
 $analytics = app(ShowRoleAnalyticsAction::class)->execute($this->actor, $role->id);
@@ -379,13 +379,13 @@ Compare one and twenty-five users/permissions/children and require the same
 query count. Add a persisted-cycle fixture and assert descendant traversal
 terminates without counting a role twice.
 
-- [ ] **Step 2: Run the focused tests and verify the Action is missing**
+- [x] **Step 2: Run the focused tests and verify the Action is missing**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
 
 Expected: FAIL because `ShowRoleAnalyticsAction` does not exist.
 
-- [ ] **Step 3: Implement package-owned role analytics**
+- [x] **Step 3: Implement package-owned role analytics**
 
 Authorize before loading aggregates. Resolve the role through the configured
 model registry. Use aggregate queries for active/inactive users and permission
@@ -393,7 +393,7 @@ groups, load the hierarchy graph with only `id`, `parent_id`, and `name`, and
 compute descendants iteratively with a visited-ID set. Do not query Activity;
 consumers compose Activity history through `ActivityReadService`.
 
-- [ ] **Step 4: Document the replacement boundary**
+- [x] **Step 4: Document the replacement boundary**
 
 Add an Auth README example that combines:
 
@@ -406,7 +406,7 @@ $activity = $activityReads->paginateForSubjectKey($role->getMorphClass(), $role-
 State that the consumer may use the Action-returned role identity for the
 Activity call but must not initiate a Role query.
 
-- [ ] **Step 5: Run package and suite contract gates**
+- [x] **Step 5: Run package and suite contract gates**
 
 Run: `php tools/run-package-quality.php auth`
 
@@ -420,7 +420,7 @@ Run: `composer types:check`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit CR-08**
+- [x] **Step 6: Commit CR-08**
 
 ```bash
 git add packages/nvl/auth/src/Actions/Rbac/ShowRoleAnalyticsAction.php packages/nvl/auth/src/Data/Display/RoleAnalyticsData.php packages/nvl/auth/tests/Feature/RbacManagementTest.php packages/nvl/auth/README.md tools/consumer-readiness.php tests/Contract/ConsumerReadinessTest.php
@@ -429,7 +429,7 @@ git commit -m "feat(auth): add role analytics projection"
 
 ### Workstream acceptance gate
 
-- [ ] Run `php tools/run-package-quality.php auth`.
-- [ ] Run `composer contracts:check` and `composer types:check` from the suite root.
+- [x] Run `php tools/run-package-quality.php auth`.
+- [x] Run `composer contracts:check` and `composer types:check` from the suite root.
 - [ ] In KPO, replace `RbacPresentationReadService` methods one endpoint at a time and run the focused Auth tests after each replacement.
 - [ ] Run `php artisan nvl:suite:consumer-audit --strict` in KPO and confirm the RBAC presentation findings are gone before deleting the service.
