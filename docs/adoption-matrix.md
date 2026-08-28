@@ -21,6 +21,22 @@ Adoption selects module ownership and operations; it never grants permission to
 bypass these package boundaries. Package-documented facades remain adapters to
 allowed Actions or explicit services.
 
+Generate the complete module map and validate it before each upgrade:
+
+```bash
+php artisan nvl:suite:configure --profile=content-platform
+php artisan nvl:suite:configure --profile=content-platform --write
+php artisan nvl:suite:upgrade:check --strict
+php artisan nvl:suite:consumer-audit --strict
+```
+
+The first command is a non-mutating preview. The second is the only command here
+that writes, and it atomically replaces the selected in-application PHP config.
+The two checks are read-only. They exit `0` on success, `1` for findings, and `2`
+for invalid input or policy. In 1.x, set
+`adoption.require_explicit_module_decisions=true` after every module key has been
+reviewed; omitted decisions otherwise retain compatibility-enabled behavior.
+
 | Module | Tables and migration ownership | Queues | Scheduler entries | Replaceable/security contracts | Registered aliases | TypeScript | Doctor |
 |---|---|---|---|---|---|---|---|
 | `support` | None | None | None | None | None | No | N/A |

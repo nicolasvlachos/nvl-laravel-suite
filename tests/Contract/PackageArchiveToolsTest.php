@@ -300,14 +300,18 @@ it('ships every module and the central provider in the archive', function (): vo
 
         expect($entries)->toContain(
             'src/SuiteServiceProvider.php',
+            'src/Console/Commands/SuiteConfigureCommand.php',
             'src/Console/Commands/SuiteConfigurationCommand.php',
             'src/Console/Commands/SuiteConsumerAuditCommand.php',
             'src/Console/Commands/SuiteDoctorCommand.php',
             'src/Console/Commands/SuiteSkillsDoctorCommand.php',
             'src/Console/Commands/SuiteSkillsPublishCommand.php',
+            'src/Console/Commands/SuiteUpgradeCheckCommand.php',
             'src/Services/SuiteConfigurationInspector.php',
+            'src/Services/SuiteConfigurationRenderer.php',
             'src/Services/SuiteConsumerAuditor.php',
             'src/Services/SuiteSkillManager.php',
+            'src/Services/SuiteUpgradeInspector.php',
             'src/Services/ConsumerAudit/ComposerSourceRootLocator.php',
             'src/Services/ConsumerAudit/PhpConsumerBoundaryScanner.php',
             'src/Services/ConsumerAudit/PhpImportMap.php',

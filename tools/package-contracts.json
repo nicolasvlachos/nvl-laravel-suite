@@ -10,10 +10,12 @@
         ],
         "commands": {
             "Nvl\\Suite\\Console\\Commands\\SuiteConfigurationCommand": "nvl:suite:configuration {--profile= : Compare effective modules with an installation profile} {--format=text : Output format: text or json}",
+            "Nvl\\Suite\\Console\\Commands\\SuiteConfigureCommand": "nvl:suite:configure {--profile= : Start with a documented installation profile} {--add=* : Add a module and its transitive dependencies} {--path= : Destination inside the application; defaults to config/nvl-suite.php} {--write : Atomically replace the destination instead of previewing it} {--format=table : Output format: table or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteConsumerAuditCommand": "nvl:suite:consumer-audit {path? : Consumer application root; defaults to base_path()} {--strict : Fail for errors and strict adoption warnings} {--format=table : Output format: table or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteDoctorCommand": "nvl:suite:doctor {--strict : Treat package warnings as failures} {--production : Enforce production-only deployment requirements} {--format=text : Output format: text or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteSkillsDoctorCommand": "nvl:suite:skills:doctor {--strict : Treat disabled managed skills as failures} {--format=text : Output format: text or json}",
-            "Nvl\\Suite\\Console\\Commands\\SuiteSkillsPublishCommand": "nvl:suite:skills:publish {--force : Replace locally modified Suite-owned skills; unmanaged skills are never overwritten} {--format=text : Output format: text or json}"
+            "Nvl\\Suite\\Console\\Commands\\SuiteSkillsPublishCommand": "nvl:suite:skills:publish {--force : Replace locally modified Suite-owned skills; unmanaged skills are never overwritten} {--format=text : Output format: text or json}",
+            "Nvl\\Suite\\Console\\Commands\\SuiteUpgradeCheckCommand": "nvl:suite:upgrade:check {--path= : Published suite configuration; defaults to config/nvl-suite.php} {--format=table : Output format: table or json} {--strict : Fail when any operational review warning is present}"
         },
         "configuration": {
             "config/nvl-suite.php": "b80098d5ded51bdd6f845503757c4f92919b57741f2c40101ad8ee37eaf56d5f"

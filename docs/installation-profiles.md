@@ -1,12 +1,26 @@
 # Installation profiles
 
-Installation profiles are adoption examples, not new runtime configuration.
-Publish `config/nvl-suite.php`, disable every module, enable the profile's direct
-modules, and let `SuiteServiceProvider` add transitive dependencies in canonical
-order. Compare the resulting application with:
+Installation profiles are reproducible module selections, not hidden runtime
+modes. Preview the full dependency-complete configuration first, then write it
+only after reviewing the exact enabled and disabled module list:
 
 ```bash
-php artisan nvl:suite:configuration --profile=auth-only
+php artisan nvl:suite:configure --profile=content-platform
+php artisan nvl:suite:configure --profile=content-platform --write
+php artisan config:clear
+```
+
+`nvl:suite:configure` is dry-run-first. It writes only with `--write`, emits all
+twenty module keys in canonical order, and atomically replaces only a `.php`
+destination inside the application root. Use repeatable `--add` options to add
+capabilities and their transitive dependencies to a profile, for example
+`--profile=auth-only --add=comments`.
+
+Compare the booted application with the selected profile after configuring
+migration ownership, contracts, registries, queues, and schedules:
+
+```bash
+php artisan nvl:suite:configuration --profile=content-platform
 php artisan nvl:suite:doctor --strict
 ```
 
@@ -25,6 +39,40 @@ php artisan nvl:suite:skills:doctor --strict
 The publisher manages only directories recorded in
 `.agents/skills/.nvl-suite-skills.json`. It never replaces an unmanaged skill,
 even when `--force` is used.
+
+## Upgrade and audit gate
+
+Before changing the suite version, run the published configuration through the
+current catalog and audit application source/runtime boundaries:
+
+```bash
+php artisan nvl:suite:upgrade:check --strict
+php artisan nvl:suite:consumer-audit --strict
+```
+
+The upgrade checker is read-only. It reports missing, unknown, and non-boolean
+module decisions and lists the migration ownership, host contracts, and
+feature-gated scheduler entries that need review for newly encountered modules.
+Neither command prints arbitrary configuration values or secrets.
+
+Both commands use stable process outcomes: exit `0` means the requested gate
+passed, exit `1` means actionable adoption or boundary findings remain, and
+exit `2` means the arguments, destination, configuration source, or audit policy
+is invalid.
+
+During 1.x, an omitted module flag remains implicitly enabled for compatibility.
+Once every key has been generated and reviewed, opt into strict explicit-module
+diagnostics with:
+
+```php
+'adoption' => [
+    'require_explicit_module_decisions' => true,
+],
+```
+
+That switch changes diagnostics only; it does not change module registration in
+1.x. The future 2.0 default can therefore be adopted deliberately rather than
+surprising an existing application.
 
 ## Auth only
 

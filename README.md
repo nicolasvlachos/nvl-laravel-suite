@@ -48,14 +48,19 @@ The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.4+. Module
 
 ## Staged module adoption
 
-The auto-discovered suite provider can register a safe subset of modules. Publish
-the module-selection configuration, disable modules that are not ready for the
-host schema, and clear the configuration cache:
+The auto-discovered suite provider can register a safe subset of modules.
+Preview a dependency-complete profile, explicitly write it after review, and
+clear the configuration cache:
 
 ```bash
-php artisan vendor:publish --tag=suite-config
+php artisan nvl:suite:configure --profile=content-platform
+php artisan nvl:suite:configure --profile=content-platform --write
 php artisan config:clear
 ```
+
+The command is dry-run-first and writes only with `--write`. Publishing the
+unmodified all-enabled default remains available with
+`php artisan vendor:publish --tag=suite-config`.
 
 Configure `config/nvl-suite.php` before running migrations. Enabling a module
 automatically registers its transitive NVL dependencies in canonical order; it
@@ -74,6 +79,8 @@ secrets, then run every enabled package Doctor through the root readiness gate:
 ```bash
 php artisan nvl:suite:configuration --profile=auth-only
 php artisan nvl:suite:configuration --format=json
+php artisan nvl:suite:upgrade:check --strict
+php artisan nvl:suite:consumer-audit --strict
 php artisan nvl:suite:doctor --strict
 php artisan nvl:suite:doctor --production --strict --format=json
 ```

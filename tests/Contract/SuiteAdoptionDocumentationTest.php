@@ -61,14 +61,25 @@ it('documents every installation profile and suite diagnostic command', function
     }
 
     expect($profiles)->toContain(
+        'nvl:suite:configure --profile=content-platform',
+        'nvl:suite:configure --profile=content-platform --write',
         'nvl:suite:configuration --format=json',
+        'nvl:suite:upgrade:check --strict',
+        'nvl:suite:consumer-audit --strict',
+        'exit `0`',
+        'exit `1`',
+        'exit `2`',
+        'require_explicit_module_decisions',
         'nvl:suite:skills:publish',
         'nvl:suite:skills:doctor --strict',
         'nvl:suite:doctor --production --strict --format=json',
     )->and($readme)->toContain(
         'docs/installation-profiles.md',
         'docs/adoption-matrix.md',
+        'nvl:suite:configure',
         'nvl:suite:configuration',
+        'nvl:suite:upgrade:check --strict',
+        'nvl:suite:consumer-audit --strict',
         'vendor:publish --tag=suite-skills',
         'nvl:suite:skills:publish',
         'nvl:suite:skills:doctor --strict',
