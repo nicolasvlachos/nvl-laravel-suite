@@ -579,7 +579,12 @@ function suiteArchiveBuild(): array
 
     $root = dirname(__DIR__, 2);
     $workspace = sys_get_temp_dir().'/nvl-suite-archive-'.bin2hex(random_bytes(8));
-    (new Filesystem)->mkdir($workspace);
+    $filesystem = new Filesystem;
+    $sourceWorktreesDirectory = $root.'/.worktrees';
+    $sourceWorktreesDirectoryExisted = is_dir($sourceWorktreesDirectory);
+    $sourceWorktreeFixture = $sourceWorktreesDirectory.'/archive-fixture-'.bin2hex(random_bytes(8));
+    $filesystem->mkdir($workspace);
+    $filesystem->dumpFile($sourceWorktreeFixture.'/sentinel.txt', 'development-only');
 
     $process = new Process(
         ['composer', 'archive', '--format=zip', '--dir='.$workspace, '--no-interaction'],
@@ -587,7 +592,16 @@ function suiteArchiveBuild(): array
         ['COMPOSER_ROOT_VERSION' => '1.2.3'],
     );
     $process->setTimeout(90);
-    $process->run();
+
+    try {
+        $process->run();
+    } finally {
+        $filesystem->remove($sourceWorktreeFixture);
+
+        if (! $sourceWorktreesDirectoryExisted && is_dir($sourceWorktreesDirectory)) {
+            rmdir($sourceWorktreesDirectory);
+        }
+    }
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 
