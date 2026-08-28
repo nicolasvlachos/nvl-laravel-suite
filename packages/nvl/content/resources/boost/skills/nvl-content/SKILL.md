@@ -53,10 +53,11 @@ composition snapshots.
 
 ## Mutate and compose
 
-- Constructor-inject `Nvl\Content\Content` as the canonical application
-  boundary. Its facade is a static proxy to the same surface, not a second
-  execution path. Keep Actions and services behind that boundary when Content
-  is consumed by another package or application layer.
+- Constructor-inject `Nvl\Content\Content` as the canonical boundary for its
+  documented model-first operations. Its facade is a static proxy to the same
+  service surface, not a second execution path. Keep undocumented Actions and
+  services behind that boundary; inject the documented focused DTO-first editor
+  Actions below when no equivalent `Content` method exists.
 - The application surface exposes source synchronization, block browse/read,
   the complete block lifecycle, definitions, presets, groups, placements,
   live rendering, and snapshots.
@@ -109,6 +110,39 @@ $placementsByOwner = app(ListOwnerContentPlacementSummariesAction::class)
     ->execute($pages, 'content', $actor);
 $pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
 ```
+
+- For exact editor lookups, inject
+  `Nvl\Content\Actions\FindContentBlockByKeyAction::execute(string $key,
+  Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentBlockData`
+  or
+  `Nvl\Content\Actions\FindContentPlacementAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group, string $idOrKey,
+  Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentPlacementData`.
+  Block keys must be byte-exact and unambiguous across active scopes. Placement
+  IDs/keys stay byte-exact and owner/group scoped, reject collisions, and never
+  compare a non-UUID key with the UUID primary-key column.
+- Replace a placed block through
+  `Nvl\Content\Actions\ReplaceContentPlacementAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group, string $placement, string $block, int
+  $expectedRevision, Nvl\Content\Data\ContentActorData $actor):
+  Nvl\Content\Data\ContentPlacementData`. It locks the complete composition,
+  revalidates existing overrides against the replacement definition, and
+  changes only block identity and revision.
+- Reorder with a complete
+  `Nvl\Content\Data\Mutations\ReorderContentPlacementsData` set and inject
+  `Nvl\Content\Actions\ReorderContentPlacementsAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group,
+  Nvl\Content\Data\Mutations\ReorderContentPlacementsData $data,
+  Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentEditorData`.
+  Include one
+  `Nvl\Content\Data\Mutations\ReorderContentPlacementData` for every placement,
+  even unchanged rows. Duplicate, partial, stale, cyclic, cross-region, or
+  over-limit proposals fail atomically; changed rows update and emit events in
+  ID order, and the Action returns a fresh editor DTO.
+- Handle `Nvl\Content\Enums\ContentAbility::Place` contexts
+  `replaces_placement=true` and `reorders_placements=true` in the consumer
+  authorization adapter. These workflows are focused injected Actions, not
+  `Content` facade methods, so the original service constructor stays callable.
 
 - Treat model-returning `Content::placements()` as a documented 1.x identity
   compatibility surface. Build new reads from editor or placement-summary DTOs

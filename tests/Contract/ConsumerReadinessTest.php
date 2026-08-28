@@ -7,8 +7,12 @@ use Nvl\Activity\Support\ActivitySubjectReference;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Content\Actions\FindContentBlockByKeyAction;
+use Nvl\Content\Actions\FindContentPlacementAction;
 use Nvl\Content\Actions\GetOwnerContentEditorAction;
 use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
+use Nvl\Content\Actions\ReorderContentPlacementsAction;
+use Nvl\Content\Actions\ReplaceContentPlacementAction;
 use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
@@ -393,13 +397,20 @@ it('publishes bounded Content editor projections as consumer seams', function ()
 
     expect($content['application_api']['symbols'])
         ->toContain(
+            FindContentBlockByKeyAction::class,
+            FindContentPlacementAction::class,
             GetOwnerContentEditorAction::class,
             ListOwnerContentPlacementSummariesAction::class,
+            ReorderContentPlacementsAction::class,
+            ReplaceContentPlacementAction::class,
         )
         ->and($content['application_api']['documentation'])
         ->toBe('packages/nvl/content/README.md#editor-projections')
         ->and($content['performance']['evidence'])
-        ->toContain('packages/nvl/content/README.md#editor-projections')
+        ->toContain(
+            'packages/nvl/content/README.md#editor-projections',
+            'packages/nvl/content/README.md#placement-editor-workflows',
+        )
         ->and($content['performance']['query_tests'])
         ->toContain('packages/nvl/content/tests/Feature/ContentContractRegressionTest.php');
 });

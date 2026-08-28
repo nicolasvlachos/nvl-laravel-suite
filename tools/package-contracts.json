@@ -7961,6 +7961,16 @@
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentPlacement|string $placement, int $expectedRevision, Nvl\\Content\\Data\\ContentActorData $actor): void"
                 ],
+                "Nvl\\Content\\Actions\\FindContentBlockByKeyAction": [
+                    "final readonly class Nvl\\Content\\Actions\\FindContentBlockByKeyAction",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentIdentityGuard $identities): mixed",
+                    "public function execute(string $key, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentBlockData"
+                ],
+                "Nvl\\Content\\Actions\\FindContentPlacementAction": [
+                    "final readonly class Nvl\\Content\\Actions\\FindContentPlacementAction",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentIdentityGuard $identities): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, string $idOrKey, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentPlacementData"
+                ],
                 "Nvl\\Content\\Actions\\GetContentBlockAction": [
                     "final readonly class Nvl\\Content\\Actions\\GetContentBlockAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization): mixed",
@@ -8022,6 +8032,16 @@
                     "final readonly class Nvl\\Content\\Actions\\PublishContentBlockAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionVersionGuard $definitionVersions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, int $expectedRevision, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock"
+                ],
+                "Nvl\\Content\\Actions\\ReorderContentPlacementsAction": [
+                    "final readonly class Nvl\\Content\\Actions\\ReorderContentPlacementsAction",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks, Nvl\\Content\\Services\\ContentPlacementTree $tree, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Actions\\GetOwnerContentEditorAction $getOwnerEditor): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\Mutations\\ReorderContentPlacementsData $data, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentEditorData"
+                ],
+                "Nvl\\Content\\Actions\\ReplaceContentPlacementAction": [
+                    "final readonly class Nvl\\Content\\Actions\\ReplaceContentPlacementAction",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, string $placement, string $block, int $expectedRevision, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentPlacementData"
                 ],
                 "Nvl\\Content\\Actions\\ResolveContentScopesAction": [
                     "final readonly class Nvl\\Content\\Actions\\ResolveContentScopesAction",
@@ -8872,6 +8892,72 @@
                     "public readonly array $overrides",
                     "public function __construct(string $key, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] string $region=\"main\", #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?string $parentId=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] int $sortOrder=0, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] bool $isVisible=true, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, unknown>\")] #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] array $overrides=[]): mixed",
                     "@param array<string, mixed> $overrides",
+                    "public static function rules(): array",
+                    "@return array<string, mixed>",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Content\\Data\\Mutations\\ReorderContentPlacementData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Content\\Data\\Mutations\\ReorderContentPlacementData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $id",
+                    "public readonly int $expectedRevision",
+                    "public readonly string $region",
+                    "public readonly ?string $parentId",
+                    "public readonly int $sortOrder",
+                    "public function __construct(string $id, int $expectedRevision, string $region, ?string $parentId, int $sortOrder): mixed",
+                    "public static function rules(): array",
+                    "@return array<string, mixed>",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Content\\Data\\Mutations\\ReorderContentPlacementsData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Content\\Data\\Mutations\\ReorderContentPlacementsData extends Spatie\\LaravelData\\Data",
+                    "#[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\Mutations\\\\ReorderContentPlacementData\")]",
+                    "public readonly array $placements",
+                    "public function __construct(#[Spatie\\LaravelData\\Attributes\\DataCollectionOf(\"Nvl\\\\Content\\\\Data\\\\Mutations\\\\ReorderContentPlacementData\")] array $placements): mixed",
+                    "@param list<ReorderContentPlacementData> $placements",
                     "public static function rules(): array",
                     "@return array<string, mixed>",
                     "public function toArray(): array",
@@ -10214,6 +10300,11 @@
                     "public function register(): void",
                     "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Services\\ContentDefinitionLoader $loader, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $definitionMigrations, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentSchemaCompiler $schemaCompiler, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentReferenceRegistry $references): void"
                 ],
+                "Nvl\\Content\\Relations\\ExactTextValueComparison": [
+                    "final readonly class Nvl\\Content\\Relations\\ExactTextValueComparison implements Illuminate\\Contracts\\Database\\Query\\Expression",
+                    "public function __construct(string $column, string $driver): mixed",
+                    "public function getValue(Illuminate\\Database\\Grammar $grammar): string"
+                ],
                 "Nvl\\Content\\Relations\\StringMorphMany": [
                     "final class Nvl\\Content\\Relations\\StringMorphMany extends Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
                     "@template TRelatedModel of Model",
@@ -10451,6 +10542,8 @@
                     "public function __construct(Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentOwnerRegistry $owners): mixed",
                     "public function load(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentPlacement>",
+                    "public function assertValidProposal(Illuminate\\Support\\Collection $placements, string $ownerType, string $ownerId, string $group): void",
+                    "@param Collection<int, ContentPlacement> $placements",
                     "public function eligible(Illuminate\\Support\\Collection $placements, bool $publicOnly): Illuminate\\Support\\Collection",
                     "@param Collection<int, ContentPlacement> $placements",
                     "@return Collection<int, ContentPlacement>"

@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 use Nvl\Activity\Console\Commands\ActivityDoctorCommand;
 use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Facades\ActivityLog;
@@ -17,8 +18,12 @@ use Nvl\Comments\Console\CommentsDoctorCommand;
 use Nvl\Comments\Contracts\HasComments;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
 use Nvl\Comments\Definitions\Tables\CommentsTables;
+use Nvl\Content\Actions\FindContentBlockByKeyAction;
+use Nvl\Content\Actions\FindContentPlacementAction;
 use Nvl\Content\Actions\GetOwnerContentEditorAction;
 use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
+use Nvl\Content\Actions\ReorderContentPlacementsAction;
+use Nvl\Content\Actions\ReplaceContentPlacementAction;
 use Nvl\Content\Actions\ResolveContentScopesAction;
 use Nvl\Content\Console\ContentDoctorCommand;
 use Nvl\Content\Content;
@@ -506,8 +511,12 @@ return [
             'application_api' => [
                 'symbols' => [
                     Content::class,
+                    FindContentBlockByKeyAction::class,
+                    FindContentPlacementAction::class,
                     GetOwnerContentEditorAction::class,
                     ListOwnerContentPlacementSummariesAction::class,
+                    ReorderContentPlacementsAction::class,
+                    ReplaceContentPlacementAction::class,
                     ResolveContentScopesAction::class,
                 ],
                 'direct_model_access' => 'compatibility_1x',
@@ -517,6 +526,7 @@ return [
             'performance' => [
                 ...$pass([
                     'packages/nvl/content/README.md#editor-projections',
+                    'packages/nvl/content/README.md#placement-editor-workflows',
                     'packages/nvl/content/README.md#operational-guidance',
                 ]),
                 'query_tests' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],

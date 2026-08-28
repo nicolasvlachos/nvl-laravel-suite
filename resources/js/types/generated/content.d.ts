@@ -258,6 +258,16 @@ sortOrder?: number,
 isVisible?: boolean,
 overrides?: Record<string, unknown>,
 };
+export type ReorderContentPlacementData = {
+id: string,
+expectedRevision: number,
+region: string,
+parentId: string | null,
+sortOrder: number,
+};
+export type ReorderContentPlacementsData = {
+placements: Nvl.Content.Data.Mutations.ReorderContentPlacementData[],
+};
 export type UpdateContentBlockData = {
 expectedRevision: number,
 mode?: Nvl.Content.Enums.ContentMutationMode,

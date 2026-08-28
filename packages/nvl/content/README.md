@@ -816,10 +816,12 @@ authentic without a consumer-owned signature and trust boundary.
 
 ## Public application surface and DTOs
 
-Application code, package integrations, the facade, commands, and optional
-HTTP controllers use `Nvl\Content\Content` as the canonical boundary. Its
-Actions and services are implementation units behind that application
-surface:
+Model-first application code, package integrations, the facade, commands, and
+optional HTTP controllers use `Nvl\Content\Content` as the canonical
+compatibility boundary. Undocumented Actions and services remain implementation
+units behind that surface. The focused DTO-first editor Actions documented
+below are intentional public injection seams where the compatibility service
+does not expose an equivalent method:
 
 | Capability | `Content` method | Input and concurrency |
 | --- | --- | --- |
@@ -843,10 +845,12 @@ omitted base values, locale rows, and metadata after schema validation. Lists
 replace as units; objects are recursively patched. Use an exact expected
 revision for every editable persisted resource.
 
-Constructor-inject `Nvl\Content\Content` in Actions, services, controllers, and
-other packages. `Nvl\Content\Facades\Content` is a static proxy to that exact
-surface for concise Laravel application code; it is not a second execution
-path. Every existing-resource transition requires the exact revision.
+Constructor-inject `Nvl\Content\Content` for its documented model-first
+operations. Inject a documented focused editor Action when that DTO-first
+workflow is not present on the service. `Nvl\Content\Facades\Content` is a
+static proxy to the service surface for concise Laravel application code; it is
+not a second execution path. Every existing-resource transition requires the
+exact revision.
 
 ## Editor projections
 
@@ -912,6 +916,84 @@ The ordinary model-returning placement call keeps its original exact
 identity-bearing `ContentPlacement` models. New editor and index reads should
 use `Content::editor()`, `GetOwnerContentEditorAction`, or the bounded bulk DTO
 projection so consumers do not own package query graphs or lazy relations.
+
+## Placement editor workflows
+
+Consumer editor mutations should inject the focused DTO-first Actions instead
+of resolving `ContentPlacement` or `ContentBlock` models in application code:
+
+```php
+use Nvl\Content\Actions\FindContentBlockByKeyAction;
+use Nvl\Content\Actions\FindContentPlacementAction;
+use Nvl\Content\Actions\ReorderContentPlacementsAction;
+use Nvl\Content\Actions\ReplaceContentPlacementAction;
+use Nvl\Content\Data\Mutations\ReorderContentPlacementData;
+use Nvl\Content\Data\Mutations\ReorderContentPlacementsData;
+
+$block = app(FindContentBlockByKeyAction::class)->execute('homepage-hero-v2', $actor);
+$placement = app(FindContentPlacementAction::class)->execute(
+    $page,
+    'homepage',
+    'hero-slot',
+    $actor,
+);
+
+$replacement = app(ReplaceContentPlacementAction::class)->execute(
+    owner: $page,
+    group: 'homepage',
+    placement: $placement->id,
+    block: $block->id,
+    expectedRevision: $placement->revision,
+    actor: $actor,
+);
+
+$editor = app(ReorderContentPlacementsAction::class)->execute(
+    $page,
+    'homepage',
+    new ReorderContentPlacementsData([
+        new ReorderContentPlacementData(
+            id: $replacement->id,
+            expectedRevision: $replacement->revision,
+            region: 'main',
+            parentId: null,
+            sortOrder: 0,
+        ),
+    ]),
+    $actor,
+);
+```
+
+`FindContentBlockByKeyAction` requires one exact, unambiguous key across active
+scopes and returns the editable block DTO. `FindContentPlacementAction` resolves
+an exact placement ID or key only inside the supplied registered owner and
+declared group. It rejects ID/key collisions and returns the constrained nested
+block projection after `ListPlacements` authorization with
+`context.includes_blocks=true`. Key matching is byte-exact on every supported
+database. Non-UUID placement keys are never compared with the UUID primary-key
+column; UUID-shaped input checks both identities so collisions remain explicit.
+
+Replacement locks the complete owner/group placement set and replacement block
+inside one three-attempt transaction. It authorizes `Place`, checks the exact
+placement revision, revalidates existing overrides and tree coordinates against
+the replacement definition, and changes only the block identity and revision.
+Soft-deleted blocks are unavailable. Its `Place` context includes
+`replaces_placement=true`.
+
+Reorder input is a complete-set contract: supply exactly one item for every
+placement in the group, including unchanged rows, up to the configured placement
+ceiling. The Action authorizes every placed block before comparing all revisions
+or writing, validates the proposed parent graph entirely in memory, then updates
+changed rows in deterministic ID order. Cycles, missing/foreign parents,
+cross-region parentage, excessive depth, duplicate IDs, partial sets, and stale
+revisions fail atomically. Only changed rows increment once and emit one
+after-commit `ContentPlacementChanged` event. Its `Place` context includes
+`reorders_placements=true`, and the return value is the fresh CR-13 editor DTO.
+
+These newer workflows are intentionally Action-injected rather than appended to
+the `Content` service/facade. That keeps the original public service constructor
+callable without optional dependencies that fail at runtime or a hidden service
+locator. Existing model-returning placement methods remain unchanged for 1.x
+compatibility.
 
 ## Generated PHP and TypeScript contracts
 
