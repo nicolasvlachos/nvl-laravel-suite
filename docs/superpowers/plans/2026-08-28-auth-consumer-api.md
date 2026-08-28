@@ -31,6 +31,7 @@
 - Create: `packages/nvl/auth/src/Data/Display/PermissionListItemData.php`
 - Create: `packages/nvl/auth/src/Data/Display/RoleNameAvailabilityData.php`
 - Create: `packages/nvl/auth/src/Data/Display/RoleAnalyticsData.php`
+- Create: `packages/nvl/auth/src/Services/RbacConsumerLimits.php`
 - Modify: `packages/nvl/auth/config/nvl-auth.php`
 - Modify: `packages/nvl/auth/tests/Feature/RbacManagementTest.php`
 - Modify: `packages/nvl/auth/tests/Unit/OpenApiContractTest.php`
@@ -39,7 +40,7 @@
 - Consumes: existing Auth model fields and `Nvl\Data\Traits\DataTransform`.
 - Produces: stable DTO constructors used by CR-06 through CR-08.
 
-- [ ] **Step 1: Write failing DTO serialization tests**
+- [x] **Step 1: Write failing DTO serialization tests**
 
 ```php
 $role = RoleOptionData::fromModel(Role::factory()->create([
@@ -60,13 +61,13 @@ expect($role->toArray())->toMatchArray([
 Add equivalent assertions for permission option/group, name availability, and
 role analytics serialization.
 
-- [ ] **Step 2: Run the focused test and verify missing DTOs fail**
+- [x] **Step 2: Run the focused test and verify missing DTOs fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
 
 Expected: FAIL because the display DTO classes do not exist.
 
-- [ ] **Step 3: Implement the DTO contracts**
+- [x] **Step 3: Implement the DTO contracts**
 
 Use `#[MapOutputName(CamelCaseMapper::class)]`, `#[TypeScript]`, and
 `DataTransform` on all seven DTOs. Constructors:
@@ -85,7 +86,7 @@ RoleAnalyticsData(string $roleId, int $users, int $activeUsers, int $inactiveUse
 `permissionGroups` is `array<string, int>` sorted by descending count and then
 ascending key.
 
-- [ ] **Step 4: Add package-owned limits**
+- [x] **Step 4: Add package-owned limits**
 
 Under `features.rbac.settings` add:
 
@@ -98,7 +99,7 @@ Under `features.rbac.settings` add:
 Extend the unit contract test so non-positive or over-hard-cap values are
 rejected by the Action-level normalization used in later tasks.
 
-- [ ] **Step 5: Run DTO, TypeScript, and formatting checks**
+- [x] **Step 5: Run DTO, TypeScript, and formatting checks**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php packages/nvl/auth/tests/Unit/OpenApiContractTest.php`
 
@@ -110,7 +111,7 @@ Run: `php artisan nvl:data:types:check --fail-on-warning`
 
 Expected: PASS with all seven DTOs represented in generated contracts.
 
-- [ ] **Step 6: Commit CR-05**
+- [x] **Step 6: Commit CR-05** (`f6329e9`)
 
 ```bash
 git add packages/nvl/auth/src/Data/Display packages/nvl/auth/config/nvl-auth.php packages/nvl/auth/tests/Feature/RbacManagementTest.php packages/nvl/auth/tests/Unit/OpenApiContractTest.php resources/js/types

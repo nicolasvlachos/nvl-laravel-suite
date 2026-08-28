@@ -40,7 +40,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-02 | [x] | Consumer source auditor | Guardrails plan | CR-01 | 1.1 | `bfae7ef` |
 | CR-03 | [x] | Explicit module decisions | Guardrails plan | CR-01 | 1.1 | `5e3ac9f` |
 | CR-04 | [x] | Configure and upgrade-check commands | Guardrails plan | CR-03 | 1.1 | `893c293` |
-| CR-05 | [ ] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | — |
+| CR-05 | [x] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | `f6329e9` |
 | CR-06 | [ ] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | — |
 | CR-07 | [ ] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | — |
 | CR-08 | [ ] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | — |
@@ -136,6 +136,13 @@ gate pass. Record the implementation commit beside the task before checking it.
   read-only external source audit remains unchanged at 64 compatibility model
   queries, three adoption-migration references, and four forbidden Auth model
   writes; `runtime_checked` is false outside KPO's booted application.
+- 2026-08-28 — CR-05 added seven TypeScript-enabled Auth RBAC projections
+  and one shared hard-limit policy in `f6329e9`. Auth package quality passed
+  136 tests with 2,052 assertions plus PHPStan and Pint; root public-contract,
+  generated-TypeScript/`tsc`, strict Composer autoloading, and validation gates
+  passed. KPO's read-only selector review maps to the new projection fields;
+  its translated system-role copy and optional permission scope remain
+  application presentation concerns rather than package persistence seams.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
