@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Illuminate\Config\Repository;
+use Nvl\Suite\Support\SuiteModuleCatalog;
+
 /**
  * Determine whether an autoloaded symbol exists regardless of symbol kind.
  */
@@ -72,6 +75,18 @@ it('keeps one canonical four-class consumer boundary across machine and rendered
             '**Explicit exceptions:** '.$boundary['exceptions'],
         );
     }
+});
+
+it('keeps development guardrail metadata synchronized with the shipped runtime catalog', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $runtime = new SuiteModuleCatalog(new Repository([
+        'nvl-suite' => ['modules' => []],
+    ]));
+
+    expect($catalog['runtime_guardrails']['table_definitions'] ?? null)
+        ->toBe($runtime->tableDefinitions())
+        ->and($catalog['runtime_guardrails']['management_actions'] ?? null)
+        ->toBe($runtime->managementActions());
 });
 
 it('catalogs every package and readiness decision exactly once', function (): void {

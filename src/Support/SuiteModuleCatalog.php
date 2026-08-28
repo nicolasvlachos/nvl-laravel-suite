@@ -6,12 +6,16 @@ namespace Nvl\Suite\Support;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\ServiceProvider;
+use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Providers\ActivityServiceProvider;
 use Nvl\Auth\Contracts\AuthManagementAccess;
+use Nvl\Auth\Definitions\Tables\AuthTables;
 use Nvl\Auth\Providers\AuthServiceProvider;
 use Nvl\Comments\Contracts\CommentAuthorization;
+use Nvl\Comments\Definitions\Tables\CommentsTables;
 use Nvl\Comments\Providers\CommentsServiceProvider;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Content\Providers\ContentServiceProvider;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Csv\Providers\CsvServiceProvider;
@@ -21,10 +25,12 @@ use Nvl\Forms\Contracts\FormEntryDeletionPolicy;
 use Nvl\Forms\Contracts\FormEntryPrivacyPolicy;
 use Nvl\Forms\Contracts\FormRateLimiter;
 use Nvl\Forms\Contracts\FormSpamDetector;
+use Nvl\Forms\Definitions\Tables\FormsTables;
 use Nvl\Forms\Providers\FormsServiceProvider;
 use Nvl\Forms\Support\FormHandlerRegistry;
 use Nvl\MailNotifications\Contracts\MailNotificationReadAuthorization;
 use Nvl\MailNotifications\Contracts\ScheduledMailReadAuthorization;
+use Nvl\MailNotifications\Definitions\Tables\MailNotificationsTables;
 use Nvl\MailNotifications\Providers\MailNotificationsServiceProvider;
 use Nvl\MailNotifications\Services\MailNotificationNotifiableTypeRegistry;
 use Nvl\MailNotifications\Services\ProviderRegistry;
@@ -32,35 +38,43 @@ use Nvl\MailNotifications\Services\ScheduledMessageFactoryRegistry;
 use Nvl\Media\Contracts\MediaAuthorization;
 use Nvl\Media\Contracts\MediaContentScanner;
 use Nvl\Media\Contracts\MultipartUploadGateway;
+use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\Providers\MediaServiceProvider;
 use Nvl\Metafields\Contracts\MetafieldAuthorization;
 use Nvl\Metafields\Contracts\MetafieldReferenceAuthorization;
+use Nvl\Metafields\Definitions\Tables\MetafieldsTables;
 use Nvl\Metafields\Providers\MetafieldsServiceProvider;
 use Nvl\Metafields\Support\MetafieldOwnerRegistry;
 use Nvl\Pages\Contracts\PageAuthorization;
 use Nvl\Pages\Contracts\PageRequestContextResolver;
 use Nvl\Pages\Contracts\PageUrlGenerator;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Providers\PagesServiceProvider;
 use Nvl\Pages\Services\PageResourceRegistry;
 use Nvl\Primitives\Providers\PrimitivesServiceProvider;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Providers\SeoServiceProvider;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Settings\Contracts\SettingsAuditContextProvider;
 use Nvl\Settings\Contracts\SettingsAuthorization;
+use Nvl\Settings\Definitions\Tables\SettingsTables;
 use Nvl\Settings\Providers\SettingsServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
+use Nvl\Taxonomy\Definitions\Tables\TaxonomyTables;
 use Nvl\Taxonomy\Providers\TaxonomyServiceProvider;
 use Nvl\Taxonomy\Services\TaxonomyOwnerRegistry;
 use Nvl\Templates\Contracts\TemplateAuthorization;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Providers\TemplatesServiceProvider;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
 use Nvl\Templates\Services\TemplateRendererRegistry;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Nvl\Translations\Contracts\TranslationsAuthorization;
+use Nvl\Translations\Definitions\Tables\TranslationsTables;
 use Nvl\Translations\Providers\TranslationsServiceProvider;
 use RuntimeException;
 
@@ -432,6 +446,57 @@ final readonly class SuiteModuleCatalog
     public function profiles(): array
     {
         return self::PROFILES;
+    }
+
+    /**
+     * Return runtime-shipped package table definitions used by consumer audits.
+     *
+     * @return array<string, class-string>
+     */
+    public function tableDefinitions(): array
+    {
+        return [
+            'activity' => ActivityTables::class,
+            'auth' => AuthTables::class,
+            'comments' => CommentsTables::class,
+            'content' => ContentTables::class,
+            'forms' => FormsTables::class,
+            'mail-notifications' => MailNotificationsTables::class,
+            'media' => MediaTables::class,
+            'metafields' => MetafieldsTables::class,
+            'pages' => PagesTables::class,
+            'seo' => SeoTables::class,
+            'settings' => SettingsTables::class,
+            'taxonomy' => TaxonomyTables::class,
+            'templates' => TemplatesTables::class,
+            'translations' => TranslationsTables::class,
+        ];
+    }
+
+    /**
+     * Return package-owned management controller classes or namespace prefixes.
+     *
+     * A trailing namespace separator marks a prefix; every other entry is an
+     * exact invokable or controller class.
+     *
+     * @return array<string, list<class-string|string>>
+     */
+    public function managementActions(): array
+    {
+        return [
+            'activity' => ['Nvl\\Activity\\Http\\Controllers\\Api\\'],
+            'auth' => ['Nvl\\Auth\\Http\\Controllers\\Management\\'],
+            'comments' => ['Nvl\\Comments\\Http\\Controllers\\CommentsManagementController'],
+            'content' => ['Nvl\\Content\\Http\\Controllers\\'],
+            'forms' => ['Nvl\\Forms\\Http\\Controllers\\Api\\FormsApiController'],
+            'media' => ['Nvl\\Media\\Http\\Controllers\\Api\\'],
+            'metafields' => ['Nvl\\Metafields\\Http\\Controllers\\Api\\'],
+            'pages' => ['Nvl\\Pages\\Http\\Controllers\\PagesManagementController'],
+            'seo' => ['Nvl\\Seo\\Http\\Controllers\\SeoManagementController'],
+            'settings' => ['Nvl\\Settings\\Http\\Controllers\\SettingsManagementController'],
+            'templates' => ['Nvl\\Templates\\Http\\Controllers\\TemplatesController'],
+            'translations' => ['Nvl\\Translations\\Http\\Controllers\\Api\\'],
+        ];
     }
 
     /**

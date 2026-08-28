@@ -35,4 +35,19 @@ return [
         'forms' => true,
         'pages' => true,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Consumer Audit
+    |--------------------------------------------------------------------------
+    |
+    | Paths extend Composer source discovery. Suppressions are exact, reviewed
+    | exceptions; broad patterns are intentionally unsupported.
+    |
+    */
+    'consumer_audit' => [
+        'paths' => ['app', 'config', 'database/migrations', 'routes'],
+        'authentication_middleware' => ['auth'],
+        'suppressions' => [],
+    ],
 ];

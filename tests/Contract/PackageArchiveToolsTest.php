@@ -236,6 +236,12 @@ it('ships a complete staged-adoption module configuration', function (): void {
         ->and($typescriptModules)->toBe($catalog['typescript_sources'])
         ->and($statefulModules)->toBe($catalog['stateful']);
 
+    expect($configuration['consumer_audit'] ?? null)->toBe([
+        'paths' => ['app', 'config', 'database/migrations', 'routes'],
+        'authentication_middleware' => ['auth'],
+        'suppressions' => [],
+    ]);
+
     expect($catalog['typescript_sources'])
         ->toContain('data', 'mail-notifications')
         ->each->toBeIn($catalogModules);
@@ -293,12 +299,20 @@ it('ships every module and the central provider in the archive', function (): vo
         expect($entries)->toContain(
             'src/SuiteServiceProvider.php',
             'src/Console/Commands/SuiteConfigurationCommand.php',
+            'src/Console/Commands/SuiteConsumerAuditCommand.php',
             'src/Console/Commands/SuiteDoctorCommand.php',
             'src/Console/Commands/SuiteSkillsDoctorCommand.php',
             'src/Console/Commands/SuiteSkillsPublishCommand.php',
             'src/Services/SuiteConfigurationInspector.php',
+            'src/Services/SuiteConsumerAuditor.php',
             'src/Services/SuiteSkillManager.php',
+            'src/Services/ConsumerAudit/ComposerSourceRootLocator.php',
+            'src/Services/ConsumerAudit/PhpConsumerBoundaryScanner.php',
+            'src/Services/ConsumerAudit/PhpImportMap.php',
+            'src/Services/ConsumerAudit/SuiteRuntimeConsumerScanner.php',
+            'src/Support/ConsumerAuditFinding.php',
             'src/Support/SuiteModuleCatalog.php',
+            'config/nvl-suite.php',
             'docs/adoption-matrix.md',
             'docs/installation-profiles.md',
         );

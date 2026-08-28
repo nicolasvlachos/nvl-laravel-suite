@@ -1,0 +1,16 @@
+{
+    "autoload": {
+        "psr-4": {
+            "Consumer\\": "app/",
+            "Nvl\\ConsumerPackage\\": "package-src/"
+        },
+        "classmap": [
+            "legacy/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ConsumerTests\\": "tests/"
+        }
+    }
+}

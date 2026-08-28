@@ -2,17 +2,21 @@
 
 declare(strict_types=1);
 use Nvl\Activity\Console\Commands\ActivityDoctorCommand;
+use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Facades\ActivityLog;
 use Nvl\Activity\Services\ActivityReadService;
 use Nvl\Auth\Actions\Users\ListUsersAction;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
 use Nvl\Auth\Contracts\AuthManagementAccess;
+use Nvl\Auth\Definitions\Tables\AuthTables;
 use Nvl\Comments\Actions\ListCommentsAction;
 use Nvl\Comments\Console\CommentsDoctorCommand;
 use Nvl\Comments\Contracts\HasComments;
+use Nvl\Comments\Definitions\Tables\CommentsTables;
 use Nvl\Content\Actions\ResolveContentScopesAction;
 use Nvl\Content\Console\ContentDoctorCommand;
 use Nvl\Content\Content;
+use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Csv\Services\CSVExport;
 use Nvl\Csv\Services\CSVImport;
 use Nvl\Data\Services\GeneratedTypesGenerator;
@@ -22,42 +26,52 @@ use Nvl\Filterable\Traits\Filterable;
 use Nvl\Forms\Actions\Form\ListFormsAction;
 use Nvl\Forms\Console\Commands\FormsDoctorCommand;
 use Nvl\Forms\Contracts\CreateFormContract;
+use Nvl\Forms\Definitions\Tables\FormsTables;
 use Nvl\MailNotifications\Actions\ListMailNotificationsAction;
 use Nvl\MailNotifications\Console\Commands\MailNotificationsDoctorCommand;
 use Nvl\MailNotifications\Contracts\TrackingLifecycle;
+use Nvl\MailNotifications\Definitions\Tables\MailNotificationsTables;
 use Nvl\Media\Console\Commands\MediaDoctorCommand;
+use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\MediaLibrary;
 use Nvl\Media\Services\MediaFileExistence;
 use Nvl\Media\Services\MediaQueryService;
 use Nvl\Metafields\Actions\Metafields\ListOwnerMetafieldsAction;
 use Nvl\Metafields\Actions\Metafields\SetMetafieldAction;
 use Nvl\Metafields\Console\Commands\MetafieldDoctorCommand;
+use Nvl\Metafields\Definitions\Tables\MetafieldsTables;
 use Nvl\Pages\Actions\GetNavigationAction;
 use Nvl\Pages\Actions\ResolvePageAction;
 use Nvl\Pages\Console\PagesDoctorCommand;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Primitives\ValueObjects\LocaleCode;
 use Nvl\Primitives\ValueObjects\Money;
 use Nvl\Seo\Actions\GetSeoProfileAction;
 use Nvl\Seo\Console\SeoDoctorCommand;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Services\SeoHeadRenderer;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Settings\Actions\SetSettingAction;
 use Nvl\Settings\Commands\DoctorCommand;
 use Nvl\Settings\Contracts\SettingRepository;
+use Nvl\Settings\Definitions\Tables\SettingsTables;
 use Nvl\Settings\Services\SettingCache;
 use Nvl\Support\Contracts\ResponseCode;
 use Nvl\Support\Exceptions\BusinessException;
 use Nvl\Taxonomy\Actions\ResolveTermsAction;
 use Nvl\Taxonomy\Commands\TaxonomyDoctorCommand;
+use Nvl\Taxonomy\Definitions\Tables\TaxonomyTables;
 use Nvl\Taxonomy\Services\TaxonomyTree;
 use Nvl\Templates\Actions\ListTemplatesAction;
 use Nvl\Templates\Actions\RenderTemplateAction;
 use Nvl\Templates\Console\TemplatesDoctorCommand;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Translatable\Console\Commands\TranslatableDoctorCommand;
 use Nvl\Translatable\Services\TranslationWriter;
 use Nvl\Translatable\Translatable;
 use Nvl\Translations\Actions\Sync\ImportTranslationsAction;
 use Nvl\Translations\Console\Commands\TranslationsDoctorCommand;
+use Nvl\Translations\Definitions\Tables\TranslationsTables;
 use Nvl\Translations\Services\TranslationScanService;
 
 /**
@@ -98,6 +112,10 @@ $notApplicable = static fn (string $rationale): array => [
  *         forbidden: string,
  *         exceptions: string
  *     },
+ *     runtime_guardrails: array{
+ *         table_definitions: array<string, class-string>,
+ *         management_actions: array<string, list<class-string|string>>
+ *     },
  *     packages: array<string, array<string, mixed>>
  * }
  */
@@ -108,6 +126,38 @@ return [
         'compatibility_1x' => 'Consumer-initiated package model queries and relation aggregates remain supported only where already documented.',
         'forbidden' => 'Consumer writes through package models, builders, raw tables, pivots, or storage paths.',
         'exceptions' => 'Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.',
+    ],
+    'runtime_guardrails' => [
+        'table_definitions' => [
+            'activity' => ActivityTables::class,
+            'auth' => AuthTables::class,
+            'comments' => CommentsTables::class,
+            'content' => ContentTables::class,
+            'forms' => FormsTables::class,
+            'mail-notifications' => MailNotificationsTables::class,
+            'media' => MediaTables::class,
+            'metafields' => MetafieldsTables::class,
+            'pages' => PagesTables::class,
+            'seo' => SeoTables::class,
+            'settings' => SettingsTables::class,
+            'taxonomy' => TaxonomyTables::class,
+            'templates' => TemplatesTables::class,
+            'translations' => TranslationsTables::class,
+        ],
+        'management_actions' => [
+            'activity' => ['Nvl\\Activity\\Http\\Controllers\\Api\\'],
+            'auth' => ['Nvl\\Auth\\Http\\Controllers\\Management\\'],
+            'comments' => ['Nvl\\Comments\\Http\\Controllers\\CommentsManagementController'],
+            'content' => ['Nvl\\Content\\Http\\Controllers\\'],
+            'forms' => ['Nvl\\Forms\\Http\\Controllers\\Api\\FormsApiController'],
+            'media' => ['Nvl\\Media\\Http\\Controllers\\Api\\'],
+            'metafields' => ['Nvl\\Metafields\\Http\\Controllers\\Api\\'],
+            'pages' => ['Nvl\\Pages\\Http\\Controllers\\PagesManagementController'],
+            'seo' => ['Nvl\\Seo\\Http\\Controllers\\SeoManagementController'],
+            'settings' => ['Nvl\\Settings\\Http\\Controllers\\SettingsManagementController'],
+            'templates' => ['Nvl\\Templates\\Http\\Controllers\\TemplatesController'],
+            'translations' => ['Nvl\\Translations\\Http\\Controllers\\Api\\'],
+        ],
     ],
     'packages' => [
         'support' => [
