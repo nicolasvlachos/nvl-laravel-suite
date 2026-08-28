@@ -1851,15 +1851,45 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Role|string $role): bool"
                 ],
+                "Nvl\\Auth\\Actions\\Rbac\\ListPermissionCatalogAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListPermissionCatalogAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Queries\\PermissionIndexQueryData $data): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
+                    "@return LengthAwarePaginator<int, PermissionListItemData>"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\ListPermissionGroupsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListPermissionGroupsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor): Illuminate\\Support\\Collection",
+                    "@return Collection<int, PermissionGroupData>"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\ListPermissionOptionsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListPermissionOptionsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacConsumerLimits $limits): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?string $group=null, ?int $limit=null): Illuminate\\Support\\Collection",
+                    "@return Collection<int, PermissionOptionData>"
+                ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListPermissionsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListPermissionsAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?string $group=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator"
                 ],
+                "Nvl\\Auth\\Actions\\Rbac\\ListRoleCatalogAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRoleCatalogAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Queries\\RoleIndexQueryData $data): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
+                    "@return LengthAwarePaginator<int, RoleListItemData>"
+                ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListRoleHierarchyAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRoleHierarchyAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor): array"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\ListRoleOptionsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRoleOptionsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacConsumerLimits $limits): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?int $limit=null): Illuminate\\Support\\Collection",
+                    "@return Collection<int, RoleOptionData>"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListRoleTemplatesAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRoleTemplatesAction",
@@ -1886,6 +1916,18 @@
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ShowRoleAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Models\\Role"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\SuggestPermissionsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\SuggestPermissionsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Actions\\Rbac\\ListPermissionOptionsAction $options): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?string $group=null, ?int $limit=null): Illuminate\\Support\\Collection",
+                    "@return Collection<int, PermissionOptionData>"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\SuggestRolesAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\SuggestRolesAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Actions\\Rbac\\ListRoleOptionsAction $options): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?int $limit=null): Illuminate\\Support\\Collection",
+                    "@return Collection<int, RoleOptionData>"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\SynchronizePermissionCatalogAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\SynchronizePermissionCatalogAction",
@@ -3702,7 +3744,11 @@
                     "public readonly ?string $search",
                     "public readonly ?string $group",
                     "public readonly ?int $perPage",
-                    "public function __construct(?string $search=null, ?string $group=null, ?int $perPage=null): mixed",
+                    "public readonly ?string $guard",
+                    "public readonly ?string $sort",
+                    "public readonly ?string $direction",
+                    "public readonly bool $includeAssignments",
+                    "public function __construct(?string $search=null, ?string $group=null, ?int $perPage=null, ?string $guard=null, ?string $sort=null, ?string $direction=null, bool $includeAssignments=false): mixed",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -3732,7 +3778,12 @@
                     "final class Nvl\\Auth\\Data\\Queries\\RoleIndexQueryData extends Spatie\\LaravelData\\Data",
                     "public readonly ?string $search",
                     "public readonly ?int $perPage",
-                    "public function __construct(?string $search=null, ?int $perPage=null): mixed",
+                    "public readonly ?bool $isSystem",
+                    "public readonly ?string $guard",
+                    "public readonly ?string $sort",
+                    "public readonly ?string $direction",
+                    "public readonly bool $includeAssignments",
+                    "public function __construct(?string $search=null, ?int $perPage=null, ?bool $isSystem=null, ?string $guard=null, ?string $sort=null, ?string $direction=null, bool $includeAssignments=false): mixed",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",

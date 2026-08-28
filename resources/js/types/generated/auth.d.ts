@@ -285,10 +285,19 @@ export type PermissionIndexQueryData = {
 search: string | null,
 group: string | null,
 perPage: number | null,
+guard: string | null,
+sort: string | null,
+direction: string | null,
+includeAssignments: boolean,
 };
 export type RoleIndexQueryData = {
 search: string | null,
 perPage: number | null,
+isSystem: boolean | null,
+guard: string | null,
+sort: string | null,
+direction: string | null,
+includeAssignments: boolean,
 };
 export type UserIndexQueryData = {
 search: string | null,
