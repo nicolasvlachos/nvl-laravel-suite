@@ -37,6 +37,7 @@
 **/.temp/
 /.vscode
 /.windsurf/
+/.worktrees/
 /.zed
 /AGENTS.md
 /CLAUDE.md
