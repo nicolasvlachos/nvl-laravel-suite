@@ -38,7 +38,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-00 | [x] | Reliable root quality runner and migration-analysis topology | Configuration/Auth ergonomics plan | None | 1.1 | `e41ffab` |
 | CR-01 | [x] | Consumer boundary doctrine | Guardrails plan | None | 1.1 | `ead83c6` |
 | CR-02 | [x] | Consumer source auditor | Guardrails plan | CR-01 | 1.1 | `bfae7ef` |
-| CR-03 | [ ] | Explicit module decisions | Guardrails plan | CR-01 | 1.1 | — |
+| CR-03 | [x] | Explicit module decisions | Guardrails plan | CR-01 | 1.1 | `5e3ac9f` |
 | CR-04 | [ ] | Configure and upgrade-check commands | Guardrails plan | CR-03 | 1.1 | — |
 | CR-05 | [ ] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | — |
 | CR-06 | [ ] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | — |
@@ -122,6 +122,12 @@ gate pass. Record the implementation commit beside the task before checking it.
   invitation delivery metadata writes plus Role and Permission seeder metadata
   writes. KPO remained unchanged; its runtime checks must be run from KPO's
   booted application after it adopts this command.
+- 2026-08-28 — CR-03 added explicit `enabled`, `disabled`, and `implicit`
+  module decisions in `5e3ac9f`. Omitted 1.x flags remain enabled for backward
+  compatibility, while Suite Doctor and consumer audit expose stable warnings
+  and fail strict mode only after the adoption switch is enabled. KPO already
+  declares all twenty module flags explicitly, so it requires no compatibility
+  exception for this gate.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.

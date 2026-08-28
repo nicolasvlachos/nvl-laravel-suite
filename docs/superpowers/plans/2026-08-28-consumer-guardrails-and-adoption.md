@@ -307,7 +307,7 @@ or managed skills were inspected.
 - Consumes: `SuiteModuleCatalog::modules()` and the CR-02 finding DTO.
 - Produces: `SuiteModuleCatalog::moduleDecision(string $module): 'enabled'|'disabled'|'implicit'` and an `explicit` field in configuration reports.
 
-- [ ] **Step 1: Write failing catalog and Doctor tests**
+- [x] **Step 1: Write failing catalog and Doctor tests**
 
 ```php
 it('distinguishes explicit and implicit module decisions', function (): void {
@@ -327,13 +327,13 @@ it('fails strict adoption when explicit decisions are required', function (): vo
 });
 ```
 
-- [ ] **Step 2: Run the diagnostics tests and verify the missing method fails**
+- [x] **Step 2: Run the diagnostics tests and verify the missing method fails**
 
 Run: `php artisan test --compact tests/Feature/SuiteDiagnosticsTest.php`
 
 Expected: FAIL because `moduleDecision()` does not exist.
 
-- [ ] **Step 3: Implement the staged 1.x decision behavior**
+- [x] **Step 3: Implement the staged 1.x decision behavior**
 
 Add:
 
@@ -350,14 +350,14 @@ Doctor emits `module.<name>.explicit_decision` as warning when omitted; strict
 mode fails that warning only when the flag is true. CR-02 emits
 `consumer.implicit_module_decision` with the same policy.
 
-- [ ] **Step 4: Prove compatibility and strict behavior**
+- [x] **Step 4: Prove compatibility and strict behavior**
 
 Run: `php artisan test --compact tests/Feature/SuiteDiagnosticsTest.php tests/Feature/SuiteConsumerAuditTest.php tests/Contract/PackageArchiveToolsTest.php`
 
 Expected: PASS; omitted flags still enable modules when the adoption flag is
 false, and both Doctor/audit fail when strict explicit decisions are enabled.
 
-- [ ] **Step 5: Commit CR-03**
+- [x] **Step 5: Commit CR-03** (`5e3ac9f`)
 
 ```bash
 git add config/nvl-suite.php src/Support/SuiteModuleCatalog.php src/Services/SuiteConfigurationInspector.php src/Console/Commands/SuiteDoctorCommand.php src/Services/SuiteConsumerAuditor.php tests/Feature/SuiteDiagnosticsTest.php tests/Feature/SuiteConsumerAuditTest.php
