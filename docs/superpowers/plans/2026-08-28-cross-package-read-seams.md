@@ -211,7 +211,7 @@ git commit -m "feat(mail): expose safe delivery aggregates and correlation"
 - Consumes: `translations` storage fields `is_missing`, `sync_status`, `locale`, `scope_type`, and `scope_name`, plus `TranslationsAuthorization`.
 - Produces: `TranslationEntryFilterSchema::make(): FilterSchema` and an authorized `GetTranslationCatalogStatisticsAction::execute(?FilterSet $filters = null): TranslationCatalogStatisticsData`.
 
-- [ ] **Step 1: Write failing aggregate tests**
+- [x] **Step 1: Write failing aggregate tests**
 
 ```php
 $statistics = app(GetTranslationCatalogStatisticsAction::class)->execute();
@@ -229,13 +229,13 @@ locale/scope sorting, authorization denial before a query, and query-count
 assertions. Prove the model trait, package HTTP controller, statistics Action,
 and a consumer-built `QueryFilterSetFactory` all use the same schema service.
 
-- [ ] **Step 2: Run the consumer-contract test and verify missing classes fail**
+- [x] **Step 2: Run the consumer-contract test and verify missing classes fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/translations/phpunit.xml.dist --compact packages/nvl/translations/tests/Feature/TranslationsConsumerContractsTest.php`
 
 Expected: FAIL because the statistics Action and DTO do not exist.
 
-- [ ] **Step 3: Implement one base aggregate plus bounded dimensions**
+- [x] **Step 3: Implement one base aggregate plus bounded dimensions**
 
 DTO constructor:
 
@@ -253,8 +253,9 @@ TranslationCatalogStatisticsData(
 `locales` and `scopes` are `array<string, int>`, sorted count descending/key
 ascending and capped at 100 distinct entries. Apply the same Filterable schema
 as the list Action. Define conflicts as `sync_status = conflict`; define changed
-as non-null `source_hash` where `sync_status` is `changed`, `preserved`, or
-`conflict`; document these semantics in the README. Implement the DTO with
+as non-null `source_hash` where durable `sync_status` is `edited` or `conflict`
+(a preserved import result remains stored as `edited`); document these semantics
+in the README. Implement the DTO with
 `DataTransform`, camel-case output mapping, and `#[TypeScript]` like the other
 Translations public DTOs.
 
@@ -264,7 +265,7 @@ compatibility, and the package HTTP controller injects it rather than
 instantiating `TranslationEntry`. The statistics Action authorizes
 `TranslationsAbility::ListEntries` before building its first query.
 
-- [ ] **Step 4: Run package quality and generated-type checks**
+- [x] **Step 4: Run package quality and generated-type checks**
 
 Run: `php tools/run-package-quality.php translations`
 
@@ -276,7 +277,7 @@ Run: `composer types:check`
 
 Expected: PASS with `TranslationCatalogStatisticsData` generated.
 
-- [ ] **Step 5: Commit CR-11**
+- [x] **Step 5: Commit CR-11**
 
 ```bash
 git add packages/nvl/translations/src/Data/TranslationCatalogStatisticsData.php packages/nvl/translations/src/Actions/Entries/GetTranslationCatalogStatisticsAction.php packages/nvl/translations/src/Services/TranslationEntryFilterSchema.php packages/nvl/translations/src/Traits/TranslationEntryFilters.php packages/nvl/translations/src/Http/Controllers/Api/TranslationsApiController.php packages/nvl/translations/tests/Feature/TranslationsConsumerContractsTest.php packages/nvl/translations/README.md resources/js/types

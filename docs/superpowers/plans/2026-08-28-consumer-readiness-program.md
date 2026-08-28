@@ -46,7 +46,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-08 | [x] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | `c70ef1c` |
 | CR-09 | [x] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | `6e22fb1` |
 | CR-10 | [x] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | `85f4c0b` |
-| CR-11 | [ ] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | — |
+| CR-11 | [x] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | `a0c8d61` |
 | CR-12 | [ ] | Comments/Settings/SEO seams | Read-seams plan | CR-01 | 1.1/1.2 | — |
 | CR-13 | [ ] | Content owner editor projection | Pages/Content plan | CR-01 | 1.2 | — |
 | CR-14 | [ ] | Content placement find/replace/reorder | Pages/Content plan | CR-13 | 1.2 | — |
@@ -224,6 +224,26 @@ gate pass. Record the implementation commit beside the task before checking it.
   and Pint; the final complete `composer test` matrix, public contracts,
   generated types/`tsc`, strict Composer autoloading/validation, skill-mirror
   contract, readiness evidence, and diff hygiene passed.
+- 2026-08-28 — CR-11 added authorized translation catalog statistics and a
+  model-free filter schema in `a0c8d61`. The statistics action applies the same
+  `FilterSet` as entry listing, authorizes before its first query, and uses one
+  scalar aggregate plus two canonicalized, bounded grouped queries. Its typed
+  projection exposes total, missing, conflict, and durable changed counts plus
+  deterministic locale and command-compatible scope maps capped at 100. The
+  compatibility model trait delegates to the new schema service, and the API
+  controller accepts injected schema resolution without increasing its required
+  argument count. Read-only KPO inspection tied these seams to its three direct
+  dashboard counts and model-instantiated filter schema; KPO migration remains
+  deferred to CR-21. RED/GREEN skill simulations produced exact FQCNs,
+  signatures, filter/operator limits, DTO semantics, and a model-free recipe.
+  Independent review found numeric locale coercion, pre-canonical scope caps,
+  and controller-call compatibility issues; regressions now cover numeric zero
+  JSON-object maps, canonical duplicates across the cap boundary, and the legacy
+  four-argument call shape. Final review reported no findings and Ready Yes.
+  Translations quality passed 75 tests with 361 assertions, PHPStan, and Pint;
+  the exact final complete `composer test` matrix, generated types/`tsc`, public
+  contracts, strict Composer autoloading/validation, skill-mirror contract,
+  readiness evidence, and diff hygiene passed.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
