@@ -41,7 +41,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-03 | [x] | Explicit module decisions | Guardrails plan | CR-01 | 1.1 | `5e3ac9f` |
 | CR-04 | [x] | Configure and upgrade-check commands | Guardrails plan | CR-03 | 1.1 | `893c293` |
 | CR-05 | [x] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | `f6329e9` |
-| CR-06 | [ ] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | — |
+| CR-06 | [x] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | `90e6db0` |
 | CR-07 | [ ] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | — |
 | CR-08 | [ ] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | — |
 | CR-09 | [ ] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | — |
@@ -143,6 +143,23 @@ gate pass. Record the implementation commit beside the task before checking it.
   passed. KPO's read-only selector review maps to the new projection fields;
   its translated system-role copy and optional permission scope remain
   application presentation concerns rather than package persistence seams.
+- 2026-08-28 — CR-06 added seven authorized RBAC consumer reads in `90e6db0`:
+  bounded role/permission options and suggestions, one-query permission-group
+  aggregates, and DTO-only role/permission catalogs with safe filters, sorts,
+  pagination, counts, and optional assignment identifiers. Independent review
+  hardening in `f8336bf`, `49aa5c1`, and `6581a4d` added a hard group cap,
+  optional TypeScript query additions with a legacy-shape compile fixture,
+  one-pass authorization via internal readers, deterministic assignment IDs,
+  and one canonical group rule across writes and legacy reads. NUL bytes are
+  rejected by package write DTOs and remain distinct/exactly filterable in
+  legacy SQLite rows because PostgreSQL cannot persist them and SQLite cannot
+  portably replace them. Auth quality passed 144 tests with 2,207 assertions,
+  PHPStan, and Pint; public contracts, generated types/`tsc`, strict Composer
+  autoloading, and validation passed. A read-only KPO review confirms its
+  selector, suggestion, module, and catalog queries map to the new Actions;
+  enum-translated role copy and response shaping remain host presentation.
+  KPO files were not modified and endpoint migration remains the separate
+  post-CR-08 KPO commit defined by Milestone 1.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.

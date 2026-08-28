@@ -136,7 +136,7 @@ git commit -m "feat(auth): add RBAC consumer projections"
 - Consumes: CR-05 DTOs, `FeatureGate`, `ManagementAuthorizer`, `AuthModelRegistry`, and Auth configuration limits.
 - Produces: five bounded option/group Collections and two DTO paginators.
 
-- [ ] **Step 1: Write failing authorization, projection, and bound tests**
+- [x] **Step 1: Write failing authorization, projection, and bound tests**
 
 ```php
 it('returns bounded authorized role options as DTOs', function (): void {
@@ -162,13 +162,23 @@ not trigger lazy loads, and group counts are deterministic. Add catalog tests
 for allowlisted filters/sorts, stable pagination, optional assignment IDs,
 absence of related user identity data, and one-versus-100 query ceilings.
 
-- [ ] **Step 2: Run the focused tests and verify missing Actions fail**
+- [x] **Step 2: Run the focused tests and verify missing Actions fail**
 
-Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
+Run:
+
+```bash
+vendor/bin/pest \
+  --test-directory=packages/nvl/auth/tests \
+  --configuration="$PWD/packages/nvl/auth/phpunit.xml.dist" \
+  --bootstrap="$PWD/vendor/autoload.php" \
+  --cache-directory="$PWD/storage/framework/cache/package-quality/auth/phpunit" \
+  --compact \
+  packages/nvl/auth/tests/Feature/RbacManagementTest.php
+```
 
 Expected: FAIL because the seven Actions do not exist.
 
-- [ ] **Step 3: Implement role options and suggestions**
+- [x] **Step 3: Implement role options and suggestions**
 
 Public signatures:
 
@@ -184,7 +194,7 @@ row through `RoleOptionData::fromModel()`.
 `SuggestRolesAction` returns an empty collection for a one-character non-empty
 search. `ListRoleOptionsAction` permits an empty search for initial picker data.
 
-- [ ] **Step 4: Implement permission options, suggestions, and groups**
+- [x] **Step 4: Implement permission options, suggestions, and groups**
 
 Permission signatures:
 
@@ -198,7 +208,7 @@ then name; clamp at 100; map to `PermissionOptionData`. Group listing performs a
 single `select group, count(*)` aggregate, normalizes blank groups to `general`,
 orders by group, and returns `PermissionGroupData`.
 
-- [ ] **Step 5: Implement safe DTO catalogs**
+- [x] **Step 5: Implement safe DTO catalogs**
 
 Extend `RoleIndexQueryData` with optional `isSystem`, `guard`, `sort`,
 `direction`, and `includeAssignments`; extend `PermissionIndexQueryData` with
@@ -211,12 +221,12 @@ Allowlisted role sorts are `name`, `label`, `priority`, and `created_at`;
 permission sorts are `name`, `label`, `group`, and `created_at`. Related user
 records/emails are never an include.
 
-- [ ] **Step 6: Prove query ceilings and package quality**
+- [x] **Step 6: Prove query ceilings and package quality**
 
 Add a query-count assertion comparing one and fifty options with a ceiling of
 one query per Action.
 
-Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
+Run the focused command from Step 2.
 
 Expected: PASS.
 
@@ -230,7 +240,7 @@ Run: `composer types:check`
 
 Expected: PASS with the extended catalog query DTOs generated.
 
-- [ ] **Step 7: Commit CR-06**
+- [x] **Step 7: Commit CR-06** (`90e6db0`; review hardening in `f8336bf`, `49aa5c1`, and `6581a4d`)
 
 ```bash
 git add packages/nvl/auth/src/Actions/Rbac packages/nvl/auth/src/Data/Queries packages/nvl/auth/tests/Feature/RbacManagementTest.php resources/js/types
