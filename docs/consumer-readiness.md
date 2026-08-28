@@ -61,7 +61,7 @@ canonical application boundary and remain compatibility-only in the 1.x line.
 |---|---|---|
 | `activity` | `ActivityLog`, `ActivityReadService`, and model activity traits | Compatibility-only in 1.x: documented model queries remain supported; use read/recording services for new code. |
 | `auth` | Feature Actions and `AuthManagementAccess` | Compatibility-only in 1.x: documented identity model queries remain supported; writes use Auth Actions. |
-| `comments` | Comment Actions plus `HasComments`/`AcceptsComments` | Compatibility-only in 1.x: owner-trait relationships are allowed; direct Comment queries are transitional and writes use Actions. |
+| `comments` | Comment Actions, bounded latest selectors, and `HasComments`/`AcceptsComments` | Compatibility-only in 1.x: owner-trait relationships are allowed; direct Comment queries are transitional and writes use Actions. |
 | `content` | `Content` and Content Actions | Compatibility-only in 1.x: documented model queries remain supported; new reads and all writes use Content contracts. |
 | `csv` | `CSVImport`, `CSVExport`, and `CSVAnalyzerService` | N/A: CSV exposes no package model. |
 | `data` | `DataTransform` and generated-type services | N/A: Data exposes no package model. |
@@ -72,8 +72,8 @@ canonical application boundary and remain compatibility-only in the 1.x line.
 | `metafields` | Definition/value Actions and `HasMetafields` | Compatibility-only in 1.x: owner-trait relationships are allowed; direct package queries are transitional and writes use Actions. |
 | `pages` | Page Actions and resource-handler contracts | Compatibility-only in 1.x: documented Page queries remain supported; composition and writes use package Actions/services. |
 | `primitives` | Value objects, casts, rules, and reference catalogs | N/A: Primitives exposes no package model. |
-| `seo` | SEO Actions, owner traits, resolver, renderer, and sitemap contracts | Compatibility-only in 1.x: owner-trait relationships are allowed; direct profile queries are transitional and writes use Actions. |
-| `settings` | `SettingRepository`, typed Actions, and `Setting` facade | Compatibility-only in 1.x: documented Setting model queries remain supported; new code uses the repository, facade, or Actions. |
+| `seo` | SEO Actions including owner profile/revision reads, owner traits, resolver, renderer, and sitemap contracts | Compatibility-only in 1.x: owner-trait relationships are allowed; direct profile queries are transitional and writes use Actions. |
+| `settings` | `SettingRepository`, typed Actions, value-free event subjects, and `Setting` facade | Compatibility-only in 1.x: documented Setting model queries remain supported; new code uses the repository, facade, or Actions. |
 | `support` | `BusinessException` and `ResponseCode` | N/A: Support exposes no package model. |
 | `taxonomy` | Taxonomy Actions, tree/resolver services, and owner traits | Compatibility-only in 1.x: owner-trait relationships are allowed; direct Term queries are transitional and mutations use Actions. |
 | `templates` | Render/list/mutation Actions and renderer/asset contracts | Compatibility-only in 1.x: documented Template queries remain supported; new reads and all writes use package contracts. |
@@ -97,7 +97,7 @@ the catalog points to the authoritative package or integration test.
 |---|---|---|---|
 | Activity | Timeline services batch subject/causer relations and enforce timeline limits. | Activity timeline tests | Uncached: actor-scoped append-sensitive audit data. |
 | Auth | Principal lists eager-load roles/permissions and all list Actions clamp pages. | Principal management tests | Uncached: revocations and authorization changes must be immediate. |
-| Comments | Public/member/management DTO projections own selected eager loads and page limits. | Constant 1-to-25 projection test | Uncached: audience and moderation are actor-sensitive. |
+| Comments | Public/member/management DTO projections own selected eager loads, page limits, and one-row latest selectors. | Constant 1-to-25 projection and latest-selector tests | Uncached: audience and moderation are actor-sensitive. |
 | Content | Editor/scope reads load definitions, values, placements, and translations within explicit row/scope limits. | Constant editor-bootstrap test | Uncached: locale, scope, publication, and actor dimensions make invalidation ambiguous. |
 | CSV | Eloquent exports use bounded chunks; imports stream bounded batches. | CSV export tests | Uncached: source streams are caller-owned and freshness is explicit. |
 | Filterable | Only allowlisted criteria, sorts, relation depth, and complexity reach caller queries. | Filterable feature tests | Uncached: the caller owns result identity and invalidation. |
@@ -106,7 +106,7 @@ the catalog points to the authoritative package or integration test.
 | Media | `MediaQueryService` selects translations/variations explicitly; owner relations are eager-loaded for collections. | Cross-package 1-to-25 owner test | File existence only: disk/path key, configured short TTL, mutation invalidation, idempotent miss policy. |
 | Metafields | Owner reads load assignments, definitions, translations, and values as one bounded projection. | Consumer workflow tests | Uncached: typed values are mutation-sensitive. |
 | Pages | Resolve/navigation Actions own hierarchy, translations, content, SEO, and result limits. | Pages package tests | Uncached: locale, publication, hierarchy, and dynamic resources are request-sensitive. |
-| SEO | Owner projections eager-load localized profiles; sitemap sources chunk and cap output. | Cross-package owner test and sitemap tests | Sitemap only: origin/scope/version key, configured TTL, after-commit invalidation, atomic build lock. |
+| SEO | Owner profile projections eager-load translations; revision reads select only identity/revision fields; sitemap sources chunk and cap output. | Owner consumer-contract, cross-package, and sitemap tests | Sitemap only: origin/scope/version key, configured TTL, after-commit invalidation, atomic build lock. |
 | Settings | Repository fetches the bounded setting catalog once and `getMany` uses one storage query. | Settings query-count tests | Cached primitive records: configured key/store, forever TTL, after-commit invalidation, bounded-miss stampede policy. |
 | Taxonomy | Tree and owner reads eager-load translations and attachments; maintenance commands chunk. | Constant localized-tree test | Uncached results; cache is used only for mutation/maintenance locks. |
 | Templates | Stored definition/list/render Actions load versions, assignments, translations, and assets deliberately and paginate. | Templates package tests | Uncached metadata; generated artifacts have explicit render lifecycle. |

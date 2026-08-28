@@ -78,6 +78,10 @@ $scanRoots = [
     'CHANGELOG.md',
 ];
 $serviceLocatorAllowlist = [
+    'auth' => [
+        'src/Services/EloquentRbacPrincipalAccess.php',
+        'src/Services/RbacEntityLocator.php',
+    ],
     'media' => ['src/Traits/InteractsWithMedia.php'],
     'seo' => ['src/Providers/SeoServiceProvider.php'],
     'settings' => ['src/Testing/InteractsWithSettings.php'],

@@ -448,6 +448,31 @@ The resolver uses the same normalization/fingerprint as writes and loads transla
 
 `UniqueSeoPath` provides an early validation error; the database constraint remains the race-safe authority.
 
+## Owner-centric profile reads
+
+Use owner Actions when application code already has the registered Eloquent
+owner. This avoids navigating `seoProfiles`, selecting a raw `SeoProfile`, or
+calling `SeoProfileData::fromModel()` with a duplicated alias:
+
+```php
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+
+$profile = app(GetOwnerSeoProfileAction::class)->execute($page, $page->site);
+$revision = app(GetOwnerSeoRevisionAction::class)->execute($page, $page->site);
+```
+
+`GetOwnerSeoProfileAction` returns an authorized `SeoProfileData` with its
+translations eager-loaded, or `null` when the normalized scope has no profile.
+`GetOwnerSeoRevisionAction` performs the lightweight concurrency read and
+returns `SeoOwnerRevisionData`: registered owner alias, string owner ID,
+normalized scope, nullable profile ID, and revision. An absent profile has
+revision `0`, which is the create token accepted by profile mutations.
+
+Both Actions resolve the alias through `SeoOwnerRegistry` and authorize
+`SeoAbility::View` before querying the profile table. Bind `SeoAuthorization`
+or configure `seo.authorization.ability`; the default remains fail-closed.
+
 ## Optional management API
 
 The package is headless and management routes are disabled by default. Register

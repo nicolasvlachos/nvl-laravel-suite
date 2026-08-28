@@ -238,6 +238,12 @@ tags?: Array<string>,
 metadata?: Record<string, unknown>,
 };
 }
+namespace Queries {
+export type CommentSelectorData = {
+tags: Array<string>,
+status: Nvl.Comments.Enums.CommentStatus | null,
+};
+}
 }
 namespace Enums {
 export type CommentAbility = 'list' | 'view' | 'view_identity' | 'create' | 'reply' | 'update' | 'delete' | 'restore' | 'anonymize' | 'react' | 'report' | 'attach' | 'detach' | 'view_history' | 'restore_revision' | 'moderate';

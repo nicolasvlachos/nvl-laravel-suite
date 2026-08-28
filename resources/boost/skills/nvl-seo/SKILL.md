@@ -104,6 +104,35 @@ Enable package routes only when the application does not already own `/sitemap.x
 - Prefer exact-locale redirects, then locale-neutral fallbacks. Prune retained
   soft-deleted redirects with `nvl:seo:redirects:prune`.
 
+## Read profiles from owners
+
+- Use `Nvl\Seo\Actions\GetOwnerSeoProfileAction::execute(
+  Illuminate\Database\Eloquent\Model $owner, ?string $scope = null)` for an
+  authorized `Nvl\Seo\Data\SeoProfileData` with translations, or `null` when
+  absent.
+- Use `Nvl\Seo\Actions\GetOwnerSeoRevisionAction::execute(Model $owner,
+  ?string $scope = null)` when a mutation needs only
+  `Nvl\Seo\Data\SeoOwnerRevisionData`. Its camel-case fields are
+  `string $ownerAlias`, `string $ownerId`, `string $scope`,
+  `?string $profileId`, and `int $revision`. Revision `0` and a null profile ID
+  mean that the scoped profile does not exist.
+- Register the owner's stable alias in `seo.owners` and bind
+  `SeoAuthorization` or configure its Gate ability. Both Actions normalize the
+  scope, resolve the alias/morph identity, and authorize `SeoAbility::View`
+  before querying profiles.
+- Do not navigate `seoProfiles`, manually choose a scoped raw model, or call
+  `SeoProfileData::fromModel()` with an application-hardcoded alias.
+
+Use these exact imports and calls:
+
+```php
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+
+$profile = app(GetOwnerSeoProfileAction::class)->execute($page, $page->site);
+$revision = app(GetOwnerSeoRevisionAction::class)->execute($page, $page->site);
+```
+
 ## Verify
 
 Test management Actions, exact locale and fallback reads, patch/replace writes,

@@ -9,9 +9,12 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
 use Nvl\Seo\Actions\ImportSeoProfilesAction;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Actions\SyncSeoRedirectAction;
+use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImportSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
 use Nvl\Seo\Data\Import\SeoImportPageData;
@@ -19,6 +22,8 @@ use Nvl\Seo\Data\Import\SeoImportRecordData;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
 use Nvl\Seo\Data\SeoImage;
+use Nvl\Seo\Data\SeoOwnerRevisionData;
+use Nvl\Seo\Data\SeoProfileData;
 use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Data\StructuredDataNodeData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
@@ -48,6 +53,87 @@ function seoConsumerOwner(string $name = 'Consumer owner'): TestSeoOwner
 {
     return TestSeoOwner::query()->create(['name' => $name]);
 }
+
+it('returns authorized owner-centric profile and revision projections', function (): void {
+    $owner = seoConsumerOwner('Owner-centric reads');
+    $profile = app(SyncSeoProfileAction::class)->execute(
+        $owner,
+        SeoProfilePayload::from([
+            'translations' => [
+                'en' => ['path' => '/owner-centric', 'title' => 'Owner-centric'],
+            ],
+        ]),
+        'catalog',
+    );
+    $authorization = new class implements SeoAuthorization
+    {
+        /** @var list<SeoAuthorizationContext> */
+        public array $contexts = [];
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->contexts[] = $context;
+        }
+    };
+    app()->instance(SeoAuthorization::class, $authorization);
+
+    $profileData = app(GetOwnerSeoProfileAction::class)->execute($owner, ' CATALOG ');
+    $revisionData = app(GetOwnerSeoRevisionAction::class)->execute($owner, 'catalog');
+    $missingProfile = app(GetOwnerSeoProfileAction::class)->execute($owner, 'missing');
+    $missingOwner = seoConsumerOwner('Owner without SEO');
+    $missing = app(GetOwnerSeoRevisionAction::class)->execute($missingOwner, 'catalog');
+
+    expect($profileData)->toBeInstanceOf(SeoProfileData::class)
+        ->and($profileData?->id)->toBe($profile->id)
+        ->and($profileData?->ownerAlias)->toBe('article')
+        ->and($profileData?->translations)->toHaveKey('en')
+        ->and($revisionData)->toBeInstanceOf(SeoOwnerRevisionData::class)
+        ->and($revisionData->toArray())->toBe([
+            'ownerAlias' => 'article',
+            'ownerId' => (string) $owner->getKey(),
+            'scope' => 'catalog',
+            'profileId' => $profile->id,
+            'revision' => $profile->revision,
+        ])
+        ->and($missingProfile)->toBeNull()
+        ->and($missing->ownerAlias)->toBe('article')
+        ->and($missing->ownerId)->toBe((string) $missingOwner->getKey())
+        ->and($missing->scope)->toBe('catalog')
+        ->and($missing->profileId)->toBeNull()
+        ->and($missing->revision)->toBe(0)
+        ->and($authorization->contexts)->toHaveCount(4)
+        ->and(array_map(
+            static fn (SeoAuthorizationContext $context): string => $context->scope ?? '',
+            $authorization->contexts,
+        ))->toBe(['catalog', 'catalog', 'missing', 'catalog']);
+
+    foreach ($authorization->contexts as $context) {
+        expect($context->ability)->toBe(SeoAbility::View)
+            ->and($context->ownerAlias)->toBe('article');
+    }
+});
+
+it('denies owner-centric SEO reads before querying profiles', function (): void {
+    $owner = seoConsumerOwner('Denied owner-centric read');
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            throw new AuthorizationException('Denied owner-centric SEO read.');
+        }
+    });
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    expect(fn () => app(GetOwnerSeoRevisionAction::class)->execute($owner))
+        ->toThrow(AuthorizationException::class, 'Denied owner-centric SEO read.');
+    $profileQueries = array_filter(
+        DB::getQueryLog(),
+        static fn (array $query): bool => str_contains($query['query'], SeoTables::Profiles),
+    );
+
+    expect($profileQueries)->toBeEmpty();
+});
 
 it('exercises the complete opt-in management API lifecycle', function (): void {
     config()->set([

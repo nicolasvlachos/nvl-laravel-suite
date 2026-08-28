@@ -33,6 +33,10 @@ expectedRevision: number | null,
 validFrom?: string | null,
 validUntil?: string | null,
 };
+export type SettingSubjectReferenceData = {
+type: 'nvl_setting',
+id: string,
+};
 export type SettingValueData = {
 key: string,
 value: unknown,

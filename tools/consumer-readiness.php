@@ -11,9 +11,11 @@ use Nvl\Auth\Actions\Users\ListUsersAction;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
 use Nvl\Auth\Contracts\AuthManagementAccess;
 use Nvl\Auth\Definitions\Tables\AuthTables;
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Actions\ListCommentsAction;
 use Nvl\Comments\Console\CommentsDoctorCommand;
 use Nvl\Comments\Contracts\HasComments;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
 use Nvl\Comments\Definitions\Tables\CommentsTables;
 use Nvl\Content\Actions\ResolveContentScopesAction;
 use Nvl\Content\Console\ContentDoctorCommand;
@@ -51,15 +53,20 @@ use Nvl\Pages\Console\PagesDoctorCommand;
 use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Primitives\ValueObjects\LocaleCode;
 use Nvl\Primitives\ValueObjects\Money;
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
 use Nvl\Seo\Actions\GetSeoProfileAction;
 use Nvl\Seo\Console\SeoDoctorCommand;
+use Nvl\Seo\Data\SeoOwnerRevisionData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Services\SeoHeadRenderer;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Settings\Actions\SetSettingAction;
 use Nvl\Settings\Commands\DoctorCommand;
 use Nvl\Settings\Contracts\SettingRepository;
+use Nvl\Settings\Data\SettingSubjectReferenceData;
 use Nvl\Settings\Definitions\Tables\SettingsTables;
+use Nvl\Settings\Events\SettingChanged;
 use Nvl\Settings\Services\SettingCache;
 use Nvl\Support\Contracts\ResponseCode;
 use Nvl\Support\Exceptions\BusinessException;
@@ -342,10 +349,15 @@ return [
         'settings' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [SettingRepository::class, SetSettingAction::class],
+                'symbols' => [
+                    SettingRepository::class,
+                    SetSettingAction::class,
+                    SettingChanged::class,
+                    SettingSubjectReferenceData::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/settings/README.md#typed-actions',
+                'documentation' => 'packages/nvl/settings/README.md#setting-change-subject-reference',
             ],
             'performance' => [
                 ...$pass(['packages/nvl/settings/README.md#database-caching-and-adoption']),
@@ -514,10 +526,15 @@ return [
         'comments' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListCommentsAction::class, HasComments::class],
+                'symbols' => [
+                    ListCommentsAction::class,
+                    FindLatestTargetCommentAction::class,
+                    CommentSelectorData::class,
+                    HasComments::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/comments/README.md#boundaries',
+                'documentation' => 'packages/nvl/comments/README.md#latest-target-comment-read',
             ],
             'performance' => [
                 ...$pass(['packages/nvl/comments/README.md#filtering-and-pagination']),
@@ -640,14 +657,23 @@ return [
         'seo' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [GetSeoProfileAction::class, SeoHeadRenderer::class],
+                'symbols' => [
+                    GetSeoProfileAction::class,
+                    GetOwnerSeoProfileAction::class,
+                    GetOwnerSeoRevisionAction::class,
+                    SeoOwnerRevisionData::class,
+                    SeoHeadRenderer::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/seo/README.md#resolve-and-render-metadata',
+                'documentation' => 'packages/nvl/seo/README.md#owner-centric-profile-reads',
             ],
             'performance' => [
                 ...$pass(['packages/nvl/seo/README.md#sitemaps']),
-                'query_tests' => ['tests/Feature/Integration/CrossPackageIntegrationTest.php'],
+                'query_tests' => [
+                    'packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php',
+                    'tests/Feature/Integration/CrossPackageIntegrationTest.php',
+                ],
                 'cache' => [
                     'mode' => 'cached',
                     'owner' => SitemapCache::class,

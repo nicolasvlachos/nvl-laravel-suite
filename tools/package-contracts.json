@@ -6036,6 +6036,11 @@
                     "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentMutationLock $commentLock, Nvl\\Media\\Contracts\\DetachMediaContract $detachMedia, Nvl\\Media\\Contracts\\MediaAuthorization $mediaAuthorization, Nvl\\Media\\Services\\MediaMutationLock $mediaLock, Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Comments\\Services\\CommentTargetLocator $targets): mixed",
                     "public function execute(Nvl\\Comments\\Models\\Comment|string $comment, string $associationId, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience): bool"
                 ],
+                "Nvl\\Comments\\Actions\\FindLatestTargetCommentAction": [
+                    "final readonly class Nvl\\Comments\\Actions\\FindLatestTargetCommentAction",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Data\\Queries\\CommentSelectorData $selector, Nvl\\Comments\\Enums\\CommentAudience $audience=Nvl\\Comments\\Enums\\CommentAudience::Member): Nvl\\Comments\\Data\\PublicCommentData|Nvl\\Comments\\Data\\MemberCommentData|Nvl\\Comments\\Data\\CommentManagementData|null"
+                ],
                 "Nvl\\Comments\\Actions\\GetCommentAction": [
                     "final readonly class Nvl\\Comments\\Actions\\GetCommentAction",
                     "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
@@ -7042,6 +7047,17 @@
                     "public static function translatedMessages(string $namespace): array",
                     "@param string $namespace Translation namespace, such as 'articles::articles'",
                     "@return array<string, mixed>"
+                ],
+                "Nvl\\Comments\\Data\\Queries\\CommentSelectorData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Comments\\Data\\Queries\\CommentSelectorData extends Spatie\\LaravelData\\Data",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Array<string>\")]",
+                    "public readonly array $tags",
+                    "public readonly ?Nvl\\Comments\\Enums\\CommentStatus $status",
+                    "public function __construct(array $tags=[], ?Nvl\\Comments\\Enums\\CommentStatus $status=null): mixed",
+                    "@param array<array-key, mixed> $tags"
                 ],
                 "Nvl\\Comments\\Definitions\\Tables\\CommentsTables": [
                     "final class Nvl\\Comments\\Definitions\\Tables\\CommentsTables",
@@ -26763,6 +26779,16 @@
                     "public function __construct(Nvl\\Seo\\Actions\\SyncSeoProfileAction $sync): mixed",
                     "public function execute(Nvl\\Seo\\Models\\SeoProfile|string $source, Illuminate\\Database\\Eloquent\\Model $target, ?string $scope=null, bool $copyPaths=false): Nvl\\Seo\\Models\\SeoProfile"
                 ],
+                "Nvl\\Seo\\Actions\\GetOwnerSeoProfileAction": [
+                    "final readonly class Nvl\\Seo\\Actions\\GetOwnerSeoProfileAction",
+                    "public function __construct(Nvl\\Seo\\Contracts\\SeoAuthorization $authorization, Nvl\\Seo\\Services\\SeoOwnerRegistry $owners, Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model $owner, ?string $scope=null): ?Nvl\\Seo\\Data\\SeoProfileData"
+                ],
+                "Nvl\\Seo\\Actions\\GetOwnerSeoRevisionAction": [
+                    "final readonly class Nvl\\Seo\\Actions\\GetOwnerSeoRevisionAction",
+                    "public function __construct(Nvl\\Seo\\Contracts\\SeoAuthorization $authorization, Nvl\\Seo\\Services\\SeoOwnerRegistry $owners): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model $owner, ?string $scope=null): Nvl\\Seo\\Data\\SeoOwnerRevisionData"
+                ],
                 "Nvl\\Seo\\Actions\\GetSeoProfileAction": [
                     "final class Nvl\\Seo\\Actions\\GetSeoProfileAction",
                     "public function execute(Nvl\\Seo\\Models\\SeoProfile|string $profile): Nvl\\Seo\\Models\\SeoProfile"
@@ -27115,6 +27141,18 @@
                     "public readonly ?int $height",
                     "public readonly ?string $mimeType",
                     "public function __construct(string $url, ?string $alt=null, ?int $width=null, ?int $height=null, ?string $mimeType=null): mixed"
+                ],
+                "Nvl\\Seo\\Data\\SeoOwnerRevisionData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Seo\\Data\\SeoOwnerRevisionData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $ownerAlias",
+                    "public readonly string $ownerId",
+                    "public readonly string $scope",
+                    "public readonly ?string $profileId",
+                    "public readonly int $revision",
+                    "public function __construct(string $ownerAlias, string $ownerId, string $scope, ?string $profileId, int $revision): mixed"
                 ],
                 "Nvl\\Seo\\Data\\SeoProfileData": [
                     "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -28261,6 +28299,14 @@
                     "public static function rules(): array",
                     "@return array<string, list<string>>"
                 ],
+                "Nvl\\Settings\\Data\\SettingSubjectReferenceData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Settings\\Data\\SettingSubjectReferenceData extends Spatie\\LaravelData\\Data",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"'nvl_setting'\")]",
+                    "public readonly string $type",
+                    "public readonly string $id",
+                    "public function __construct(string $id): mixed"
+                ],
                 "Nvl\\Settings\\Data\\SettingSyncResultData": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\Hidden()]",
                     "final class Nvl\\Settings\\Data\\SettingSyncResultData extends Spatie\\LaravelData\\Data",
@@ -28370,6 +28416,7 @@
                 "Nvl\\Settings\\Events\\SettingChanged": [
                     "final readonly class Nvl\\Settings\\Events\\SettingChanged implements Illuminate\\Contracts\\Events\\ShouldDispatchAfterCommit",
                     "public readonly Nvl\\Settings\\Data\\SettingAuditContextData $context",
+                    "public readonly Nvl\\Settings\\Data\\SettingSubjectReferenceData $subject",
                     "public readonly string $id",
                     "public readonly string $key",
                     "public readonly int $revision",

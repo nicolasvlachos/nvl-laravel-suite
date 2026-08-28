@@ -5,9 +5,16 @@ declare(strict_types=1);
 use Illuminate\Config\Repository;
 use Nvl\Activity\Support\ActivitySubjectReference;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
 use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Data\SeoOwnerRevisionData;
+use Nvl\Settings\Data\SettingSubjectReferenceData;
+use Nvl\Settings\Events\SettingChanged;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 use Nvl\Translations\Actions\Entries\GetTranslationCatalogStatisticsAction;
 use Nvl\Translations\Data\TranslationCatalogStatisticsData;
@@ -353,6 +360,29 @@ it('publishes bounded Translation catalog statistics and a model-free filter sch
         ->toContain('packages/nvl/translations/README.md#catalog-statistics-and-shared-filters')
         ->and($translations['performance']['query_tests'])
         ->toContain('packages/nvl/translations/tests/Feature/TranslationsConsumerContractsTest.php');
+});
+
+it('publishes stable Comments Settings and SEO consumer seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+
+    expect($catalog['packages']['comments']['application_api']['symbols'])
+        ->toContain(FindLatestTargetCommentAction::class, CommentSelectorData::class)
+        ->and($catalog['packages']['comments']['application_api']['documentation'])
+        ->toBe('packages/nvl/comments/README.md#latest-target-comment-read')
+        ->and($catalog['packages']['settings']['application_api']['symbols'])
+        ->toContain(SettingChanged::class, SettingSubjectReferenceData::class)
+        ->and($catalog['packages']['settings']['application_api']['documentation'])
+        ->toBe('packages/nvl/settings/README.md#setting-change-subject-reference')
+        ->and($catalog['packages']['seo']['application_api']['symbols'])
+        ->toContain(
+            GetOwnerSeoProfileAction::class,
+            GetOwnerSeoRevisionAction::class,
+            SeoOwnerRevisionData::class,
+        )
+        ->and($catalog['packages']['seo']['application_api']['documentation'])
+        ->toBe('packages/nvl/seo/README.md#owner-centric-profile-reads')
+        ->and($catalog['packages']['seo']['performance']['query_tests'])
+        ->toContain('packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {
