@@ -1816,6 +1816,12 @@
                     "public function execute(bool $dryRun=false): array",
                     "@return array<string, int>"
                 ],
+                "Nvl\\Auth\\Actions\\Rbac\\AddRolePermissionsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\AddRolePermissionsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacAssignmentService $assignments, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Role|string $role, array $permissionIdentifiers): Nvl\\Auth\\Models\\Role",
+                    "@param list<string> $permissionIdentifiers"
+                ],
                 "Nvl\\Auth\\Actions\\Rbac\\ApplyRoleTemplateAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ApplyRoleTemplateAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RoleTemplateRegistry $templates, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
@@ -1826,6 +1832,11 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacSynchronizer $synchronizer, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Nvl\\Auth\\ValueObjects\\SystemMutationContext $context): Nvl\\Auth\\Results\\RbacSynchronizationResult"
                 ],
+                "Nvl\\Auth\\Actions\\Rbac\\CheckRoleNameAvailabilityAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\CheckRoleNameAvailabilityAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $name, ?string $exceptId=null): Nvl\\Auth\\Data\\Display\\RoleNameAvailabilityData"
+                ],
                 "Nvl\\Auth\\Actions\\Rbac\\CloneRoleAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CloneRoleAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
@@ -1835,6 +1846,12 @@
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CreatePermissionAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\StorePermissionData $data): Nvl\\Auth\\Models\\Permission"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\CreatePermissionWithRolesAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\CreatePermissionWithRolesAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RbacAssignmentService $assignments, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\StorePermissionData $data, array $roleIdentifiers=[]): Nvl\\Auth\\Models\\Permission",
+                    "@param list<string> $roleIdentifiers"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CreateRoleAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CreateRoleAction",
@@ -1902,6 +1919,20 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator"
                 ],
+                "Nvl\\Auth\\Actions\\Rbac\\ResolvePermissionIdentifiersAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ResolvePermissionIdentifiersAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, array $identifiers): Illuminate\\Support\\Collection",
+                    "@param list<string> $identifiers",
+                    "@return Collection<int, PermissionOptionData>"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\ResolveRoleIdentifiersAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ResolveRoleIdentifiersAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, array $identifiers): Illuminate\\Support\\Collection",
+                    "@param list<string> $identifiers",
+                    "@return Collection<int, RoleOptionData>"
+                ],
                 "Nvl\\Auth\\Actions\\Rbac\\ShowPermissionAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ShowPermissionAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities): mixed",
@@ -1928,6 +1959,12 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacConsumerLimits $limits, Nvl\\Auth\\Services\\RbacOptionReadService $options): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?int $limit=null): Illuminate\\Support\\Collection",
                     "@return Collection<int, RoleOptionData>"
+                ],
+                "Nvl\\Auth\\Actions\\Rbac\\SyncRolePermissionsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\SyncRolePermissionsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacAssignmentService $assignments, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Role|string $role, array $permissionIdentifiers): Nvl\\Auth\\Models\\Role",
+                    "@param list<string> $permissionIdentifiers"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\SynchronizePermissionCatalogAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\SynchronizePermissionCatalogAction",
@@ -5551,6 +5588,21 @@
                     "final class Nvl\\Auth\\Services\\PrincipalEligibility implements Nvl\\Auth\\Contracts\\AuthenticationEligibility",
                     "public function assertEligible(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Enums\\AuthenticationPurpose $purpose): void"
                 ],
+                "Nvl\\Auth\\Services\\RbacAssignmentService": [
+                    "final readonly class Nvl\\Auth\\Services\\RbacAssignmentService",
+                    "public function __construct(Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Spatie\\Permission\\PermissionRegistrar $registrar): mixed",
+                    "public function roleConnectionName(Nvl\\Auth\\Models\\Role|string $role): ?string",
+                    "public function add(Nvl\\Auth\\Models\\Role|string $role, array $permissionIdentifiers): array",
+                    "@param list<string> $permissionIdentifiers",
+                    "@return array{role: Role, permissionIds: list<string>, permissionNames: list<string>}",
+                    "public function synchronize(Nvl\\Auth\\Models\\Role|string $role, array $permissionIdentifiers): array",
+                    "@param list<string> $permissionIdentifiers",
+                    "@return array{role: Role, permissionIds: list<string>, permissionNames: list<string>}",
+                    "public function attachPermissionToRoles(Nvl\\Auth\\Models\\Permission $permission, array $roleIdentifiers): array",
+                    "@param list<string> $roleIdentifiers",
+                    "@return array{permission: Permission, roleIds: list<string>, roleNames: list<string>}",
+                    "public function clearPermissionCache(): void"
+                ],
                 "Nvl\\Auth\\Services\\RbacConsumerLimits": [
                     "final readonly class Nvl\\Auth\\Services\\RbacConsumerLimits",
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
@@ -5561,10 +5613,16 @@
                 ],
                 "Nvl\\Auth\\Services\\RbacEntityLocator": [
                     "final readonly class Nvl\\Auth\\Services\\RbacEntityLocator",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, ?Nvl\\Auth\\Services\\AuthConfiguration $configuration=null, ?Nvl\\Auth\\Services\\RbacConsumerLimits $limits=null): mixed",
                     "public function role(Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Models\\Role",
                     "public function roleByName(string $name, string $guard): Nvl\\Auth\\Models\\Role",
-                    "public function permission(Nvl\\Auth\\Models\\Permission|string $permission): Nvl\\Auth\\Models\\Permission"
+                    "public function permission(Nvl\\Auth\\Models\\Permission|string $permission): Nvl\\Auth\\Models\\Permission",
+                    "public function rolesByIdentifiers(array $identifiers): Illuminate\\Support\\Collection",
+                    "@param array<int, mixed> $identifiers",
+                    "@return Collection<int, Role>",
+                    "public function permissionsByIdentifiers(array $identifiers): Illuminate\\Support\\Collection",
+                    "@param array<int, mixed> $identifiers",
+                    "@return Collection<int, Permission>"
                 ],
                 "Nvl\\Auth\\Services\\RbacManager": [
                     "final readonly class Nvl\\Auth\\Services\\RbacManager",
