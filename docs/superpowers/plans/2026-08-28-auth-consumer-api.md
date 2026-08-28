@@ -264,7 +264,7 @@ git commit -m "feat(auth): add RBAC catalog and option reads"
 - Consumes: CR-05 option/availability DTOs and `RbacEntityLocator`.
 - Produces: deterministic identifier reads plus atomic assignment workflows used by host form DTOs and mutation adapters.
 
-- [ ] **Step 1: Write failing validation and ordering tests**
+- [x] **Step 1: Write failing validation and ordering tests**
 
 ```php
 it('resolves mixed role ids and names in caller order', function (): void {
@@ -286,13 +286,13 @@ assignment tests for add versus replace semantics, empty replacement, duplicate
 IDs, rollback, audit/event emission, system-role rules, and creating a
 permission with initial roles in one transaction.
 
-- [ ] **Step 2: Run the focused tests and verify missing Actions fail**
+- [x] **Step 2: Run the focused tests and verify missing Actions fail**
 
-Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
+Run: `vendor/bin/pest --test-directory=packages/nvl/auth/tests --configuration="$PWD/packages/nvl/auth/phpunit.xml.dist" --bootstrap="$PWD/vendor/autoload.php" --cache-directory="$PWD/storage/framework/cache/package-quality/auth/phpunit" --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
 
 Expected: FAIL because the resolution and assignment Actions do not exist.
 
-- [ ] **Step 3: Implement role name availability**
+- [x] **Step 3: Implement role name availability**
 
 Signature:
 
@@ -308,7 +308,7 @@ Trim and require 1–160 characters, use the configured role class and guard,
 exclude only the exact UUID when supplied, and return the conflicting role ID
 without returning the model.
 
-- [ ] **Step 4: Implement two-query identifier resolution**
+- [x] **Step 4: Implement two-query identifier resolution**
 
 Normalize strings, reject duplicates before querying, partition UUID-like IDs
 from names, perform at most one ID query and one name query, index results by
@@ -317,21 +317,22 @@ then emit option DTOs in original order. Add focused methods to
 `RbacEntityLocator` for the shared normalization/query logic; do not expose its
 builders publicly.
 
-- [ ] **Step 5: Implement package-owned assignment workflows**
+- [x] **Step 5: Implement package-owned assignment workflows**
 
-`RbacAssignmentService` resolves the role and permission identifiers through
-the configured model registry, authorizes the specific manage ability before
-loading assignments, uses the Auth connection with deadlock retries, syncs in
-deterministic canonical-name order, clears the permission cache, records one
-bounded audit entry, and dispatches one `RbacChanged` event after the durable
-change. `AddRolePermissionsAction` unions with existing assignments;
+The public Actions authorize the specific manage ability before loading
+assignments and own the Auth-connection transaction with deadlock retries.
+`RbacAssignmentService` resolves configured role/permission models, syncs in
+deterministic canonical-name order, and clears the permission cache after the
+durable change. Each transaction records one ID/count-bounded audit entry and
+queues one after-commit `RbacChanged` event. `AddRolePermissionsAction` unions
+with existing assignments;
 `SyncRolePermissionsAction` replaces them. `CreatePermissionWithRolesAction`
 creates the permission and attaches it to all resolved roles inside one outer
 transaction so a missing/denied role rolls back creation.
 
-- [ ] **Step 6: Run feature, analysis, and formatting checks**
+- [x] **Step 6: Run feature, analysis, and formatting checks**
 
-Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
+Run: `vendor/bin/pest --test-directory=packages/nvl/auth/tests --configuration="$PWD/packages/nvl/auth/phpunit.xml.dist" --bootstrap="$PWD/vendor/autoload.php" --cache-directory="$PWD/storage/framework/cache/package-quality/auth/phpunit" --compact packages/nvl/auth/tests/Feature/RbacManagementTest.php`
 
 Expected: PASS with a maximum of two resolution queries for one and 100 inputs.
 
@@ -339,7 +340,7 @@ Run: `composer analyse --working-dir=packages/nvl/auth`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit CR-07**
+- [x] **Step 7: Commit CR-07** (`85f607d`)
 
 ```bash
 git add packages/nvl/auth/src/Actions/Rbac/CheckRoleNameAvailabilityAction.php packages/nvl/auth/src/Actions/Rbac/ResolveRoleIdentifiersAction.php packages/nvl/auth/src/Actions/Rbac/ResolvePermissionIdentifiersAction.php packages/nvl/auth/src/Actions/Rbac/AddRolePermissionsAction.php packages/nvl/auth/src/Actions/Rbac/SyncRolePermissionsAction.php packages/nvl/auth/src/Actions/Rbac/CreatePermissionWithRolesAction.php packages/nvl/auth/src/Services/RbacEntityLocator.php packages/nvl/auth/src/Services/RbacAssignmentService.php packages/nvl/auth/tests/Feature/RbacManagementTest.php

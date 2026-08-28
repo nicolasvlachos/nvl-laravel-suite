@@ -42,7 +42,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-04 | [x] | Configure and upgrade-check commands | Guardrails plan | CR-03 | 1.1 | `893c293` |
 | CR-05 | [x] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | `f6329e9` |
 | CR-06 | [x] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | `90e6db0` |
-| CR-07 | [ ] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | — |
+| CR-07 | [x] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | `85f607d` |
 | CR-08 | [ ] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | — |
 | CR-09 | [ ] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | — |
 | CR-10 | [ ] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | — |
@@ -160,6 +160,24 @@ gate pass. Record the implementation commit beside the task before checking it.
   enum-translated role copy and response shaping remain host presentation.
   KPO files were not modified and endpoint migration remains the separate
   post-CR-08 KPO commit defined by Milestone 1.
+- 2026-08-28 — CR-07 added role-name availability, ordered mixed ID/name
+  resolution, additive and replacement role-permission assignments, and atomic
+  permission creation with initial roles in `85f607d`. Resolution is
+  guard-scoped, rejects empty, duplicate, alias-duplicate, unknown, ambiguous,
+  and over-limit inputs, preserves caller order, and performs at most one ID
+  plus one name query. Assignment Actions authorize before loading RBAC state,
+  use the configured Auth connection with deadlock retries, preserve system-role
+  identity, clear Spatie's permission cache after commit, and emit one audit and
+  one after-commit event. Independent review found and verified hardening for
+  maximum-length multibyte names: audits now contain bounded IDs/counts inside
+  the transaction, so an audit failure rolls back the mutation and emits no
+  event. `RbacEntityLocator` retains its one-argument construction contract.
+  Auth quality passed 155 tests with 2,317 assertions, PHPStan, and Pint; the
+  complete root `composer test` matrix, public contracts, generated types/`tsc`,
+  strict Composer autoloading, and validation passed. KPO's direct availability,
+  mixed-identifier normalization, add/sync assignment, and create-with-roles
+  compositions now have package-owned replacements; KPO remained read-only and
+  migration stays in the separate post-CR-08 wave.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
