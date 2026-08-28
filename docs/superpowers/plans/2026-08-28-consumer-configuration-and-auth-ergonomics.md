@@ -145,7 +145,7 @@ Expected: both orderings pass repeatedly, Auth reports no mutable-source
 analysis errors, Comments passes 193 tests without shared-cache contamination,
 and JSON contains no absolute paths or configuration values.
 
-- [ ] **Step 7: Commit CR-00**
+- [x] **Step 7: Commit CR-00** (`e41ffab`)
 
 ```bash
 git add composer.json tools/package-family.php tools/package-quality-runner.php tools/run-package-quality.php packages/nvl/auth/phpstan.neon.dist tests/Contract/PackageMigrationQualityTest.php tests/Contract/PackageQualityWorkflowTest.php CONTRIBUTING.md docs/superpowers/plans

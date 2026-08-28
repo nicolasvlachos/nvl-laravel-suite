@@ -35,7 +35,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 
 | ID | Done | Deliverable | Plan | Depends on | Release | Commit |
 |---|---|---|---|---|---|---|
-| CR-00 | [ ] | Reliable root quality runner and migration-analysis topology | Configuration/Auth ergonomics plan | None | 1.1 | — |
+| CR-00 | [x] | Reliable root quality runner and migration-analysis topology | Configuration/Auth ergonomics plan | None | 1.1 | `e41ffab` |
 | CR-01 | [ ] | Consumer boundary doctrine | Guardrails plan | None | 1.1 | — |
 | CR-02 | [ ] | Consumer source auditor | Guardrails plan | CR-01 | 1.1 | — |
 | CR-03 | [ ] | Explicit module decisions | Guardrails plan | CR-01 | 1.1 | — |
@@ -90,7 +90,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 - [x] Create an isolated worktree using `superpowers:using-git-worktrees` before implementation.
 - [x] Record baseline output from `composer contracts:check`, `composer types:check`, and the focused suite diagnostics tests.
 - [x] Confirm KPO's Composer source/version and save the starting KPO strict-test command in the execution log.
-- [ ] Execute CR-00 and use its root runner for every subsequent package gate.
+- [x] Execute CR-00 and use its root runner for every subsequent package gate.
 - [ ] Execute CR-01 through CR-04 in dependency order.
 
 ### Execution log
