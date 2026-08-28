@@ -302,7 +302,7 @@ git commit -m "feat(translations): add catalog statistics"
 - Consumes: Comments read/projection services, CR-09 Activity subject reference shape, Settings event identity, SEO owner registry/authorization/presenter.
 - Produces: one-comment DTO lookup, value-free setting subject identity, and owner-shaped SEO profile/revision DTOs.
 
-- [ ] **Step 1: Write failing package-specific contract tests**
+- [x] **Step 1: Write failing package-specific contract tests**
 
 ```php
 $comment = app(FindLatestTargetCommentAction::class)->execute(
@@ -320,7 +320,7 @@ event serializes no setting value. For SEO, assert an authorized owner lookup
 returns `SeoProfileData`, a missing scope returns null, and the revision lookup
 returns only owner alias/ID/scope/profile ID/revision.
 
-- [ ] **Step 2: Run all three focused tests and verify missing APIs fail**
+- [x] **Step 2: Run all three focused tests and verify missing APIs fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/comments/phpunit.xml.dist --compact packages/nvl/comments/tests/Feature/CommentsV1ApiProjectionTest.php`
 
@@ -330,7 +330,7 @@ Run: `vendor/bin/pest --configuration=packages/nvl/seo/phpunit.xml.dist --compac
 
 Expected: each command FAILS for its missing API.
 
-- [ ] **Step 3: Implement the latest matching Comment projection**
+- [x] **Step 3: Implement the latest matching Comment projection**
 
 Signature:
 
@@ -350,7 +350,7 @@ and project through `CommentProjectionFactory`. CR-31 extends the selector with
 registered metadata equality aliases; callers never provide JSON paths.
 Denied management audiences fail before the query.
 
-- [ ] **Step 4: Add a stable Settings subject reference**
+- [x] **Step 4: Add a stable Settings subject reference**
 
 `SettingSubjectReferenceData` contains `type: 'nvl_setting'` and `id: string`.
 Declare `public SettingSubjectReferenceData $subject` on `SettingChanged` and
@@ -358,7 +358,7 @@ initialize it from the existing event ID inside the constructor body; do not
 add a constructor argument. KPO can map it to CR-09's
 `ActivitySubjectReference` without querying the Setting model.
 
-- [ ] **Step 5: Add authorized SEO owner reads**
+- [x] **Step 5: Add authorized SEO owner reads**
 
 Signatures:
 
@@ -374,7 +374,7 @@ normalized scope, eager-load translations only for the full profile, and use
 scope, nullable profile ID, and revision (zero when absent). Make the revision
 DTO a camel-case `#[TypeScript]` Data contract.
 
-- [ ] **Step 6: Run the three package quality gates**
+- [x] **Step 6: Run the three package quality gates**
 
 Run: `php tools/run-package-quality.php comments`
 
@@ -390,7 +390,7 @@ Run: `composer types:check`
 
 Expected: PASS with the SEO revision projection generated.
 
-- [ ] **Step 7: Commit CR-12**
+- [x] **Step 7: Commit CR-12** (`f267556`)
 
 ```bash
 git add packages/nvl/comments/src/Actions/FindLatestTargetCommentAction.php packages/nvl/comments/src/Data/Queries/CommentSelectorData.php packages/nvl/comments/tests/Feature/CommentsV1ApiProjectionTest.php packages/nvl/settings/src/Data/SettingSubjectReferenceData.php packages/nvl/settings/src/Events/SettingChanged.php packages/nvl/settings/tests/SettingsConsumerContractsTest.php packages/nvl/seo/src/Actions/GetOwnerSeoProfileAction.php packages/nvl/seo/src/Actions/GetOwnerSeoRevisionAction.php packages/nvl/seo/src/Data/SeoOwnerRevisionData.php packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php resources/js/types
@@ -399,8 +399,8 @@ git commit -m "feat: add stable cross-package read seams"
 
 ### Workstream acceptance gate
 
-- [ ] Run the quality command for Activity, Mail Notifications, Translations, Comments, Settings, and SEO.
-- [ ] Run `composer contracts:check` and `composer types:check`.
+- [x] Run the quality command for Activity, Mail Notifications, Translations, Comments, Settings, and SEO.
+- [x] Run `composer contracts:check` and `composer types:check`.
 - [ ] Replace KPO's direct failed-mail inbox query with `ListMailNotificationsAction` using `failedOnly: true`; the existing Action already matches all four failure statuses.
 - [ ] Replace KPO's mail and setting listener package-model reloads with the new event/reference context.
 - [ ] Confirm KPO strict consumer audit has no Mail Notification or Setting model-query findings outside documented legacy-import bridges.

@@ -47,7 +47,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-09 | [x] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | `6e22fb1` |
 | CR-10 | [x] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | `85f4c0b` |
 | CR-11 | [x] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | `a0c8d61` |
-| CR-12 | [ ] | Comments/Settings/SEO seams | Read-seams plan | CR-01 | 1.1/1.2 | — |
+| CR-12 | [x] | Comments/Settings/SEO seams | Read-seams plan | CR-01 | 1.1/1.2 | `f267556` |
 | CR-13 | [ ] | Content owner editor projection | Pages/Content plan | CR-01 | 1.2 | — |
 | CR-14 | [ ] | Content placement find/replace/reorder | Pages/Content plan | CR-13 | 1.2 | — |
 | CR-15 | [ ] | Page lookup/options/public children | Pages/Content plan | CR-01 | 1.2 | — |
@@ -244,6 +244,25 @@ gate pass. Record the implementation commit beside the task before checking it.
   the exact final complete `composer test` matrix, generated types/`tsc`, public
   contracts, strict Composer autoloading/validation, skill-mirror contract,
   readiness evidence, and diff hygiene passed.
+- 2026-08-28 — CR-12 added a bounded latest-target Comments projection,
+  value-free Settings subject identity, and authorized owner-centric SEO
+  profile/revision reads in `f267556`. Read-only KPO inspection tied the seams
+  to its candidacy workflow-note relation query, Setting reload for Activity,
+  and raw scoped SEO profile/revision access. The Comments selector requires
+  exact all-tag matches, optional status, a hard twenty-tag ceiling, active
+  rows, audience projection, authorization before SQL, and deterministic
+  newest ordering. Settings events now expose `nvl_setting` plus ID without a
+  value or new constructor argument. SEO reads resolve registered owner
+  identity, authorize before profile SQL, eager-load translations only for the
+  full projection, and return revision zero when absent. RED/GREEN skill
+  simulations were initially too shorthand-heavy; exact imports, signatures,
+  runnable recipes, selector bounds, Activity mapping, and SEO DTO fields now
+  pass with synchronized mirrors. Independent review found one stale SEO
+  registry comment; after correction it reported no findings and Ready Yes.
+  All six workstream package gates, the exact full `composer test` matrix,
+  generated types/`tsc`, public contracts, dependency and package-family
+  validation, strict Composer validation/autoloading, readiness evidence, and
+  diff hygiene passed. KPO remained read-only; migration stays in CR-21.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
