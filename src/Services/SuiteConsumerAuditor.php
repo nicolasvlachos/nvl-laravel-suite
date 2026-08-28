@@ -45,7 +45,10 @@ final readonly class SuiteConsumerAuditor
                 tableOwners: $this->tableOwners(),
                 enabledPackages: $this->catalog->effectiveModules(),
             ),
-            ...($this->runtimeChecked($basePath) ? $this->runtimeScanner->scan() : []),
+            ...($this->runtimeChecked($basePath) ? [
+                ...$this->moduleDecisionFindings(),
+                ...$this->runtimeScanner->scan(),
+            ] : []),
         ];
 
         $findings = array_values(array_filter(
@@ -64,6 +67,33 @@ final readonly class SuiteConsumerAuditor
             $right->code,
             $right->symbol,
         ]);
+
+        return $findings;
+    }
+
+    /**
+     * @return list<ConsumerAuditFinding>
+     */
+    private function moduleDecisionFindings(): array
+    {
+        $findings = [];
+
+        foreach (array_keys($this->catalog->modules()) as $module) {
+            if ($this->catalog->moduleDecision($module) !== 'implicit') {
+                continue;
+            }
+
+            $findings[] = new ConsumerAuditFinding(
+                code: 'consumer.implicit_module_decision',
+                severity: 'warning',
+                package: $module,
+                path: 'runtime/configuration',
+                line: null,
+                symbol: $module,
+                message: 'A Suite module is enabled by the 1.x compatibility default.',
+                remediation: 'Publish an explicit true or false decision for every Suite module.',
+            );
+        }
 
         return $findings;
     }

@@ -240,6 +240,8 @@ it('ships a complete staged-adoption module configuration', function (): void {
         'paths' => ['app', 'config', 'database/migrations', 'routes'],
         'authentication_middleware' => ['auth'],
         'suppressions' => [],
+    ])->and($configuration['adoption'] ?? null)->toBe([
+        'require_explicit_module_decisions' => false,
     ]);
 
     expect($catalog['typescript_sources'])

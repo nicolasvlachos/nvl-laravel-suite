@@ -81,6 +81,7 @@ final class SuiteConfigurationCommand extends Command
                 static fn (string $module, array $definition): array => [
                     $module,
                     match (true) {
+                        ! $definition['explicit'] => 'implicit (enabled)',
                         ! $definition['enabled'] => 'disabled',
                         $definition['dependency'] => 'dependency',
                         default => 'enabled',

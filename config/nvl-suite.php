@@ -36,6 +36,10 @@ return [
         'pages' => true,
     ],
 
+    'adoption' => [
+        'require_explicit_module_decisions' => false,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Consumer Audit

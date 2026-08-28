@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Suite\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Nvl\Suite\Services\SuiteConfigurationInspector;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -33,6 +34,7 @@ final class SuiteDoctorCommand extends Command
     public function handle(
         Application $application,
         SuiteConfigurationInspector $inspector,
+        Repository $configurationRepository,
     ): int {
         $format = $this->option('format');
 
@@ -49,6 +51,15 @@ final class SuiteDoctorCommand extends Command
         $doctors = [];
 
         foreach ($configuration['modules'] as $module => $definition) {
+            $checks[] = $this->check(
+                key: "module.{$module}.explicit_decision",
+                passed: $definition['explicit'],
+                severity: 'warning',
+                message: $definition['explicit']
+                    ? 'The module has an explicit enabled or disabled decision.'
+                    : 'The module is enabled by the 1.x compatibility default because its flag is omitted.',
+            );
+
             if (! $definition['enabled']) {
                 continue;
             }
@@ -149,8 +160,16 @@ final class SuiteDoctorCommand extends Command
             );
         }
 
+        $requireExplicitDecisions = $configurationRepository->get(
+            'nvl-suite.adoption.require_explicit_module_decisions',
+            false,
+        ) === true;
         $healthy = collect($checks)->every(
-            static fn (array $check): bool => $check['passed'],
+            static fn (array $check): bool => $check['passed']
+                || ($check['severity'] !== 'error'
+                    && (! $strict
+                        || ! $requireExplicitDecisions
+                        || ! str_ends_with($check['key'], '.explicit_decision'))),
         );
         $report = [
             'suite' => 'nvl/laravel-suite',

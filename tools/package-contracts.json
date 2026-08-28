@@ -16,7 +16,7 @@
             "Nvl\\Suite\\Console\\Commands\\SuiteSkillsPublishCommand": "nvl:suite:skills:publish {--force : Replace locally modified Suite-owned skills; unmanaged skills are never overwritten} {--format=text : Output format: text or json}"
         },
         "configuration": {
-            "config/nvl-suite.php": "261592797fbaf7801cf17d3e222e06db098a81ec5dea6900a5e78b62fa8feff6"
+            "config/nvl-suite.php": "b80098d5ded51bdd6f845503757c4f92919b57741f2c40101ad8ee37eaf56d5f"
         }
     },
     "packages": {

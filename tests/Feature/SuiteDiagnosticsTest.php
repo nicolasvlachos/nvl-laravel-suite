@@ -27,6 +27,58 @@ function suiteDiagnosticModules(string ...$enabled): array
     return $modules;
 }
 
+it('distinguishes explicit and implicit module decisions', function (): void {
+    config()->set('nvl-suite.modules', ['auth' => true, 'forms' => false]);
+    $catalog = app(SuiteModuleCatalog::class);
+
+    expect($catalog->moduleDecision('auth'))->toBe('enabled')
+        ->and($catalog->moduleDecision('forms'))->toBe('disabled')
+        ->and($catalog->moduleDecision('pages'))->toBe('implicit');
+
+    $report = app(SuiteConfigurationInspector::class)->inspect();
+
+    expect($report['modules']['auth'])
+        ->decision->toBe('enabled')
+        ->explicit->toBeTrue()
+        ->and($report['modules']['forms'])
+        ->decision->toBe('disabled')
+        ->explicit->toBeTrue()
+        ->and($report['modules']['pages'])
+        ->decision->toBe('implicit')
+        ->explicit->toBeFalse();
+});
+
+it('fails strict adoption only when explicit module decisions are required', function (): void {
+    $modules = suiteDiagnosticModules('support');
+    unset($modules['data']);
+    config()->set('nvl-suite.modules', $modules);
+    config()->set('nvl-suite.adoption.require_explicit_module_decisions', false);
+
+    expect(Artisan::call('nvl:suite:doctor', [
+        '--strict' => true,
+        '--format' => 'json',
+    ]))->toBe(0);
+
+    config()->set('nvl-suite.adoption.require_explicit_module_decisions', true);
+
+    expect(Artisan::call('nvl:suite:doctor', [
+        '--format' => 'json',
+    ]))->toBe(0)
+        ->and(Artisan::call('nvl:suite:doctor', [
+            '--strict' => true,
+            '--format' => 'json',
+        ]))->toBe(1);
+
+    $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+    $check = collect($report['checks'] ?? [])
+        ->firstWhere('key', 'module.data.explicit_decision');
+
+    expect($check)
+        ->not->toBeNull()
+        ->passed->toBeFalse()
+        ->severity->toBe('warning');
+});
+
 it('provides dependency-complete installation profiles', function (): void {
     $catalog = app(SuiteModuleCatalog::class);
 

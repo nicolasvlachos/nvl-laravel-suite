@@ -24,6 +24,8 @@ use Throwable;
  * @phpstan-type EffectiveSchedule array{command: string, condition: string|null, enabled: bool|null, registered: bool, required: bool}
  * @phpstan-type EffectiveModule array{
  *     requested: bool,
+ *     decision: 'enabled'|'disabled'|'implicit',
+ *     explicit: bool,
  *     enabled: bool,
  *     dependency: bool,
  *     provider: class-string,
@@ -67,9 +69,12 @@ final readonly class SuiteConfigurationInspector
         foreach ($definitions as $module => $definition) {
             $enabled = isset($effectiveLookup[$module]);
             $requested = $this->catalog->requested($module);
+            $decision = $this->catalog->moduleDecision($module);
 
             $modules[$module] = [
                 'requested' => $requested,
+                'decision' => $decision,
+                'explicit' => $decision !== 'implicit',
                 'enabled' => $enabled,
                 'dependency' => $enabled && ! $requested,
                 'provider' => $definition['provider'],

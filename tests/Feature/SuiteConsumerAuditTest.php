@@ -517,6 +517,104 @@ it('keeps compatibility query warnings non-failing in normal and strict modes', 
     }
 });
 
+it('reports implicit module decisions and applies the explicit adoption switch', function (): void {
+    $workspace = sys_get_temp_dir().'/nvl-consumer-audit-decisions-'.bin2hex(random_bytes(8));
+    $filesystem = new Filesystem;
+    $filesystem->ensureDirectoryExists($workspace);
+    $modules = array_fill_keys(
+        array_keys(resolve(SuiteModuleCatalog::class)->modules()),
+        false,
+    );
+    $modules['support'] = true;
+    unset($modules['data']);
+    $runtimeConfiguration = new Repository([
+        'nvl-suite' => [
+            'modules' => $modules,
+            'consumer_audit' => ['authentication_middleware' => ['auth']],
+        ],
+    ]);
+    $catalog = new SuiteModuleCatalog($runtimeConfiguration);
+    $runtimeApplication = resolve(Application::class);
+    $inspector = new SuiteConfigurationInspector(
+        $runtimeApplication,
+        $runtimeConfiguration,
+        new Schedule,
+        $catalog,
+    );
+    $router = new Router(new Dispatcher($runtimeApplication), $runtimeApplication);
+    $console = Mockery::mock(Kernel::class);
+    $console->shouldReceive('call')->times(4)->andReturn(0);
+    $skills = new SuiteSkillManager(
+        filesystem: $filesystem,
+        catalog: $catalog,
+        suiteRoot: dirname(__DIR__, 2),
+        applicationRoot: $workspace,
+        suiteVersion: '1.0.0-test',
+    );
+    $originalAuditor = resolve(SuiteConsumerAuditor::class);
+    $configuration = resolve(Repository::class);
+    $originalPolicy = $configuration->get(
+        'nvl-suite.adoption.require_explicit_module_decisions',
+    );
+    $consumerPath = base_path();
+
+    try {
+        expect($skills->publish()['healthy'])->toBeTrue();
+
+        $runtime = new SuiteRuntimeConsumerScanner(
+            $inspector,
+            $router,
+            $console,
+            $skills,
+            $catalog,
+            $runtimeConfiguration,
+        );
+        $auditor = new SuiteConsumerAuditor(
+            resolve(ComposerSourceRootLocator::class),
+            resolve(PhpConsumerBoundaryScanner::class),
+            $runtime,
+            $catalog,
+            $configuration,
+            $runtimeApplication,
+        );
+        app()->instance(SuiteConsumerAuditor::class, $auditor);
+        $configuration->set(
+            'nvl-suite.adoption.require_explicit_module_decisions',
+            true,
+        );
+        $findings = $auditor->audit($consumerPath);
+        $decisions = collect($findings)
+            ->where('code', 'consumer.implicit_module_decision');
+
+        expect($decisions)->toHaveCount(1)
+            ->and($decisions->first()?->package)->toBe('data')
+            ->and(Artisan::call('nvl:suite:consumer-audit', [
+                'path' => $consumerPath,
+            ]))->toBe(0)
+            ->and(Artisan::call('nvl:suite:consumer-audit', [
+                'path' => $consumerPath,
+                '--strict' => true,
+            ]))->toBe(1);
+
+        $configuration->set(
+            'nvl-suite.adoption.require_explicit_module_decisions',
+            false,
+        );
+
+        expect(Artisan::call('nvl:suite:consumer-audit', [
+            'path' => $consumerPath,
+            '--strict' => true,
+        ]))->toBe(0);
+    } finally {
+        app()->instance(SuiteConsumerAuditor::class, $originalAuditor);
+        $configuration->set(
+            'nvl-suite.adoption.require_explicit_module_decisions',
+            $originalPolicy,
+        );
+        $filesystem->deleteDirectory($workspace);
+    }
+});
+
 it('returns one for error findings and emits secret-free JSON', function (): void {
     $process = new Process([
         PHP_BINARY,

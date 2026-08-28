@@ -559,6 +559,26 @@ final readonly class SuiteModuleCatalog
     }
 
     /**
+     * Return the consumer's explicit or compatibility-default module decision.
+     *
+     * @return 'enabled'|'disabled'|'implicit'
+     */
+    public function moduleDecision(string $module): string
+    {
+        if (! isset(self::MODULES[$module])) {
+            throw new RuntimeException("Unknown suite module [{$module}].");
+        }
+
+        $configured = $this->configuredModules();
+
+        if (! array_key_exists($module, $configured)) {
+            return 'implicit';
+        }
+
+        return $configured[$module] ? 'enabled' : 'disabled';
+    }
+
+    /**
      * @return array<string, bool>
      */
     private function configuredModules(): array
