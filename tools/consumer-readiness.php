@@ -5,6 +5,7 @@ use Nvl\Activity\Console\Commands\ActivityDoctorCommand;
 use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Facades\ActivityLog;
 use Nvl\Activity\Services\ActivityReadService;
+use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Auth\Actions\Users\ListUsersAction;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
 use Nvl\Auth\Contracts\AuthManagementAccess;
@@ -211,14 +212,17 @@ return [
         'auth' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListUsersAction::class, AuthManagementAccess::class],
+                'symbols' => [ListUsersAction::class, ShowRoleAnalyticsAction::class, AuthManagementAccess::class],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/auth/README.md#ownership',
+                'documentation' => 'packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/auth/README.md#enabling-the-api']),
-                'query_tests' => ['packages/nvl/auth/tests/Feature/PrincipalManagementTest.php'],
+                ...$pass(['packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics']),
+                'query_tests' => [
+                    'packages/nvl/auth/tests/Feature/PrincipalManagementTest.php',
+                    'packages/nvl/auth/tests/Feature/RbacManagementTest.php',
+                ],
                 'cache' => ['mode' => 'none', 'rationale' => 'Authorization-sensitive principal and RBAC reads are bounded and uncached so revocations are immediately visible.'],
             ],
             'media_lifecycle' => $notApplicable('Auth does not own media associations.'),

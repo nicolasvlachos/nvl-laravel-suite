@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Config\Repository;
+use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 
 /**
@@ -283,6 +284,20 @@ it('limits explicit model query exceptions and built-in presets to reviewed capa
     ])->and($directModelPackages)->toBe(['filterable', 'translatable'])
         ->and($notApplicablePackages)->toBe(['csv', 'data', 'primitives', 'support'])
         ->and($presetPackages)->toBe(['content', 'media']);
+});
+
+it('publishes bounded Auth role analytics as a consumer-readiness seam', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $auth = $catalog['packages']['auth'];
+
+    expect($auth['application_api']['symbols'])
+        ->toContain(ShowRoleAnalyticsAction::class)
+        ->and($auth['application_api']['documentation'])
+        ->toBe('packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics')
+        ->and($auth['performance']['evidence'])
+        ->toContain('packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics')
+        ->and($auth['performance']['query_tests'])
+        ->toContain('packages/nvl/auth/tests/Feature/RbacManagementTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {

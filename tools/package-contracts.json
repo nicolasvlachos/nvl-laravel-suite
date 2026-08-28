@@ -1948,6 +1948,11 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Models\\Role"
                 ],
+                "Nvl\\Auth\\Actions\\Rbac\\ShowRoleAnalyticsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Rbac\\ShowRoleAnalyticsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Nvl\\Auth\\Services\\RbacPermissionGroupExpressions $groupExpressions): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Data\\Display\\RoleAnalyticsData"
+                ],
                 "Nvl\\Auth\\Actions\\Rbac\\SuggestPermissionsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\SuggestPermissionsAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacConsumerLimits $limits, Nvl\\Auth\\Services\\RbacOptionReadService $options): mixed",
@@ -5455,6 +5460,8 @@
                     "@return class-string<Role>",
                     "public function permissionClass(): string",
                     "@return class-string<Permission>",
+                    "public function rbacPrincipalClass(): string",
+                    "@return class-string<Model&Authenticatable>",
                     "public function personalAccessTokenClass(): string",
                     "@return class-string<PersonalAccessToken>"
                 ],
@@ -5490,6 +5497,7 @@
                 ],
                 "Nvl\\Auth\\Services\\EloquentRbacPrincipalAccess": [
                     "final readonly class Nvl\\Auth\\Services\\EloquentRbacPrincipalAccess implements Nvl\\Auth\\Contracts\\RbacPrincipalAccess",
+                    "public function __construct(?Nvl\\Auth\\Services\\AuthModelRegistry $models=null): mixed",
                     "public function find(Illuminate\\Contracts\\Auth\\Authenticatable|string $principal): Illuminate\\Contracts\\Auth\\Authenticatable",
                     "public function identifier(Illuminate\\Contracts\\Auth\\Authenticatable $principal): string",
                     "public function connectionName(Illuminate\\Contracts\\Auth\\Authenticatable $principal): ?string",
@@ -5615,6 +5623,7 @@
                     "final readonly class Nvl\\Auth\\Services\\RbacEntityLocator",
                     "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, ?Nvl\\Auth\\Services\\AuthConfiguration $configuration=null, ?Nvl\\Auth\\Services\\RbacConsumerLimits $limits=null): mixed",
                     "public function role(Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Models\\Role",
+                    "public function roleForConfiguredGuard(Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Models\\Role",
                     "public function roleByName(string $name, string $guard): Nvl\\Auth\\Models\\Role",
                     "public function permission(Nvl\\Auth\\Models\\Permission|string $permission): Nvl\\Auth\\Models\\Permission",
                     "public function rolesByIdentifiers(array $identifiers): Illuminate\\Support\\Collection",
