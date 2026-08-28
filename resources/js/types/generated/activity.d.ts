@@ -19,6 +19,7 @@ createdAtTo: string | null,
 subjectType: string | null,
 subjectId: string | null,
 perPage: number,
+events?: string[],
 };
 export type ActivityPurgeQueuedResult = {
 queued: boolean,

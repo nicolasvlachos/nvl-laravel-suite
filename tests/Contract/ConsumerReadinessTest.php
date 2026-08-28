@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Config\Repository;
+use Nvl\Activity\Support\ActivitySubjectReference;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 
@@ -298,6 +299,20 @@ it('publishes bounded Auth role analytics as a consumer-readiness seam', functio
         ->toContain('packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics')
         ->and($auth['performance']['query_tests'])
         ->toContain('packages/nvl/auth/tests/Feature/RbacManagementTest.php');
+});
+
+it('publishes bounded Activity event and subject-reference seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $activity = $catalog['packages']['activity'];
+
+    expect($activity['application_api']['symbols'])
+        ->toContain(ActivitySubjectReference::class)
+        ->and($activity['application_api']['documentation'])
+        ->toBe('packages/nvl/activity/README.md#bounded-subject-references-and-event-filters')
+        ->and($activity['performance']['evidence'])
+        ->toContain('packages/nvl/activity/README.md#bounded-subject-references-and-event-filters')
+        ->and($activity['performance']['query_tests'])
+        ->toContain('packages/nvl/activity/tests/Feature/ActivityBehaviorTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {

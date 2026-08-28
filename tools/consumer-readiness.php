@@ -5,6 +5,7 @@ use Nvl\Activity\Console\Commands\ActivityDoctorCommand;
 use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Facades\ActivityLog;
 use Nvl\Activity\Services\ActivityReadService;
+use Nvl\Activity\Support\ActivitySubjectReference;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Auth\Actions\Users\ListUsersAction;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
@@ -367,14 +368,20 @@ return [
         'activity' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ActivityLog::class, ActivityReadService::class],
+                'symbols' => [ActivityLog::class, ActivityReadService::class, ActivitySubjectReference::class],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/activity/README.md#record-structured-activity',
+                'documentation' => 'packages/nvl/activity/README.md#bounded-subject-references-and-event-filters',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/activity/README.md#timeline-limits']),
-                'query_tests' => ['packages/nvl/activity/tests/Feature/ActivityTimelineReadTest.php'],
+                ...$pass([
+                    'packages/nvl/activity/README.md#timeline-limits',
+                    'packages/nvl/activity/README.md#bounded-subject-references-and-event-filters',
+                ]),
+                'query_tests' => [
+                    'packages/nvl/activity/tests/Feature/ActivityTimelineReadTest.php',
+                    'packages/nvl/activity/tests/Feature/ActivityBehaviorTest.php',
+                ],
                 'cache' => ['mode' => 'none', 'rationale' => 'Audit timelines are actor-scoped, append-sensitive, and bounded; caching risks stale security evidence.'],
             ],
             'media_lifecycle' => $notApplicable('Activity records references and snapshots but does not own media lifecycle.'),

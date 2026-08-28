@@ -7,6 +7,7 @@
     },
     "files": [
         "resources/js/types/generated.d.ts",
+        "tests/TypeScript/activity-index-filter-backward-compatibility.ts",
         "tests/TypeScript/auth-query-backward-compatibility.ts"
     ]
 }

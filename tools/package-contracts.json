@@ -180,7 +180,11 @@
                     "public readonly ?string $subjectId",
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"number\")]",
                     "public readonly int $perPage",
-                    "public function __construct(#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $search, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $event, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $causerId, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?Carbon\\CarbonImmutable $createdAtFrom, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?Carbon\\CarbonImmutable $createdAtTo, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $subjectType=null, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $subjectId=null, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"number\")] int $perPage=20): mixed",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string[]\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
+                    "public readonly array $events",
+                    "public function __construct(#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $search, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $event, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $causerId, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?Carbon\\CarbonImmutable $createdAtFrom, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?Carbon\\CarbonImmutable $createdAtTo, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $subjectType=null, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string | null\")] ?string $subjectId=null, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"number\")] int $perPage=20, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"string[]\")] #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] array $events=[]): mixed",
+                    "@param list<string> $events",
                     "public static function fromInput(array $input): self",
                     "@param array<string, mixed> $input",
                     "public function toArray(): array",
@@ -867,6 +871,7 @@
                 "Nvl\\Activity\\Facades\\ActivityLog": [
                     "final class Nvl\\Activity\\Facades\\ActivityLog extends Illuminate\\Support\\Facades\\Facade",
                     "@method static ActivityContract|null record(?Model $subject, string|BackedEnum $event, string $description = '', array<string, mixed> $context = [], array<string, mixed>|null $attributes = null, array<string, mixed>|null $old = null, Model|string|int|null $actor = null, ?string $logName = null, string|BackedEnum|null $source = null, string|BackedEnum|null $visibility = null, string|BackedEnum|null $importance = null, bool $resolveChanges = true, ?string $batchUuid = null)",
+                    "@method static ActivityContract|null recordForSubjectReference(ActivitySubjectReference $subject, string|BackedEnum $event, string $description = '', array<string, mixed> $context = [], Model|string|int|null $actor = null, string|BackedEnum|null $importance = null)",
                     "protected static function getFacadeAccessor(): string",
                     "@return string Facade accessor key"
                 ],
@@ -1272,6 +1277,9 @@
                     "@return EloquentCollection<int, ActivityLog>",
                     "public function paginateForSubjectKey(string $subjectType, string|int $subjectId, int $perPage=20): Illuminate\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, ActivityLog>",
+                    "public function paginateForSubjectReferences(array $subjects, int $perPage=20): Illuminate\\Pagination\\LengthAwarePaginator",
+                    "@param list<ActivitySubjectReference> $subjects",
+                    "@return LengthAwarePaginator<int, ActivityLog>",
                     "public function paginateForSubjectOrCauserKey(string $modelType, string|int $modelId, int $perPage=20): Illuminate\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, ActivityLog>"
                 ],
@@ -1289,7 +1297,11 @@
                     "@param string|BackedEnum|null $importance Importance classification; normal by default",
                     "@param bool $resolveChanges Whether changed attributes may be inferred automatically",
                     "@param string|null $batchUuid Optional caller-owned batch identifier",
-                    "@return ActivityContract|null Persisted activity or null when the event key is blank"
+                    "@return ActivityContract|null Persisted activity or null when the event key is blank",
+                    "public function recordForSubjectReference(Nvl\\Activity\\Support\\ActivitySubjectReference $subject, BackedEnum|string $event, string $description=\"\", array $context=[], Illuminate\\Database\\Eloquent\\Model|string|int|null $actor=null, BackedEnum|string|null $importance=null): ?Spatie\\Activitylog\\Contracts\\Activity",
+                    "@param string|BackedEnum $event Canonical event key or backed enum",
+                    "@param array<string, mixed> $context Event-specific business context",
+                    "@param Model|string|int|null $actor Causing actor model, scalar ID, or null"
                 ],
                 "Nvl\\Activity\\Services\\ActivityRelationLoader": [
                     "final class Nvl\\Activity\\Services\\ActivityRelationLoader",
@@ -1434,6 +1446,12 @@
                     "public function afterCutoff(): ?Carbon\\CarbonImmutable",
                     "public function summaryParts(): array",
                     "@return list<string>"
+                ],
+                "Nvl\\Activity\\Support\\ActivitySubjectReference": [
+                    "final readonly class Nvl\\Activity\\Support\\ActivitySubjectReference",
+                    "public readonly string $type",
+                    "public readonly string|int $id",
+                    "public function __construct(string $type, string|int $id): mixed"
                 ],
                 "Nvl\\Activity\\Support\\ActivityTimelineData": [
                     "final class Nvl\\Activity\\Support\\ActivityTimelineData",
