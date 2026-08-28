@@ -37,7 +37,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 |---|---|---|---|---|---|---|
 | CR-00 | [x] | Reliable root quality runner and migration-analysis topology | Configuration/Auth ergonomics plan | None | 1.1 | `e41ffab` |
 | CR-01 | [x] | Consumer boundary doctrine | Guardrails plan | None | 1.1 | `ead83c6` |
-| CR-02 | [ ] | Consumer source auditor | Guardrails plan | CR-01 | 1.1 | — |
+| CR-02 | [x] | Consumer source auditor | Guardrails plan | CR-01 | 1.1 | `bfae7ef` |
 | CR-03 | [ ] | Explicit module decisions | Guardrails plan | CR-01 | 1.1 | — |
 | CR-04 | [ ] | Configure and upgrade-check commands | Guardrails plan | CR-03 | 1.1 | — |
 | CR-05 | [ ] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | — |
@@ -113,6 +113,15 @@ gate pass. Record the implementation commit beside the task before checking it.
   Contract gate also exposed linked-worktree metadata entering Composer
   archives; `5caed2f` added a behavioral regression and excludes `.git` and
   `.worktrees` from release artifacts.
+- 2026-08-28 — CR-02 shipped the release-safe consumer source and runtime
+  auditor in `bfae7ef`. The root gate passed 142 tests with 8,861 assertions,
+  PHPStan, strict Composer autoloading and validation, public-contract and
+  generated-type checks, Pint, and archive membership. A read-only external
+  KPO scan (`runtime_checked: false`) found 64 compatibility model queries,
+  three adoption-migration references, and four forbidden Auth model writes:
+  invitation delivery metadata writes plus Role and Permission seeder metadata
+  writes. KPO remained unchanged; its runtime checks must be run from KPO's
+  booted application after it adopts this command.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.

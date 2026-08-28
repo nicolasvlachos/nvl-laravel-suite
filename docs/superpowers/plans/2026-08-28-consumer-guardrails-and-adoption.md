@@ -106,7 +106,7 @@ git commit -m "docs: define suite consumer boundary"
 - Consumes: CR-01 classifications and `SuiteModuleCatalog::modules()`.
 - Produces: `SuiteConsumerAuditor::audit(string $basePath): array` returning `list<ConsumerAuditFinding>` and the `nvl:suite:consumer-audit` command.
 
-- [ ] **Step 1: Write failing DTO and scanner tests**
+- [x] **Step 1: Write failing DTO and scanner tests**
 
 ```php
 it('reports package model queries with stable source locations', function (): void {
@@ -146,14 +146,14 @@ it('reports every runtime and generated-artifact adoption failure with stable co
 });
 ```
 
-- [ ] **Step 2: Run the new test and verify missing classes fail**
+- [x] **Step 2: Run the new test and verify missing classes fail**
 
 Run: `php artisan test --compact tests/Feature/SuiteConsumerAuditTest.php`
 
 Expected: FAIL because `SuiteConsumerAuditor` and `ConsumerAuditFinding` do not
 exist.
 
-- [ ] **Step 3: Implement deterministic PHP import and static-call scanning**
+- [x] **Step 3: Implement deterministic PHP import and static-call scanning**
 
 `ConsumerAuditFinding` is a final readonly value object with this constructor:
 
@@ -190,7 +190,7 @@ factories, fixtures, and generated caches. Explicit `consumer_audit.paths`
 extends these discovered roots rather than replacing them, so modular Laravel
 applications cannot silently escape the scan.
 
-- [ ] **Step 4: Add migration/table checks and strict command output**
+- [x] **Step 4: Add migration/table checks and strict command output**
 
 `SuiteConsumerAuditor` combines source findings with migration checks derived
 from the package table definitions in `tools/package-contracts.json`. References
@@ -220,7 +220,7 @@ errors. `--strict` additionally fails the implicit-decision warning only when
 `adoption.require_explicit_module_decisions` is true; it reports but does not
 fail compatibility-query warnings until CR-24 changes the 2.0 policy.
 
-- [ ] **Step 5: Add booted runtime and generated-artifact checks**
+- [x] **Step 5: Add booted runtime and generated-artifact checks**
 
 `SuiteRuntimeConsumerScanner` consumes the secret-free
 `SuiteConfigurationInspector::inspect()` report and the application route
@@ -249,7 +249,7 @@ or configuration values in findings. Add fixture providers/routes/schedules,
 an isolated generated-types directory, and a temporary Suite skill destination
 so all five codes are tested without reading the developer workstation state.
 
-- [ ] **Step 6: Add exact suppression validation**
+- [x] **Step 6: Add exact suppression validation**
 
 Add this configuration shape:
 
@@ -264,7 +264,7 @@ Each suppression must contain non-empty `code`, `path`, `symbol`, and `reason`.
 Reject unknown finding codes, absolute paths, `..`, globs, regex delimiters, and
 empty reasons with command exit 2.
 
-- [ ] **Step 7: Run focused and distribution tests**
+- [x] **Step 7: Run focused and distribution tests**
 
 Run: `php artisan test --compact tests/Feature/SuiteConsumerAuditTest.php tests/Contract/PackageArchiveToolsTest.php`
 
@@ -275,12 +275,22 @@ Run: `vendor/bin/pint --dirty --format agent`
 
 Expected: exit 0.
 
-- [ ] **Step 8: Commit CR-02**
+- [x] **Step 8: Commit CR-02** (`bfae7ef`)
 
 ```bash
 git add src/Support/ConsumerAuditFinding.php src/Services/ConsumerAudit src/Services/SuiteConsumerAuditor.php src/Console/Commands/SuiteConsumerAuditCommand.php src/SuiteServiceProvider.php config/nvl-suite.php tests/Fixtures/consumer-audit tests/Feature/SuiteConsumerAuditTest.php tests/Contract/PackageArchiveToolsTest.php
 git commit -m "feat: audit suite consumer boundaries"
 ```
+
+Implementation notes: release-time table and management-route metadata comes
+from the shipped `SuiteModuleCatalog`; `tools/consumer-readiness.php` mirrors
+that metadata under a contract test because tooling files are excluded from
+Composer archives. The scanner additionally follows local package-model
+variables and builder chains so forbidden instance writes are not understated
+as compatibility queries. Runtime checks run only when the audited path is the
+booted application; JSON reports `runtime_checked` so an external static audit
+cannot imply that another application's container, routes, schedules, types,
+or managed skills were inspected.
 
 ### Task 3 (CR-03): Track explicit module decisions
 
