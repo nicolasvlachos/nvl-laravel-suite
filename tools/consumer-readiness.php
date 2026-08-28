@@ -479,7 +479,7 @@ return [
                     'stampede' => 'Idempotent existence probes may repeat on a miss; the short TTL avoids a blocking global lock around storage.',
                 ],
             ],
-            'media_lifecycle' => $pass(['packages/nvl/media/README.md#retrieval-and-lifecycle', 'packages/nvl/media/README.md#operations', 'packages/nvl/media/tests/Feature/ActionsTest.php']),
+            'media_lifecycle' => $pass(['packages/nvl/media/README.md#retrieval-and-lifecycle', 'packages/nvl/media/README.md#operations', 'packages/nvl/media/tests/Feature/ActionsTest.php', 'packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php']),
             'locale_fallback' => $pass(['packages/nvl/media/README.md#localized-metadata']),
             'boundaries' => $pass(['packages/nvl/media/README.md#purpose-and-boundaries', 'docs/consumer-readiness.md#ownership-boundaries']),
             'presets' => $pass(['packages/nvl/media/README.md#variations-and-optimization', 'packages/nvl/media/tests/Unit/MediaConfiguredVariationServiceTest.php']),

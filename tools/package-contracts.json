@@ -20667,11 +20667,13 @@
                     "public const string ImageVariations=\"px_media_image_variations\"",
                     "public const string I18n=\"px_media_i18n\"",
                     "public const string MultipartUploads=\"px_media_multipart_uploads\"",
+                    "public const string OwnerSlotOperations=\"px_media_owner_slot_operations\"",
                     "public const string MEDIA=\"px_media\"",
                     "public const string MEDIA_ASSOCIATIONS=\"px_media_associations\"",
                     "public const string MEDIA_IMAGE_VARIATIONS=\"px_media_image_variations\"",
                     "public const string MEDIA_I18N=\"px_media_i18n\"",
-                    "public const string MEDIA_MULTIPART_UPLOADS=\"px_media_multipart_uploads\""
+                    "public const string MEDIA_MULTIPART_UPLOADS=\"px_media_multipart_uploads\"",
+                    "public const string MEDIA_OWNER_SLOT_OPERATIONS=\"px_media_owner_slot_operations\""
                 ],
                 "Nvl\\Media\\Enums\\ImageCompression": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
@@ -20742,6 +20744,7 @@
                     "public const mixed Mutate=Nvl\\Media\\Enums\\MediaAbility::Mutate=mutate",
                     "public const mixed Delete=Nvl\\Media\\Enums\\MediaAbility::Delete=delete",
                     "public const mixed Reuse=Nvl\\Media\\Enums\\MediaAbility::Reuse=reuse",
+                    "public const mixed ManageStaging=Nvl\\Media\\Enums\\MediaAbility::ManageStaging=manage_staging",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -20789,6 +20792,30 @@
                     "public const mixed Aborted=Nvl\\Media\\Enums\\MediaMultipartStatus::Aborted=aborted",
                     "public const mixed Expired=Nvl\\Media\\Enums\\MediaMultipartStatus::Expired=expired",
                     "public const mixed Failed=Nvl\\Media\\Enums\\MediaMultipartStatus::Failed=failed",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Media\\Enums\\MediaOwnerSlotOperationStatus": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "enum Nvl\\Media\\Enums\\MediaOwnerSlotOperationStatus implements BackedEnum, UnitEnum: string",
+                    "public const mixed Processing=Nvl\\Media\\Enums\\MediaOwnerSlotOperationStatus::Processing=processing",
+                    "public const mixed Completed=Nvl\\Media\\Enums\\MediaOwnerSlotOperationStatus::Completed=completed",
+                    "public const mixed Failed=Nvl\\Media\\Enums\\MediaOwnerSlotOperationStatus::Failed=failed",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Media\\Enums\\MediaOwnerSlotOperationType": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "enum Nvl\\Media\\Enums\\MediaOwnerSlotOperationType implements BackedEnum, UnitEnum: string",
+                    "public const mixed Replace=Nvl\\Media\\Enums\\MediaOwnerSlotOperationType::Replace=replace",
+                    "public const mixed Clear=Nvl\\Media\\Enums\\MediaOwnerSlotOperationType::Clear=clear",
+                    "public const mixed Copy=Nvl\\Media\\Enums\\MediaOwnerSlotOperationType::Copy=copy",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -22404,6 +22431,54 @@
                     "@return never",
                     "@throws \\Illuminate\\Database\\Eloquent\\ModelNotFoundException"
                 ],
+                "Nvl\\Media\\Models\\MediaOwnerSlotOperation": [
+                    "final class Nvl\\Media\\Models\\MediaOwnerSlotOperation extends Illuminate\\Database\\Eloquent\\Model",
+                    "@property string $id",
+                    "@property string $idempotency_key",
+                    "@property string|null $actor_type",
+                    "@property string|null $actor_id",
+                    "@property string $owner_type",
+                    "@property string $owner_id",
+                    "@property string $slot",
+                    "@property MediaOwnerSlotOperationType $operation",
+                    "@property string $request_hash",
+                    "@property MediaOwnerSlotOperationStatus $status",
+                    "@property string|null $result_media_id",
+                    "@property string|null $failure_code",
+                    "@property Carbon|null $completed_at",
+                    "@property Carbon|null $failed_at",
+                    "@property Carbon|null $created_at",
+                    "@property Carbon|null $updated_at",
+                    "protected mixed $fillable=[\"idempotency_key\",\"actor_type\",\"actor_id\",\"owner_type\",\"owner_id\",\"slot\",\"operation\",\"request_hash\",\"status\",\"result_media_id\",\"failure_code\",\"completed_at\",\"failed_at\"]",
+                    "public function getTable(): string",
+                    "public function getConnectionName(): ?string",
+                    "protected function casts(): array",
+                    "@return array<string, string>",
+                    "public function getKeyType(): mixed",
+                    "@return string",
+                    "public function getIncrementing(): mixed",
+                    "@return bool",
+                    "public function resolveRouteBindingQuery(mixed $query, mixed $value, mixed $field=null): mixed",
+                    "@param \\Illuminate\\Database\\Eloquent\\Model|\\Illuminate\\Database\\Eloquent\\Relations\\Relation<*, *, *> $query",
+                    "@param mixed $value",
+                    "@param string|null $field",
+                    "@return \\Illuminate\\Contracts\\Database\\Eloquent\\Builder",
+                    "@throws \\Illuminate\\Database\\Eloquent\\ModelNotFoundException",
+                    "public function newUniqueId(): mixed",
+                    "@return string",
+                    "public function uniqueIds(): mixed",
+                    "@return array",
+                    "protected function isValidUniqueId(mixed $value): bool",
+                    "@param mixed $value",
+                    "@return bool",
+                    "public function initializeHasUniqueStringIds(): mixed",
+                    "@return void",
+                    "protected function handleInvalidUniqueId(mixed $value, mixed $field): mixed",
+                    "@param mixed $value",
+                    "@param string|null $field",
+                    "@return never",
+                    "@throws \\Illuminate\\Database\\Eloquent\\ModelNotFoundException"
+                ],
                 "Nvl\\Media\\Models\\MediaTranslation": [
                     "class Nvl\\Media\\Models\\MediaTranslation extends Illuminate\\Database\\Eloquent\\Model",
                     "@property string $id",
@@ -22741,7 +22816,8 @@
                 "Nvl\\Media\\Services\\MediaLibraryItemDataFactory": [
                     "final readonly class Nvl\\Media\\Services\\MediaLibraryItemDataFactory",
                     "public function __construct(Nvl\\Media\\Services\\MediaConfiguredVariationService $configuredVariationService, Nvl\\Media\\Services\\MediaLocaleResolver $localeResolver, Nvl\\Media\\Services\\MediaUrlResolver $urlResolver): mixed",
-                    "public function fromModel(Nvl\\Media\\Models\\Media $media): Nvl\\Media\\Data\\Display\\MediaLibraryItem"
+                    "public function fromModel(Nvl\\Media\\Models\\Media $media): Nvl\\Media\\Data\\Display\\MediaLibraryItem",
+                    "public function fromAssociation(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Models\\MediaAssociation $association): Nvl\\Media\\Data\\Display\\MediaLibraryItem"
                 ],
                 "Nvl\\Media\\Services\\MediaLifecycleService": [
                     "final class Nvl\\Media\\Services\\MediaLifecycleService",
@@ -22844,6 +22920,15 @@
                 "Nvl\\Media\\Services\\MediaOwnedSourceLifecycle": [
                     "final class Nvl\\Media\\Services\\MediaOwnedSourceLifecycle",
                     "public function deleteAfterCommit(string $path): void"
+                ],
+                "Nvl\\Media\\Services\\MediaOwnerSlotIdempotency": [
+                    "final class Nvl\\Media\\Services\\MediaOwnerSlotIdempotency",
+                    "public function begin(string $key, Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model $owner, string $slot, Nvl\\Media\\Enums\\MediaOwnerSlotOperationType $operation, array $payload): Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
+                    "@param array<array-key, mixed> $payload",
+                    "public function complete(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, ?string $resultMediaId): void",
+                    "public function fail(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, string $failureCode): void",
+                    "public function renew(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim): void",
+                    "public function prune(?int $retentionDays=null, ?int $chunkSize=null): int"
                 ],
                 "Nvl\\Media\\Services\\MediaPathResolver": [
                     "final class Nvl\\Media\\Services\\MediaPathResolver",
@@ -23156,6 +23241,8 @@
                 ],
                 "Nvl\\Media\\Support\\MediaConfiguration": [
                     "final class Nvl\\Media\\Support\\MediaConfiguration",
+                    "public static function ownerSlotOperationConnection(): ?string",
+                    "public static function ownerSlotOperationTable(): string",
                     "public static function string(string $key, string $default): string",
                     "public static function integer(string $key, int $default, int $minimum=0): int",
                     "public static function stringList(string $key, array $default=[]): array",
@@ -23198,6 +23285,14 @@
                     "public static function mimeToExtension(string $mimeType): string",
                     "@param string $mimeType Full MIME type string",
                     "@return string File extension without dot, defaults to 'bin' for unknown MIME types"
+                ],
+                "Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim": [
+                    "final readonly class Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
+                    "public readonly string $operationId",
+                    "public readonly string $requestHash",
+                    "public readonly bool $replayed",
+                    "public readonly ?string $resultMediaId",
+                    "public function __construct(string $operationId, string $requestHash, bool $replayed, ?string $resultMediaId): mixed"
                 ],
                 "Nvl\\Media\\Support\\MediaQueueConfiguration": [
                     "final class Nvl\\Media\\Support\\MediaQueueConfiguration",
@@ -23299,7 +23394,7 @@
                 ]
             },
             "configuration": {
-                "config/media.php": "c960cbac4ba0aa8ae2beaee737659b5b912b3e8e757e12e728629de5516a5273"
+                "config/media.php": "aa72c44189b327267e031c756079cbf3d7ebdaba7c1cb4994e055d8dede25262"
             },
             "routes": {
                 "routes/api.php": "85bb1199819a207493a61fe48f6772fcf696358d949b010f5c5939b28d4a4ff9",
@@ -23310,7 +23405,8 @@
                 "database/migrations/2024_02_01_000002_create_media_associations_table.php": "5221ee23c3a36cda215736f814381cde248de40f0c2032033086ac0593b042fd",
                 "database/migrations/2024_02_01_000003_create_media_image_variations_table.php": "89b381b8d24335e9704eb382c56015d5e4ce71fc5369a6c687804cf84677845e",
                 "database/migrations/2024_02_01_000004_create_media_i18n_table.php": "61916648befa9fead9fff0fbbd147b0444b28ad090cfc4b2cf513674db32c0f6",
-                "database/migrations/2026_07_28_000003_create_media_multipart_uploads_table.php": "351c188d9e14481174e4fd73dfc0c7578a795d7a27063b09039925b65de3bc2e"
+                "database/migrations/2026_07_28_000003_create_media_multipart_uploads_table.php": "351c188d9e14481174e4fd73dfc0c7578a795d7a27063b09039925b65de3bc2e",
+                "database/migrations/2026_08_28_000000_create_media_owner_slot_operations_table.php": "07b69f0b783963d8e53c6d2cec87a154c052de17e960cb6b8a87ef52a5214325"
             }
         },
         "metafields": {

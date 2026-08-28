@@ -138,6 +138,16 @@ Media transaction lifecycle. Shared-use checks prevent one owner from deleting
 another owner's asset. Owner soft deletion preserves media; owner force deletion
 uses the registered owner semantics and deletes only assets no longer shared.
 
+Owner-slot mutations use a package-owned UUID operation ledger. Canonical
+request hashes bind an idempotency key to actor, persisted owner, slot,
+operation, and nested scalar payload without storing that payload. Completed
+requests replay their nullable Media result, failed exact requests may be
+retried, live contention fails closed, expired processing attempts recover with
+a new operation UUID, and bounded pruning removes only expired terminal rows.
+Long work renews its lease. A separately configured ledger connection is a
+recoverable saga boundary and requires retry-safe mutation reconciliation.
+Consumers do not write the ledger.
+
 `nvl:media:reconcile --orphans` inventories unreferenced originals and
 variations. Cleanup is dry-run-first, age-bounded, explicitly destructive, and
 requires `--force` in production. Storage health, variation regeneration, disk
