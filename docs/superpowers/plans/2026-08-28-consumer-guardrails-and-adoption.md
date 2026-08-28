@@ -34,7 +34,7 @@
 - Consumes: the decision in the design spec's “Consumer boundary doctrine”.
 - Produces: one machine-checked classification used by the audit messages and all later package docs.
 
-- [ ] **Step 1: Add a failing contract assertion for the four policy classes**
+- [x] **Step 1: Add a failing contract assertion for the four policy classes**
 
 ```php
 expect($document)->toContain(
@@ -45,14 +45,14 @@ expect($document)->toContain(
 );
 ```
 
-- [ ] **Step 2: Run the focused contract test and confirm the old doctrine fails**
+- [x] **Step 2: Run the focused contract test and confirm the old doctrine fails**
 
 Run: `php artisan test --compact tests/Contract/ConsumerReadinessTest.php`
 
 Expected: FAIL because the rendered document does not yet contain the four
 canonical policy classes.
 
-- [ ] **Step 3: Replace conflicting model-language in the catalog and rendered document**
+- [x] **Step 3: Replace conflicting model-language in the catalog and rendered document**
 
 Use these exact classifications:
 
@@ -67,7 +67,7 @@ Update every package row so the package's canonical entry point and any model
 exception agree with these definitions. Add the same summary to the adoption
 matrix introduction.
 
-- [ ] **Step 4: Run contract and formatting checks**
+- [x] **Step 4: Run contract and formatting checks**
 
 Run: `php artisan test --compact tests/Contract/ConsumerReadinessTest.php tests/Contract/SuiteAdoptionDocumentationTest.php`
 
@@ -77,7 +77,7 @@ Run: `vendor/bin/pint --dirty --format agent`
 
 Expected: exit 0.
 
-- [ ] **Step 5: Commit CR-01**
+- [x] **Step 5: Commit CR-01** (`ead83c6`)
 
 ```bash
 git add docs/consumer-readiness.md docs/adoption-matrix.md tools/consumer-readiness.php tests/Contract/ConsumerReadinessTest.php
