@@ -49,7 +49,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-11 | [x] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | `a0c8d61` |
 | CR-12 | [x] | Comments/Settings/SEO seams | Read-seams plan | CR-01 | 1.1/1.2 | `f267556` |
 | CR-13 | [x] | Content owner editor projection | Pages/Content plan | CR-01 | 1.2 | `aa4c689` |
-| CR-14 | [ ] | Content placement find/replace/reorder | Pages/Content plan | CR-13 | 1.2 | — |
+| CR-14 | [x] | Content placement find/replace/reorder | Pages/Content plan | CR-13 | 1.2 | `42113d8` |
 | CR-15 | [ ] | Page lookup/options/public children | Pages/Content plan | CR-01 | 1.2 | — |
 | CR-16 | [ ] | Page editor/publication composition | Pages/Content plan | CR-12, CR-13, CR-15 | 1.2 | — |
 | CR-17 | [ ] | Media slot reads and replacement | Media plan | CR-01 | 1.3 | — |
@@ -283,6 +283,17 @@ gate pass. Record the implementation commit beside the task before checking it.
   dependency and package-family validation, strict Composer validation and
   autoloading, formatting, mirrored skills, and diff hygiene passed. KPO and
   the original suite checkout remained read-only.
+- 2026-08-29 — CR-14 shipped exact block/placement lookup and atomic
+  replace/reorder editor Actions in `42113d8`. Review caught and the final
+  implementation prevents non-UUID values from reaching PostgreSQL UUID
+  predicates, keeps key matching byte-exact across all five supported database
+  drivers, and preserves the existing `Content` constructor/facade as an
+  Action-only additive API. Content passed 135 tests with 931 assertions; root
+  tests passed 159 tests with 9,151 assertions; every package test and PHPStan
+  level-max analysis passed, as did contracts, generated TypeScript,
+  distribution, dependency, autoload, formatting, and strict Composer gates.
+  Independent re-review reported no findings and Ready Yes. KPO and the
+  original suite checkout remained read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
@@ -302,7 +313,7 @@ build suggestions, options, groups, identifier resolution, or name availability.
 ## Milestone 2: release 1.2 editor composition
 
 - [x] Execute CR-13 and prove constant query count for editor and one-to-twenty-five-owner placement projections.
-- [ ] Execute CR-14 and prove owner locking, revision conflicts, ordering, and authorization.
+- [x] Execute CR-14 and prove owner locking, revision conflicts, ordering, and authorization.
 - [ ] Execute CR-15 and prove site, locale, publication, hierarchy, and result limits.
 - [ ] Execute CR-16 and regenerate the TypeScript contracts.
 - [ ] Migrate KPO page/editor reads after the package-focused gate passes.

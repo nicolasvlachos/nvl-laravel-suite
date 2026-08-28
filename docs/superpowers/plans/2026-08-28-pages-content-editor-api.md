@@ -129,16 +129,18 @@ git commit -m "refactor(content): extract editor projection action"
 - Create: `packages/nvl/content/src/Actions/ReorderContentPlacementsAction.php`
 - Create: `packages/nvl/content/src/Data/Mutations/ReorderContentPlacementData.php`
 - Create: `packages/nvl/content/src/Data/Mutations/ReorderContentPlacementsData.php`
+- Create: `packages/nvl/content/src/Relations/ExactTextValueComparison.php`
 - Modify: `packages/nvl/content/src/Services/ContentPlacementTree.php`
-- Modify: `packages/nvl/content/src/Content.php`
-- Modify: `packages/nvl/content/src/Facades/Content.php`
 - Modify: `packages/nvl/content/tests/Feature/ContentContractRegressionTest.php`
+- Modify: `packages/nvl/content/README.md`
+- Modify: both mirrored `nvl-content` skills, readiness evidence, public
+  contracts, and generated TypeScript declarations
 
 **Interfaces:**
 - Consumes: CR-13 editor DTO, `ContentPlacementOwnerLock`, `ContentPlacementValidator`, `ContentOwnerRegistry`, and revision exceptions.
 - Produces: DTO-first block/placement find plus replacement/reorder APIs.
 
-- [ ] **Step 1: Write failing owner, revision, and transaction tests**
+- [x] **Step 1: Write failing owner, revision, and transaction tests**
 
 ```php
 $result = app(ReplaceContentPlacementAction::class)->execute(
@@ -159,14 +161,17 @@ blocks, invalid overrides after replacement, duplicate reorder IDs, incomplete
 reorder sets, cycles, cross-region parents, lock contention, deadlock retry,
 rollback, event payloads, and deterministic final ordering. Add block-key lookup
 tests for authorization, exact keys, duplicate/corrupt keys, and absent blocks.
+The completed matrix also proves byte-exact key predicates for MySQL, MariaDB,
+PostgreSQL, SQL Server, and SQLite, plus the PostgreSQL-safe non-UUID query
+shape.
 
-- [ ] **Step 2: Run the Content regression test and verify missing APIs fail**
+- [x] **Step 2: Run the Content regression test and verify missing APIs fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/content/phpunit.xml.dist --compact packages/nvl/content/tests/Feature/ContentContractRegressionTest.php`
 
 Expected: FAIL because the new Actions/DTOs do not exist.
 
-- [ ] **Step 3: Implement authorized block and placement lookups**
+- [x] **Step 3: Implement authorized block and placement lookups**
 
 `FindContentBlockByKeyAction::execute(string $key, ContentActorData $actor):
 ContentBlockData` normalizes a 1–191 character exact key, authorizes
@@ -188,9 +193,12 @@ public function execute(
 Resolve canonical owner type/ID, assert the group, authorize
 `ListPlacements`, query only within that owner/group by exact ID or key, reject
 ambiguous ID/key collisions, eager-load the block fields needed for policy, and
-return `ContentPlacementData`.
+return `ContentPlacementData`. Byte-exact grammar predicates preserve semantics
+on case-insensitive database collations. Non-UUID keys never bind to the UUID
+primary key; UUID-shaped input checks both identities to retain collision
+detection.
 
-- [ ] **Step 4: Implement atomic block replacement**
+- [x] **Step 4: Implement atomic block replacement**
 
 Inside the owner lock and one transaction: lock the complete owner/group
 placement ID set, resolve and lock the target placement and replacement block,
@@ -199,7 +207,7 @@ existing region/parent/overrides against the replacement definition, change
 only `content_block_id` and revision, dispatch `ContentPlacementChanged` after
 the write, and return a DTO from the refreshed placement.
 
-- [ ] **Step 5: Implement full-set reorder**
+- [x] **Step 5: Implement full-set reorder**
 
 DTOs:
 
@@ -219,26 +227,31 @@ method, update rows in deterministic ID order, increment each revision once,
 dispatch one event per changed row after all writes succeed, and return the
 fresh CR-13 editor DTO.
 
-- [ ] **Step 6: Wire facade methods and run quality**
+- [x] **Step 6: Publish focused Action seams and run quality**
 
-Add DTO-returning `findPlacement`, `replacePlacement`, and `reorderPlacements`
-methods to `Content` and its facade annotation without changing existing
-model-returning mutation methods.
+Keep the new DTO-returning workflows as documented, constructor-injected
+Actions. This intentional implementation adjustment preserves the original
+22-argument `Content` constructor and existing facade/model-returning methods
+without optional dependencies or a service-locator fallback. Undocumented
+Actions remain internal; these four editor Actions are explicit public seams.
 
 Run: `php tools/run-package-quality.php content`
 
-Expected: PASS.
+Actual: PASS with 135 tests and 931 assertions, PHPStan level max, and Pint.
 
 Run: `php artisan nvl:data:types:generate --fail-on-warning`
 
 Run: `composer types:check`
 
-Expected: PASS with the reorder inputs generated.
+Actual: PASS with both reorder inputs generated. Public-contract, package
+distribution, dependency, optimized-autoload, strict Composer, root analysis,
+all-package analysis, focused readiness/skill, and full root/package test gates
+also passed.
 
-- [ ] **Step 7: Commit CR-14**
+- [x] **Step 7: Commit CR-14** (`42113d8`)
 
 ```bash
-git add packages/nvl/content/src/Actions packages/nvl/content/src/Data/Mutations packages/nvl/content/src/Services/ContentPlacementTree.php packages/nvl/content/src/Content.php packages/nvl/content/src/Facades/Content.php packages/nvl/content/tests/Feature/ContentContractRegressionTest.php resources/js/types
+git add packages/nvl/content/src/Actions packages/nvl/content/src/Data/Mutations packages/nvl/content/src/Relations/ExactTextValueComparison.php packages/nvl/content/src/Services/ContentPlacementTree.php packages/nvl/content/tests/Feature/ContentContractRegressionTest.php packages/nvl/content/README.md resources/boost/skills packages/nvl/content/resources/boost/skills resources/js/types tests/Contract/ConsumerReadinessTest.php tools/consumer-readiness.php tools/package-contracts.json docs/consumer-readiness.md
 git commit -m "feat(content): add placement editor workflows"
 ```
 
