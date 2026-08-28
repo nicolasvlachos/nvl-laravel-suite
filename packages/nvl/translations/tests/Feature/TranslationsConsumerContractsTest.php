@@ -10,13 +10,18 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Nvl\Filterable\Data\FilterSet;
+use Nvl\Filterable\Http\QueryFilterSetFactory;
+use Nvl\Translations\Actions\Entries\GetTranslationCatalogStatisticsAction;
 use Nvl\Translations\Actions\Entries\ListTranslationEntriesAction;
 use Nvl\Translations\Contracts\TranslationsAuthorization;
+use Nvl\Translations\Data\TranslationCatalogStatisticsData;
 use Nvl\Translations\Enums\TranslationsAbility;
 use Nvl\Translations\Exceptions\TranslationConflictException;
 use Nvl\Translations\Exceptions\TranslationsException;
+use Nvl\Translations\Http\Controllers\Api\TranslationsApiController;
 use Nvl\Translations\Models\TranslationEntry;
 use Nvl\Translations\Rules\StringOrList;
+use Nvl\Translations\Services\TranslationEntryFilterSchema;
 use Nvl\Translations\Services\TranslationsDoctor;
 use Nvl\Translations\Support\TranslationConfiguration;
 use Nvl\Translations\Support\TranslationValueHash;
@@ -194,6 +199,205 @@ test('keeps translation catalog list queries independent of result size', functi
 
     expect($singleQueryCount)->toBeLessThanOrEqual(2)
         ->and($populatedQueryCount)->toBe($singleQueryCount);
+});
+
+test('returns authorized bounded translation catalog statistics with list filter parity', function (): void {
+    foreach ([
+        ['scope_type' => 'app', 'scope_name' => 'app', 'locale' => 'en', 'key' => 'One', 'sync_status' => 'synchronized', 'source_hash' => hash('sha256', 'One')],
+        ['scope_type' => 'app', 'scope_name' => 'app', 'locale' => 'en', 'key' => 'Two', 'sync_status' => 'edited', 'source_hash' => hash('sha256', 'Two')],
+        ['scope_type' => 'module', 'scope_name' => 'website', 'locale' => 'bg', 'key' => 'Three', 'sync_status' => 'conflict', 'source_hash' => hash('sha256', 'Three')],
+        ['scope_type' => 'module', 'scope_name' => 'website', 'locale' => 'bg', 'key' => 'Four', 'sync_status' => 'edited', 'source_hash' => hash('sha256', 'Four')],
+        ['scope_type' => 'custom', 'scope_name' => 'shared', 'locale' => 'de', 'key' => 'Five', 'sync_status' => 'missing', 'source_hash' => hash('sha256', 'Five'), 'is_missing' => true],
+        ['scope_type' => 'custom', 'scope_name' => 'shared', 'locale' => 'fr', 'key' => 'Six', 'sync_status' => 'edited', 'source_hash' => null, 'is_missing' => true],
+    ] as $attributes) {
+        TranslationEntry::query()->create([
+            'format' => 'json',
+            'group' => '*',
+            'value' => $attributes['key'],
+            'is_missing' => false,
+            ...$attributes,
+        ]);
+    }
+
+    $authorization = new class implements TranslationsAuthorization
+    {
+        /** @var list<TranslationsAbility> */
+        public array $abilities = [];
+
+        public function authorize(TranslationsAbility $ability, ?TranslationEntry $entry = null): void
+        {
+            $this->abilities[] = $ability;
+        }
+    };
+    app()->instance(TranslationsAuthorization::class, $authorization);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $statistics = app(GetTranslationCatalogStatisticsAction::class)->execute();
+    $queryCount = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($statistics)->toBeInstanceOf(TranslationCatalogStatisticsData::class)
+        ->and($statistics->toArray())->toBe([
+            'total' => 6,
+            'missing' => 2,
+            'conflicts' => 1,
+            'changed' => 3,
+            'locales' => ['bg' => 2, 'en' => 2, 'de' => 1, 'fr' => 1],
+            'scopes' => ['app' => 2, 'custom:shared' => 2, 'module:website' => 2],
+        ])
+        ->and($queryCount)->toBe(3)
+        ->and($authorization->abilities)->toBe([TranslationsAbility::ListEntries]);
+
+    $schema = app(TranslationEntryFilterSchema::class)->make();
+    $filters = app(QueryFilterSetFactory::class)->fromQuery([
+        'filter' => ['locale' => 'bg'],
+        'sort' => 'key',
+    ], $schema);
+    $page = app(ListTranslationEntriesAction::class)->execute(25, $filters);
+    $filtered = app(GetTranslationCatalogStatisticsAction::class)->execute($filters);
+
+    expect($page->total())->toBe(2)
+        ->and($filtered->toArray())->toBe([
+            'total' => 2,
+            'missing' => 0,
+            'conflicts' => 1,
+            'changed' => 2,
+            'locales' => ['bg' => 2],
+            'scopes' => ['module:website' => 2],
+        ]);
+});
+
+test('returns empty catalog statistics and caps dimensions at one hundred sorted keys', function (): void {
+    $authorization = new class implements TranslationsAuthorization
+    {
+        public function authorize(TranslationsAbility $ability, ?TranslationEntry $entry = null): void {}
+    };
+    app()->instance(TranslationsAuthorization::class, $authorization);
+
+    $empty = app(GetTranslationCatalogStatisticsAction::class)->execute();
+
+    expect($empty->toArray())->toBe([
+        'total' => 0,
+        'missing' => 0,
+        'conflicts' => 0,
+        'changed' => 0,
+        'locales' => [],
+        'scopes' => [],
+    ]);
+
+    foreach (range(0, 104) as $index) {
+        $key = str_pad((string) $index, 3, '0', STR_PAD_LEFT);
+        TranslationEntry::query()->create([
+            'scope_type' => 'custom',
+            'scope_name' => "scope-{$key}",
+            'locale' => "locale-{$key}",
+            'format' => 'json',
+            'group' => '*',
+            'key' => "Key {$key}",
+            'value' => "Value {$key}",
+            'source_hash' => hash('sha256', $key),
+            'is_missing' => false,
+        ]);
+    }
+
+    foreach ([
+        ['scope_type' => 'app', 'scope_name' => 'app', 'key' => 'Canonical app'],
+        ['scope_type' => ' app ', 'scope_name' => 'legacy', 'key' => 'Legacy app'],
+    ] as $attributes) {
+        TranslationEntry::query()->create([
+            'locale' => 'locale-000',
+            'format' => 'json',
+            'group' => '*',
+            'value' => $attributes['key'],
+            'source_hash' => hash('sha256', $attributes['key']),
+            'is_missing' => false,
+            ...$attributes,
+        ]);
+    }
+
+    $bounded = app(GetTranslationCatalogStatisticsAction::class)->execute();
+
+    expect($bounded->locales)->toHaveCount(100)
+        ->and(array_key_first($bounded->locales))->toBe('locale-000')
+        ->and(array_key_last($bounded->locales))->toBe('locale-099')
+        ->and($bounded->scopes)->toHaveCount(100)
+        ->and(array_key_first($bounded->scopes))->toBe('app')
+        ->and($bounded->scopes['app'])->toBe(2)
+        ->and(array_key_last($bounded->scopes))->toBe('custom:scope-098');
+});
+
+test('serializes numeric-looking locale aggregate keys without a type error', function (): void {
+    $authorization = new class implements TranslationsAuthorization
+    {
+        public function authorize(TranslationsAbility $ability, ?TranslationEntry $entry = null): void {}
+    };
+    app()->instance(TranslationsAuthorization::class, $authorization);
+    foreach (['0', '1'] as $locale) {
+        TranslationEntry::query()->create([
+            'scope_type' => 'app',
+            'scope_name' => 'app',
+            'locale' => $locale,
+            'format' => 'json',
+            'group' => '*',
+            'key' => "Numeric locale {$locale}",
+            'value' => "Numeric locale {$locale}",
+            'source_hash' => hash('sha256', $locale),
+            'is_missing' => false,
+        ]);
+    }
+
+    $statistics = app(GetTranslationCatalogStatisticsAction::class)->execute();
+    $json = json_encode($statistics, JSON_THROW_ON_ERROR);
+
+    expect($statistics->locales)->toBe([0 => 1, 1 => 1])
+        ->and($statistics->toArray()['locales'])->toBe([0 => 1, 1 => 1])
+        ->and($json)->toContain('"locales":{"0":1,"1":1}')
+        ->and($statistics->toJson(JSON_THROW_ON_ERROR))->toBe($json);
+});
+
+test('denies translation statistics before the first catalog query', function (): void {
+    $authorization = new class implements TranslationsAuthorization
+    {
+        public function authorize(TranslationsAbility $ability, ?TranslationEntry $entry = null): void
+        {
+            throw new AuthorizationException('Denied.');
+        }
+    };
+    app()->instance(TranslationsAuthorization::class, $authorization);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    expect(fn () => app(GetTranslationCatalogStatisticsAction::class)->execute())
+        ->toThrow(AuthorizationException::class, 'Denied.');
+    expect(DB::getQueryLog())->toBeEmpty();
+
+    DB::disableQueryLog();
+});
+
+test('shares one translation entry schema across model http and consumer adapters', function (): void {
+    $serviceSchema = app(TranslationEntryFilterSchema::class)->make();
+    $modelSchema = (new TranslationEntry)->filterSchema();
+    $indexParameters = (new ReflectionMethod(
+        TranslationsApiController::class,
+        'index',
+    ))->getParameters();
+
+    expect(array_map(static fn ($definition): string => $definition->alias, $modelSchema->filters))
+        ->toBe(array_map(static fn ($definition): string => $definition->alias, $serviceSchema->filters))
+        ->and(array_map(static fn ($definition): string => $definition->alias, $modelSchema->sorts))
+        ->toBe(array_map(static fn ($definition): string => $definition->alias, $serviceSchema->sorts))
+        ->and(collect($indexParameters)->contains(
+            static fn (ReflectionParameter $parameter): bool => $parameter->getType() instanceof ReflectionNamedType
+                && $parameter->getType()->getName() === TranslationEntryFilterSchema::class,
+        ))->toBeTrue()
+        ->and((new ReflectionMethod(TranslationsApiController::class, 'index'))->getNumberOfRequiredParameters())
+        ->toBe(4);
+
+    expect(app(QueryFilterSetFactory::class)->fromQuery([
+        'filter' => ['is_missing' => true],
+    ], $serviceSchema))->toBeInstanceOf(FilterSet::class);
 });
 
 test('commands reject every ambiguous or unsafe option before doing work', function (): void {

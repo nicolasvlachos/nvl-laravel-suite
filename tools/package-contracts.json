@@ -32433,6 +32433,11 @@
                 "Nvl\\Translations\\Console\\Commands\\TranslationsUnusedCommand": "nvl:translations:unused {--scope=* : Scope tokens (app,module:name,vendor:package,custom:name)} {--days=0 : Use rolling usage window in days instead of latest scan} {--limit=200 : Max rows to print}"
             },
             "symbols": {
+                "Nvl\\Translations\\Actions\\Entries\\GetTranslationCatalogStatisticsAction": [
+                    "final class Nvl\\Translations\\Actions\\Entries\\GetTranslationCatalogStatisticsAction",
+                    "public function __construct(Nvl\\Translations\\Contracts\\TranslationsAuthorization $authorization): mixed",
+                    "public function execute(?Nvl\\Filterable\\Data\\FilterSet $filters=null): Nvl\\Translations\\Data\\TranslationCatalogStatisticsData"
+                ],
                 "Nvl\\Translations\\Actions\\Entries\\ListTranslationEntriesAction": [
                     "final class Nvl\\Translations\\Actions\\Entries\\ListTranslationEntriesAction",
                     "public function execute(int $perPage=25, ?Nvl\\Filterable\\Data\\FilterSet $filters=null): Illuminate\\Pagination\\LengthAwarePaginator",
@@ -32544,6 +32549,43 @@
                 "Nvl\\Translations\\Contracts\\UpdateTranslationEntryContract": [
                     "interface Nvl\\Translations\\Contracts\\UpdateTranslationEntryContract",
                     "public abstract function execute(Nvl\\Translations\\Models\\TranslationEntry|string $entry, Nvl\\Translations\\Data\\UpdateTranslationEntryPayload $data): Nvl\\Translations\\Models\\TranslationEntry"
+                ],
+                "Nvl\\Translations\\Data\\TranslationCatalogStatisticsData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Translations\\Data\\TranslationCatalogStatisticsData extends Spatie\\LaravelData\\Data",
+                    "public readonly int $total",
+                    "public readonly int $missing",
+                    "public readonly int $conflicts",
+                    "public readonly int $changed",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, number>\")]",
+                    "public readonly array $locales",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, number>\")]",
+                    "public readonly array $scopes",
+                    "public function __construct(int $total, int $missing, int $conflicts, int $changed, array $locales, array $scopes): mixed",
+                    "@param array<string, int> $locales Entry counts by locale",
+                    "@param array<string, int> $scopes Entry counts by canonical scope token",
+                    "public function transform(Spatie\\LaravelData\\Support\\Transformation\\TransformationContextFactory|Spatie\\LaravelData\\Support\\Transformation\\TransformationContext|null $transformationContext=null): array",
+                    "@return array<string, mixed>",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
                 ],
                 "Nvl\\Translations\\Data\\TranslationEntryPayload": [
                     "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -32796,7 +32838,7 @@
                 "Nvl\\Translations\\Http\\Controllers\\Api\\TranslationsApiController": [
                     "final class Nvl\\Translations\\Http\\Controllers\\Api\\TranslationsApiController extends Illuminate\\Routing\\Controller",
                     "public function __construct(Nvl\\Translations\\Contracts\\TranslationsAuthorization $authorization): mixed",
-                    "public function index(Nvl\\Translations\\Http\\Requests\\TranslationIndexRequest $request, Nvl\\Translations\\Actions\\Entries\\ListTranslationEntriesAction $action, Nvl\\Translations\\Actions\\Entries\\ListTranslationFilterOptionsAction $optionsAction, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory): Illuminate\\Http\\JsonResponse",
+                    "public function index(Nvl\\Translations\\Http\\Requests\\TranslationIndexRequest $request, Nvl\\Translations\\Actions\\Entries\\ListTranslationEntriesAction $action, Nvl\\Translations\\Actions\\Entries\\ListTranslationFilterOptionsAction $optionsAction, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, ?Nvl\\Translations\\Services\\TranslationEntryFilterSchema $filterSchema=null): Illuminate\\Http\\JsonResponse",
                     "@param TranslationIndexRequest $request Validated query request",
                     "@param ListTranslationEntriesAction $action Listing action",
                     "@return JsonResponse Paginated translation entries",
@@ -33029,6 +33071,22 @@
                     "public function validatePlan(array $writes, array $deletes): void",
                     "@param list<ArtifactWrite> $writes",
                     "@param list<ArtifactDelete> $deletes"
+                ],
+                "Nvl\\Translations\\Services\\TranslationEntryFilterSchema": [
+                    "final class Nvl\\Translations\\Services\\TranslationEntryFilterSchema",
+                    "public function make(): Nvl\\Filterable\\Definitions\\FilterSchema",
+                    "public function filterSearch(Illuminate\\Database\\Eloquent\\Builder $query, mixed $value): Illuminate\\Database\\Eloquent\\Builder",
+                    "@param Builder<*> $query",
+                    "@return Builder<*>",
+                    "public function filterMissingValue(Illuminate\\Database\\Eloquent\\Builder $query, mixed $value): Illuminate\\Database\\Eloquent\\Builder",
+                    "@param Builder<*> $query",
+                    "@return Builder<*>",
+                    "public function filterChangedSinceImport(Illuminate\\Database\\Eloquent\\Builder $query, mixed $value): Illuminate\\Database\\Eloquent\\Builder",
+                    "@param Builder<*> $query",
+                    "@return Builder<*>",
+                    "public function filterIsMissing(Illuminate\\Database\\Eloquent\\Builder $query, mixed $value): Illuminate\\Database\\Eloquent\\Builder",
+                    "@param Builder<*> $query",
+                    "@return Builder<*>"
                 ],
                 "Nvl\\Translations\\Services\\TranslationExportService": [
                     "final class Nvl\\Translations\\Services\\TranslationExportService",

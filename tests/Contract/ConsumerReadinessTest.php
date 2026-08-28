@@ -9,6 +9,9 @@ use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
 use Nvl\Suite\Support\SuiteModuleCatalog;
+use Nvl\Translations\Actions\Entries\GetTranslationCatalogStatisticsAction;
+use Nvl\Translations\Data\TranslationCatalogStatisticsData;
+use Nvl\Translations\Services\TranslationEntryFilterSchema;
 
 /**
  * Determine whether an autoloaded symbol exists regardless of symbol kind.
@@ -332,6 +335,24 @@ it('publishes bounded Mail aggregate and event-correlation seams', function (): 
         ->toBe('packages/nvl/mail-notifications/README.md#administrative-delivery-reads')
         ->and($mail['performance']['query_tests'])
         ->toContain('packages/nvl/mail-notifications/tests/Feature/MailNotificationAdministrationTest.php');
+});
+
+it('publishes bounded Translation catalog statistics and a model-free filter schema', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $translations = $catalog['packages']['translations'];
+
+    expect($translations['application_api']['symbols'])
+        ->toContain(
+            GetTranslationCatalogStatisticsAction::class,
+            TranslationCatalogStatisticsData::class,
+            TranslationEntryFilterSchema::class,
+        )
+        ->and($translations['application_api']['documentation'])
+        ->toBe('packages/nvl/translations/README.md#catalog-statistics-and-shared-filters')
+        ->and($translations['performance']['evidence'])
+        ->toContain('packages/nvl/translations/README.md#catalog-statistics-and-shared-filters')
+        ->and($translations['performance']['query_tests'])
+        ->toContain('packages/nvl/translations/tests/Feature/TranslationsConsumerContractsTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {

@@ -74,9 +74,12 @@ use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Translatable\Console\Commands\TranslatableDoctorCommand;
 use Nvl\Translatable\Services\TranslationWriter;
 use Nvl\Translatable\Translatable;
+use Nvl\Translations\Actions\Entries\GetTranslationCatalogStatisticsAction;
 use Nvl\Translations\Actions\Sync\ImportTranslationsAction;
 use Nvl\Translations\Console\Commands\TranslationsDoctorCommand;
+use Nvl\Translations\Data\TranslationCatalogStatisticsData;
 use Nvl\Translations\Definitions\Tables\TranslationsTables;
+use Nvl\Translations\Services\TranslationEntryFilterSchema;
 use Nvl\Translations\Services\TranslationScanService;
 
 /**
@@ -607,13 +610,19 @@ return [
         'translations' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ImportTranslationsAction::class, TranslationScanService::class],
+                'symbols' => [
+                    GetTranslationCatalogStatisticsAction::class,
+                    ImportTranslationsAction::class,
+                    TranslationCatalogStatisticsData::class,
+                    TranslationEntryFilterSchema::class,
+                    TranslationScanService::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/translations/README.md#purpose-and-boundary',
+                'documentation' => 'packages/nvl/translations/README.md#catalog-statistics-and-shared-filters',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/translations/README.md#operational-workflow']),
+                ...$pass(['packages/nvl/translations/README.md#catalog-statistics-and-shared-filters']),
                 'query_tests' => ['packages/nvl/translations/tests/Feature/TranslationsConsumerContractsTest.php'],
                 'cache' => ['mode' => 'none', 'rationale' => 'Catalog scans and imports are explicit bounded operations; editable database rows and generated files must not be hidden by a runtime result cache.'],
             ],
