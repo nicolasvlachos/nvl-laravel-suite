@@ -45,7 +45,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-07 | [x] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | `85f607d` |
 | CR-08 | [x] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | `c70ef1c` |
 | CR-09 | [x] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | `6e22fb1` |
-| CR-10 | [ ] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | — |
+| CR-10 | [x] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | `85f4c0b` |
 | CR-11 | [ ] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | — |
 | CR-12 | [ ] | Comments/Settings/SEO seams | Read-seams plan | CR-01 | 1.1/1.2 | — |
 | CR-13 | [ ] | Content owner editor projection | Pages/Content plan | CR-01 | 1.2 | — |
@@ -209,6 +209,21 @@ gate pass. Record the implementation commit beside the task before checking it.
   the final complete `composer test` matrix, public contracts, generated
   types/`tsc`, strict Composer autoloading/validation, skill-mirror contract,
   and readiness evidence passed. KPO remained read-only.
+- 2026-08-28 — CR-10 added authorized, bounded Mail statistics dimensions and
+  privacy-safe tracking correlation in `85f4c0b`. Mailer and category reads use
+  one grouped query per dimension, normalize blank keys to `unknown`, sort
+  deterministically, and return at most ten typed aggregates. Tracking contexts
+  validate at most twenty non-sensitive scalar identifiers, preserve them
+  through clone-style methods, persist the redacted map, and dispatch the same
+  map directly on normal and queued-failure start events without reloading the
+  package model. Read-only KPO inspection tied these seams to its direct mailer
+  breakdown and reminder-occurrence listener reload; KPO migration remains
+  deferred to CR-21. A RED/GREEN consumer exercise hardened the shipped Mail
+  skill and synchronized suite copy. Independent review reported no findings
+  and Ready Yes. Mail quality passed 567 tests with 2,156 assertions, PHPStan,
+  and Pint; the final complete `composer test` matrix, public contracts,
+  generated types/`tsc`, strict Composer autoloading/validation, skill-mirror
+  contract, readiness evidence, and diff hygiene passed.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.

@@ -134,7 +134,7 @@ git commit -m "feat(activity): add bounded event and subject reads"
 - Consumes: existing authorized read query and `TrackingContext::metadata` redaction.
 - Produces: top mailer/category aggregates and `MailTrackingStarted::$correlation`.
 
-- [ ] **Step 1: Write failing aggregate and privacy tests**
+- [x] **Step 1: Write failing aggregate and privacy tests**
 
 ```php
 $statistics = app(GetMailNotificationStatisticsAction::class)->execute(
@@ -150,13 +150,13 @@ Add an event assertion where approved correlation contains
 `reminder_occurrence_id`, while nested arrays, objects, email addresses, and a
 key rejected by policy never appear in the dispatched event.
 
-- [ ] **Step 2: Run focused Mail tests and verify missing fields fail**
+- [x] **Step 2: Run focused Mail tests and verify missing fields fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/mail-notifications/phpunit.xml.dist --compact packages/nvl/mail-notifications/tests/Feature/MailNotificationAdministrationTest.php packages/nvl/mail-notifications/tests/Feature/MailTrackingEventDispatcherTest.php packages/nvl/mail-notifications/tests/Unit/PrivacyTest.php`
 
 Expected: FAIL because aggregate DTOs and correlation context do not exist.
 
-- [ ] **Step 3: Implement bounded statistics dimensions**
+- [x] **Step 3: Implement bounded statistics dimensions**
 
 `MailNotificationAggregate` has `string $key` and `int $count`. Append
 `array $mailers = []` and `array $categories = []` to
@@ -164,7 +164,7 @@ Expected: FAIL because aggregate DTOs and correlation context do not exist.
 query, order count descending/key ascending, and limit to ten. Empty/null keys
 normalize to `unknown`. Include both arrays in `toArray()`.
 
-- [ ] **Step 4: Implement approved correlation context**
+- [x] **Step 4: Implement approved correlation context**
 
 Append `array $correlation = []` to `TrackingContext` and add:
 
@@ -182,14 +182,14 @@ Preserve the correlation map in every existing clone-style method, including
 `forNotifiable()` and `withMetadata()`, and prove both method orders retain the
 same validated values.
 
-- [ ] **Step 5: Run Mail quality and compatibility tests**
+- [x] **Step 5: Run Mail quality and compatibility tests**
 
 Run: `php tools/run-package-quality.php mail-notifications`
 
 Expected: PASS, including old two-argument `MailTrackingStarted` construction
 with the optional correlation default.
 
-- [ ] **Step 6: Commit CR-10**
+- [x] **Step 6: Commit CR-10**
 
 ```bash
 git add packages/nvl/mail-notifications/src packages/nvl/mail-notifications/tests
