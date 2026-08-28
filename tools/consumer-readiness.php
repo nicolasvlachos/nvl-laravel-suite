@@ -29,10 +29,13 @@ use Nvl\Forms\Actions\Form\ListFormsAction;
 use Nvl\Forms\Console\Commands\FormsDoctorCommand;
 use Nvl\Forms\Contracts\CreateFormContract;
 use Nvl\Forms\Definitions\Tables\FormsTables;
+use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\Actions\ListMailNotificationsAction;
 use Nvl\MailNotifications\Console\Commands\MailNotificationsDoctorCommand;
 use Nvl\MailNotifications\Contracts\TrackingLifecycle;
 use Nvl\MailNotifications\Definitions\Tables\MailNotificationsTables;
+use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
+use Nvl\MailNotifications\ValueObjects\TrackingContext;
 use Nvl\Media\Console\Commands\MediaDoctorCommand;
 use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\MediaLibrary;
@@ -454,7 +457,13 @@ return [
         'mail-notifications' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListMailNotificationsAction::class, TrackingLifecycle::class],
+                'symbols' => [
+                    ListMailNotificationsAction::class,
+                    GetMailNotificationStatisticsAction::class,
+                    MailNotificationAggregate::class,
+                    TrackingContext::class,
+                    TrackingLifecycle::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/mail-notifications/README.md#administrative-delivery-reads',

@@ -17499,7 +17499,9 @@
                     "final class Nvl\\MailNotifications\\Events\\MailTrackingStarted",
                     "public readonly Nvl\\MailNotifications\\ValueObjects\\TrackingAttempt $attempt",
                     "public readonly string $category",
-                    "public function __construct(Nvl\\MailNotifications\\ValueObjects\\TrackingAttempt $attempt, string $category): mixed",
+                    "public readonly array $correlation",
+                    "public function __construct(Nvl\\MailNotifications\\ValueObjects\\TrackingAttempt $attempt, string $category, array $correlation=[]): mixed",
+                    "@param array<string, string|int|bool|null> $correlation",
                     "public static function dispatch(mixed ...$arguments): mixed",
                     "@param mixed ...$arguments",
                     "@return mixed",
@@ -18447,6 +18449,14 @@
                     "public readonly bool $dryRun",
                     "public function __construct(Carbon\\CarbonImmutable $notificationCutoff, ?Carbon\\CarbonImmutable $scheduledMessageCutoff, int $notificationCount, int $providerEventCount, int $scheduledMessageCount, bool $dryRun): mixed"
                 ],
+                "Nvl\\MailNotifications\\ValueObjects\\MailNotificationAggregate": [
+                    "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationAggregate",
+                    "public readonly string $key",
+                    "public readonly int $count",
+                    "public function __construct(string $key, int $count): mixed",
+                    "public function toArray(): array",
+                    "@return array{key: string, count: int}"
+                ],
                 "Nvl\\MailNotifications\\ValueObjects\\MailNotificationEventReadData": [
                     "final readonly class Nvl\\MailNotifications\\ValueObjects\\MailNotificationEventReadData",
                     "public readonly string $id",
@@ -18532,9 +18542,13 @@
                     "public readonly float $successRate",
                     "public readonly float $failureRate",
                     "public readonly array $recent",
-                    "public function __construct(int $total, array $statuses, int $accepted, int $successful, int $failed, float $successRate, float $failureRate, array $recent): mixed",
+                    "public readonly array $mailers",
+                    "public readonly array $categories",
+                    "public function __construct(int $total, array $statuses, int $accepted, int $successful, int $failed, float $successRate, float $failureRate, array $recent, array $mailers=[], array $categories=[]): mixed",
                     "@param array<string, int> $statuses",
                     "@param list<MailNotificationReadData> $recent",
+                    "@param list<MailNotificationAggregate> $mailers",
+                    "@param list<MailNotificationAggregate> $categories",
                     "public function toArray(): array",
                     "@return array<string, mixed>"
                 ],
@@ -18797,14 +18811,18 @@
                 "Nvl\\MailNotifications\\ValueObjects\\TrackingContext": [
                     "final readonly class Nvl\\MailNotifications\\ValueObjects\\TrackingContext",
                     "public readonly string $category",
+                    "public readonly array $correlation",
                     "public readonly ?Nvl\\MailNotifications\\ValueObjects\\NotifiableReference $notifiable",
                     "public readonly array $metadata",
-                    "public function __construct(string $category, ?Nvl\\MailNotifications\\ValueObjects\\NotifiableReference $notifiable=null, array $metadata=[]): mixed",
+                    "public function __construct(string $category, ?Nvl\\MailNotifications\\ValueObjects\\NotifiableReference $notifiable=null, array $metadata=[], array $correlation=[]): mixed",
                     "@param array<string, mixed> $metadata",
+                    "@param array<string, mixed> $correlation",
                     "public static function forCategory(string $category): self",
                     "public function forNotifiable(Nvl\\MailNotifications\\Contracts\\MailTrackable $notifiable): self",
                     "public function withMetadata(array $metadata): self",
-                    "@param array<string, mixed> $metadata"
+                    "@param array<string, mixed> $metadata",
+                    "public function withCorrelation(array $correlation): self",
+                    "@param array<string, mixed> $correlation"
                 ],
                 "Nvl\\MailNotifications\\ValueObjects\\TransitionResult": [
                     "final readonly class Nvl\\MailNotifications\\ValueObjects\\TransitionResult",

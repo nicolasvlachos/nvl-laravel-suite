@@ -5,6 +5,9 @@ declare(strict_types=1);
 use Illuminate\Config\Repository;
 use Nvl\Activity\Support\ActivitySubjectReference;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
+use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
+use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
+use Nvl\MailNotifications\ValueObjects\TrackingContext;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 
 /**
@@ -313,6 +316,22 @@ it('publishes bounded Activity event and subject-reference seams', function (): 
         ->toContain('packages/nvl/activity/README.md#bounded-subject-references-and-event-filters')
         ->and($activity['performance']['query_tests'])
         ->toContain('packages/nvl/activity/tests/Feature/ActivityBehaviorTest.php');
+});
+
+it('publishes bounded Mail aggregate and event-correlation seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $mail = $catalog['packages']['mail-notifications'];
+
+    expect($mail['application_api']['symbols'])
+        ->toContain(
+            GetMailNotificationStatisticsAction::class,
+            MailNotificationAggregate::class,
+            TrackingContext::class,
+        )
+        ->and($mail['application_api']['documentation'])
+        ->toBe('packages/nvl/mail-notifications/README.md#administrative-delivery-reads')
+        ->and($mail['performance']['query_tests'])
+        ->toContain('packages/nvl/mail-notifications/tests/Feature/MailNotificationAdministrationTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {
