@@ -1853,19 +1853,19 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListPermissionCatalogAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListPermissionCatalogAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacPermissionGroupExpressions $groupExpressions): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Queries\\PermissionIndexQueryData $data): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, PermissionListItemData>"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListPermissionGroupsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListPermissionGroupsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacConsumerLimits $limits, Nvl\\Auth\\Services\\RbacPermissionGroupExpressions $groupExpressions): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor): Illuminate\\Support\\Collection",
                     "@return Collection<int, PermissionGroupData>"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListPermissionOptionsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListPermissionOptionsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacConsumerLimits $limits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacConsumerLimits $limits, Nvl\\Auth\\Services\\RbacOptionReadService $options): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?string $group=null, ?int $limit=null): Illuminate\\Support\\Collection",
                     "@return Collection<int, PermissionOptionData>"
                 ],
@@ -1887,7 +1887,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListRoleOptionsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRoleOptionsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacConsumerLimits $limits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacConsumerLimits $limits, Nvl\\Auth\\Services\\RbacOptionReadService $options): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?int $limit=null): Illuminate\\Support\\Collection",
                     "@return Collection<int, RoleOptionData>"
                 ],
@@ -1919,13 +1919,13 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\SuggestPermissionsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\SuggestPermissionsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Actions\\Rbac\\ListPermissionOptionsAction $options): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacConsumerLimits $limits, Nvl\\Auth\\Services\\RbacOptionReadService $options): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?string $group=null, ?int $limit=null): Illuminate\\Support\\Collection",
                     "@return Collection<int, PermissionOptionData>"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\SuggestRolesAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\SuggestRolesAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Actions\\Rbac\\ListRoleOptionsAction $options): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacConsumerLimits $limits, Nvl\\Auth\\Services\\RbacOptionReadService $options): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, ?int $limit=null): Illuminate\\Support\\Collection",
                     "@return Collection<int, RoleOptionData>"
                 ],
@@ -3744,11 +3744,15 @@
                     "public readonly ?string $search",
                     "public readonly ?string $group",
                     "public readonly ?int $perPage",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly ?string $guard",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly ?string $sort",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly ?string $direction",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly bool $includeAssignments",
-                    "public function __construct(?string $search=null, ?string $group=null, ?int $perPage=null, ?string $guard=null, ?string $sort=null, ?string $direction=null, bool $includeAssignments=false): mixed",
+                    "public function __construct(?string $search=null, ?string $group=null, ?int $perPage=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?string $guard=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?string $sort=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?string $direction=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] bool $includeAssignments=false): mixed",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -3778,12 +3782,17 @@
                     "final class Nvl\\Auth\\Data\\Queries\\RoleIndexQueryData extends Spatie\\LaravelData\\Data",
                     "public readonly ?string $search",
                     "public readonly ?int $perPage",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly ?bool $isSystem",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly ?string $guard",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly ?string $sort",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly ?string $direction",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\Optional()]",
                     "public readonly bool $includeAssignments",
-                    "public function __construct(?string $search=null, ?int $perPage=null, ?bool $isSystem=null, ?string $guard=null, ?string $sort=null, ?string $direction=null, bool $includeAssignments=false): mixed",
+                    "public function __construct(?string $search=null, ?int $perPage=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?bool $isSystem=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?string $guard=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?string $sort=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] ?string $direction=null, #[Spatie\\TypeScriptTransformer\\Attributes\\Optional()] bool $includeAssignments=false): mixed",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -5546,6 +5555,7 @@
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
                     "public function roleOptionLimit(?int $requested=null): int",
                     "public function permissionOptionLimit(?int $requested=null): int",
+                    "public function permissionGroupLimit(): int",
                     "public function identifierResolutionLimit(): int"
                 ],
                 "Nvl\\Auth\\Services\\RbacEntityLocator": [
@@ -5569,6 +5579,26 @@
                     "@param array<string, mixed> $metadata",
                     "public function refresh(Illuminate\\Contracts\\Auth\\Authenticatable $subject, array $relations=[]): Illuminate\\Contracts\\Auth\\Authenticatable",
                     "@param list<string> $relations"
+                ],
+                "Nvl\\Auth\\Services\\RbacOptionReadService": [
+                    "final readonly class Nvl\\Auth\\Services\\RbacOptionReadService",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacPermissionGroupExpressions $groupExpressions): mixed",
+                    "public function roles(?string $search, int $limit): Illuminate\\Support\\Collection",
+                    "@return Collection<int, RoleOptionData>",
+                    "public function permissions(?string $search, ?string $group, int $limit): Illuminate\\Support\\Collection",
+                    "@return Collection<int, PermissionOptionData>"
+                ],
+                "Nvl\\Auth\\Services\\RbacPermissionGroupExpressions": [
+                    "final class Nvl\\Auth\\Services\\RbacPermissionGroupExpressions",
+                    "public function blank(Illuminate\\Database\\Eloquent\\Builder $query): Illuminate\\Database\\Query\\Expression",
+                    "@param Builder<Permission> $query",
+                    "@return Expression<literal-string>",
+                    "public function normalized(Illuminate\\Database\\Eloquent\\Builder $query): Illuminate\\Database\\Query\\Expression",
+                    "@param Builder<Permission> $query",
+                    "@return Expression<literal-string>",
+                    "public function selected(Illuminate\\Database\\Eloquent\\Builder $query): Illuminate\\Database\\Query\\Expression",
+                    "@param Builder<Permission> $query",
+                    "@return Expression<literal-string>"
                 ],
                 "Nvl\\Auth\\Services\\RbacSynchronizer": [
                     "final readonly class Nvl\\Auth\\Services\\RbacSynchronizer",
@@ -5847,7 +5877,7 @@
                 ]
             },
             "configuration": {
-                "config/nvl-auth.php": "6b14c5ca354beea9318ae32854b97ab1601545ae7f73fd5b585d011682f2917b"
+                "config/nvl-auth.php": "8eb09472e4a833a0f0e73842d1d1a16b038fa9ef8b9da1f2dac927a3871d093b"
             },
             "routes": {
                 "routes/account/api_tokens.php": "87625e4b2170c152d7d47882b8023bd652474efdfa2c82bf1ec5ed8eac35e81e",

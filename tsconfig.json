@@ -6,6 +6,7 @@
         "strict": true
     },
     "files": [
-        "resources/js/types/generated.d.ts"
+        "resources/js/types/generated.d.ts",
+        "tests/TypeScript/auth-query-backward-compatibility.ts"
     ]
 }
