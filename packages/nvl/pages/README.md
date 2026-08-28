@@ -130,6 +130,81 @@ If a resource page has path `pages/catalog` and its handler pattern is `{id}`, r
 
 The package never serializes the resolved Eloquent model. The handler must explicitly construct its public DTO payload.
 
+## Bounded page reads
+
+Consumers should use the focused DTO-first reads for page selectors, key
+validation, and one-level public listings instead of querying `Page` or its
+translations directly:
+
+```php
+use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
+use Nvl\Pages\Actions\FindPageByKeyAction;
+use Nvl\Pages\Actions\ListPageOptionsAction;
+use Nvl\Pages\Actions\ListPublicChildPagesAction;
+use Nvl\Pages\Data\PageActorData;
+use Nvl\Pages\Data\PageRequestContextData;
+use Nvl\Pages\Enums\PageKind;
+use Nvl\Pages\Enums\PublicChildPageOrder;
+
+$actor = PageActorData::fromAuthenticatable($user);
+$page = app(FindPageByKeyAction::class)->execute('main', 'about', $actor);
+$availability = app(CheckPageKeyAvailabilityAction::class)->execute(
+    'main',
+    'about',
+    $actor,
+    exceptId: $page->id,
+);
+$options = app(ListPageOptionsAction::class)->execute(
+    'main',
+    'bg',
+    $actor,
+    search: 'about',
+);
+$children = app(ListPublicChildPagesAction::class)->execute(
+    $page->id,
+    new PageRequestContextData('main', 'bg'),
+    limit: 24,
+    kind: PageKind::Static,
+    order: PublicChildPageOrder::Newest,
+);
+```
+
+`FindPageByKeyAction` trims and validates the site and globally unique key,
+keeps the lookup site-scoped, authorizes `View`, and returns `PageData` with its
+translation map. `CheckPageKeyAvailabilityAction` authorizes `List` before SQL
+and mirrors the actual global unique index, including soft-deleted rows. A
+same-site conflict exposes its ID so an update can use `exceptId`; a conflict in
+another authorized site reports unavailable without disclosing that page's ID.
+An `exceptId` only excludes the same-site row, so a foreign UUID cannot bypass
+the write constraint.
+
+`ListPageOptionsAction` returns `PageOptionData(id, key, label, path, kind,
+status, revision)` ordered by path and ID. Labels resolve the requested locale
+through Translatable fallback, then fall back to the stable key. Empty search
+returns the default bounded list, one-character typeahead input returns an
+empty collection without storage queries, and longer input searches key, path,
+title, and navigation label case-insensitively. The requested limit is clamped
+to `pages.limits.maximum_page_options` and an absolute 100-row ceiling. Search
+input must be valid UTF-8 without NUL bytes so behavior remains portable across
+supported databases.
+
+`ListPublicChildPagesAction` validates the trusted site/locale context, requires
+the parent itself to be publicly visible in that site, authorizes
+`ViewNavigation` before child SQL, and returns only currently public children as
+localized `PublicPageData`. Package-built public projections include the
+optional additive `publishedAt` field, using the explicit publication time or
+the persisted creation time when publication is immediate. The PHP constructor
+and generated TypeScript property remain optional for 1.x source compatibility.
+The default uses canonical sibling order. Consumers can allowlist one
+`PageKind` and select `PublicChildPageOrder::Newest` to filter and order by the
+effective publication timestamp before the requested limit—for example, a
+static news-card feed. Results are clamped to
+`pages.limits.maximum_public_children` plus the same absolute 100-row ceiling.
+Option reads use two fixed queries and populated public-child reads use three,
+whether one or 25 records are returned. These projections are uncached because
+authorization, locale fallback, publication windows, and hierarchy are
+request-sensitive.
+
 ## Content blocks
 
 `Page` implements `ContentOwner` with `HasContent`. Its sections use the

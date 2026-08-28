@@ -16,6 +16,13 @@ use Nvl\Content\Actions\ReplaceContentPlacementAction;
 use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
+use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
+use Nvl\Pages\Actions\FindPageByKeyAction;
+use Nvl\Pages\Actions\ListPageOptionsAction;
+use Nvl\Pages\Actions\ListPublicChildPagesAction;
+use Nvl\Pages\Data\PageKeyAvailabilityData;
+use Nvl\Pages\Data\PageOptionData;
+use Nvl\Pages\Enums\PublicChildPageOrder;
 use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
 use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
 use Nvl\Seo\Data\SeoOwnerRevisionData;
@@ -413,6 +420,28 @@ it('publishes bounded Content editor projections as consumer seams', function ()
         )
         ->and($content['performance']['query_tests'])
         ->toContain('packages/nvl/content/tests/Feature/ContentContractRegressionTest.php');
+});
+
+it('publishes bounded Page lookup option and public-child projections', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $pages = $catalog['packages']['pages'];
+
+    expect($pages['application_api']['symbols'])
+        ->toContain(
+            CheckPageKeyAvailabilityAction::class,
+            FindPageByKeyAction::class,
+            ListPageOptionsAction::class,
+            ListPublicChildPagesAction::class,
+            PageKeyAvailabilityData::class,
+            PageOptionData::class,
+            PublicChildPageOrder::class,
+        )
+        ->and($pages['application_api']['documentation'])
+        ->toBe('packages/nvl/pages/README.md#bounded-page-reads')
+        ->and($pages['performance']['evidence'])
+        ->toContain('packages/nvl/pages/README.md#bounded-page-reads')
+        ->and($pages['performance']['query_tests'])
+        ->toContain('packages/nvl/pages/tests/Feature/PagesPackageTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {

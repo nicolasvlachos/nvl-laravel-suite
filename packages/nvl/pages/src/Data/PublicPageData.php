@@ -12,6 +12,7 @@ use Nvl\Translatable\TranslationResolution;
 use Spatie\LaravelData\Attributes\MapOutputName;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\CamelCaseMapper;
+use Spatie\LaravelData\Optional;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
@@ -40,6 +41,7 @@ final class PublicPageData extends Data
         public readonly ?string $titleLocale,
         public readonly ?string $navigationLabelLocale,
         public readonly ?string $summaryLocale,
+        public readonly string|Optional $publishedAt = new Optional,
     ) {}
 
     /**
@@ -56,6 +58,7 @@ final class PublicPageData extends Data
         $summary = $page->resolveTranslation('summary', $locale);
         $titleValue = self::stringValue($title) ?? '';
         $navigationLabelValue = self::stringValue($navigationLabel);
+        $publishedAt = $page->published_at ?? $page->created_at;
 
         return new self(
             id: $page->id,
@@ -73,6 +76,7 @@ final class PublicPageData extends Data
                 ? $navigationLabel->resolvedLocale
                 : $title->resolvedLocale,
             summaryLocale: $summary->resolvedLocale,
+            publishedAt: $publishedAt->format(DATE_ATOM),
         );
     }
 

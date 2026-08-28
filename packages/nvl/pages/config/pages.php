@@ -80,6 +80,8 @@ return [
     'limits' => [
         'per_page' => 25,
         'maximum_per_page' => 100,
+        'maximum_page_options' => 100,
+        'maximum_public_children' => 100,
         'maximum_path_bytes' => 768,
         'maximum_resource_parameters' => 8,
     ],

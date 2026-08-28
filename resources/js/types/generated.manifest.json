@@ -1,8 +1,8 @@
 {
     "schemaVersion": 2,
-    "hash": "4171f3f7ffff708d29c98a1059afa0f1456e43af666ad846596d6432b664e6ad",
-    "transformerHash": "8e180d36a967cd9452d1742a47c627dbd1ba6c178b0c59d4d883811b29e8a339",
-    "generatedAt": "2026-08-28T21:52:33+00:00",
+    "hash": "f71ceb9fbec01aa39917bf0a87975c8911d2ca9774f56775c5833b5f14739792",
+    "transformerHash": "bad8eb9789bedf883da84c34baeeff70063b05aa6468d31536006afe853258c4",
+    "generatedAt": "2026-08-28T22:45:31+00:00",
     "packages": {
         "nvl/activity": "unknown",
         "nvl/auth": "unknown",
@@ -1853,6 +1853,18 @@
             "source": "Data/PageData.php"
         },
         {
+            "phpType": "Nvl\\Pages\\Data\\PageKeyAvailabilityData",
+            "typescriptType": "Nvl.Pages.Data.PageKeyAvailabilityData",
+            "package": "nvl/pages",
+            "source": "Data/PageKeyAvailabilityData.php"
+        },
+        {
+            "phpType": "Nvl\\Pages\\Data\\PageOptionData",
+            "typescriptType": "Nvl.Pages.Data.PageOptionData",
+            "package": "nvl/pages",
+            "source": "Data/PageOptionData.php"
+        },
+        {
             "phpType": "Nvl\\Pages\\Data\\PageResourceData",
             "typescriptType": "Nvl.Pages.Data.PageResourceData",
             "package": "nvl/pages",
@@ -1905,6 +1917,12 @@
             "typescriptType": "Nvl.Pages.Enums.PageStatus",
             "package": "nvl/pages",
             "source": "Enums/PageStatus.php"
+        },
+        {
+            "phpType": "Nvl\\Pages\\Enums\\PublicChildPageOrder",
+            "typescriptType": "Nvl.Pages.Enums.PublicChildPageOrder",
+            "package": "nvl/pages",
+            "source": "Enums/PublicChildPageOrder.php"
         },
         {
             "phpType": "Nvl\\Primitives\\Data\\CoordinatesData",
@@ -2470,7 +2488,7 @@
         "filename": "generated.d.ts",
         "bytes": 1170,
         "hash": "1084a3538e35f79a7b8cf96e2091f90b9c204802945a1cae8afe9c4b2f4caaec",
-        "lastModified": "2026-08-28T21:52:33+00:00"
+        "lastModified": "2026-08-28T22:45:31+00:00"
     },
     "files": [
         {
@@ -2479,7 +2497,7 @@
             "filename": "activity.d.ts",
             "bytes": 4072,
             "hash": "f158403587dd92c28283c72204b228af625e8bdd9866a5f68bd5a76def3b4186",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "auth",
@@ -2487,7 +2505,7 @@
             "filename": "auth.d.ts",
             "bytes": 7549,
             "hash": "75a7e9caebe89b55993c543c62b5a052db3cd5b3600b0d9050947d3b38eb499f",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "comments",
@@ -2495,7 +2513,7 @@
             "filename": "comments.d.ts",
             "bytes": 6680,
             "hash": "068e5745352de2705d3910f615379ee3a78cbf777f74f2b93212d407a8e02190",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "content",
@@ -2503,7 +2521,7 @@
             "filename": "content.d.ts",
             "bytes": 9276,
             "hash": "c1b3fa63e29e63d2ae1f2b09bcda88a5a7ad6b4b02a4d18c6d914da6d45ae580",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "csv",
@@ -2511,7 +2529,7 @@
             "filename": "csv.d.ts",
             "bytes": 4214,
             "hash": "b1f4fb1b745726ebb9d24ac18025f00148b4d4726b491cbe969be9c5268eba35",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "data",
@@ -2519,7 +2537,7 @@
             "filename": "data.d.ts",
             "bytes": 376,
             "hash": "2e71c2bfc92b5b17856cc679cdd13b03a0a40f6adbc9537364c57c32f405c56a",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "filterable",
@@ -2527,7 +2545,7 @@
             "filename": "filterable.d.ts",
             "bytes": 933,
             "hash": "d207b741ec396458e51716907d84fd084a80caa4a4a8174f8b76f65c7e1e7a74",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "forms",
@@ -2535,7 +2553,7 @@
             "filename": "forms.d.ts",
             "bytes": 8131,
             "hash": "ac3ce5523dc31e8b817e7c6df642023b00ec3e7ef6111650cbdf5550805aeac0",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "illuminate",
@@ -2543,7 +2561,7 @@
             "filename": "illuminate.d.ts",
             "bytes": 1097,
             "hash": "a64e8e4cb0e546a5b5e90c715bff6c89a7c82113a50bd9e9876697839f5001c0",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "mail-notifications",
@@ -2551,7 +2569,7 @@
             "filename": "mail-notifications.d.ts",
             "bytes": 823,
             "hash": "a91379352730651c696723a96dc29dce4f493efb8d0bb255c19ab189835e8059",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "media",
@@ -2559,7 +2577,7 @@
             "filename": "media.d.ts",
             "bytes": 9101,
             "hash": "3bba950f29453df2c9a00d07f883d33ed8a6775cb8a8b4843fb436b5970ea328",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "metafields",
@@ -2567,15 +2585,15 @@
             "filename": "metafields.d.ts",
             "bytes": 5579,
             "hash": "230c69d999a299476129f32b076243569b80fa6106d86f532f047a87b3e97ce8",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "pages",
             "path": "generated/pages.d.ts",
             "filename": "pages.d.ts",
-            "bytes": 3481,
-            "hash": "e6209ae2ec08148c6b193de95ff70b9b391c2386e804de8798f72606e6e109fc",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "bytes": 3858,
+            "hash": "604854b098f2b5c860658a8ce75da555b24640e06a1f56587589ffececa704d7",
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "primitives",
@@ -2583,7 +2601,7 @@
             "filename": "primitives.d.ts",
             "bytes": 676,
             "hash": "6f27c2008478672e9b15805b8ce551e871eca89ca860c3327129adafdbd47c1c",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "seo",
@@ -2591,7 +2609,7 @@
             "filename": "seo.d.ts",
             "bytes": 4894,
             "hash": "896250c0447d588bd6f6fac000dedb2e8adac60b774e4bd7d2d31dee9d5172e8",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "settings",
@@ -2599,7 +2617,7 @@
             "filename": "settings.d.ts",
             "bytes": 1811,
             "hash": "c9a4720bea393a812256b6b487c996da8e4272c5e592bcdef2820157ffd4b79b",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "spatie",
@@ -2607,7 +2625,7 @@
             "filename": "spatie.d.ts",
             "bytes": 356,
             "hash": "da79f3f2d2619c04eb76942edf6f1e54d229ffc3be5e2a4c238b2699770c513b",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "taxonomy",
@@ -2615,7 +2633,7 @@
             "filename": "taxonomy.d.ts",
             "bytes": 747,
             "hash": "f81c91c733eb28d1408e1cf6ea56f0350b5f3bcd6b5b983fca6507b61a3685fb",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "templates",
@@ -2623,7 +2641,7 @@
             "filename": "templates.d.ts",
             "bytes": 5573,
             "hash": "d0f88ae9b7bcee9a3f0e66f554bb8a59756ba4618bd39680280634b183306bbd",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "translatable",
@@ -2631,7 +2649,7 @@
             "filename": "translatable.d.ts",
             "bytes": 2076,
             "hash": "0d11e4f1e2ffa0f00a272175d79a6e9a8aaff61b0422c15786db430ad201fab7",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         },
         {
             "scope": "translations",
@@ -2639,12 +2657,12 @@
             "filename": "translations.d.ts",
             "bytes": 1607,
             "hash": "8fa3cde0a5d5102c663fd37f9f6a1093ebbf70802da86c1de6cbb5dabde8451f",
-            "lastModified": "2026-08-28T21:52:33+00:00"
+            "lastModified": "2026-08-28T22:45:31+00:00"
         }
     ],
     "archive": {
         "enabled": true,
-        "filename": "generated-types-4171f3f7ffff.zip"
+        "filename": "generated-types-f71ceb9fbec0.zip"
     },
-    "revision": "2bbb6491a587083dccfc828c68a7efb4190a14a007b26f9fd1d84e90c8fcc0a3"
+    "revision": "1dbb2c3facda22f2fb92eb47ba759372d2ccdd8820c1a75845c6a4fac973336a"
 }

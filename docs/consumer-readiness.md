@@ -105,7 +105,7 @@ the catalog points to the authoritative package or integration test.
 | Mail Notifications | Administrative reads are authorized, paginated, selected, and fresh. | Presentation/read tests | Uncached: delivery state changes asynchronously. |
 | Media | `MediaQueryService` selects translations/variations explicitly; owner relations are eager-loaded for collections. | Cross-package 1-to-25 owner test | File existence only: disk/path key, configured short TTL, mutation invalidation, idempotent miss policy. |
 | Metafields | Owner reads load assignments, definitions, translations, and values as one bounded projection. | Consumer workflow tests | Uncached: typed values are mutation-sensitive. |
-| Pages | Resolve/navigation Actions own hierarchy, translations, content, SEO, and result limits. | Pages package tests | Uncached: locale, publication, hierarchy, and dynamic resources are request-sensitive. |
+| Pages | Exact key/availability, localized options, public children, resolve, and navigation Actions own site, hierarchy, translations, publication, and hard 100-row limits. | Constant 1-to-25 option/public-child and Pages package tests | Uncached: locale, publication, hierarchy, authorization, and dynamic resources are request-sensitive. |
 | SEO | Owner profile projections eager-load translations; revision reads select only identity/revision fields; sitemap sources chunk and cap output. | Owner consumer-contract, cross-package, and sitemap tests | Sitemap only: origin/scope/version key, configured TTL, after-commit invalidation, atomic build lock. |
 | Settings | Repository fetches the bounded setting catalog once and `getMany` uses one storage query. | Settings query-count tests | Cached primitive records: configured key/store, forever TTL, after-commit invalidation, bounded-miss stampede policy. |
 | Taxonomy | Tree and owner reads eager-load translations and attachments; maintenance commands chunk. | Constant localized-tree test | Uncached results; cache is used only for mutation/maintenance locks. |
@@ -121,7 +121,8 @@ The fixture-independence checks run on SQLite in the normal package gate with
 one and 25 result records. Their exact ceilings are: Activity 10; Auth 4;
 Comments 8 public, 9 member, and 2 management; Content 2; Forms 4; Mail
 Notifications 2; the cross-package Content/Comments/Media/Metafields/SEO/
-Taxonomy owner projection 7; Metafields 7; Pages 2; Settings 1; Taxonomy 2;
+Taxonomy owner projection 7; Metafields 7; Pages 2 for options/navigation and 3
+for public children; Settings 1; Taxonomy 2;
 Templates 3; Translatable 2; and Translations 2. The PostgreSQL package and
 integration gate reruns the portable behavior against PostgreSQL; it does not
 replace the explicit SQLite ceilings.

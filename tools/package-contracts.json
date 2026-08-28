@@ -25143,6 +25143,11 @@
                 "Nvl\\Pages\\Console\\PagesDoctorCommand": "nvl:pages:doctor {--strict} {--format=text}"
             },
             "symbols": {
+                "Nvl\\Pages\\Actions\\CheckPageKeyAvailabilityAction": [
+                    "final readonly class Nvl\\Pages\\Actions\\CheckPageKeyAvailabilityAction",
+                    "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Pages\\Services\\PageIdentityGuard $identities): mixed",
+                    "public function execute(string $site, string $key, Nvl\\Pages\\Data\\PageActorData $actor, ?string $exceptId=null): Nvl\\Pages\\Data\\PageKeyAvailabilityData"
+                ],
                 "Nvl\\Pages\\Actions\\CreatePageAction": [
                     "final readonly class Nvl\\Pages\\Actions\\CreatePageAction",
                     "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Pages\\Services\\PageDatabaseConflict $conflicts, Nvl\\Pages\\Services\\PageHierarchy $hierarchy, Nvl\\Pages\\Services\\PageLifecycle $lifecycle, Nvl\\Pages\\Services\\PageMutationValues $values, Nvl\\Pages\\Services\\PageTreeLock $treeLock, Nvl\\Translatable\\Services\\TranslationWriter $translations): mixed",
@@ -25152,6 +25157,11 @@
                     "final readonly class Nvl\\Pages\\Actions\\DeletePageAction",
                     "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Pages\\Services\\PageTreeLock $treeLock): mixed",
                     "public function execute(Nvl\\Pages\\Models\\Page|string $page, Nvl\\Pages\\Data\\Mutations\\DeletePageData $data, Nvl\\Pages\\Data\\PageActorData $actor): bool"
+                ],
+                "Nvl\\Pages\\Actions\\FindPageByKeyAction": [
+                    "final readonly class Nvl\\Pages\\Actions\\FindPageByKeyAction",
+                    "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Pages\\Services\\PageIdentityGuard $identities): mixed",
+                    "public function execute(string $site, string $key, Nvl\\Pages\\Data\\PageActorData $actor): Nvl\\Pages\\Data\\PageData"
                 ],
                 "Nvl\\Pages\\Actions\\GetNavigationAction": [
                     "final readonly class Nvl\\Pages\\Actions\\GetNavigationAction",
@@ -25163,11 +25173,23 @@
                     "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization): mixed",
                     "public function execute(Nvl\\Pages\\Models\\Page|string $page, Nvl\\Pages\\Data\\PageActorData $actor): Nvl\\Pages\\Models\\Page"
                 ],
+                "Nvl\\Pages\\Actions\\ListPageOptionsAction": [
+                    "final readonly class Nvl\\Pages\\Actions\\ListPageOptionsAction",
+                    "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Pages\\Services\\PageIdentityGuard $identities, Nvl\\Translatable\\Services\\LocaleRegistry $locales): mixed",
+                    "public function execute(string $site, string $locale, Nvl\\Pages\\Data\\PageActorData $actor, ?string $search=null, int $limit=50): Illuminate\\Support\\Collection",
+                    "@return Collection<int, PageOptionData>"
+                ],
                 "Nvl\\Pages\\Actions\\ListPagesAction": [
                     "final readonly class Nvl\\Pages\\Actions\\ListPagesAction",
                     "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Filterable\\Services\\EloquentFilterApplier $filters, Nvl\\Pages\\Services\\PageFilterSchema $schema): mixed",
                     "public function execute(Nvl\\Filterable\\Data\\FilterSet $filters, string $site, Nvl\\Pages\\Data\\PageActorData $actor, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, Page>"
+                ],
+                "Nvl\\Pages\\Actions\\ListPublicChildPagesAction": [
+                    "final readonly class Nvl\\Pages\\Actions\\ListPublicChildPagesAction",
+                    "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Pages\\Contracts\\PageUrlGenerator $urls, Nvl\\Pages\\Services\\PageIdentityGuard $identities, Nvl\\Translatable\\Services\\LocaleRegistry $locales): mixed",
+                    "public function execute(string $parentId, Nvl\\Pages\\Data\\PageRequestContextData $context, int $limit=50, ?Nvl\\Pages\\Enums\\PageKind $kind=null, Nvl\\Pages\\Enums\\PublicChildPageOrder $order=Nvl\\Pages\\Enums\\PublicChildPageOrder::Sibling): Illuminate\\Support\\Collection",
+                    "@return Collection<int, PublicPageData>"
                 ],
                 "Nvl\\Pages\\Actions\\MovePageAction": [
                     "final readonly class Nvl\\Pages\\Actions\\MovePageAction",
@@ -25559,6 +25581,70 @@
                     "@param string $namespace Translation namespace, such as 'articles::articles'",
                     "@return array<string, mixed>"
                 ],
+                "Nvl\\Pages\\Data\\PageKeyAvailabilityData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Pages\\Data\\PageKeyAvailabilityData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $site",
+                    "public readonly string $key",
+                    "public readonly bool $available",
+                    "public readonly ?string $conflictingPageId",
+                    "public function __construct(string $site, string $key, bool $available, ?string $conflictingPageId): mixed",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Pages\\Data\\PageOptionData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Pages\\Data\\PageOptionData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $id",
+                    "public readonly string $key",
+                    "public readonly string $label",
+                    "public readonly string $path",
+                    "public readonly Nvl\\Pages\\Enums\\PageKind $kind",
+                    "public readonly Nvl\\Pages\\Enums\\PageStatus $status",
+                    "public readonly int $revision",
+                    "public function __construct(string $id, string $key, string $label, string $path, Nvl\\Pages\\Enums\\PageKind $kind, Nvl\\Pages\\Enums\\PageStatus $status, int $revision): mixed",
+                    "public static function fromModel(Nvl\\Pages\\Models\\Page $page, string $locale): self",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
                 "Nvl\\Pages\\Data\\PageRequestContextData": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\Hidden()]",
                     "final class Nvl\\Pages\\Data\\PageRequestContextData extends Spatie\\LaravelData\\Data",
@@ -25675,7 +25761,8 @@
                     "public readonly ?string $titleLocale",
                     "public readonly ?string $navigationLabelLocale",
                     "public readonly ?string $summaryLocale",
-                    "public function __construct(string $id, string $key, string $slug, string $path, Nvl\\Pages\\Enums\\PageKind $kind, string $url, string $locale, string $title, ?string $navigationLabel, ?string $summary, ?string $titleLocale, ?string $navigationLabelLocale, ?string $summaryLocale): mixed",
+                    "public readonly Spatie\\LaravelData\\Optional|string $publishedAt",
+                    "public function __construct(string $id, string $key, string $slug, string $path, Nvl\\Pages\\Enums\\PageKind $kind, string $url, string $locale, string $title, ?string $navigationLabel, ?string $summary, ?string $titleLocale, ?string $navigationLabelLocale, ?string $summaryLocale, Spatie\\LaravelData\\Optional|string $publishedAt=Spatie\\LaravelData\\Optional): mixed",
                     "public static function fromModel(Nvl\\Pages\\Models\\Page $page, string $locale, Nvl\\Pages\\Contracts\\PageUrlGenerator $urls): self",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -25848,6 +25935,17 @@
                     "public const mixed Scheduled=Nvl\\Pages\\Enums\\PageStatus::Scheduled=scheduled",
                     "public const mixed Published=Nvl\\Pages\\Enums\\PageStatus::Published=published",
                     "public const mixed Archived=Nvl\\Pages\\Enums\\PageStatus::Archived=archived",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Pages\\Enums\\PublicChildPageOrder": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "enum Nvl\\Pages\\Enums\\PublicChildPageOrder implements BackedEnum, UnitEnum: string",
+                    "public const mixed Sibling=Nvl\\Pages\\Enums\\PublicChildPageOrder::Sibling=sibling",
+                    "public const mixed Newest=Nvl\\Pages\\Enums\\PublicChildPageOrder::Newest=newest",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -26171,6 +26269,13 @@
                     "public function rebuildDescendantPaths(Nvl\\Pages\\Models\\Page $page): array",
                     "@return list<Page>"
                 ],
+                "Nvl\\Pages\\Services\\PageIdentityGuard": [
+                    "final class Nvl\\Pages\\Services\\PageIdentityGuard",
+                    "public function site(string $site): string",
+                    "public function key(string $key): string",
+                    "public function id(string $id): string",
+                    "public function search(?string $search): ?string"
+                ],
                 "Nvl\\Pages\\Services\\PageLifecycle": [
                     "final class Nvl\\Pages\\Services\\PageLifecycle",
                     "public function ability(?Nvl\\Pages\\Enums\\PageStatus $current, Nvl\\Pages\\Enums\\PageStatus $target): ?Nvl\\Pages\\Enums\\PageAbility"
@@ -26247,7 +26352,7 @@
                 ]
             },
             "configuration": {
-                "config/pages.php": "faf9ebc331ed56015c63b039f03166fd9a460ccadad883c49756b9100bbe607a"
+                "config/pages.php": "0c5f72fdb5ce70022a24fbe72dd29ff7e5a92caf20e406fcfc55191defffef29"
             },
             "routes": {
                 "routes/api.php": "ad81165ef7c5dfd1599ec1cf3870697d8e5baa96b120825e1a4a6d0789e9a850"

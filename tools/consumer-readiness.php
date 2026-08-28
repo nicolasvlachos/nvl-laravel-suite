@@ -54,10 +54,17 @@ use Nvl\Metafields\Actions\Metafields\ListOwnerMetafieldsAction;
 use Nvl\Metafields\Actions\Metafields\SetMetafieldAction;
 use Nvl\Metafields\Console\Commands\MetafieldDoctorCommand;
 use Nvl\Metafields\Definitions\Tables\MetafieldsTables;
+use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
+use Nvl\Pages\Actions\FindPageByKeyAction;
 use Nvl\Pages\Actions\GetNavigationAction;
+use Nvl\Pages\Actions\ListPageOptionsAction;
+use Nvl\Pages\Actions\ListPublicChildPagesAction;
 use Nvl\Pages\Actions\ResolvePageAction;
 use Nvl\Pages\Console\PagesDoctorCommand;
+use Nvl\Pages\Data\PageKeyAvailabilityData;
+use Nvl\Pages\Data\PageOptionData;
 use Nvl\Pages\Definitions\Tables\PagesTables;
+use Nvl\Pages\Enums\PublicChildPageOrder;
 use Nvl\Primitives\ValueObjects\LocaleCode;
 use Nvl\Primitives\ValueObjects\Money;
 use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
@@ -623,13 +630,26 @@ return [
         'pages' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ResolvePageAction::class, GetNavigationAction::class],
+                'symbols' => [
+                    CheckPageKeyAvailabilityAction::class,
+                    FindPageByKeyAction::class,
+                    GetNavigationAction::class,
+                    ListPageOptionsAction::class,
+                    ListPublicChildPagesAction::class,
+                    PageKeyAvailabilityData::class,
+                    PageOptionData::class,
+                    PublicChildPageOrder::class,
+                    ResolvePageAction::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/pages/README.md#purpose-and-boundaries',
+                'documentation' => 'packages/nvl/pages/README.md#bounded-page-reads',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/pages/README.md#navigation-preview-and-apis']),
+                ...$pass([
+                    'packages/nvl/pages/README.md#bounded-page-reads',
+                    'packages/nvl/pages/README.md#navigation-preview-and-apis',
+                ]),
                 'query_tests' => ['packages/nvl/pages/tests/Feature/PagesPackageTest.php'],
                 'cache' => ['mode' => 'none', 'rationale' => 'Page resolution and navigation depend on locale, publication, hierarchy, and dynamic resource admission; reads remain bounded and fresh.'],
             ],
