@@ -37,7 +37,7 @@
 - Consumes: existing single `event` input and `ActivityLogBuilder::whereEvents()`.
 - Produces: `ActivityIndexFilter::$events`, clamped single/multi-subject history, and model-free `recordForSubjectReference()`.
 
-- [ ] **Step 1: Write failing multi-event and bound tests**
+- [x] **Step 1: Write failing multi-event and bound tests**
 
 ```php
 $filters = ActivityIndexFilter::fromInput([
@@ -52,14 +52,14 @@ normalizes, blank entries disappear, more than ten unique events is rejected,
 subject pagination clamps `perPage` to 100, multi-subject reads reject more
 than 100 references, and mixed subject types cannot cross-match IDs.
 
-- [ ] **Step 2: Run focused Activity tests and verify failures**
+- [x] **Step 2: Run focused Activity tests and verify failures**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/activity/phpunit.xml.dist --compact packages/nvl/activity/tests/Unit/ActivityIndexFiltersDataTest.php packages/nvl/activity/tests/Feature/ActivityApiTest.php`
 
 Expected: FAIL because `events` does not exist and subject pagination is not
 clamped.
 
-- [ ] **Step 3: Add compatible event normalization**
+- [x] **Step 3: Add compatible event normalization**
 
 Append `public readonly array $events = []` to `ActivityIndexFilter`. In
 `fromInput()`, accept `events` as an array or comma-separated string; merge the
@@ -68,7 +68,7 @@ legacy `event`; trim, discard blanks, deduplicate in caller order, and throw an
 `whereEvents($filters->events)` when non-empty and otherwise preserves the
 legacy single-event path.
 
-- [ ] **Step 4: Add bounded subject history and stable subject recording**
+- [x] **Step 4: Add bounded subject history and stable subject recording**
 
 Clamp `paginateForSubjectKey()` to 1–100. Add this value object:
 
@@ -104,13 +104,13 @@ It reuses normal metadata validation, creates the activity through the existing
 logger, and sets `subject_type`/`subject_id` through a logger tap. It never
 instantiates or queries the subject model and never enables automatic diffs.
 
-- [ ] **Step 5: Run Activity quality**
+- [x] **Step 5: Run Activity quality**
 
 Run: `php tools/run-package-quality.php activity`
 
 Expected: PASS, including legacy single-event compatibility.
 
-- [ ] **Step 6: Commit CR-09**
+- [x] **Step 6: Commit CR-09**
 
 ```bash
 git add packages/nvl/activity/src packages/nvl/activity/tests

@@ -44,7 +44,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-06 | [x] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | `90e6db0` |
 | CR-07 | [x] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | `85f607d` |
 | CR-08 | [x] | RBAC analytics projection | Auth plan | CR-05 | 1.1 | `c70ef1c` |
-| CR-09 | [ ] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | — |
+| CR-09 | [x] | Activity multi-event filter | Read-seams plan | CR-01 | 1.1 | `6e22fb1` |
 | CR-10 | [ ] | Mail aggregates and event context | Read-seams plan | CR-01 | 1.1 | — |
 | CR-11 | [ ] | Translation catalog statistics | Read-seams plan | CR-01 | 1.1 | — |
 | CR-12 | [ ] | Comments/Settings/SEO seams | Read-seams plan | CR-01 | 1.1/1.2 | — |
@@ -193,6 +193,22 @@ gate pass. Record the implementation commit beside the task before checking it.
   root/package `composer test` matrix, public contracts, generated types/`tsc`,
   strict Composer autoloading/validation, and readiness contract passed. KPO
   remained read-only; endpoint replacement stays in CR-21.
+- 2026-08-28 — CR-09 added backward-compatible plural Activity event filters,
+  clamped exact-pair subject-reference pagination, and model-free subject
+  recording in `6e22fb1`. Event input accepts bounded arrays or comma-separated
+  strings while retaining the legacy single-event path. Reference reads accept
+  at most 100 normalized pairs, preserve numeric-looking types as string-bound
+  values, avoid cross-type ID matches, and return empty pages without queries;
+  reference writes perform one insert without loading a subject or inferring
+  diffs. NUL bytes fail before normalization. The generated `events` field is
+  optional so legacy TypeScript literals continue compiling. A RED/GREEN
+  consumer exercise hardened the shipped Activity skill and its synchronized
+  suite copy. Independent review found the TypeScript, numeric-key binding, NUL,
+  and public-generic issues; the follow-up review reported no findings and Ready
+  Yes. Activity quality passed 194 tests with 754 assertions, PHPStan, and Pint;
+  the final complete `composer test` matrix, public contracts, generated
+  types/`tsc`, strict Composer autoloading/validation, skill-mirror contract,
+  and readiness evidence passed. KPO remained read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
