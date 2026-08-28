@@ -4,6 +4,70 @@
 declare namespace Nvl {
 namespace Auth {
 namespace Data {
+namespace Display {
+export type PermissionGroupData = {
+value: string,
+label: string,
+permissionsCount: number,
+};
+export type PermissionListItemData = {
+label: string,
+group: string,
+id: string,
+name: string,
+description: string | null,
+guard: string,
+roleIds: Array<string>,
+rolesCount: number,
+usersCount: number,
+createdAt: string,
+};
+export type PermissionOptionData = {
+label: string,
+group: string,
+id: string,
+name: string,
+description: string | null,
+};
+export type RoleAnalyticsData = {
+permissionGroups: Record<string, number>,
+roleId: string,
+users: number,
+activeUsers: number,
+inactiveUsers: number,
+permissions: number,
+children: number,
+descendants: number,
+parentName: string | null,
+};
+export type RoleListItemData = {
+label: string,
+id: string,
+name: string,
+description: string | null,
+guard: string,
+isSystem: boolean,
+priority: number,
+parentId: string | null,
+parentName: string | null,
+permissionIds: Array<string>,
+permissionsCount: number,
+usersCount: number,
+createdAt: string,
+};
+export type RoleNameAvailabilityData = {
+name: string,
+available: boolean,
+conflictingRoleId: string | null,
+};
+export type RoleOptionData = {
+label: string,
+id: string,
+name: string,
+description: string | null,
+isSystem: boolean,
+};
+}
 namespace Mutations {
 export type AcceptInvitationData = {
 token: string,
