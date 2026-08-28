@@ -51,7 +51,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-13 | [x] | Content owner editor projection | Pages/Content plan | CR-01 | 1.2 | `aa4c689` |
 | CR-14 | [x] | Content placement find/replace/reorder | Pages/Content plan | CR-13 | 1.2 | `42113d8` |
 | CR-15 | [x] | Page lookup/options/public children | Pages/Content plan | CR-01 | 1.2 | `aa352a2` |
-| CR-16 | [ ] | Page editor/publication composition | Pages/Content plan | CR-12, CR-13, CR-15 | 1.2 | — |
+| CR-16 | [x] | Page editor/publication composition | Pages/Content plan | CR-12, CR-13, CR-15 | 1.2 | `9ffc48c` |
 | CR-17 | [ ] | Media slot reads and replacement | Media plan | CR-01 | 1.3 | — |
 | CR-18 | [ ] | Media slot clear/copy/idempotency | Media plan | CR-17 | 1.3 | — |
 | CR-19 | [ ] | Auth proof consumer | Validation plan | CR-04, CR-08, CR-12 | 1.3 | — |
@@ -310,6 +310,21 @@ gate pass. Record the implementation commit beside the task before checking it.
   strict Composer validation/autoloading, formatting, mirrored skills, and
   diff hygiene passed. Independent re-review reported Ready Yes. KPO and the
   original suite checkout remained read-only.
+- 2026-08-29 — CR-16 completed in `9ffc48c`. Pages now exposes bounded editor
+  summaries, a complete Page/Content/SEO/Metafields editor bootstrap, and an
+  ID-based static publication projection. Metafields adds an owner-authorized
+  read wrapper, while SEO adds a positional 100-owner bulk projection that
+  authorizes every owner before its fixed two profile/translation queries.
+  Independent review caught and drove removal of the original summary-level SEO
+  authorization bypass plus an over-configurable page-size bound; re-review
+  found no Critical or Important findings and reported Ready Yes. Pages passed
+  40 tests with 588 assertions, Metafields 69/272, SEO 64/390, Content 135/931,
+  Translatable 101/423, Data 52/325, and cross-package integration 19/39. The
+  final complete quality gate passed 3,387 root/package tests with 29,496
+  assertions and 12 environment-dependent skips, together with Pint, optimized
+  autoloading, PHPStan level max, dependency/distribution validation, contracts,
+  generated types, and `tsc`. KPO and the original suite checkout remained
+  read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
@@ -331,9 +346,9 @@ build suggestions, options, groups, identifier resolution, or name availability.
 - [x] Execute CR-13 and prove constant query count for editor and one-to-twenty-five-owner placement projections.
 - [x] Execute CR-14 and prove owner locking, revision conflicts, ordering, and authorization.
 - [x] Execute CR-15 and prove site, locale, publication, hierarchy, and result limits.
-- [ ] Execute CR-16 and regenerate the TypeScript contracts.
+- [x] Execute CR-16 and regenerate the TypeScript contracts.
 - [ ] Migrate KPO page/editor reads after the package-focused gate passes.
-- [ ] Run Content, Pages, SEO, Metafields, Translatable, Data, and integration quality gates.
+- [x] Run Content, Pages, SEO, Metafields, Translatable, Data, and integration quality gates.
 
 **Gate M2:** A consumer can build a page editor and public child-page listing
 without initiating a Pages, Content, SEO, or Metafields model query.

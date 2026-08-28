@@ -382,6 +382,8 @@ git commit -m "feat(pages): add bounded page lookup projections"
 - Create: `packages/nvl/pages/src/Actions/GetPageEditorBootstrapAction.php`
 - Create: `packages/nvl/pages/src/Actions/ListPageEditorSummariesAction.php`
 - Create: `packages/nvl/pages/src/Actions/GetPagePublicationProjectionAction.php`
+- Create: `packages/nvl/seo/src/Actions/ListOwnerSeoProfilesAction.php`
+- Modify: `packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php`
 - Modify: `packages/nvl/pages/tests/Feature/PagesPackageTest.php`
 - Modify: `packages/nvl/pages/tests/ArchitectureTest.php`
 - Modify: `packages/nvl/pages/README.md`
@@ -390,9 +392,9 @@ git commit -m "feat(pages): add bounded page lookup projections"
 
 **Interfaces:**
 - Consumes: CR-12 SEO owner read, CR-13 Content editor, CR-15 Page reads, `MetafieldAuthorization`, `ListOwnerMetafieldsAction`, `PageResourceRegistry`, and existing public rendering services.
-- Produces: an authorized Metafields owner read, `PageEditorSummaryData` paginator, `PageEditorBootstrapData`, and an ID-based `ResolvedPageData` publication projection.
+- Produces: authorized bounded Metafields and bulk SEO owner reads, a `PageEditorSummaryData` paginator, `PageEditorBootstrapData`, and an ID-based `ResolvedPageData` publication projection.
 
-- [ ] **Step 1: Write failing complete-projection tests**
+- [x] **Step 1: Write failing complete-projection tests**
 
 ```php
 $editor = app(GetPageEditorBootstrapAction::class)->execute(
@@ -413,7 +415,7 @@ one-versus-twenty-five page/placement query counts, stable summary pagination,
 and ID-based public visibility tests. Add a Metafields-focused test proving
 authorization happens before its storage list Action.
 
-- [ ] **Step 2: Run Pages tests and verify missing projection classes fail**
+- [x] **Step 2: Run Pages tests and verify missing projection classes fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/pages/phpunit.xml.dist --compact packages/nvl/pages/tests/Feature/PagesPackageTest.php packages/nvl/pages/tests/ArchitectureTest.php`
 
@@ -422,7 +424,7 @@ Run: `vendor/bin/pest --configuration=packages/nvl/metafields/phpunit.xml.dist -
 Expected: FAIL because the authorized Metafields wrapper and the Pages
 bootstrap/publication APIs do not exist.
 
-- [ ] **Step 3: Add the authorized Metafields owner projection**
+- [x] **Step 3: Add the authorized Metafields owner projection**
 
 `ListAuthorizedOwnerMetafieldsAction::execute(Model $owner, ?string $locale = null): Collection`
 calls `MetafieldAuthorization::authorizeOwner(MetafieldAbility::ViewOwner,
@@ -430,7 +432,7 @@ $owner)` before delegating to the existing `ListOwnerMetafieldsAction`. Keep the
 existing storage-focused Action compatible; consumers and Pages use the new
 authorized wrapper for management reads.
 
-- [ ] **Step 4: Implement the editor bootstrap DTO**
+- [x] **Step 4: Implement the editor bootstrap DTO**
 
 Constructor:
 
@@ -455,7 +457,7 @@ resource aliases come from `PageResourceRegistry::aliases()`; metafields use
 their existing DTOs. Do not catch authorization exceptions or return partial
 data after denial.
 
-- [ ] **Step 5: Implement bounded editor summaries**
+- [x] **Step 5: Implement bounded editor summaries**
 
 Signature:
 
@@ -468,16 +470,17 @@ public function execute(
 ): LengthAwarePaginator
 ```
 
-Authorize `PageAbility::List` for the site, clamp `perPage` to 100, eager-load
-page and SEO translations with fixed columns, then request all Content
-placements in one call to CR-13's
+Authorize `PageAbility::List` for the site, clamp `perPage` against the
+configured and absolute 100 limits, eager-load page translations with fixed
+columns, then request all SEO profiles through the authorized bounded
+`ListOwnerSeoProfilesAction` and all Content placements through CR-13's
 `ListOwnerContentPlacementSummariesAction`. Map with paginator `through()`.
 `PageEditorSummaryData` contains `PageData $page`, `string $label`,
 `array<ContentPlacementData> $placements`, and `?SeoProfileData $seo`. Preserve
 page ordering and paginator links; never repeat definition/preset catalogs in
 each row.
 
-- [ ] **Step 6: Implement publication projection by page identity**
+- [x] **Step 6: Implement publication projection by page identity**
 
 Signature:
 
@@ -491,7 +494,7 @@ Resolve a publicly visible page by ID, authorize `View`, build
 their resource request parameters are absent; consumers use `ResolvePageAction`
 for those.
 
-- [ ] **Step 7: Document editor/public read choices and update evidence**
+- [x] **Step 7: Document editor/public read choices and update evidence**
 
 Document:
 
@@ -503,7 +506,7 @@ Document:
 
 Point the consumer-readiness catalog to the query-count test.
 
-- [ ] **Step 8: Run package, contracts, and type gates**
+- [x] **Step 8: Run package, contracts, and type gates**
 
 Run: `php tools/run-package-quality.php pages`
 
@@ -517,7 +520,24 @@ Run: `composer types:check`
 
 Expected: all PASS.
 
-- [ ] **Step 9: Commit CR-16**
+Actual: PASS. Pages completed 40 tests with 588 assertions, Metafields 69
+with 272, SEO 64 with 390, Content 135 with 931, Translatable 101 with 423,
+and Data 52 with 325. Cross-package integration completed 19 tests with 39
+assertions. The full root/package quality gate completed 3,387 tests with
+29,496 assertions and 12 environment-dependent skips, plus Pint, optimized
+autoloading, PHPStan level max, dependency analysis, distribution validation,
+public contracts, generated TypeScript, and `tsc`.
+
+Independent review first found that editor summaries bypassed SEO authorization
+and that a configured page limit could exceed Content's absolute 100-owner
+bound. The final implementation adds SEO's authorized positional
+`ListOwnerSeoProfilesAction`, proves constant two-query behavior for one and 25
+mixed owner profiles, prevents profile SQL after denial, and clamps Page
+pagination against both configuration and an absolute 100. Re-review found no
+Critical or Important findings and reported Ready Yes. Populated Page editor
+summaries remain constant at no more than ten queries for one or 25 pages.
+
+- [x] **Step 9: Commit CR-16** (`9ffc48c`)
 
 ```bash
 git add packages/nvl/metafields/src/Actions/Metafields/ListAuthorizedOwnerMetafieldsAction.php packages/nvl/metafields/tests/Feature/MetafieldConsumerWorkflowTest.php packages/nvl/pages/src/Data/PageEditorBootstrapData.php packages/nvl/pages/src/Data/PageEditorSummaryData.php packages/nvl/pages/src/Actions/GetPageEditorBootstrapAction.php packages/nvl/pages/src/Actions/ListPageEditorSummariesAction.php packages/nvl/pages/src/Actions/GetPagePublicationProjectionAction.php packages/nvl/pages/tests packages/nvl/pages/README.md tools/consumer-readiness.php tests/Contract/ConsumerReadinessTest.php resources/js/types
@@ -526,9 +546,9 @@ git commit -m "feat(pages): compose editor and publication projections"
 
 ### Workstream acceptance gate
 
-- [ ] Run `php tools/run-package-quality.php content`.
-- [ ] Run `php tools/run-package-quality.php pages`.
-- [ ] Run Metafields, SEO, Translatable, and Data focused integration gates.
-- [ ] Run `composer contracts:check` and `composer types:check`.
+- [x] Run `php tools/run-package-quality.php content`.
+- [x] Run `php tools/run-package-quality.php pages`.
+- [x] Run Metafields, SEO, Translatable, and Data focused integration gates.
+- [x] Run `composer contracts:check` and `composer types:check`.
 - [ ] Build the KPO editor endpoint using only the new DTO APIs and run KPO strict consumer audit.
 - [ ] Confirm the editor endpoint makes the documented constant query count for one and twenty-five placements.
