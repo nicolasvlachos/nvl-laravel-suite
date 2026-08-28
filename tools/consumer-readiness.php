@@ -50,6 +50,7 @@ use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\MediaLibrary;
 use Nvl\Media\Services\MediaFileExistence;
 use Nvl\Media\Services\MediaQueryService;
+use Nvl\Metafields\Actions\Metafields\ListAuthorizedOwnerMetafieldsAction;
 use Nvl\Metafields\Actions\Metafields\ListOwnerMetafieldsAction;
 use Nvl\Metafields\Actions\Metafields\SetMetafieldAction;
 use Nvl\Metafields\Console\Commands\MetafieldDoctorCommand;
@@ -57,10 +58,15 @@ use Nvl\Metafields\Definitions\Tables\MetafieldsTables;
 use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
 use Nvl\Pages\Actions\FindPageByKeyAction;
 use Nvl\Pages\Actions\GetNavigationAction;
+use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
+use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
+use Nvl\Pages\Actions\ListPageEditorSummariesAction;
 use Nvl\Pages\Actions\ListPageOptionsAction;
 use Nvl\Pages\Actions\ListPublicChildPagesAction;
 use Nvl\Pages\Actions\ResolvePageAction;
 use Nvl\Pages\Console\PagesDoctorCommand;
+use Nvl\Pages\Data\PageEditorBootstrapData;
+use Nvl\Pages\Data\PageEditorSummaryData;
 use Nvl\Pages\Data\PageKeyAvailabilityData;
 use Nvl\Pages\Data\PageOptionData;
 use Nvl\Pages\Definitions\Tables\PagesTables;
@@ -70,6 +76,7 @@ use Nvl\Primitives\ValueObjects\Money;
 use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
 use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
 use Nvl\Seo\Actions\GetSeoProfileAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
 use Nvl\Seo\Console\SeoDoctorCommand;
 use Nvl\Seo\Data\SeoOwnerRevisionData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
@@ -606,7 +613,11 @@ return [
         'metafields' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListOwnerMetafieldsAction::class, SetMetafieldAction::class],
+                'symbols' => [
+                    ListAuthorizedOwnerMetafieldsAction::class,
+                    ListOwnerMetafieldsAction::class,
+                    SetMetafieldAction::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/metafields/README.md#querying',
@@ -633,9 +644,14 @@ return [
                 'symbols' => [
                     CheckPageKeyAvailabilityAction::class,
                     FindPageByKeyAction::class,
+                    GetPageEditorBootstrapAction::class,
                     GetNavigationAction::class,
+                    GetPagePublicationProjectionAction::class,
+                    ListPageEditorSummariesAction::class,
                     ListPageOptionsAction::class,
                     ListPublicChildPagesAction::class,
+                    PageEditorBootstrapData::class,
+                    PageEditorSummaryData::class,
                     PageKeyAvailabilityData::class,
                     PageOptionData::class,
                     PublicChildPageOrder::class,
@@ -643,11 +659,12 @@ return [
                 ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/pages/README.md#bounded-page-reads',
+                'documentation' => 'packages/nvl/pages/README.md#editor-and-publication-projections',
             ],
             'performance' => [
                 ...$pass([
                     'packages/nvl/pages/README.md#bounded-page-reads',
+                    'packages/nvl/pages/README.md#editor-and-publication-projections',
                     'packages/nvl/pages/README.md#navigation-preview-and-apis',
                 ]),
                 'query_tests' => ['packages/nvl/pages/tests/Feature/PagesPackageTest.php'],
@@ -701,6 +718,7 @@ return [
                     GetSeoProfileAction::class,
                     GetOwnerSeoProfileAction::class,
                     GetOwnerSeoRevisionAction::class,
+                    ListOwnerSeoProfilesAction::class,
                     SeoOwnerRevisionData::class,
                     SeoHeadRenderer::class,
                 ],
@@ -709,7 +727,10 @@ return [
                 'documentation' => 'packages/nvl/seo/README.md#owner-centric-profile-reads',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/seo/README.md#sitemaps']),
+                ...$pass([
+                    'packages/nvl/seo/README.md#owner-centric-profile-reads',
+                    'packages/nvl/seo/README.md#sitemaps',
+                ]),
                 'query_tests' => [
                     'packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php',
                     'tests/Feature/Integration/CrossPackageIntegrationTest.php',

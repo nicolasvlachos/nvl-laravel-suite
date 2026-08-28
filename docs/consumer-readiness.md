@@ -69,8 +69,8 @@ canonical application boundary and remain compatibility-only in the 1.x line.
 | `forms` | Form and FormEntry Actions/contracts | Compatibility-only in 1.x: documented model queries remain supported; new reads and all writes use Forms Actions. |
 | `mail-notifications` | Administrative read Actions and `TrackingLifecycle` | Compatibility-only in 1.x: documented delivery-model queries remain supported; new reads use package Actions. |
 | `media` | `MediaLibrary`, Media Actions, `MediaQueryService`, and owner traits | Compatibility-only in 1.x: owner-trait relationships are allowed; direct Media queries are transitional and lifecycle writes stay in Media. |
-| `metafields` | Definition/value Actions and `HasMetafields` | Compatibility-only in 1.x: owner-trait relationships are allowed; direct package queries are transitional and writes use Actions. |
-| `pages` | Page Actions and resource-handler contracts | Compatibility-only in 1.x: documented Page queries remain supported; composition and writes use package Actions/services. |
+| `metafields` | Authorized definition/value Actions and `HasMetafields` | Compatibility-only in 1.x: owner-trait relationships are allowed; direct package queries are transitional and writes use Actions. |
+| `pages` | Page Actions, complete editor/publication projections, and resource-handler contracts | Compatibility-only in 1.x: documented Page queries remain supported; composition and writes use package Actions/services. |
 | `primitives` | Value objects, casts, rules, and reference catalogs | N/A: Primitives exposes no package model. |
 | `seo` | SEO Actions including owner profile/revision reads, owner traits, resolver, renderer, and sitemap contracts | Compatibility-only in 1.x: owner-trait relationships are allowed; direct profile queries are transitional and writes use Actions. |
 | `settings` | `SettingRepository`, typed Actions, value-free event subjects, and `Setting` facade | Compatibility-only in 1.x: documented Setting model queries remain supported; new code uses the repository, facade, or Actions. |
@@ -104,9 +104,9 @@ the catalog points to the authoritative package or integration test.
 | Forms | Render/search/list Actions own field/translation eager loads and page/export bounds. | Forms Action tests | Uncached: admission and privacy policy are request-sensitive. |
 | Mail Notifications | Administrative reads are authorized, paginated, selected, and fresh. | Presentation/read tests | Uncached: delivery state changes asynchronously. |
 | Media | `MediaQueryService` selects translations/variations explicitly; owner relations are eager-loaded for collections. | Cross-package 1-to-25 owner test | File existence only: disk/path key, configured short TTL, mutation invalidation, idempotent miss policy. |
-| Metafields | Owner reads load assignments, definitions, translations, and values as one bounded projection. | Consumer workflow tests | Uncached: typed values are mutation-sensitive. |
-| Pages | Exact key/availability, localized options, public children, resolve, and navigation Actions own site, hierarchy, translations, publication, and hard 100-row limits. | Constant 1-to-25 option/public-child and Pages package tests | Uncached: locale, publication, hierarchy, authorization, and dynamic resources are request-sensitive. |
-| SEO | Owner profile projections eager-load translations; revision reads select only identity/revision fields; sitemap sources chunk and cap output. | Owner consumer-contract, cross-package, and sitemap tests | Sitemap only: origin/scope/version key, configured TTL, after-commit invalidation, atomic build lock. |
+| Metafields | Authorized owner reads check `ViewOwner` before SQL, then load assignments, definitions, translations, and values as one bounded projection. | Consumer workflow authorization and query-count tests | Uncached: typed values and authorization are mutation-sensitive. |
+| Pages | Exact key/availability, localized options, public children, editor summaries, complete editor bootstrap, publication, resolve, and navigation Actions own package composition and hard 100-row limits. | Constant 1-to-25 option/public-child/editor-summary and Pages package tests | Uncached: locale, publication, hierarchy, authorization, Content, SEO, Metafields, and dynamic resources are request-sensitive. |
+| SEO | Owner profile projections authorize before SQL and eager-load translations; bounded bulk reads batch up to 100 owners; revision reads select only identity/revision fields; sitemap sources chunk and cap output. | Constant one-to-25 bulk-owner, owner consumer-contract, cross-package, and sitemap tests | Sitemap only: origin/scope/version key, configured TTL, after-commit invalidation, atomic build lock. |
 | Settings | Repository fetches the bounded setting catalog once and `getMany` uses one storage query. | Settings query-count tests | Cached primitive records: configured key/store, forever TTL, after-commit invalidation, bounded-miss stampede policy. |
 | Taxonomy | Tree and owner reads eager-load translations and attachments; maintenance commands chunk. | Constant localized-tree test | Uncached results; cache is used only for mutation/maintenance locks. |
 | Templates | Stored definition/list/render Actions load versions, assignments, translations, and assets deliberately and paginate. | Templates package tests | Uncached metadata; generated artifacts have explicit render lifecycle. |
@@ -121,8 +121,9 @@ The fixture-independence checks run on SQLite in the normal package gate with
 one and 25 result records. Their exact ceilings are: Activity 10; Auth 4;
 Comments 8 public, 9 member, and 2 management; Content 2; Forms 4; Mail
 Notifications 2; the cross-package Content/Comments/Media/Metafields/SEO/
-Taxonomy owner projection 7; Metafields 7; Pages 2 for options/navigation and 3
-for public children; Settings 1; Taxonomy 2;
+Taxonomy owner projection 7; Metafields 7; Pages 2 for options/navigation, 3
+for public children, and at most 10 for populated editor summaries; SEO 2 for
+bulk owner profiles; Settings 1; Taxonomy 2;
 Templates 3; Translatable 2; and Translations 2. The PostgreSQL package and
 integration gate reruns the portable behavior against PostgreSQL; it does not
 replace the explicit SQLite ceilings.

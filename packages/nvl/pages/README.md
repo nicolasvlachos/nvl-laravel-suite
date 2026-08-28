@@ -205,6 +205,75 @@ whether one or 25 records are returned. These projections are uncached because
 authorization, locale fallback, publication windows, and hierarchy are
 request-sensitive.
 
+## Editor and publication projections
+
+Pages composes its neighboring package reads so applications do not have to
+assemble Page, Content, SEO, and Metafields state in controllers. Inject the
+smallest projection for the workflow:
+
+```php
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
+use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
+use Nvl\Pages\Actions\ListPageEditorSummariesAction;
+use Nvl\Pages\Data\PageActorData;
+
+final readonly class PageWorkspace
+{
+    public function __construct(
+        private ListPageEditorSummariesAction $summaries,
+        private GetPageEditorBootstrapAction $editor,
+        private GetPagePublicationProjectionAction $publication,
+    ) {}
+
+    public function index(string $site, string $locale, PageActorData $actor): LengthAwarePaginator
+    {
+        return $this->summaries->execute($site, $locale, $actor, perPage: 25);
+    }
+
+    public function edit(string $pageId, string $locale, PageActorData $actor): array
+    {
+        return $this->editor->execute($pageId, $locale, $actor)->toArray();
+    }
+
+    public function show(string $pageId, string $locale, PageActorData $actor): array
+    {
+        return $this->publication->execute($pageId, $locale, $actor)->toArray();
+    }
+}
+```
+
+`ListPageEditorSummariesAction` authorizes the site-level `List` ability before
+SQL, clamps the page size to 100, and returns a paginator of
+`PageEditorSummaryData`. Each item contains the management `PageData`, a
+localized label with stable key fallback, Content placement summaries, and the
+site-scoped SEO profile. SEO authorizes every owner before its batched profile
+query; a denial returns no summaries and performs no SEO profile query. A
+populated one- or 25-page result uses the same fixed query count and at most ten
+queries. Definition and preset catalogs intentionally do not repeat on every
+row, and both configured and requested page sizes remain under the absolute
+100-owner ceiling.
+
+`GetPageEditorBootstrapAction` authorizes and resolves one Page, then returns
+`PageEditorBootstrapData`: Page state, the complete Content editor projection,
+the site-scoped SEO profile, authorized Metafields, Page kinds and statuses,
+registered resource aliases, and the configured maximum depth. Content, SEO,
+and Metafields retain their own authorization boundaries; a denial propagates
+and no partial bootstrap is returned. Empty optional state is represented by
+empty collections or `null`, not by consumer-side fallback queries.
+
+`GetPagePublicationProjectionAction` is the ID-based public seam for a static
+Page already known to the application. It requires current public visibility,
+authorizes `View`, renders public-only Content, resolves SEO, and returns the
+same redacted `ResolvedPageData` shape as path delivery. Use
+`ResolvePageAction` when resolving a public path or dynamic resource Page, and
+`PreviewPageAction` for authorized management preview; the ID-based publication
+Action rejects resource Pages because their handler parameters are path-owned.
+
+These projections are uncached. Authorization, locale fallback, Page lifecycle,
+publication windows, Content visibility, SEO, and custom values can all change
+within a request-sensitive workflow.
+
 ## Content blocks
 
 `Page` implements `ContentOwner` with `HasContent`. Its sections use the

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -10,12 +12,29 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Nvl\Content\Actions\CreateContentBlockAction;
+use Nvl\Content\Actions\PlaceContentBlockAction;
+use Nvl\Content\Actions\PublishContentBlockAction;
+use Nvl\Content\Actions\SyncContentDefinitionsAction;
+use Nvl\Content\Data\ContentEditorData;
+use Nvl\Content\Data\ContentPlacementData;
+use Nvl\Content\Data\Mutations\CreateContentBlockData;
+use Nvl\Content\Data\Mutations\PlaceContentBlockData;
+use Nvl\Content\Models\ContentBlock;
+use Nvl\Content\Schema\ContentDefinitionSource;
+use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Filterable\Data\FilterSet;
+use Nvl\Metafields\Contracts\MetafieldAuthorization;
+use Nvl\Metafields\Enums\MetafieldAbility;
+use Nvl\Metafields\Models\MetafieldDefinition;
 use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
 use Nvl\Pages\Actions\CreatePageAction;
 use Nvl\Pages\Actions\DeletePageAction;
 use Nvl\Pages\Actions\FindPageByKeyAction;
 use Nvl\Pages\Actions\GetNavigationAction;
+use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
+use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
+use Nvl\Pages\Actions\ListPageEditorSummariesAction;
 use Nvl\Pages\Actions\ListPageOptionsAction;
 use Nvl\Pages\Actions\ListPagesAction;
 use Nvl\Pages\Actions\ListPublicChildPagesAction;
@@ -34,10 +53,13 @@ use Nvl\Pages\Data\Mutations\UpdatePageData;
 use Nvl\Pages\Data\PageActorData;
 use Nvl\Pages\Data\PageAuthorizationContextData;
 use Nvl\Pages\Data\PageData;
+use Nvl\Pages\Data\PageEditorBootstrapData;
+use Nvl\Pages\Data\PageEditorSummaryData;
 use Nvl\Pages\Data\PageKeyAvailabilityData;
 use Nvl\Pages\Data\PageOptionData;
 use Nvl\Pages\Data\PageRequestContextData;
 use Nvl\Pages\Data\PublicPageData;
+use Nvl\Pages\Data\ResolvedPageData;
 use Nvl\Pages\Enums\PageAbility;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Enums\PageStatus;
@@ -51,7 +73,10 @@ use Nvl\Pages\Support\PagesRouteConfiguration;
 use Nvl\Pages\Tests\Fixtures\RecordingPageAuthorization;
 use Nvl\Pages\Tests\Fixtures\TestPageResource;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
+use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
+use Nvl\Seo\Data\SeoProfileData;
+use Nvl\Seo\Support\SeoAuthorizationContext;
 use Nvl\Translatable\Exceptions\InvalidLocaleException;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -79,6 +104,69 @@ function createTestPage(
             ],
         ),
         PageActorData::system(),
+    );
+}
+
+function allowPageEditorPackageReads(): void
+{
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
+    app()->instance(MetafieldAuthorization::class, new class implements MetafieldAuthorization
+    {
+        public function authorizeDefinition(
+            MetafieldAbility $ability,
+            ?MetafieldDefinition $definition = null,
+        ): void {}
+
+        public function authorizeOwner(
+            MetafieldAbility $ability,
+            ?Model $owner = null,
+            ?MetafieldDefinition $definition = null,
+        ): void {}
+    });
+}
+
+function createPageTestContentBlock(string $key): ContentBlock
+{
+    config()->set([
+        'content.locales.available' => ['en', 'bg'],
+        'content.locales.required_on_publish' => ['en'],
+    ]);
+    app(ContentDefinitionRegistry::class)->register(new ContentDefinitionSource(
+        key: 'website.section',
+        name: 'Website section',
+        description: null,
+        category: 'website',
+        version: 1,
+        view: null,
+        schema: [
+            'fields' => [[
+                'key' => 'title',
+                'type' => 'text',
+                'label' => 'Title',
+                'localized' => true,
+                'required' => true,
+            ]],
+        ],
+        allowedScopes: ['global'],
+        allowedRegions: ['main'],
+    ));
+    app(SyncContentDefinitionsAction::class)->execute(PageActorData::system()->contentActor());
+    $block = app(CreateContentBlockAction::class)->execute(
+        new CreateContentBlockData(
+            definition: 'website.section',
+            key: $key,
+            translations: ['en' => ['title' => 'Editor section']],
+        ),
+        PageActorData::system()->contentActor(),
+    );
+
+    return app(PublishContentBlockAction::class)->execute(
+        $block,
+        $block->revision,
+        PageActorData::system()->contentActor(),
     );
 }
 
@@ -873,6 +961,385 @@ it('keeps the legacy public page projection constructor source compatible', func
     );
 
     expect($projection->toArray())->not->toHaveKey('publishedAt');
+});
+
+it('builds a complete authorized page editor bootstrap without lazy loading', function (): void {
+    allowPageEditorPackageReads();
+    $actor = PageActorData::system();
+    $page = createTestPage('pages.editor-bootstrap', 'editor-bootstrap');
+    $block = createPageTestContentBlock('editor-bootstrap-section');
+    app(PlaceContentBlockAction::class)->execute(
+        $block,
+        $page,
+        Page::CONTENT_GROUP,
+        new PlaceContentBlockData(key: 'main-section'),
+        $actor->contentActor(),
+    );
+    app(SyncSeoProfileAction::class)->execute(
+        $page,
+        SeoProfilePayload::from([
+            'translations' => [
+                'en' => [
+                    'path' => '/editor-bootstrap',
+                    'title' => 'Editor SEO',
+                ],
+            ],
+        ]),
+        $page->site,
+    );
+    Model::preventLazyLoading();
+
+    try {
+        $editor = app(GetPageEditorBootstrapAction::class)->execute(
+            strtoupper($page->id),
+            'en',
+            $actor,
+        );
+        $serialized = $editor->toArray();
+
+        expect($editor)->toBeInstanceOf(PageEditorBootstrapData::class)
+            ->and($editor->page)->toBeInstanceOf(PageData::class)
+            ->and($editor->page->id)->toBe($page->id)
+            ->and($editor->content)->toBeInstanceOf(ContentEditorData::class)
+            ->and($editor->content->placements)->toHaveCount(1)
+            ->and($editor->content->placements[0])->toBeInstanceOf(ContentPlacementData::class)
+            ->and($editor->content->placements[0]->block?->key)->toBe('editor-bootstrap-section')
+            ->and($editor->seo)->toBeInstanceOf(SeoProfileData::class)
+            ->and($editor->seo?->translations['en']->title)->toBe('Editor SEO')
+            ->and($editor->metafields)->toBe([])
+            ->and($editor->pageKinds)->toBe(['static', 'resource'])
+            ->and($editor->pageStatuses)->toBe(['draft', 'scheduled', 'published', 'archived'])
+            ->and($editor->resourceAliases)->toBe(['records.detail'])
+            ->and($editor->maximumDepth)->toBe(4)
+            ->and($serialized['content']['placements'])->toHaveCount(1);
+    } finally {
+        Model::preventLazyLoading(false);
+    }
+});
+
+it('returns an empty editor composition when optional package state is absent', function (): void {
+    allowPageEditorPackageReads();
+    $page = createTestPage('pages.editor-empty', 'editor-empty');
+    $editor = app(GetPageEditorBootstrapAction::class)->execute(
+        $page->id,
+        'bg',
+        PageActorData::system(),
+    );
+
+    expect($editor->page->id)->toBe($page->id)
+        ->and($editor->content->placements)->toBe([])
+        ->and($editor->seo)->toBeNull()
+        ->and($editor->metafields)->toBe([]);
+});
+
+it('fails the page editor bootstrap when any package authorization boundary denies', function (): void {
+    $page = createTestPage('pages.editor-denied', 'editor-denied');
+    $actor = new PageActorData('user', 'editor-user');
+    allowPageEditorPackageReads();
+    app()->instance(PageAuthorization::class, new class implements PageAuthorization
+    {
+        public function authorize(
+            PageAbility $ability,
+            PageActorData $actor,
+            ?Page $page = null,
+            ?PageAuthorizationContextData $context = null,
+        ): void {
+            throw new AuthorizationException;
+        }
+    });
+
+    expect(fn () => app(GetPageEditorBootstrapAction::class)->execute(
+        $page->id,
+        'en',
+        $actor,
+    ))->toThrow(AuthorizationException::class);
+
+    app()->instance(PageAuthorization::class, new RecordingPageAuthorization);
+    config()->set('content.authorization.callback', static fn (): bool => false);
+
+    expect(fn () => app(GetPageEditorBootstrapAction::class)->execute(
+        $page->id,
+        'en',
+        $actor,
+    ))->toThrow(AuthorizationException::class);
+
+    config()->set('content.authorization.callback', static fn (): bool => true);
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            throw new AuthorizationException;
+        }
+    });
+
+    expect(fn () => app(GetPageEditorBootstrapAction::class)->execute(
+        $page->id,
+        'en',
+        $actor,
+    ))->toThrow(AuthorizationException::class);
+
+    allowPageEditorPackageReads();
+    app()->instance(MetafieldAuthorization::class, new class implements MetafieldAuthorization
+    {
+        public function authorizeDefinition(
+            MetafieldAbility $ability,
+            ?MetafieldDefinition $definition = null,
+        ): void {}
+
+        public function authorizeOwner(
+            MetafieldAbility $ability,
+            ?Model $owner = null,
+            ?MetafieldDefinition $definition = null,
+        ): void {
+            throw new AuthorizationException;
+        }
+    });
+
+    expect(fn () => app(GetPageEditorBootstrapAction::class)->execute(
+        $page->id,
+        'en',
+        $actor,
+    ))->toThrow(AuthorizationException::class);
+});
+
+it('returns stable bounded page editor summaries with fixed query counts', function (): void {
+    allowPageEditorPackageReads();
+    $actor = PageActorData::system();
+    $block = createPageTestContentBlock('summary-section');
+    $first = createTestPage('pages.editor-summary-01', 'editor-summary-01');
+    app(PlaceContentBlockAction::class)->execute(
+        $block,
+        $first,
+        Page::CONTENT_GROUP,
+        new PlaceContentBlockData(key: 'summary-01'),
+        $actor->contentActor(),
+    );
+    app(SyncSeoProfileAction::class)->execute(
+        $first,
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Summary SEO']],
+        ]),
+        'default',
+    );
+    $measure = static function () use ($actor): array {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $summaries = app(ListPageEditorSummariesAction::class)->execute(
+                'default',
+                'en',
+                $actor,
+                25,
+            );
+            $queryCount = count(DB::getQueryLog());
+            $summaries->toArray();
+
+            expect(DB::getQueryLog())->toHaveCount($queryCount);
+
+            return [$summaries, $queryCount];
+        } finally {
+            DB::disableQueryLog();
+        }
+    };
+    Model::preventLazyLoading();
+
+    try {
+        [$single, $singleQueries] = $measure();
+
+        foreach (range(2, 25) as $index) {
+            $number = str_pad((string) $index, 2, '0', STR_PAD_LEFT);
+            $page = createTestPage(
+                "pages.editor-summary-{$number}",
+                "editor-summary-{$number}",
+            );
+            app(PlaceContentBlockAction::class)->execute(
+                $block,
+                $page,
+                Page::CONTENT_GROUP,
+                new PlaceContentBlockData(key: "summary-{$number}"),
+                $actor->contentActor(),
+            );
+        }
+
+        [$populated, $populatedQueries] = $measure();
+        config()->set('pages.limits.maximum_per_page', 250);
+        $capped = app(ListPageEditorSummariesAction::class)->execute(
+            'default',
+            'en',
+            $actor,
+            1_000,
+        );
+
+        expect($single)->toBeInstanceOf(LengthAwarePaginator::class)
+            ->and($single->total())->toBe(1)
+            ->and($single->items()[0])->toBeInstanceOf(PageEditorSummaryData::class)
+            ->and($single->items()[0]->seo)->toBeInstanceOf(SeoProfileData::class)
+            ->and($single->items()[0]->placements)->toHaveCount(1)
+            ->and($populated->total())->toBe(25)
+            ->and($populated->items())->toHaveCount(25)
+            ->and($populated->items()[0]->page->id)->toBe($first->id)
+            ->and($populated->items()[0]->label)->toBe('Editor-summary-01')
+            ->and($singleQueries)->toBeLessThanOrEqual(10)
+            ->and($populatedQueries)->toBe($singleQueries)
+            ->and($capped->perPage())->toBe(100);
+    } finally {
+        Model::preventLazyLoading(false);
+    }
+});
+
+it('authorizes page editor summary lists before querying storage', function (): void {
+    app()->instance(PageAuthorization::class, new class implements PageAuthorization
+    {
+        public function authorize(
+            PageAbility $ability,
+            PageActorData $actor,
+            ?Page $page = null,
+            ?PageAuthorizationContextData $context = null,
+        ): void {
+            throw new AuthorizationException;
+        }
+    });
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => app(ListPageEditorSummariesAction::class)->execute(
+            'default',
+            'en',
+            PageActorData::anonymous(),
+        ))->toThrow(AuthorizationException::class)
+            ->and(DB::getQueryLog())->toBe([]);
+    } finally {
+        DB::disableQueryLog();
+    }
+});
+
+it('does not query SEO profiles when editor summary authorization is denied', function (): void {
+    createTestPage('pages.editor-summary-seo-denied', 'editor-summary-seo-denied');
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            throw new AuthorizationException;
+        }
+    });
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => app(ListPageEditorSummariesAction::class)->execute(
+            'default',
+            'en',
+            PageActorData::system(),
+        ))->toThrow(AuthorizationException::class)
+            ->and(collect(DB::getQueryLog())->contains(
+                static fn (array $query): bool => str_contains(
+                    $query['query'],
+                    'seo_profiles',
+                ),
+            ))->toBeFalse();
+    } finally {
+        DB::disableQueryLog();
+    }
+});
+
+it('builds static publication projections by ID and rejects ineligible pages', function (): void {
+    $actor = PageActorData::system();
+    $page = createTestPage('pages.publication', 'publication');
+    $block = createPageTestContentBlock('publication-section');
+    app(PlaceContentBlockAction::class)->execute(
+        $block,
+        $page,
+        Page::CONTENT_GROUP,
+        new PlaceContentBlockData(key: 'publication-main'),
+        $actor->contentActor(),
+    );
+    app(SyncSeoProfileAction::class)->execute(
+        $page,
+        SeoProfilePayload::from([
+            'translations' => [
+                'en' => [
+                    'path' => '/publication',
+                    'title' => 'Publication SEO',
+                ],
+            ],
+        ]),
+        'default',
+    );
+    $resource = createTestPage(
+        'pages.publication-resource',
+        'publication-resource',
+        kind: PageKind::Resource,
+        resource: 'records.detail',
+    );
+    $draft = app(CreatePageAction::class)->execute(
+        new CreatePageData(
+            key: 'pages.publication-draft',
+            slug: 'publication-draft',
+            translations: ['en' => ['title' => 'Publication draft']],
+        ),
+        $actor,
+    );
+    $publication = app(GetPagePublicationProjectionAction::class)->execute(
+        strtoupper($page->id),
+        'en',
+        $actor,
+    );
+
+    expect($publication)->toBeInstanceOf(ResolvedPageData::class)
+        ->and($publication->page->id)->toBe($page->id)
+        ->and($publication->content->blocks)->toHaveCount(1)
+        ->and($publication->seo->title)->toBe('Publication SEO | Laravel')
+        ->and($publication->resource)->toBeNull()
+        ->and(fn () => app(GetPagePublicationProjectionAction::class)->execute(
+            $draft->id,
+            'en',
+            $actor,
+        ))->toThrow(ModelNotFoundException::class)
+        ->and(fn () => app(GetPagePublicationProjectionAction::class)->execute(
+            $resource->id,
+            'en',
+            $actor,
+        ))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => app(GetPagePublicationProjectionAction::class)->execute(
+            $page->id,
+            'de',
+            $actor,
+        ))->toThrow(InvalidLocaleException::class);
+});
+
+it('does not compose publication data after page authorization denial', function (): void {
+    $page = createTestPage('pages.publication-denied', 'publication-denied');
+    app()->instance(PageAuthorization::class, new class implements PageAuthorization
+    {
+        public function authorize(
+            PageAbility $ability,
+            PageActorData $actor,
+            ?Page $page = null,
+            ?PageAuthorizationContextData $context = null,
+        ): void {
+            throw new AuthorizationException;
+        }
+    });
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => app(GetPagePublicationProjectionAction::class)->execute(
+            $page->id,
+            'en',
+            PageActorData::anonymous(),
+        ))->toThrow(AuthorizationException::class)
+            ->and(collect(DB::getQueryLog())->contains(
+                static fn (array $query): bool => str_contains(
+                    $query['query'],
+                    'content_placements',
+                ),
+            ))->toBeFalse();
+    } finally {
+        DB::disableQueryLog();
+    }
 });
 
 it('keeps option and public-child queries constant and enforces child caps', function (): void {

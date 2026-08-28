@@ -39,7 +39,19 @@ Use this skill when application work creates, resolves, translates, composes, or
     Package-built projections populate the optional `publishedAt` field from the
     publication timestamp or persisted creation fallback for public cards.
 14. Use `GetNavigationAction` for localized navigation and `PreviewPageAction` for authorized non-public rendering.
-15. Keep public and management routes disabled unless the application explicitly secures and enables them.
-16. Run `nvl:pages:doctor --strict` after configuration or schema changes.
+15. Use `ListPageEditorSummariesAction` for bounded management indexes. It
+    authorizes the site-level list before SQL and batches Page, Content
+    placement, and SEO projections without repeating catalogs per row. SEO
+    authorizes every owner before its batched query, and configured/requested
+    page sizes cannot exceed the absolute 100-owner ceiling.
+16. Use `GetPageEditorBootstrapAction` for one complete editor payload. It
+    composes authorized Page, Content, SEO, and Metafields reads plus Page
+    kinds, statuses, resource aliases, and maximum depth; do not rebuild that
+    graph in a controller.
+17. Use `GetPagePublicationProjectionAction` only for a currently public static
+    Page known by ID. Use `ResolvePageAction` for paths and resource Pages, and
+    `PreviewPageAction` for management preview.
+18. Keep public and management routes disabled unless the application explicitly secures and enables them.
+19. Run `nvl:pages:doctor --strict` after configuration or schema changes.
 
 Use `ResolvePageAction` for headless delivery. Its `ResolvedPageData` combines a localized redacted Page projection, Content, SEO, and the optional dynamic resource projection.

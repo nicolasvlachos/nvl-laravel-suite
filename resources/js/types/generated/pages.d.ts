@@ -39,6 +39,22 @@ translations: Record<string, { title: string; navigationLabel: string | null; su
 createdAt: string,
 updatedAt: string,
 };
+export type PageEditorBootstrapData = {
+page: Nvl.Pages.Data.PageData,
+content: Nvl.Content.Data.ContentEditorData,
+seo: Nvl.Seo.Data.SeoProfileData | null,
+metafields: Nvl.Metafields.Data.OwnerMetafieldField[],
+pageKinds: Array<string>,
+pageStatuses: Array<string>,
+resourceAliases: Array<string>,
+maximumDepth: number,
+};
+export type PageEditorSummaryData = {
+page: Nvl.Pages.Data.PageData,
+label: string,
+placements: Nvl.Content.Data.ContentPlacementData[],
+seo: Nvl.Seo.Data.SeoProfileData | null,
+};
 export type PageKeyAvailabilityData = {
 site: string,
 key: string,

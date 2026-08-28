@@ -16,15 +16,22 @@ use Nvl\Content\Actions\ReplaceContentPlacementAction;
 use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
+use Nvl\Metafields\Actions\Metafields\ListAuthorizedOwnerMetafieldsAction;
 use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
 use Nvl\Pages\Actions\FindPageByKeyAction;
+use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
+use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
+use Nvl\Pages\Actions\ListPageEditorSummariesAction;
 use Nvl\Pages\Actions\ListPageOptionsAction;
 use Nvl\Pages\Actions\ListPublicChildPagesAction;
+use Nvl\Pages\Data\PageEditorBootstrapData;
+use Nvl\Pages\Data\PageEditorSummaryData;
 use Nvl\Pages\Data\PageKeyAvailabilityData;
 use Nvl\Pages\Data\PageOptionData;
 use Nvl\Pages\Enums\PublicChildPageOrder;
 use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
 use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
 use Nvl\Seo\Data\SeoOwnerRevisionData;
 use Nvl\Settings\Data\SettingSubjectReferenceData;
 use Nvl\Settings\Events\SettingChanged;
@@ -390,6 +397,7 @@ it('publishes stable Comments Settings and SEO consumer seams', function (): voi
         ->toContain(
             GetOwnerSeoProfileAction::class,
             GetOwnerSeoRevisionAction::class,
+            ListOwnerSeoProfilesAction::class,
             SeoOwnerRevisionData::class,
         )
         ->and($catalog['packages']['seo']['application_api']['documentation'])
@@ -437,9 +445,34 @@ it('publishes bounded Page lookup option and public-child projections', function
             PublicChildPageOrder::class,
         )
         ->and($pages['application_api']['documentation'])
-        ->toBe('packages/nvl/pages/README.md#bounded-page-reads')
+        ->toBe('packages/nvl/pages/README.md#editor-and-publication-projections')
         ->and($pages['performance']['evidence'])
         ->toContain('packages/nvl/pages/README.md#bounded-page-reads')
+        ->and($pages['performance']['query_tests'])
+        ->toContain('packages/nvl/pages/tests/Feature/PagesPackageTest.php');
+});
+
+it('publishes authorized metafield and complete Page composition reads', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $metafields = $catalog['packages']['metafields'];
+    $pages = $catalog['packages']['pages'];
+
+    expect($metafields['application_api']['symbols'])
+        ->toContain(ListAuthorizedOwnerMetafieldsAction::class)
+        ->and($metafields['application_api']['documentation'])
+        ->toBe('packages/nvl/metafields/README.md#querying')
+        ->and($metafields['performance']['query_tests'])
+        ->toContain('packages/nvl/metafields/tests/Feature/MetafieldConsumerWorkflowTest.php')
+        ->and($pages['application_api']['symbols'])
+        ->toContain(
+            GetPageEditorBootstrapAction::class,
+            GetPagePublicationProjectionAction::class,
+            ListPageEditorSummariesAction::class,
+            PageEditorBootstrapData::class,
+            PageEditorSummaryData::class,
+        )
+        ->and($pages['performance']['evidence'])
+        ->toContain('packages/nvl/pages/README.md#editor-and-publication-projections')
         ->and($pages['performance']['query_tests'])
         ->toContain('packages/nvl/pages/tests/Feature/PagesPackageTest.php');
 });
