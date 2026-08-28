@@ -264,14 +264,19 @@ git commit -m "feat(content): add placement editor workflows"
 - Create: `packages/nvl/pages/src/Actions/CheckPageKeyAvailabilityAction.php`
 - Create: `packages/nvl/pages/src/Actions/ListPageOptionsAction.php`
 - Create: `packages/nvl/pages/src/Actions/ListPublicChildPagesAction.php`
+- Create: `packages/nvl/pages/src/Enums/PublicChildPageOrder.php`
+- Create: `packages/nvl/pages/src/Services/PageIdentityGuard.php`
+- Modify: `packages/nvl/pages/src/Data/PublicPageData.php`
 - Modify: `packages/nvl/pages/config/pages.php`
 - Modify: `packages/nvl/pages/tests/Feature/PagesPackageTest.php`
+- Modify: Pages README, mirrored skill, readiness evidence, public contracts,
+  and generated TypeScript declarations
 
 **Interfaces:**
 - Consumes: `PageAuthorization`, `PageUrlGenerator`, Translatable fallback, and `PagesConfiguration` limits.
 - Produces: `PageData`, `PageKeyAvailabilityData`, `PageOptionData`, and `PublicPageData` application reads.
 
-- [ ] **Step 1: Write failing authorization, locale, and bound tests**
+- [x] **Step 1: Write failing authorization, locale, and bound tests**
 
 ```php
 $page = app(FindPageByKeyAction::class)->execute('main', 'about', $actor);
@@ -283,16 +288,19 @@ expect($page)->toBeInstanceOf(PageData::class)
 Add tests for wrong site, missing key, denied actor, translation fallback,
 published/scheduled/expired children, deterministic sibling ordering, search,
 one-character search behavior, 100-result caps, and one-versus-twenty-five query
-counts. Add key-availability tests for per-site uniqueness, `exceptId`, invalid
-keys, and authorization before disclosure.
+counts. Add key-availability tests for the actual global unique index,
+site-scoped conflict-ID disclosure, `exceptId`, invalid keys, UUID
+canonicalization, and authorization before disclosure. Add portable invalid
+UTF-8/NUL search tests, post-authorization translation loading, and
+static/newest child-feed coverage before limits.
 
-- [ ] **Step 2: Run the Pages package test and verify missing APIs fail**
+- [x] **Step 2: Run the Pages package test and verify missing APIs fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/pages/phpunit.xml.dist --compact packages/nvl/pages/tests/Feature/PagesPackageTest.php`
 
 Expected: FAIL because the new DTO/Actions do not exist.
 
-- [ ] **Step 3: Implement management key and option reads**
+- [x] **Step 3: Implement management key and option reads**
 
 Signatures:
 
@@ -308,10 +316,12 @@ revision plus translations, resolve label for the requested locale, order by
 path then ID, and map to
 `PageOptionData(id, key, label, path, kind, status, revision)`.
 Availability authorizes `PageAbility::List` for the site before checking the
-configured Page model and returns the conflicting page ID without exposing a
-model.
+Page model and reflects its global unique key index. Same-site conflicts expose
+the ID; foreign-site conflicts remain unavailable without disclosing their ID.
+Search rejects invalid UTF-8 and NUL bytes before SQL, and UUID inputs are
+canonicalized to lowercase for portable comparisons.
 
-- [ ] **Step 4: Implement public child projection**
+- [x] **Step 4: Implement public child projection**
 
 Signature:
 
@@ -320,15 +330,24 @@ public function execute(
     string $parentId,
     PageRequestContextData $context,
     int $limit = 50,
+    ?PageKind $kind = null,
+    PublicChildPageOrder $order = PublicChildPageOrder::Sibling,
 ): Collection
 ```
 
 Resolve the parent inside `context.site`, authorize `ViewNavigation` with the
 parent/context, restrict children to the same site and `publiclyVisible()`,
-eager-load translations, apply sibling ordering, clamp at the configured/hard
-100 maximum, and map through `PublicPageData::fromModel()`.
+eager-load translations, apply the requested deterministic ordering, clamp at
+the configured/hard 100 maximum, and map through `PublicPageData::fromModel()`.
 
-- [ ] **Step 5: Run Pages quality and generated types**
+The completed KPO inspection added an allowlisted Page-kind filter and newest
+effective-publication ordering before the limit, so its static 24-card News
+query can migrate without losing qualifying rows behind the 100-row ceiling.
+`PublicPageData` adds an optional `publishedAt` field, populated from explicit
+publication or persisted creation time while preserving the previous PHP
+constructor and TypeScript object shape.
+
+- [x] **Step 5: Run Pages quality and generated types**
 
 Run: `php tools/run-package-quality.php pages`
 
@@ -338,9 +357,15 @@ Run: `php artisan nvl:data:types:generate --fail-on-warning`
 
 Run: `composer types:check`
 
-Expected: PASS with `PageOptionData` generated.
+Actual: PASS with 31 tests and 320 assertions, PHPStan level max, and Pint.
+`PageOptionData`, `PageKeyAvailabilityData`, `PublicChildPageOrder`, and optional
+`PublicPageData.publishedAt` are generated. Readiness/skill tests passed 20 tests
+with 1,755 assertions. Public contracts, TypeScript/`tsc`, dependency,
+distribution, optimized-autoload, strict Composer, root/all-package analysis,
+and the complete root/package test matrix passed. Independent re-review found
+no substantive findings and reported Ready Yes.
 
-- [ ] **Step 6: Commit CR-15**
+- [x] **Step 6: Commit CR-15** (`aa352a2`)
 
 ```bash
 git add packages/nvl/pages/src/Data/PageOptionData.php packages/nvl/pages/src/Data/PageKeyAvailabilityData.php packages/nvl/pages/src/Actions/FindPageByKeyAction.php packages/nvl/pages/src/Actions/CheckPageKeyAvailabilityAction.php packages/nvl/pages/src/Actions/ListPageOptionsAction.php packages/nvl/pages/src/Actions/ListPublicChildPagesAction.php packages/nvl/pages/config/pages.php packages/nvl/pages/tests/Feature/PagesPackageTest.php resources/js/types
