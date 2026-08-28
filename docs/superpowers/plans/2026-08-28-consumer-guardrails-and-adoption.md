@@ -368,6 +368,7 @@ git commit -m "feat: diagnose implicit suite modules"
 
 **Files:**
 - Create: `src/Services/SuiteConfigurationRenderer.php`
+- Create: `src/Services/SuiteUpgradeInspector.php`
 - Create: `src/Console/Commands/SuiteConfigureCommand.php`
 - Create: `src/Console/Commands/SuiteUpgradeCheckCommand.php`
 - Create: `tests/Feature/SuiteConfigurationWriterTest.php`
@@ -381,7 +382,7 @@ git commit -m "feat: diagnose implicit suite modules"
 - Consumes: `SuiteModuleCatalog::profileModules()`, `modules()`, `moduleDecision()`, and the published `config/nvl-suite.php` path.
 - Produces: dry-run-first `nvl:suite:configure` and read-only `nvl:suite:upgrade:check` commands.
 
-- [ ] **Step 1: Write failing command behavior tests**
+- [x] **Step 1: Write failing command behavior tests**
 
 ```php
 it('renders a dependency-complete profile without writing by default', function (): void {
@@ -406,13 +407,13 @@ it('reports modules absent from a published config', function (): void {
 });
 ```
 
-- [ ] **Step 2: Run the new test and verify both commands are missing**
+- [x] **Step 2: Run the new test and verify both commands are missing**
 
 Run: `php artisan test --compact tests/Feature/SuiteConfigurationWriterTest.php`
 
 Expected: FAIL because the command names are not registered.
 
-- [ ] **Step 3: Implement canonical rendering and explicit writes**
+- [x] **Step 3: Implement canonical rendering and explicit writes**
 
 Command signatures:
 
@@ -433,7 +434,7 @@ reports missing/unknown/non-boolean keys, new required schedules, migration
 ownership changes, and newly required contracts from the current catalog. It
 never writes.
 
-- [ ] **Step 4: Document reproducible adoption commands**
+- [x] **Step 4: Document reproducible adoption commands**
 
 Add these verified examples:
 
@@ -446,7 +447,7 @@ php artisan nvl:suite:consumer-audit --strict
 
 Explain exit codes 0/1/2 and the 1.x explicit-decision switch.
 
-- [ ] **Step 5: Run focused, contract, and archive tests**
+- [x] **Step 5: Run focused, contract, and archive tests**
 
 Run: `php artisan test --compact tests/Feature/SuiteConfigurationWriterTest.php tests/Feature/SuiteDiagnosticsTest.php tests/Contract/SuiteAdoptionDocumentationTest.php tests/Contract/PackageArchiveToolsTest.php`
 
@@ -456,7 +457,7 @@ Run: `vendor/bin/pint --dirty --format agent`
 
 Expected: exit 0.
 
-- [ ] **Step 6: Commit CR-04**
+- [x] **Step 6: Commit CR-04** (`893c293`)
 
 ```bash
 git add src/Services/SuiteConfigurationRenderer.php src/Console/Commands/SuiteConfigureCommand.php src/Console/Commands/SuiteUpgradeCheckCommand.php src/SuiteServiceProvider.php tests/Feature/SuiteConfigurationWriterTest.php docs/installation-profiles.md docs/adoption-matrix.md tests/Contract/SuiteAdoptionDocumentationTest.php tests/Contract/PackageArchiveToolsTest.php
@@ -465,8 +466,8 @@ git commit -m "feat: guide suite adoption upgrades"
 
 ### Workstream acceptance gate
 
-- [ ] Run `vendor/bin/pint --dirty --format agent`.
-- [ ] Run `php artisan test --compact tests/Feature/SuiteConsumerAuditTest.php tests/Feature/SuiteConfigurationWriterTest.php tests/Feature/SuiteDiagnosticsTest.php tests/Contract/ConsumerReadinessTest.php tests/Contract/SuiteAdoptionDocumentationTest.php tests/Contract/PackageArchiveToolsTest.php`.
-- [ ] Run `composer analyse` and `composer contracts:check`.
-- [ ] Run the audit against KPO in non-strict JSON mode and save only the finding summary, never KPO source contents.
-- [ ] Confirm the audit identifies the known Role/Permission, Media concern, and listener seams without flagging owner-trait declarations.
+- [x] Run `vendor/bin/pint --dirty --format agent`.
+- [x] Run `php artisan test --compact tests/Feature/SuiteConsumerAuditTest.php tests/Feature/SuiteConfigurationWriterTest.php tests/Feature/SuiteDiagnosticsTest.php tests/Contract/ConsumerReadinessTest.php tests/Contract/SuiteAdoptionDocumentationTest.php tests/Contract/PackageArchiveToolsTest.php`.
+- [x] Run `composer analyse` and `composer contracts:check`.
+- [x] Run the audit against KPO in non-strict JSON mode and save only the finding summary, never KPO source contents.
+- [x] Confirm the audit identifies the known Role/Permission, Media concern, and listener seams without flagging owner-trait declarations.

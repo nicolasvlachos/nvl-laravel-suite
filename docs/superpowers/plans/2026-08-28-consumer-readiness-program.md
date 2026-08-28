@@ -39,7 +39,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-01 | [x] | Consumer boundary doctrine | Guardrails plan | None | 1.1 | `ead83c6` |
 | CR-02 | [x] | Consumer source auditor | Guardrails plan | CR-01 | 1.1 | `bfae7ef` |
 | CR-03 | [x] | Explicit module decisions | Guardrails plan | CR-01 | 1.1 | `5e3ac9f` |
-| CR-04 | [ ] | Configure and upgrade-check commands | Guardrails plan | CR-03 | 1.1 | — |
+| CR-04 | [x] | Configure and upgrade-check commands | Guardrails plan | CR-03 | 1.1 | `893c293` |
 | CR-05 | [ ] | Auth role/permission option DTOs | Auth plan | CR-01 | 1.1 | — |
 | CR-06 | [ ] | Auth catalogs, suggestions, and group reads | Auth plan | CR-05 | 1.1 | — |
 | CR-07 | [ ] | Auth identifier/name and assignment seams | Auth plan | CR-05 | 1.1 | — |
@@ -91,7 +91,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 - [x] Record baseline output from `composer contracts:check`, `composer types:check`, and the focused suite diagnostics tests.
 - [x] Confirm KPO's Composer source/version and save the starting KPO strict-test command in the execution log.
 - [x] Execute CR-00 and use its root runner for every subsequent package gate.
-- [ ] Execute CR-01 through CR-04 in dependency order.
+- [x] Execute CR-01 through CR-04 in dependency order.
 
 ### Execution log
 
@@ -128,6 +128,14 @@ gate pass. Record the implementation commit beside the task before checking it.
   and fail strict mode only after the adoption switch is enabled. KPO already
   declares all twenty module flags explicitly, so it requires no compatibility
   exception for this gate.
+- 2026-08-28 — CR-04 added dry-run-first canonical configuration generation
+  and read-only upgrade inspection in `893c293`. Its gate passed 153 tests with
+  8,943 assertions, PHPStan, public-contract and generated-type checks, strict
+  Composer autoloading/validation, Pint, and archive membership. KPO's existing
+  twenty boolean module decisions produce no structural upgrade findings. Its
+  read-only external source audit remains unchanged at 64 compatibility model
+  queries, three adoption-migration references, and four forbidden Auth model
+  writes; `runtime_checked` is false outside KPO's booted application.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
