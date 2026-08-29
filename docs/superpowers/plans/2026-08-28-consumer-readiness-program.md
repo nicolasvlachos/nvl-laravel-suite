@@ -62,7 +62,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-24 | [ ] | Compatibility-query deprecations | 2.0 plan | CR-02, CR-21, CR-22, CR-34 | 2.0 | — |
 | CR-25 | [x] | Auth delivery, invitation projections, and outcomes | Auth delivery plan | CR-00, CR-01 | 1.4 | `ab5077a`, `d83b303` |
 | CR-26 | [ ] | KPO Auth delivery/invitation migration | Auth delivery plan | CR-25 | 1.4 | — |
-| CR-27 | [x] | Atomic list/deep-map config merge and drift diagnostics | Configuration/Auth ergonomics plan | CR-00, CR-04, dependency approval | 1.4 | Pending commit |
+| CR-27 | [x] | Atomic list/deep-map config merge and drift diagnostics | Configuration/Auth ergonomics plan | CR-00, CR-04, dependency approval | 1.4 | `7961e03` |
 | CR-28 | [ ] | Runtime profiles and minimal overlays | Configuration/Auth ergonomics plan | CR-03, CR-04, CR-27 | 1.4 | — |
 | CR-29 | [ ] | Embedded-application Auth preset/adapter | Configuration/Auth ergonomics plan | CR-25, CR-27 | 1.4 | — |
 | CR-30 | [ ] | KPO configuration/Auth simplification | Configuration/Auth ergonomics plan | CR-26, CR-28, CR-29 | 1.4 | — |
