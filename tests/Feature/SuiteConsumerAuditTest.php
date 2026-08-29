@@ -333,6 +333,26 @@ it('recognizes configured package-owned table names', function (): void {
     }
 });
 
+it('does not require configuration for explicitly disabled package tables', function (): void {
+    $configuration = resolve(Repository::class);
+    $originalModules = $configuration->get('nvl-suite.modules');
+    $originalComments = $configuration->get('comments');
+
+    try {
+        $configuration->set('nvl-suite.modules.comments', false);
+        $configuration->set('comments', null);
+
+        $findings = resolve(SuiteConsumerAuditor::class)->audit(
+            base_path('tests/Fixtures/consumer-audit'),
+        );
+
+        expect($findings)->each->toBeInstanceOf(ConsumerAuditFinding::class);
+    } finally {
+        $configuration->set('nvl-suite.modules', $originalModules);
+        $configuration->set('comments', $originalComments);
+    }
+});
+
 it('applies only exact reviewed suppressions', function (): void {
     $configuration = resolve(Repository::class);
     $original = $configuration->get('nvl-suite.consumer_audit.suppressions');

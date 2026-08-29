@@ -200,7 +200,10 @@
             "npm install --ignore-scripts",
             "npm run build"
         ],
-        "analyse": "phpstan analyse --memory-limit=2G",
+        "analyse": [
+            "phpstan analyse --memory-limit=2G",
+            "phpstan analyse --memory-limit=2G tools/fixtures/auth-production-consumer/app"
+        ],
         "autoload:check": "@composer dump-autoload --optimize --strict-psr --strict-ambiguous --no-scripts --no-interaction",
         "package:quality": "@php tools/run-package-quality.php",
         "packages:analyse": "@php tools/analyse-packages.php",
@@ -217,8 +220,8 @@
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
         ],
-        "format": "pint --parallel --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/suite-release-consumer",
-        "format:test": "pint --parallel --test --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/suite-release-consumer",
+        "format": "pint --parallel --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/auth-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/suite-release-consumer",
+        "format:test": "pint --parallel --test --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/auth-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/suite-release-consumer",
         "quality": [
             "@format:test",
             "@autoload:check",

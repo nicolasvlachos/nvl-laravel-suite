@@ -134,13 +134,14 @@ final readonly class SuiteConsumerAuditor
     private function tableOwners(): array
     {
         $owners = [];
+        $enabledModules = array_fill_keys($this->catalog->effectiveModules(), true);
 
         foreach ($this->catalog->tableDefinitions() as $package => $definition) {
             foreach ((new ReflectionClass($definition))->getConstants() as $table) {
                 if (is_string($table) && $table !== '') {
                     $owners[$table] = $package;
 
-                    if (method_exists($definition, 'get')) {
+                    if (isset($enabledModules[$package]) && method_exists($definition, 'get')) {
                         $configured = $definition::get($table);
 
                         if (is_string($configured) && $configured !== '') {
