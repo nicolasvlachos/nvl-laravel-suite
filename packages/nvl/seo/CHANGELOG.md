@@ -4,6 +4,16 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Changed SEO profile detail and management-list reads from Eloquent models to
+  presenter-backed `SeoProfileData` while preserving paginator metadata,
+  translations, owner aliases, and mutation identity contracts.
+- Established SEO Actions and owner projections as the 2.0 consumer boundary;
+  direct consumer SEO-model queries now fail Suite audit.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

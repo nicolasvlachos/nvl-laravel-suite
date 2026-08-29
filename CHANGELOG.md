@@ -9,6 +9,31 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Added
+
+- Added an authoritative consumer deprecation catalog, strict package-model
+  boundary audit, and a sealed prepared-final-1.x-to-2.0 proof-consumer
+  rehearsal covering configuration, caches, migrations, generated types,
+  diagnostics, smoke behavior, and TypeScript compilation.
+
+### Changed
+
+- Disabled omitted keys in published legacy module maps while retaining
+  dependency closure for explicit roots and the full-suite fresh-install
+  default.
+- Changed Auth, Pages, Content, and SEO management reads from Eloquent model
+  results to their established DTO projections.
+- Made every unallowlisted consumer-initiated package-model query an audit
+  error in normal and strict modes while retaining the documented bounded
+  exceptions.
+
+### Fixed
+
+- Release-reviewed the immutable forward-only Comments rich-document migration
+  with upgrade, rollback, and application-owned-storage evidence.
+
 ## [1.0.7] - 2026-08-22
 
 ### Added

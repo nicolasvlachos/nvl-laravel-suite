@@ -199,7 +199,7 @@ git commit -m "feat!: return DTOs from management reads"
 - Consumes: final 1.x audit evidence and CR-24a DTO reads.
 - Produces: authoritative removed/replacement catalog, strict v2 audit, and verified migration documentation.
 
-- [ ] **Step 1: Write a failing catalog completeness test**
+- [x] **Step 1: Write a failing catalog completeness test**
 
 ```php
 foreach ($deprecations as $symbol => $replacement) {
@@ -213,13 +213,13 @@ foreach ($deprecations as $symbol => $replacement) {
 Assert every changed CR-24a signature is cataloged and every catalog entry is
 mentioned in `UPGRADING.md`.
 
-- [ ] **Step 2: Run the contract test and verify the catalog is missing**
+- [x] **Step 2: Run the contract test and verify the catalog is missing**
 
 Run: `php artisan test --compact tests/Contract/ConsumerApiDeprecationsTest.php`
 
 Expected: FAIL because the deprecation catalog does not exist.
 
-- [ ] **Step 3: Add exact replacement metadata and audit severity**
+- [x] **Step 3: Add exact replacement metadata and audit severity**
 
 Catalog each old symbol, final supported 1.x version, 2.0 replacement, old/new
 return shapes, and migration test evidence. In 2.0 strict audit, every
@@ -235,13 +235,21 @@ the guide against the final 1.x KPO/fixtures, upgrade to the 2.0 archive, and
 rerun config/route cache, migrations, TypeScript, strict Doctor/audit, fixture
 smokes, and KPO full CI.
 
+The sealed prepared-final-1.x proof-consumer rehearsal passes locally. This
+step remains open because KPO full CI and its separately owned source migration
+are not green.
+
 - [ ] **Step 5: Run the complete 2.0 release gate**
 
 Run `composer quality`, both production runners, all database jobs, the archive
 install, and previous-minor upgrade rehearsal. Require clean audit output from
 KPO and both proof consumers.
 
-- [ ] **Step 6: Commit CR-24b**
+The package-owned changes pass their focused gates and the previous-minor
+rehearsal. This step remains open for the complete quality rerun, external KPO,
+supported-database CI, and publication gates.
+
+- [x] **Step 6: Commit CR-24b**
 
 ```bash
 git add tools/consumer-api-deprecations.php tests/Contract/ConsumerApiDeprecationsTest.php src/Services/ConsumerAudit src/Console/Commands/SuiteConsumerAuditCommand.php tools/consumer-readiness.php docs UPGRADING.md CHANGELOG.md .github/workflows/package-release.yml
@@ -250,8 +258,8 @@ git commit -m "docs: finalize suite 2.0 consumer boundary"
 
 ### Workstream acceptance gate
 
-- [ ] Omitted module flags are disabled in partial configs and explicit profiles are unchanged.
-- [ ] All changed read Actions return DTOs with pagination/query parity.
+- [x] Omitted module flags are disabled in partial configs and explicit profiles are unchanged.
+- [x] All changed read Actions return DTOs with pagination/query parity.
 - [ ] KPO and both proof consumers upgrade from final 1.x to 2.0 without a source-query suppression.
 - [ ] Full PHP/framework/database/release matrices pass.
 - [ ] Record the 2.0 release candidate commit beside CR-23 and CR-24 in the master tracker.

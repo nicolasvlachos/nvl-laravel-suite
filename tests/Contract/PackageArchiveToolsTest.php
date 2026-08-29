@@ -14,6 +14,52 @@ use Symfony\Component\Yaml\Yaml;
 
 require_once dirname(__DIR__, 2).'/tools/check-release-changelogs.php';
 
+it('archives the complete package-owned 2.0 release notes with blank Unreleased sections', function (): void {
+    $root = dirname(__DIR__, 2);
+    $changedPackages = [
+        'activity',
+        'auth',
+        'comments',
+        'content',
+        'data',
+        'forms',
+        'mail-notifications',
+        'media',
+        'metafields',
+        'pages',
+        'primitives',
+        'seo',
+        'settings',
+        'support',
+        'taxonomy',
+        'templates',
+        'translatable',
+        'translations',
+    ];
+
+    expect(releaseChangelogErrors($root, '2.0.0', $changedPackages))->toBe([])
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/comments/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('forward-only rich-document columns')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/pages/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('PageData')->not->toContain('PageListItemData')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/auth/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('RoleListItemData', 'PermissionListItemData')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/content/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('ContentBlockData', 'ContentPlacementData')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/seo/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('SeoProfileData');
+});
+
 it('keeps v1.0.5 release history under dated suite and every package heading', function (): void {
     $root = dirname(__DIR__, 2);
     $version = '1.0.5';

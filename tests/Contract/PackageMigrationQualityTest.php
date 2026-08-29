@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use PhpParser\ParserFactory;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
 it('keeps every released package migration checksum locked and parseable', function (): void {
@@ -94,4 +95,26 @@ it('declares executable migration evidence and database-family coverage', functi
             expect($root.'/packages/nvl/'.$package.'/'.$testPath)->toBeFile();
         }
     }
+});
+
+it('release-reviews the forward-only Comments document migration without changing it', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/package-family.php';
+    $contractPath = $root.'/'.$catalog['quality']['released_migrations_contract'];
+    $contracts = json_decode(
+        file_get_contents($contractPath),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $relativePath = 'database/migrations/2026_08_28_000001_add_comment_documents.php';
+    $migrationPath = $root.'/packages/nvl/comments/'.$relativePath;
+    $process = new Process([PHP_BINARY, $root.'/tools/validate-package-family.php'], $root);
+    $process->setTimeout(30);
+    $process->run();
+
+    expect($contracts['packages']['comments']['migrations'][$relativePath] ?? null)
+        ->toBe(migrationContractChecksum($migrationPath))
+        ->and($catalog['quality']['packages']['comments']['migration_tests'] ?? [])
+        ->toContain('tests/Feature/CommentRichDocumentLifecycleTest.php')
+        ->and($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });

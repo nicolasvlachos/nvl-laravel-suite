@@ -44,9 +44,28 @@ jobs:
     needs: validate
     uses: ./.github/workflows/package-quality.yml
 
+  php85:
+    name: PHP 8.5 / Laravel 13
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: ctype, curl, dom, fileinfo, filter, gd, iconv, intl, json, libxml, mbstring, pdo_sqlite, tokenizer, xmlwriter, zip
+          coverage: none
+          tools: composer:2.10.2
+
+      - run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
+      - run: composer test
+
   archive:
     name: Suite archive and clean consumer
-    needs: checks
+    needs: [checks, php85]
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -328,9 +347,44 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+  previous-minor:
+    name: Prepared final 1.x to candidate rehearsal
+    needs: archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: ctype, curl, dom, fileinfo, filter, gd, iconv, intl, json, libxml, mbstring, pdo_sqlite, tokenizer, xmlwriter, zip
+          coverage: none
+          tools: composer:2.10.2
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nvl-laravel-suite-v${{ inputs.version }}
+          path: build/archives
+
+      - name: Upgrade a prepared final 1.x proof consumer from sealed archives
+        shell: bash
+        env:
+          PACKAGE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          candidate_archive="$(find build/archives -maxdepth 1 -name 'nvl-laravel-suite-*.zip' -print -quit)"
+          test -n "$candidate_archive"
+          NVL_CANDIDATE_ARCHIVE="$candidate_archive" \
+          NVL_CANDIDATE_VERSION="$PACKAGE_VERSION" \
+            bash tools/rehearse-final-1x-upgrade.sh
+
   publish-release:
     name: Publish clean tag and GitHub release
-    needs: archive
+    needs: previous-minor
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

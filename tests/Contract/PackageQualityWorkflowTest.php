@@ -467,27 +467,48 @@ it('collects coverage only for packages with changed PHP source', function (): v
         ->and($coverage)->not->toHaveKey('strategy');
 });
 
-it('publishes one clean suite tag only after all six routine gates pass', function (): void {
+it('publishes one clean suite tag only after runtime archive and previous-minor gates pass', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();
 
     $jobs = $workflow['jobs'] ?? [];
+    $php85 = $jobs['php85'] ?? [];
     $archive = $jobs['archive'] ?? [];
+    $previousMinor = $jobs['previous-minor'] ?? [];
     $publish = $jobs['publish-release'] ?? [];
     $validateCommands = workflowCommands($jobs['validate'] ?? []);
+    $php85Commands = workflowCommands($php85);
     $archiveCommands = workflowCommands($archive);
+    $previousMinorCommands = workflowCommands($previousMinor);
     $publishCommands = workflowCommands($publish);
+    $php85Setup = collect($php85['steps'] ?? [])->firstWhere('uses', SUITE_SETUP_PHP_ACTION);
+    $previousMinorCheckout = collect($previousMinor['steps'] ?? [])->firstWhere('uses', SUITE_CHECKOUT_ACTION);
+    $previousMinorDownload = collect($previousMinor['steps'] ?? [])->firstWhere('uses', SUITE_DOWNLOAD_ARTIFACT_ACTION);
     $publishCheckout = collect($publish['steps'] ?? [])->firstWhere('uses', SUITE_CHECKOUT_ACTION);
 
-    expect(array_keys($jobs))->toBe(['validate', 'checks', 'archive', 'publish-release'])
+    expect(array_keys($jobs))->toBe([
+        'validate',
+        'checks',
+        'php85',
+        'archive',
+        'previous-minor',
+        'publish-release',
+    ])
         ->and($validateCommands)->toContain(
             'refs/heads/$DEFAULT_BRANCH',
             'semver_pattern=',
         )
         ->and($jobs['checks']['uses'] ?? null)->toBe('./.github/workflows/package-quality.yml')
         ->and($jobs['checks']['needs'] ?? null)->toBe('validate')
-        ->and($archive['needs'] ?? null)->toBe('checks')
+        ->and($php85['needs'] ?? null)->toBe('validate')
+        ->and($php85Setup)->toBeArray()
+        ->and($php85Setup['with']['php-version'] ?? null)->toBe('8.5')
+        ->and($php85Commands)->toContain(
+            'bash tools/retry-composer.sh install --no-interaction --prefer-dist',
+            'composer test',
+        )
+        ->and($archive['needs'] ?? null)->toBe(['checks', 'php85'])
         ->and($archiveCommands)->toContain(
             'COMPOSER_ROOT_VERSION="$PACKAGE_VERSION" composer archive',
             'test "$archive_count" -eq 1',
@@ -521,7 +542,16 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
             'build-public-composer-repository.php',
             'actions/deploy-pages',
         )
-        ->and($publish['needs'] ?? null)->toBe('archive')
+        ->and($previousMinor['needs'] ?? null)->toBe('archive')
+        ->and($previousMinorCheckout)->toBeArray()
+        ->and($previousMinorCheckout['with']['fetch-depth'] ?? null)->toBe(0)
+        ->and($previousMinorDownload)->toBeArray()
+        ->and($previousMinorCommands)->toContain(
+            'tools/rehearse-final-1x-upgrade.sh',
+            'NVL_CANDIDATE_ARCHIVE="$candidate_archive"',
+            'NVL_CANDIDATE_VERSION="$PACKAGE_VERSION"',
+        )
+        ->and($publish['needs'] ?? null)->toBe('previous-minor')
         ->and($publishCommands)->toContain(
             'git read-tree --empty',
             'git --work-tree="$release_tree" add --all --force -- .',
@@ -543,6 +573,58 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
             'actions/deploy-pages',
             'actions/upload-pages-artifact',
         );
+});
+
+it('rehearses the prepared final 1.x archive through the complete 2.0 consumer boundary', function (): void {
+    $root = dirname(__DIR__, 2);
+    $scriptPath = $root.'/tools/rehearse-final-1x-upgrade.sh';
+    $catalog = require $root.'/tools/consumer-api-deprecations.php';
+    $script = is_file($scriptPath) ? file_get_contents($scriptPath) : null;
+
+    expect($scriptPath)->toBeFile()
+        ->and(is_executable($scriptPath))->toBeTrue()
+        ->and($script)->toBeString()->toContain(
+            'prepared_source_commit="'.$catalog['final_1x']['prepared_source'].'"',
+            'previous_version="dev-final-1x-prepared"',
+            'git -C "$repository_root" archive "$prepared_source_commit"',
+            'COMPOSER_ROOT_VERSION="$previous_version" composer archive',
+            'COMPOSER_ROOT_VERSION="$candidate_version" composer archive',
+            'nvl:suite:configure --profile=auth-only',
+            '--add=activity --add=mail-notifications --add=settings',
+            '--full --write --force --format=json',
+            'auth_consumer_artisan config:cache',
+            'auth_consumer_artisan route:cache',
+            'auth_consumer_artisan migrate --force',
+            'auth_consumer_artisan nvl:data:types:generate',
+            'auth_consumer_artisan nvl:data:types:check',
+            'auth_consumer_artisan nvl:suite:doctor --strict --production --format=json',
+            'auth_consumer_artisan nvl:suite:consumer-audit --strict --format=json',
+            'auth_consumer_artisan auth-consumer:smoke --format=json',
+            '"nvl/laravel-suite:$candidate_version"',
+            'auth_consumer_artisan auth-consumer:smoke --verify-queued-mail --format=json',
+            './node_modules/.bin/tsc --noEmit -p auth-consumer-types/tsconfig.json',
+        )->not->toContain(
+            'sleep ',
+            '--ignore-platform-reqs',
+            '"symlink":true',
+            'sk_live_',
+        );
+});
+
+it('documents prepared final 1.x evidence without claiming published warnings', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/consumer-api-deprecations.php';
+    $guide = (string) file_get_contents($root.'/docs/releasing.md');
+
+    expect($guide)->toContain(
+        'tools/rehearse-final-1x-upgrade.sh',
+        $catalog['final_1x']['tag'],
+        $catalog['final_1x']['prepared_source'],
+        'did not publish the 2.0 deprecation warnings',
+        'prepared evidence is not a published 1.x release',
+        'PHP 8.5 / Laravel 13',
+        'MySQL 8.4 and MariaDB 12.3',
+    )->not->toContain('wait for its five quality jobs');
 });
 
 it('adopts published Suite skills before running release doctors', function (): void {

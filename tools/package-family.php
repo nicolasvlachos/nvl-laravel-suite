@@ -154,6 +154,7 @@ return [
                     'tests/TestCase.php',
                     'tests/Feature/CommentsPackageTest.php',
                     'tests/Feature/CommentsDoctorCommandTest.php',
+                    'tests/Feature/CommentRichDocumentLifecycleTest.php',
                 ],
             ],
             'content' => [

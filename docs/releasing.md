@@ -12,6 +12,10 @@ The executable contracts are:
   Releases.
 - `tools/check-release-changelogs.php` for the requested suite version and every
   package changed since the preceding stable source.
+- `tools/consumer-api-deprecations.php` for the exact final-1.x-to-2.0 behavior
+  and return-shape inventory.
+- `tools/rehearse-final-1x-upgrade.sh` for the sealed prepared-final-1.x upgrade
+  proof.
 - `tests/Contract/PackageQualityWorkflowTest.php` for the workflow invariants.
 
 If this guide and a workflow disagree, stop and update them together. Do not
@@ -51,7 +55,7 @@ successful release workflow may create the stable tag.
   green.
 - **Publish, release, or tag:** confirm that the requested version matches the
   changelogs and does not already exist, ensure the release-preparation commit
-  is on `main`, wait for its five quality jobs, and dispatch `Package release`
+  is on `main`, wait for its six quality jobs, and dispatch `Package release`
   with that exact version. Never substitute a nearby version or create a local
   tag as a shortcut.
 - **Report state precisely:** after preparation, report the commit and that the
@@ -95,6 +99,7 @@ before pushing:
 composer install --no-interaction --prefer-dist
 composer validate --strict
 composer contracts:check
+composer packages:validate
 composer quality
 composer audit --locked --no-interaction
 ```
@@ -115,6 +120,22 @@ the exact artifact version under test.
 Review intentional public-contract changes before running
 `composer contracts:update`. A baseline update is part of the reviewed release
 change, never an automatic way to silence a failure.
+
+For the 2.0 boundary, `v1.0.7` is the published final 1.x tag. It did not publish the 2.0 deprecation warnings or all additive proof APIs needed for a
+complete in-place rehearsal. Commit
+`d8feceecc02f436772dca74b260704a535bceca6` is the immutable prepared-final-1.x
+source checkpoint immediately before the breaking changes. Run:
+
+```bash
+tools/rehearse-final-1x-upgrade.sh
+```
+
+This builds both checkpoints as sealed Composer archives, installs the prepared
+checkpoint into a Laravel 13 Auth proof consumer, renders all module decisions,
+caches configuration and routes, migrates, generates and compiles TypeScript,
+runs strict Doctor/audit and fixture smoke, upgrades the same application to
+the candidate, and repeats those checks. This prepared evidence is not a published 1.x release and must never be described as proof that final-1.x
+warnings reached external consumers.
 
 Optionally rehearse the Composer archive with the chosen version:
 
@@ -151,14 +172,15 @@ Adjust the `git add` paths to the files actually changed. Do not blindly use
 private keys, `.temp`, local agent configuration, `vendor`, and `node_modules`
 are not staged.
 
-Pushing `main` starts **Package quality**. It must finish with these five green
+Pushing `main` starts **Package quality**. It must finish with these six green
 jobs:
 
 1. Formatting, analysis, manifests and contracts.
 2. PHP 8.4 / Laravel 13 / SQLite.
 3. PHP 8.4 / Laravel 12 / lowest.
 4. PostgreSQL stateful packages.
-5. Changed-package coverage.
+5. MySQL 8.4 and MariaDB 12.3 stateful packages.
+6. Changed-package coverage.
 
 Use the GitHub Actions page, or GitHub CLI:
 
@@ -189,7 +211,8 @@ gh run watch RUN_ID --exit-status
 The workflow performs the complete publication transaction:
 
 1. Validates the default branch and semantic version.
-2. Reruns all five routine quality gates.
+2. Reruns all six routine quality gates and a separate PHP 8.5 / Laravel 13
+   test job.
 3. Requires a dated version heading in the suite and every changed module,
    rejects future-target wording, and requires release-ready `Unreleased`
    sections to be blank.
@@ -198,8 +221,11 @@ The workflow performs the complete publication transaction:
 6. Installs that exact ZIP into a clean Laravel 13 application.
 7. Verifies discovery, configuration and route caches, migrations, publish
    tags, strict doctor commands, and the Composer security audit.
-8. Creates and pushes the annotated clean `vX.Y.Z` tag.
-9. Creates the GitHub Release and attaches the verified ZIP.
+8. Upgrades the prepared final-1.x Auth proof consumer to that same sealed ZIP
+   and verifies explicit configuration, caches, migrations, generated types,
+   strict Doctor/audit, queue-backed smoke behavior, and TypeScript compilation.
+9. Creates and pushes the annotated clean `vX.Y.Z` tag.
+10. Creates the GitHub Release and attaches the verified ZIP.
 
 No tag is created when validation, quality, or archive verification fails.
 

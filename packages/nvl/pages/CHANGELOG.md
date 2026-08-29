@@ -4,6 +4,16 @@ All notable changes to `nvl/pages` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Changed page detail and management-list reads from Eloquent models to the
+  established `PageData` projection while preserving pagination, filters,
+  translations, authorization, and ordering.
+- Established Page Actions and editor/publication projections as the 2.0
+  consumer boundary; direct consumer Page-model queries now fail Suite audit.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

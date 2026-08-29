@@ -58,8 +58,60 @@ it('reports package model access with consumer source context', function (): voi
     expect($finding)
         ->not->toBeNull()
         ->package->toBe('auth')
+        ->severity->toBe('error')
         ->path->toBe('app/UnsafeRoleReader.php')
         ->symbol->toBe('Nvl\\Auth\\Models\\Role::query');
+});
+
+it('classifies every unallowlisted package model query as an error', function (): void {
+    $findings = collect(consumerAuditFixtureFindings());
+
+    expect($findings
+        ->where('path', 'app/UnsafeDynamicRoleReader.php')
+        ->where('code', 'consumer.package_model_query')
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->all())->toBe(['Nvl\\Auth\\Models\\Role::whereName'])
+        ->and($findings
+            ->where('path', 'app/UnsafeBoundRoleReader.php')
+            ->where('code', 'consumer.package_model_query')
+            ->where('severity', 'error')
+            ->pluck('symbol')
+            ->all())->toBe([
+                'Nvl\\Auth\\Models\\Role::permissions',
+                'Nvl\\Auth\\Models\\Role::whereName',
+            ])
+        ->and($findings
+            ->where('path', 'app/UnsafeActionReturnedRoleReader.php')
+            ->where('code', 'consumer.package_model_query')
+            ->where('severity', 'error')
+            ->pluck('symbol')
+            ->all())->toBe(['Nvl\\Auth\\Models\\Role::permissions']);
+});
+
+it('preserves the explicit allowed consumer model classifications', function (): void {
+    $findings = collect(consumerAuditFixtureFindings());
+
+    foreach ([
+        'app/AllowedModelBoundaries.php',
+        'app/AllowedConsumerTraits.php',
+        'app/AllowedOwner.php',
+    ] as $path) {
+        expect($findings->where('path', $path))->toBeEmpty();
+    }
+
+    expect($findings
+        ->where('path', 'database/migrations/2026_01_03_000000_read_auth_roles_for_adoption.php')
+        ->whereIn('code', [
+            'consumer.package_model_query',
+            'consumer.package_model_write',
+        ]))->toBeEmpty();
+
+    expect($findings
+        ->where('path', 'database/migrations/2026_01_04_000000_write_auth_roles_for_adoption.php')
+        ->where('code', 'consumer.package_model_write')
+        ->pluck('symbol')
+        ->all())->toBe(['Nvl\\Auth\\Models\\Role::update']);
 });
 
 it('allows package model access from documented owner model traits', function (): void {
@@ -451,7 +503,7 @@ it('rejects every inexact or unjustified suppression form', function (array $sup
     ]],
 ]);
 
-it('keeps compatibility query warnings non-failing in normal and strict modes', function (): void {
+it('fails package model queries as v2 errors in normal and strict modes', function (): void {
     $workspace = sys_get_temp_dir().'/nvl-consumer-audit-command-'.bin2hex(random_bytes(8));
     $filesystem = new Filesystem;
     $filesystem->ensureDirectoryExists($workspace);
@@ -507,20 +559,21 @@ it('keeps compatibility query warnings non-failing in normal and strict modes', 
 
         expect(Artisan::call('nvl:suite:consumer-audit', [
             'path' => $path,
-        ]))->toBe(0)
+        ]))->toBe(1)
             ->and(Artisan::output())->toContain('consumer.package_model_query')
             ->and(Artisan::call('nvl:suite:consumer-audit', [
                 'path' => $path,
                 '--strict' => true,
                 '--format' => 'json',
-            ]))->toBe(0);
+            ]))->toBe(1);
 
         $payload = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
 
-        expect($payload['healthy'] ?? null)->toBeTrue()
+        expect($payload['healthy'] ?? null)->toBeFalse()
             ->and($payload['strict'] ?? null)->toBeTrue()
             ->and($payload['runtime_checked'] ?? null)->toBeFalse()
             ->and($payload['findings'] ?? [])->toHaveCount(1)
+            ->and($payload['findings'][0]['severity'] ?? null)->toBe('error')
             ->and($payload['findings'][0])->toHaveKeys([
                 'code',
                 'severity',
@@ -563,7 +616,7 @@ it('reports implicit module decisions and applies the explicit adoption switch',
     );
     $router = new Router(new Dispatcher($runtimeApplication), $runtimeApplication);
     $console = Mockery::mock(Kernel::class);
-    $console->shouldReceive('call')->times(4)->andReturn(0);
+    $console->shouldNotReceive('call');
     $skills = new SuiteSkillManager(
         filesystem: $filesystem,
         catalog: $catalog,
@@ -654,5 +707,9 @@ it('returns one for error findings and emits secret-free JSON', function (): voi
         ->and(collect($payload['findings'] ?? [])->pluck('code'))
         ->toContain('consumer.package_model_write', 'consumer.package_table_reference')
         ->and($output)
-        ->not->toContain('guard_name', 'Temporary 1.x compatibility migration.');
+        ->not->toContain(
+            'guard_name',
+            'Temporary 1.x compatibility migration.',
+            'sk_live_consumer_secret',
+        );
 });

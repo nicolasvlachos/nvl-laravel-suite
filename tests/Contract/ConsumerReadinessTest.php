@@ -107,7 +107,7 @@ it('keeps one canonical four-class consumer boundary across machine and rendered
     $adoption = (string) file_get_contents($root.'/docs/adoption-matrix.md');
     $boundary = [
         'allowed' => 'Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.',
-        'compatibility_1x' => 'Consumer-initiated package model queries and relation aggregates remain supported only where already documented.',
+        'prohibited_v2' => 'Consumer-initiated package model queries and relation aggregates are errors in 2.0.',
         'forbidden' => 'Consumer writes through package models, builders, raw tables, pivots, or storage paths.',
         'exceptions' => 'Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.',
     ];
@@ -117,7 +117,7 @@ it('keeps one canonical four-class consumer boundary across machine and rendered
     foreach ([$readiness, $adoption] as $document) {
         expect($document)->toContain(
             '**Allowed:** '.$boundary['allowed'],
-            '**Compatibility-only in 1.x:** '.$boundary['compatibility_1x'],
+            '**Prohibited in 2.0:** '.$boundary['prohibited_v2'],
             '**Forbidden:** '.$boundary['forbidden'],
             '**Explicit exceptions:** '.$boundary['exceptions'],
         );
@@ -148,7 +148,7 @@ it('catalogs every package and readiness decision exactly once', function (): vo
     sort($actualPackages);
     sort($expectedStateful);
 
-    expect($catalog['version'] ?? null)->toBe(1)
+    expect($catalog['version'] ?? null)->toBe(2)
         ->and($actualPackages)->toBe($expectedPackages);
 
     $catalogStateful = [];
@@ -167,7 +167,7 @@ it('catalogs every package and readiness decision exactly once', function (): vo
 
         expect($symbols)->toBeArray()->not->toBeEmpty()
             ->and($directModelAccess)->toBeIn([
-                'compatibility_1x',
+                'prohibited_v2',
                 'explicit_exception',
                 'not_applicable',
             ]);
@@ -282,7 +282,7 @@ it('catalogs every package and readiness decision exactly once', function (): vo
 
 it('limits explicit model query exceptions and built-in presets to reviewed capabilities', function (): void {
     $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
-    $compatibilityPackages = [];
+    $prohibitedPackages = [];
     $directModelPackages = [];
     $notApplicablePackages = [];
     $presetPackages = [];
@@ -290,8 +290,8 @@ it('limits explicit model query exceptions and built-in presets to reviewed capa
     foreach ($catalog['packages'] as $package => $policy) {
         $modelPolicy = $policy['application_api']['direct_model_access'];
 
-        if ($modelPolicy === 'compatibility_1x') {
-            $compatibilityPackages[] = $package;
+        if ($modelPolicy === 'prohibited_v2') {
+            $prohibitedPackages[] = $package;
         }
 
         if ($modelPolicy === 'explicit_exception') {
@@ -307,12 +307,12 @@ it('limits explicit model query exceptions and built-in presets to reviewed capa
         }
     }
 
-    sort($compatibilityPackages);
+    sort($prohibitedPackages);
     sort($directModelPackages);
     sort($notApplicablePackages);
     sort($presetPackages);
 
-    expect($compatibilityPackages)->toBe([
+    expect($prohibitedPackages)->toBe([
         'activity',
         'auth',
         'comments',
@@ -585,7 +585,7 @@ it('renders every package model policy with its canonical classification', funct
 
     foreach ($catalog['packages'] as $package => $policy) {
         $prefix = match ($policy['application_api']['direct_model_access']) {
-            'compatibility_1x' => 'Compatibility-only in 1.x:',
+            'prohibited_v2' => 'Prohibited in 2.0:',
             'explicit_exception' => 'Explicit exception:',
             'not_applicable' => 'N/A:',
         };

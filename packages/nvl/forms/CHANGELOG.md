@@ -4,6 +4,13 @@ All notable changes to `nvl/forms` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Established bounded Form and FormEntry Actions and contracts as the 2.0
+  consumer boundary; direct consumer Forms-model queries now fail Suite audit.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

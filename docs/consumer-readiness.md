@@ -15,15 +15,15 @@ uncertain claim is a finding until it becomes a tested decision or a gap.
 ## Consumer boundary doctrine
 
 - **Allowed:** Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.
-- **Compatibility-only in 1.x:** Consumer-initiated package model queries and relation aggregates remain supported only where already documented.
+- **Prohibited in 2.0:** Consumer-initiated package model queries and relation aggregates are errors in 2.0.
 - **Forbidden:** Consumer writes through package models, builders, raw tables, pivots, or storage paths.
 - **Explicit exceptions:** Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.
 
 The package rows below identify the preferred application entry point and place
-model access into this shared policy. Compatibility is a transition guarantee,
-not the recommended shape for new consumer code. A package-documented facade is
-an adapter to its allowed Action or explicit service, not a separate policy
-class.
+model access into this shared policy. Model type hints, identity use, models
+returned by mutation Actions, and route-bound models passed immediately to an
+Action remain allowed. A package-documented facade is an adapter to its allowed
+Action or explicit service, not a separate policy class.
 
 ## Readiness matrix
 
@@ -55,34 +55,35 @@ class.
 Consumers use the smallest package-owned Action, service, facade, contract, or
 trait that represents their use case. A global suite facade would erase package
 ownership and is intentionally absent. Direct package-model queries are not a
-canonical application boundary and remain compatibility-only in the 1.x line.
+canonical application boundary and fail the Suite consumer audit in 2.0.
 
 | Package | Canonical entry point | Direct-model policy |
 |---|---|---|
-| `activity` | `ActivityLog`, `ActivityReadService`, and model activity traits | Compatibility-only in 1.x: documented model queries remain supported; use read/recording services for new code. |
-| `auth` | Feature Actions and `AuthManagementAccess` | Compatibility-only in 1.x: documented identity model queries remain supported; writes use Auth Actions. |
-| `comments` | Comment Actions, bounded latest selectors, and `HasComments`/`AcceptsComments` | Compatibility-only in 1.x: owner-trait relationships are allowed; direct Comment queries are transitional and writes use Actions. |
-| `content` | `Content` and Content Actions | Compatibility-only in 1.x: documented model queries remain supported; new reads and all writes use Content contracts. |
+| `activity` | `ActivityLog`, `ActivityReadService`, and model activity traits | Prohibited in 2.0: consumer package-model queries fail the audit; use read/recording services and documented model activity traits. |
+| `auth` | Feature Actions and `AuthManagementAccess` | Prohibited in 2.0: consumer identity-model queries fail the audit; model type hints and models passed directly to Auth Actions remain allowed. |
+| `comments` | Comment Actions, bounded latest selectors, and `HasComments`/`AcceptsComments` | Prohibited in 2.0: direct Comment queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `content` | `Content` and Content Actions | Prohibited in 2.0: consumer package-model queries fail the audit; use Content read contracts and mutation Actions. |
 | `csv` | `CSVImport`, `CSVExport`, and `CSVAnalyzerService` | N/A: CSV exposes no package model. |
 | `data` | `DataTransform` and generated-type services | N/A: Data exposes no package model. |
 | `filterable` | `FilterSet`, allowlisted schemas, and `Filterable` | Explicit exception: the allowlisted builder on a consumer-owned model is the public API. |
-| `forms` | Form and FormEntry Actions/contracts | Compatibility-only in 1.x: documented model queries remain supported; new reads and all writes use Forms Actions. |
-| `mail-notifications` | Administrative read Actions and `TrackingLifecycle` | Compatibility-only in 1.x: documented delivery-model queries remain supported; new reads use package Actions. |
-| `media` | `MediaLibrary`, Media Actions, `MediaQueryService`, and owner traits | Compatibility-only in 1.x: owner-trait relationships are allowed; direct Media queries are transitional and lifecycle writes stay in Media. |
-| `metafields` | Authorized definition/value Actions and `HasMetafields` | Compatibility-only in 1.x: owner-trait relationships are allowed; direct package queries are transitional and writes use Actions. |
-| `pages` | Page Actions, complete editor/publication projections, and resource-handler contracts | Compatibility-only in 1.x: documented Page queries remain supported; composition and writes use package Actions/services. |
+| `forms` | Form and FormEntry Actions/contracts | Prohibited in 2.0: consumer package-model queries fail the audit; use Forms Actions and contracts. |
+| `mail-notifications` | Administrative read Actions and `TrackingLifecycle` | Prohibited in 2.0: consumer delivery-model queries fail the audit; use package administrative read Actions. |
+| `media` | `MediaLibrary`, Media Actions, `MediaQueryService`, and owner traits | Prohibited in 2.0: direct Media queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `metafields` | Authorized definition/value Actions and `HasMetafields` | Prohibited in 2.0: direct package queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `pages` | Page Actions, complete editor/publication projections, and resource-handler contracts | Prohibited in 2.0: consumer Page queries fail the audit; use Page Actions, including `PageData` list results. |
 | `primitives` | Value objects, casts, rules, and reference catalogs | N/A: Primitives exposes no package model. |
-| `seo` | SEO Actions including owner profile/revision reads, owner traits, resolver, renderer, and sitemap contracts | Compatibility-only in 1.x: owner-trait relationships are allowed; direct profile queries are transitional and writes use Actions. |
-| `settings` | `SettingRepository`, typed Actions, value-free event subjects, and `Setting` facade | Compatibility-only in 1.x: documented Setting model queries remain supported; new code uses the repository, facade, or Actions. |
+| `seo` | SEO Actions including owner profile/revision reads, owner traits, resolver, renderer, and sitemap contracts | Prohibited in 2.0: direct profile queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `settings` | `SettingRepository`, typed Actions, value-free event subjects, and `Setting` facade | Prohibited in 2.0: consumer Setting-model queries fail the audit; use the repository, facade, or Actions. |
 | `support` | `BusinessException` and `ResponseCode` | N/A: Support exposes no package model. |
-| `taxonomy` | Taxonomy Actions, tree/resolver services, and owner traits | Compatibility-only in 1.x: owner-trait relationships are allowed; direct Term queries are transitional and mutations use Actions. |
-| `templates` | Render/list/mutation Actions and renderer/asset contracts | Compatibility-only in 1.x: documented Template queries remain supported; new reads and all writes use package contracts. |
+| `taxonomy` | Taxonomy Actions, tree/resolver services, and owner traits | Prohibited in 2.0: direct Term queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `templates` | Render/list/mutation Actions and renderer/asset contracts | Prohibited in 2.0: consumer Template-model queries fail the audit; use render/list/mutation Actions. |
 | `translatable` | Typed definitions, traits, query scopes, resolver, and writer | Explicit exception: opted-in domain models may use the documented Translatable scopes and helpers. |
-| `translations` | Scan/import/export/update Actions and services | Compatibility-only in 1.x: documented catalog queries remain supported; new reads and writes use package Actions/services. |
+| `translations` | Scan/import/export/update Actions and services | Prohibited in 2.0: consumer catalog-model queries fail the audit; use package Actions and services. |
 
-Documented 1.x model APIs are not removed by this policy. They remain supported
-until a separately documented breaking release, but new consumer examples use
-the canonical surfaces above.
+The published final 1.x tag did not ship deprecation warnings for these model
+queries. The exact 1.x-to-2.0 return and behavior changes are therefore recorded
+durably in `tools/consumer-api-deprecations.php` and `UPGRADING.md`; the release
+evidence must not claim those warnings were externally published.
 
 ## Performance and cache policy
 

@@ -13,7 +13,7 @@ enforced when their feature is enabled.
 ## Consumer boundary doctrine
 
 - **Allowed:** Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.
-- **Compatibility-only in 1.x:** Consumer-initiated package model queries and relation aggregates remain supported only where already documented.
+- **Prohibited in 2.0:** Consumer-initiated package model queries and relation aggregates are errors in 2.0.
 - **Forbidden:** Consumer writes through package models, builders, raw tables, pivots, or storage paths.
 - **Explicit exceptions:** Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.
 
@@ -33,9 +33,10 @@ php artisan nvl:suite:consumer-audit --strict
 The first command is a non-mutating preview. The second is the only command here
 that writes, and it atomically replaces the selected in-application PHP config.
 The two checks are read-only. They exit `0` on success, `1` for findings, and `2`
-for invalid input or policy. In 1.x, set
-`adoption.require_explicit_module_decisions=true` after every module key has been
-reviewed; omitted decisions otherwise retain compatibility-enabled behavior.
+for invalid input or policy. Before leaving 1.x, render and review the complete
+module map, then set `adoption.require_explicit_module_decisions=true`. In 2.0,
+an omitted key in a published legacy module map is requested-disabled unless an
+explicit root enables it through dependency closure.
 
 | Module | Tables and migration ownership | Queues | Scheduler entries | Replaceable/security contracts | Registered aliases | TypeScript | Doctor |
 |---|---|---|---|---|---|---|---|
