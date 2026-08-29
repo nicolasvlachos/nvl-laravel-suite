@@ -60,7 +60,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-22 | [ ] | Golden journeys and release matrix | Validation plan | CR-19, CR-20, CR-21 | 1.3 | — |
 | CR-23 | [ ] | Missing module flags disabled | 2.0 plan | CR-03, CR-04, CR-22, CR-34 | 2.0 | — |
 | CR-24 | [ ] | Compatibility-query deprecations | 2.0 plan | CR-02, CR-21, CR-22, CR-34 | 2.0 | — |
-| CR-25 | [ ] | Auth delivery, invitation projections, and outcomes | Auth delivery plan | CR-00, CR-01 | 1.4 | — |
+| CR-25 | [x] | Auth delivery, invitation projections, and outcomes | Auth delivery plan | CR-00, CR-01 | 1.4 | `ab5077a`, `d83b303` |
 | CR-26 | [ ] | KPO Auth delivery/invitation migration | Auth delivery plan | CR-25 | 1.4 | — |
 | CR-27 | [ ] | Atomic list/deep-map config merge and drift diagnostics | Configuration/Auth ergonomics plan | CR-00, CR-04, dependency approval | 1.4 | — |
 | CR-28 | [ ] | Runtime profiles and minimal overlays | Configuration/Auth ergonomics plan | CR-03, CR-04, CR-27 | 1.4 | — |
@@ -440,7 +440,7 @@ consumer suppression.
 
 ## Milestone 4: release 1.4 consumer configuration, Auth delivery, and rich Comments
 
-- [ ] Execute CR-25 and prove queued Auth delivery requires no Challenge/Invitation reload or metadata write.
+- [x] Execute CR-25 and prove queued Auth delivery requires no Challenge/Invitation reload or metadata write.
 - [ ] Execute CR-26 as reversible KPO listener, read, and candidacy-timing waves.
 - [ ] Obtain CR-27a's internal dependency approval, execute CR-27 and CR-28, and prove atomic list overrides, value-free drift output, and KPO's unchanged seventeen-module selection.
 - [ ] Execute CR-29 and CR-30; preserve KPO's host-owned Auth HTTP/UI while removing copied defaults and bridge gates.

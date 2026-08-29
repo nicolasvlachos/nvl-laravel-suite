@@ -221,12 +221,20 @@ Run: `composer types:check`
 
 Expected: all PASS.
 
-- [ ] **Step 7: Commit CR-25b**
+- [x] **Step 7: Commit CR-25b**
 
 ```bash
 git add packages/nvl/auth/database/migrations/2026_08_28_000000_add_invitation_delivery_outcomes.php packages/nvl/auth/src/Enums/InvitationDeliveryStatus.php packages/nvl/auth/src/Data/Display/InvitationReadData.php packages/nvl/auth/src/Actions/Invitations packages/nvl/auth/src/Data/Queries/InvitationIndexQueryData.php packages/nvl/auth/src/Models/Invitation.php packages/nvl/auth/tests packages/nvl/auth/README.md tools/consumer-readiness.php tests/Contract/ConsumerReadinessTest.php resources/js/types
 git commit -m "feat(auth): add invitation consumer projections"
 ```
+
+**Evidence (2026-08-29):**
+
+- `php tools/run-package-quality.php auth`: passed with 176 tests, 2,481 assertions, and the process-level PostgreSQL/MySQL concurrency test explicitly skipped on SQLite.
+- Consumer-readiness and production-fixture contracts: 20 tests and 1,883 assertions passed.
+- Package PHPStan, production-consumer PHPStan, generated TypeScript, TypeScript compilation, package contracts, Pint, and diff checks passed.
+- Independent review found no remaining Critical, Important, or Minor findings after correlation-ID privacy, generated list typing, raw input bounds, committed event ordering, and portable two-process concurrency coverage were hardened.
+- Commit: `d83b303` (`feat(auth): add invitation consumer projections`).
 
 ### Task 3 (CR-26): Migrate KPO delivery and invitation reads to package seams
 
