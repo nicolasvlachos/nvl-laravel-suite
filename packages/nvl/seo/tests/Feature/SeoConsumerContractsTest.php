@@ -60,7 +60,16 @@ function seoConsumerOwner(string $name = 'Consumer owner'): TestSeoOwner
     return TestSeoOwner::query()->create(['name' => $name]);
 }
 
+function allowSeoConsumerReads(): void
+{
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
+}
+
 it('returns management profile details and pages as stable DTOs without mapping queries', function (): void {
+    allowSeoConsumerReads();
     $olderOwner = seoConsumerOwner('Older management profile');
     $newerOwner = seoConsumerOwner('Newer management profile');
     $older = app(SyncSeoProfileAction::class)->execute(
@@ -126,6 +135,80 @@ it('returns management profile details and pages as stable DTOs without mapping 
         ->and($profile->translations['en']->title ?? null)->toBe('Newer profile')
         ->and($older)->toBeInstanceOf(SeoProfile::class)
         ->and($archived)->toBeInstanceOf(SeoProfile::class);
+});
+
+it('denies direct management profile reads through the configured authorization boundary', function (): void {
+    $owner = seoConsumerOwner('Denied direct management profile');
+    $profile = app(SyncSeoProfileAction::class)->execute(
+        $owner,
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Denied profile']],
+        ]),
+    );
+    $authorization = new class implements SeoAuthorization
+    {
+        public ?SeoAuthorizationContext $context = null;
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->context = $context;
+
+            throw new AuthorizationException('Denied direct management profile read.');
+        }
+    };
+    app()->instance(SeoAuthorization::class, $authorization);
+
+    expect(fn () => app(GetSeoProfileAction::class)->execute($profile->id))
+        ->toThrow(AuthorizationException::class, 'Denied direct management profile read.');
+
+    expect($authorization->context?->ability)->toBe(SeoAbility::View)
+        ->and($authorization->context?->profile?->is($profile))->toBeTrue()
+        ->and($authorization->context?->owner?->is($owner))->toBeTrue()
+        ->and($authorization->context?->ownerAlias)->toBe('article')
+        ->and($authorization->context?->scope)->toBe('default');
+});
+
+it('denies direct management profile lists through the configured authorization boundary', function (): void {
+    $authorization = new class implements SeoAuthorization
+    {
+        public ?SeoAuthorizationContext $context = null;
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->context = $context;
+
+            throw new AuthorizationException('Denied direct management profile list.');
+        }
+    };
+    app()->instance(SeoAuthorization::class, $authorization);
+
+    expect(fn () => app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        scope: ' CATALOG ',
+        ownerAlias: 'article',
+    )))
+        ->toThrow(AuthorizationException::class, 'Denied direct management profile list.');
+
+    expect($authorization->context?->ability)->toBe(SeoAbility::List)
+        ->and($authorization->context?->ownerAlias)->toBe('article')
+        ->and($authorization->context?->scope)->toBe('catalog');
+});
+
+it('bounds directly constructed management profile queries inside the Action', function (): void {
+    allowSeoConsumerReads();
+
+    $upper = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        page: 0,
+        perPage: 999,
+    ));
+    $lower = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        page: -10,
+        perPage: -10,
+    ));
+
+    expect($upper->currentPage())->toBe(1)
+        ->and($upper->perPage())->toBe(200)
+        ->and($lower->currentPage())->toBe(1)
+        ->and($lower->perPage())->toBe(1);
 });
 
 it('returns authorized owner-centric profile and revision projections', function (): void {

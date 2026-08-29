@@ -6,6 +6,8 @@ namespace Nvl\Suite\Services\ConsumerAudit;
 
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Nvl\Suite\Support\ConsumerAuditFinding;
 use PhpToken;
 use ReflectionMethod;
@@ -217,7 +219,13 @@ final readonly class PhpConsumerBoundaryScanner
                 $findings[] = $finding;
             }
 
-            foreach ($this->tableFindings($source, $path, $tableOwners, $enabledPackages) as $finding) {
+            foreach ($this->tableFindings(
+                $source,
+                $path,
+                $imports,
+                $tableOwners,
+                $enabledPackages,
+            ) as $finding) {
                 $findings[] = $finding;
             }
         }
@@ -1175,6 +1183,7 @@ final readonly class PhpConsumerBoundaryScanner
     private function tableFindings(
         string $source,
         string $path,
+        PhpImportMap $imports,
         array $tableOwners,
         array $enabledPackages,
     ): array {
@@ -1191,6 +1200,7 @@ final readonly class PhpConsumerBoundaryScanner
                 $scopeMap['tokens'],
                 $scopeMap['parents'],
                 $scopeMap['arrow_bodies'],
+                $imports,
             )
             : [];
 
@@ -1208,12 +1218,13 @@ final readonly class PhpConsumerBoundaryScanner
 
             $duplicate = $migration
                 && isset($enabled[$package])
-                && preg_match(
-                    '/(?:Schema|\\\\Illuminate\\\\Support\\\\Facades\\\\Schema)\\s*::\\s*create\\s*\\(\\s*[\'\"]'.preg_quote($table, '/').'[\'\"]/i',
-                    $source,
-                ) === 1;
+                && $this->staticSchemaCreateArgument($tokens, $index, $imports);
             $writeMethod = $migration
-                ? ($indirectTableWrites[$index] ?? $this->rawTableWriteMethod($tokens, $index))
+                ? ($indirectTableWrites[$index] ?? $this->rawTableWriteMethod(
+                    $tokens,
+                    $index,
+                    $imports,
+                ))
                 : null;
             $code = match (true) {
                 $duplicate => 'consumer.duplicate_package_migration',
@@ -1274,6 +1285,7 @@ final readonly class PhpConsumerBoundaryScanner
         array $scopes,
         array $scopeParents,
         array $arrowBodies,
+        PhpImportMap $imports,
     ): array {
         /** @var array<int, array<string, int|null>> $variables */
         $variables = [];
@@ -1324,13 +1336,27 @@ final readonly class PhpConsumerBoundaryScanner
                 continue;
             }
 
-            $literalIndex = $variables[$scope][$token->text] ?? null;
+            if ($this->closureCaptureVariable($tokens, $index)) {
+                $parentScope = $scopeParents[$scope] ?? null;
 
-            if ($literalIndex === null || ! $this->staticTableCallArgument($tokens, $index)) {
+                if ($parentScope !== null) {
+                    $variables[$scope][$token->text] = $variables[$parentScope][$token->text] ?? null;
+                }
+
                 continue;
             }
 
-            $writeMethod = $this->rawTableWriteMethod($tokens, $index);
+            $literalIndex = $variables[$scope][$token->text] ?? null;
+
+            if ($literalIndex === null || ! $this->staticTableCallArgument(
+                $tokens,
+                $index,
+                $imports,
+            )) {
+                continue;
+            }
+
+            $writeMethod = $this->rawTableWriteMethod($tokens, $index, $imports);
 
             if ($writeMethod !== null) {
                 $writes[$literalIndex] ??= $writeMethod;
@@ -1368,9 +1394,12 @@ final readonly class PhpConsumerBoundaryScanner
      *
      * @param  array<PhpToken>  $tokens
      */
-    private function rawTableWriteMethod(array $tokens, int $index): ?PhpToken
-    {
-        if (! $this->staticTableCallArgument($tokens, $index)) {
+    private function rawTableWriteMethod(
+        array $tokens,
+        int $index,
+        PhpImportMap $imports,
+    ): ?PhpToken {
+        if (! $this->staticTableCallArgument($tokens, $index, $imports)) {
             return null;
         }
 
@@ -1418,8 +1447,52 @@ final readonly class PhpConsumerBoundaryScanner
      *
      * @param  array<PhpToken>  $tokens
      */
-    private function staticTableCallArgument(array $tokens, int $index): bool
-    {
+    private function staticTableCallArgument(
+        array $tokens,
+        int $index,
+        PhpImportMap $imports,
+    ): bool {
+        return $this->staticFacadeCallArgument(
+            tokens: $tokens,
+            index: $index,
+            imports: $imports,
+            method: 'table',
+            facades: [DB::class, Schema::class],
+        );
+    }
+
+    /**
+     * Return whether a token is the first argument of a Schema create call.
+     *
+     * @param  array<PhpToken>  $tokens
+     */
+    private function staticSchemaCreateArgument(
+        array $tokens,
+        int $index,
+        PhpImportMap $imports,
+    ): bool {
+        return $this->staticFacadeCallArgument(
+            tokens: $tokens,
+            index: $index,
+            imports: $imports,
+            method: 'create',
+            facades: [Schema::class],
+        );
+    }
+
+    /**
+     * Return whether a token is the first argument of an allowed facade method.
+     *
+     * @param  array<PhpToken>  $tokens
+     * @param  list<class-string>  $facades
+     */
+    private function staticFacadeCallArgument(
+        array $tokens,
+        int $index,
+        PhpImportMap $imports,
+        string $method,
+        array $facades,
+    ): bool {
         $openingParenthesis = $this->previousMeaningfulToken($tokens, $index - 1);
         $methodIndex = $openingParenthesis === null
             ? null
@@ -1435,14 +1508,24 @@ final readonly class PhpConsumerBoundaryScanner
             || $tokens[$openingParenthesis]->text !== '('
             || $methodIndex === null
             || $tokens[$methodIndex]->id !== T_STRING
-            || $tokens[$methodIndex]->text !== 'table'
+            || $tokens[$methodIndex]->text !== $method
             || $operatorIndex === null
             || $tokens[$operatorIndex]->id !== T_DOUBLE_COLON
             || $classIndex === null) {
             return false;
         }
 
-        return preg_match('/(?:^|\\\\)(?:DB|Schema)$/', $tokens[$classIndex]->text) === 1;
+        $reference = $tokens[$classIndex]->text;
+        $resolved = $imports->resolve($reference);
+
+        if (in_array($resolved, $facades, true)) {
+            return true;
+        }
+
+        return in_array(ltrim($reference, '\\'), array_map(
+            static fn (string $facade): string => class_basename($facade),
+            $facades,
+        ), true);
     }
 
     /**

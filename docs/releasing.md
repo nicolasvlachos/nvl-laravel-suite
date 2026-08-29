@@ -137,6 +137,12 @@ runs strict Doctor/audit and fixture smoke, upgrades the same application to
 the candidate, and repeats those checks. This prepared evidence is not a published 1.x release and must never be described as proof that final-1.x
 warnings reached external consumers.
 
+Suite 2.0 publication is gated by package-owned evidence: the green `main`
+quality run and the release workflow's archive, prepared-final-1.x, and sealed
+Auth/Content proof-consumer jobs. KPO adoption follows publication because it
+must resolve an available stable 2.0 package; KPO's pre-adoption state is not a
+release prerequisite or publication gate.
+
 Optionally rehearse the Composer archive with the chosen version:
 
 ```bash

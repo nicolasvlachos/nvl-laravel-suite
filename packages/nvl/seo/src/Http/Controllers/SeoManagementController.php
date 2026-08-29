@@ -12,6 +12,7 @@ use Nvl\Data\Data\PaginationMeta;
 use Nvl\Seo\Actions\ArchiveSeoProfileAction;
 use Nvl\Seo\Actions\DeleteSeoProfileAction;
 use Nvl\Seo\Actions\DuplicateSeoProfileAction;
+use Nvl\Seo\Actions\GetSeoProfileAction;
 use Nvl\Seo\Actions\ListSeoProfilesAction;
 use Nvl\Seo\Actions\PreviewSeoProfileAction;
 use Nvl\Seo\Actions\SeoProfileStatusAction;
@@ -51,11 +52,6 @@ final class SeoManagementController extends Controller
         ListSeoProfilesAction $action,
     ): JsonResponse {
         $query = $request->profileQuery();
-        $this->authorization->authorize(new SeoAuthorizationContext(
-            ability: SeoAbility::List,
-            ownerAlias: $query->ownerAlias,
-            scope: $query->scope === null ? null : SeoScope::normalize($query->scope),
-        ));
         $profiles = $action->execute($query);
         $items = [];
 
@@ -82,13 +78,10 @@ final class SeoManagementController extends Controller
     /**
      * Return one authorized management profile.
      */
-    public function show(string $profile): JsonResponse
+    public function show(string $profile, GetSeoProfileAction $action): JsonResponse
     {
-        $profileModel = $this->profileModel($profile);
-        $this->authorizeProfile(SeoAbility::View, $profileModel);
-
         return response()->json([
-            'data' => $this->presenter->present($profileModel)->toArray(),
+            'data' => $action->execute($profile)->toArray(),
         ]);
     }
 
@@ -156,7 +149,7 @@ final class SeoManagementController extends Controller
             scope: $scope,
         ));
         $duplicate = $action->execute(
-            $profileModel,
+            $profile,
             $target,
             $scope,
             $request->copyPaths(),
@@ -176,7 +169,7 @@ final class SeoManagementController extends Controller
         $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Archive, $profileModel);
         $updated = $action->execute(
-            $profileModel,
+            $profile,
             $request->archived(),
             $request->expectedRevision(),
         );
@@ -198,7 +191,7 @@ final class SeoManagementController extends Controller
         return response()->json([
             'data' => [
                 'deleted' => $action->execute(
-                    $profileModel,
+                    $profile,
                     $request->expectedRevision(),
                 ),
             ],
@@ -260,7 +253,7 @@ final class SeoManagementController extends Controller
     }
 
     /**
-     * Load one management profile model for route-owned authorization and mutations.
+     * Load one profile model for mutation and preview authorization contexts.
      */
     private function profileModel(string $profile): SeoProfile
     {

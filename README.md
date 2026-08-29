@@ -417,11 +417,13 @@ git push origin main
 gh workflow run package-release.yml --ref main -f version=1.1.0
 ```
 
-Wait for the five `Package quality` jobs to pass before dispatching `Package
-release`. Supply `1.1.0`, not `v1.1.0`. Never create or push a version tag
-manually: the workflow builds and installs the clean archive, creates the
-annotated `v1.1.0` tag, publishes the GitHub Release, and lets Packagist discover
-the stable version.
+Wait for the six `Package quality` jobs to pass before dispatching `Package
+release`. Supply `1.1.0`, not `v1.1.0`. The release workflow reruns those gates
+and requires its PHP 8.5, archive, prepared-final-1.x, and Auth/Content proof
+consumer jobs before publication. Never create or push a version tag manually:
+the workflow builds and installs the clean archive, creates the annotated
+`v1.1.0` tag, publishes the GitHub Release, and lets Packagist discover the
+stable version.
 
 Do not publish `dev-main` as a stable dependency. Consumers should use the `^1.0` line.
 Choose one migration owner per application. Automatic vendor loading is the

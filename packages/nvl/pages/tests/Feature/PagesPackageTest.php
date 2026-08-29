@@ -490,6 +490,33 @@ it('always scopes management lists to one explicit site', function (): void {
         ->and($page->translations['en']['title'] ?? null)->toBe('Default-site');
 });
 
+it('loads only relationships consumed by the management page projection', function (): void {
+    $parent = createTestPage('pages.management-parent', 'management-parent');
+    $child = createTestPage(
+        'pages.management-child',
+        'management-child',
+        $parent->id,
+    );
+    $page = Page::query()->findOrFail($child->id);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $projection = app(GetPageAction::class)->execute(
+            $page,
+            PageActorData::system(),
+        );
+
+        expect($projection->parentId)->toBe($parent->id)
+            ->and(DB::getQueryLog())->toHaveCount(1)
+            ->and($page->relationLoaded('translations'))->toBeTrue()
+            ->and($page->relationLoaded('parent'))->toBeFalse()
+            ->and($page->relationLoaded('children'))->toBeFalse();
+    } finally {
+        DB::disableQueryLog();
+    }
+});
+
 it('finds site-scoped page keys and reports the real global key constraint', function (): void {
     $actor = PageActorData::system();
     $page = createTestPage('pages.lookup', 'lookup');

@@ -28325,7 +28325,7 @@
                 ],
                 "Nvl\\Seo\\Actions\\GetSeoProfileAction": [
                     "final readonly class Nvl\\Seo\\Actions\\GetSeoProfileAction",
-                    "public function __construct(Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
+                    "public function __construct(Nvl\\Seo\\Contracts\\SeoAuthorization $authorization, Nvl\\Seo\\Services\\SeoOwnerRegistry $owners, Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
                     "public function execute(Nvl\\Seo\\Models\\SeoProfile|string $profile): Nvl\\Seo\\Data\\SeoProfileData"
                 ],
                 "Nvl\\Seo\\Actions\\ImportSeoProfilesAction": [
@@ -28342,7 +28342,7 @@
                 ],
                 "Nvl\\Seo\\Actions\\ListSeoProfilesAction": [
                     "final class Nvl\\Seo\\Actions\\ListSeoProfilesAction",
-                    "public function __construct(Nvl\\Seo\\Services\\SeoOwnerRegistry $owners, Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
+                    "public function __construct(Nvl\\Seo\\Contracts\\SeoAuthorization $authorization, Nvl\\Seo\\Services\\SeoOwnerRegistry $owners, Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
                     "public function execute(Nvl\\Seo\\Data\\SeoProfileQuery $query): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, SeoProfileData>"
                 ],
@@ -28980,7 +28980,7 @@
                     "final class Nvl\\Seo\\Http\\Controllers\\SeoManagementController extends Illuminate\\Routing\\Controller",
                     "public function __construct(Nvl\\Seo\\Contracts\\SeoAuthorization $authorization, Nvl\\Seo\\Services\\SeoOwnerRegistry $owners, Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
                     "public function index(Nvl\\Seo\\Http\\Requests\\ListSeoProfilesRequest $request, Nvl\\Seo\\Actions\\ListSeoProfilesAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function show(string $profile): Illuminate\\Http\\JsonResponse",
+                    "public function show(string $profile, Nvl\\Seo\\Actions\\GetSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
                     "public function store(Nvl\\Seo\\Http\\Requests\\StoreSeoProfileRequest $request, Nvl\\Seo\\Actions\\SyncSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
                     "public function update(Nvl\\Seo\\Http\\Requests\\UpdateSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\SyncSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
                     "public function duplicate(Nvl\\Seo\\Http\\Requests\\DuplicateSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\DuplicateSeoProfileAction $action): Illuminate\\Http\\JsonResponse",

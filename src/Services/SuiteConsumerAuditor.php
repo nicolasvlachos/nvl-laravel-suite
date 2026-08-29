@@ -77,11 +77,16 @@ final readonly class SuiteConsumerAuditor
     private function moduleDecisionFindings(): array
     {
         $findings = [];
+        $selection = $this->catalog->selection();
 
         foreach (array_keys($this->catalog->modules()) as $module) {
-            if ($this->catalog->moduleDecision($module) !== 'implicit') {
+            if ($selection->decision($module) !== 'implicit') {
                 continue;
             }
+
+            $requestedState = $selection->requested($module)
+                ? 'requested-enabled'
+                : 'requested-disabled';
 
             $findings[] = new ConsumerAuditFinding(
                 code: 'consumer.implicit_module_decision',
@@ -90,7 +95,9 @@ final readonly class SuiteConsumerAuditor
                 path: 'runtime/configuration',
                 line: null,
                 symbol: $module,
-                message: 'A Suite module is enabled by the 1.x compatibility default.',
+                message: $selection->enabled($module)
+                    ? "The omitted module flag is {$requestedState} and is effectively enabled in Suite 2.0 through dependency closure."
+                    : "The omitted module flag is {$requestedState} and is effectively disabled in Suite 2.0.",
                 remediation: 'Publish an explicit true or false decision for every Suite module.',
             );
         }

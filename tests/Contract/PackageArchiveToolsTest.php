@@ -14,6 +14,16 @@ use Symfony\Component\Yaml\Yaml;
 
 require_once dirname(__DIR__, 2).'/tools/check-release-changelogs.php';
 
+it('advertises the main development branch on the Suite 2 line', function (): void {
+    $manifest = json_decode(
+        (string) file_get_contents(dirname(__DIR__, 2).'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+
+    expect($manifest['extra']['branch-alias']['dev-main'] ?? null)->toBe('2.x-dev');
+});
+
 it('archives the complete package-owned 2.0 release notes with blank Unreleased sections', function (): void {
     $root = dirname(__DIR__, 2);
     $changedPackages = [

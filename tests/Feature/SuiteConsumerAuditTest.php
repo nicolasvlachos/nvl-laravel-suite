@@ -207,6 +207,39 @@ it('blocks an arrow write through an implicitly captured package table variable'
         ->toBeEmpty();
 });
 
+it('blocks a package table write captured by an explicit closure', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'database/migrations/2026_01_11_000000_write_captured_auth_table_from_closure.php');
+
+    expect($findings
+        ->where('code', 'consumer.package_table_reference')
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->all())->toBe(['nvl_auth_roles::update'])
+        ->and($findings->where('code', 'consumer.package_migration_reference'))
+        ->toBeEmpty();
+});
+
+it('resolves aliased database facades without weakening migration severity', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'database/migrations/2026_01_12_000000_use_aliased_database_facades.php');
+
+    expect($findings
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->sort()
+        ->values()
+        ->all())->toBe([
+            'nvl_auth_permissions',
+            'nvl_auth_permissions::insert',
+        ])
+        ->and($findings
+            ->where('code', 'consumer.package_migration_reference')
+            ->where('severity', 'warning')
+            ->pluck('symbol')
+            ->all())->toBe(['nvl_auth_roles']);
+});
+
 it('keeps an arrow-local package table assignment out of outer and sibling scopes', function (): void {
     $findings = collect(consumerAuditFixtureFindings())
         ->where('path', 'database/migrations/2026_01_10_000000_keep_arrow_table_assignment_local.php');
@@ -815,6 +848,8 @@ it('reports implicit module decisions and applies the explicit adoption switch',
 
         expect($decisions)->toHaveCount(1)
             ->and($decisions->first()?->package)->toBe('data')
+            ->and($decisions->first()?->message)
+            ->toBe('The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.')
             ->and(Artisan::call('nvl:suite:consumer-audit', [
                 'path' => $consumerPath,
             ]))->toBe(0)
@@ -838,6 +873,93 @@ it('reports implicit module decisions and applies the explicit adoption switch',
             'nvl-suite.adoption.require_explicit_module_decisions',
             $originalPolicy,
         );
+        $filesystem->deleteDirectory($workspace);
+    }
+});
+
+it('reports every explicitly omitted module in order for an empty legacy map', function (): void {
+    $workspace = sys_get_temp_dir().'/nvl-consumer-audit-empty-modules-'.bin2hex(random_bytes(8));
+    $filesystem = new Filesystem;
+    $filesystem->ensureDirectoryExists($workspace);
+    $runtimeConfiguration = new Repository([
+        'nvl-suite' => [
+            'modules' => [],
+            'consumer_audit' => ['authentication_middleware' => ['auth']],
+        ],
+    ]);
+    $catalog = new SuiteModuleCatalog($runtimeConfiguration);
+    $runtimeApplication = resolve(Application::class);
+    $inspector = new SuiteConfigurationInspector(
+        $runtimeApplication,
+        $runtimeConfiguration,
+        new Schedule,
+        $catalog,
+    );
+    $router = new Router(new Dispatcher($runtimeApplication), $runtimeApplication);
+    $console = Mockery::mock(Kernel::class);
+    $console->shouldNotReceive('call');
+    $skills = new SuiteSkillManager(
+        filesystem: $filesystem,
+        catalog: $catalog,
+        suiteRoot: dirname(__DIR__, 2),
+        applicationRoot: $workspace,
+        suiteVersion: '2.0.0-test',
+    );
+
+    try {
+        expect($catalog->effectiveModules())->toBe([])
+            ->and($skills->publish()['healthy'])->toBeTrue();
+
+        $runtime = new SuiteRuntimeConsumerScanner(
+            $inspector,
+            $router,
+            $console,
+            $skills,
+            $catalog,
+            $runtimeConfiguration,
+        );
+        $auditor = new SuiteConsumerAuditor(
+            resolve(ComposerSourceRootLocator::class),
+            resolve(PhpConsumerBoundaryScanner::class),
+            $runtime,
+            $catalog,
+            $runtimeConfiguration,
+            $runtimeApplication,
+        );
+        $decisions = collect($auditor->audit(base_path()))
+            ->where('code', 'consumer.implicit_module_decision')
+            ->values();
+
+        expect($decisions)->toHaveCount(20)
+            ->and($decisions->pluck('package')->all())->toBe([
+                'activity',
+                'auth',
+                'comments',
+                'content',
+                'csv',
+                'data',
+                'filterable',
+                'forms',
+                'mail-notifications',
+                'media',
+                'metafields',
+                'pages',
+                'primitives',
+                'seo',
+                'settings',
+                'support',
+                'taxonomy',
+                'templates',
+                'translatable',
+                'translations',
+            ])
+            ->and($decisions->pluck('message')->unique()->values()->all())->toBe([
+                'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.',
+            ])
+            ->and($decisions->pluck('remediation')->unique()->values()->all())->toBe([
+                'Publish an explicit true or false decision for every Suite module.',
+            ]);
+    } finally {
         $filesystem->deleteDirectory($workspace);
     }
 });
