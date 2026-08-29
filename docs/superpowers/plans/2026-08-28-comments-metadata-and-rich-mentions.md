@@ -90,7 +90,7 @@
 - Consumes: existing metadata JSON, revisions, target/actor/audience authorization, and CR-12's planned latest-target read.
 - Produces: registered schema validation, audience-safe metadata DTOs, and package-owned tag/metadata selectors.
 
-- [ ] **Step 1: Write failing compatibility, validation, and privacy tests**
+- [x] **Step 1: Write failing compatibility, validation, and privacy tests**
 
 Cover fresh/upgrade/application-owned storage, an unregistered legacy key, a registered scalar/null field, wrong types,
 unknown registered fields, duplicate storage keys across schemas, encoded size,
@@ -99,7 +99,7 @@ strict mode. Run equality selectors against string/integer/boolean/null values o
 the supported database matrix. Assert raw/unregistered metadata never appears in any projection,
 event serialization, log context, or exception message.
 
-- [ ] **Step 2: Define the metadata schema contract**
+- [x] **Step 2: Define the metadata schema contract**
 
 Each container-resolvable schema returns a stable snake/dot namespace and
 `list<CommentMetadataField>`. A field defines:
@@ -120,7 +120,7 @@ Allowed registered types are string, integer, boolean, UUID, and nullability.
 No object, model, date parser, arbitrary callback, nested path, or secret type is
 accepted. Registry boot rejects duplicate namespace/field/storage-key ownership.
 
-- [ ] **Step 3: Add explicit metadata configuration and guarding**
+- [x] **Step 3: Add explicit metadata configuration and guarding**
 
 Add:
 
@@ -139,7 +139,7 @@ registered fields are validated and unknown keys stay internal; in strict mode,
 unknown keys fail mutation. Update idempotency digests and revision snapshots to
 use the normalized metadata order.
 
-- [ ] **Step 4: Add a portable queryable-metadata index**
+- [x] **Step 4: Add a portable queryable-metadata index**
 
 Do not edit released migrations. Add the configured Metadata Values table with
 UUID ID, Comment foreign key/cascade, schema namespace, field alias, value type,
@@ -152,7 +152,7 @@ Use a domain-separated HMAC with `metadata.digest_key`, falling back to the
 existing Comments idempotency key/application key. Doctor fails when no stable
 key exists; changing the key requires the documented reconciliation rebuild.
 
-- [ ] **Step 5: Add safe projections**
+- [x] **Step 5: Add safe projections**
 
 `CommentMetadataProjectionData` contains `namespace` and an allowlisted scalar
 `values` record. Projection selects fields by audience; unregistered metadata
@@ -161,7 +161,7 @@ four existing DTOs so unchanged comments preserve their serialized shape when
 no visible schema data exists. Management does not automatically see fields
 unless the schema explicitly includes Management.
 
-- [ ] **Step 6: Replace CR-12's generic FilterSet with a safe selector**
+- [x] **Step 6: Replace CR-12's generic FilterSet with a safe selector**
 
 `CommentSelectorData` contains:
 
@@ -190,7 +190,7 @@ false when no match exists. Lookup and deletion happen in one package-owned
 transaction so a consumer never needs a Comment model just to delete a matched
 workflow note.
 
-- [ ] **Step 7: Extend Doctor and documentation**
+- [x] **Step 7: Extend Doctor and documentation**
 
 Doctor validates schema resolution, names, type/bounds, unique storage keys,
 queryability, audience declarations, Metadata Values schema/indexes, and
@@ -199,7 +199,7 @@ without displaying values. README
 documents internal legacy metadata, registered safe metadata, selectors, and
 why secrets/mentions do not belong in metadata.
 
-- [ ] **Step 8: Verify CR-31**
+- [x] **Step 8: Verify CR-31**
 
 ```bash
 php tools/run-package-quality.php comments
@@ -211,7 +211,7 @@ php artisan test --compact tests/Contract/ConsumerReadinessTest.php
 Expected: Comments passes; generated contracts include only the safe metadata
 projection/selector shapes.
 
-- [ ] **Step 9: Commit CR-31**
+- [x] **Step 9: Commit CR-31**
 
 ```bash
 git add packages/nvl/comments tools/consumer-readiness.php tests/Contract/ConsumerReadinessTest.php resources/js/types
@@ -402,7 +402,7 @@ git commit -m "feat(comments): add rich document persistence"
 - Consumes: CR-32 mention inputs/rows, target/actor/audience context, and registered host resource definitions.
 - Produces: bounded suggestions, batch resolution, viewer-safe projections, and after-commit mention diffs.
 
-- [ ] **Step 1: Write failing registry and attack-surface tests**
+- [x] **Step 1: Write failing registry and attack-surface tests**
 
 Cover declarative Eloquent and custom resolvers; alias collision; unresolvable
 classes; nonexistent fields; hidden/guarded sensitive fields; SQL metacharacters;
@@ -411,7 +411,7 @@ resource; missing/deleted resource; duplicate IDs; cross-tenant IDs; public cach
 safety; max query/limit/batch/mention bounds; and constant query count for one
 versus 25 comments.
 
-- [ ] **Step 2: Define declarative and custom registration**
+- [x] **Step 2: Define declarative and custom registration**
 
 Add disabled-by-default configuration:
 
@@ -447,7 +447,7 @@ label/ID ordering; applies the resource authorization boundary before returning
 anything; and caps every query. A custom resolver must return the same DTOs and
 enforce the same bounds.
 
-- [ ] **Step 3: Implement suggestion and batch-resolution Actions**
+- [x] **Step 3: Implement suggestion and batch-resolution Actions**
 
 Signatures:
 
@@ -473,7 +473,7 @@ factory groups references by alias and resolves each alias in one bounded batch.
 No resolver may return a builder/model. Duplicate IDs are de-duplicated for
 lookup and expanded back to token order.
 
-- [ ] **Step 4: Define safe projection/tombstone behavior**
+- [x] **Step 4: Define safe projection/tombstone behavior**
 
 `CommentMentionData` contains token ID, alias, state, label snapshot, nullable
 authorized resource ID/current label, allowlisted scalar fields, and nullable
@@ -487,7 +487,7 @@ stored document because that contains opaque resource IDs. Add Optional
 document/mention collections to existing comment DTOs and omit both on
 tombstones.
 
-- [ ] **Step 5: Emit after-commit mention diffs**
+- [x] **Step 5: Emit after-commit mention diffs**
 
 `CommentMentionsChanged` contains comment ID, target alias/ID reference,
 revision, and bounded added/removed `CommentMentionChangeData` lists with alias,
@@ -496,7 +496,7 @@ by alias/resource identity, ignore token reordering and unchanged mentions, and
 emit no duplicate event for an idempotent retry. Notification channels, user
 lookup, and copy remain consumer-owned.
 
-- [ ] **Step 6: Add package HTTP seams without forcing them on consumers**
+- [x] **Step 6: Add package HTTP seams without forcing them on consumers**
 
 Member/management controllers add rich store/update methods and suggestion
 endpoints under their existing disabled-by-default route groups. Routes use the
@@ -504,7 +504,7 @@ existing auth middleware plus configured throttle. There is no public suggestion
 endpoint. Hosts with package routes disabled call Actions from their controllers.
 Update OpenAPI contracts and generated TypeScript.
 
-- [ ] **Step 7: Extend Doctor and reconciliation**
+- [x] **Step 7: Extend Doctor and reconciliation**
 
 Doctor validates resource aliases, resolver/model exclusivity, model/table/ID,
 field allowlists, label membership, authorization/URL resolver container
@@ -514,7 +514,7 @@ invalid snapshots, orphan rows, and body projection drift; `--repair` rebuilds
 current rows/body only after revalidation and never resolves unauthorized live
 data into historical revisions.
 
-- [ ] **Step 8: Verify CR-33**
+- [x] **Step 8: Verify CR-33**
 
 ```bash
 php tools/run-package-quality.php comments
@@ -527,7 +527,7 @@ php artisan test --compact tests/Contract/CommentsConsumerWorkflowTest.php tests
 Expected: package/API/security/event/reconcile tests pass; public cached
 projections contain no actor-specific resource data.
 
-- [ ] **Step 9: Commit CR-33**
+- [x] **Step 9: Commit CR-33**
 
 ```bash
 git add packages/nvl/comments tools/consumer-readiness.php tests/Contract resources/js/types
@@ -620,9 +620,9 @@ and the rich proof. Do not enable a user-facing editor in the same change.
 
 ### Workstream acceptance gate
 
-- [ ] Existing plain/Markdown comments remain wire-compatible and pass their full package tests.
+- [x] Existing plain/Markdown comments remain wire-compatible and pass their full package tests.
 - [ ] KPO can query workflow metadata only through registered package selectors.
-- [ ] Consumers can register a simple resource with model/search/display fields or a complex resource resolver without exposing either choice to clients.
-- [ ] Rich mentions survive create, update, revision, restore, delete, anonymization, missing resources, and access loss.
-- [ ] Suggestion, resolution, projection, event, and reconciliation paths are authorized, bounded, batch-safe, and database-portable.
-- [ ] Public cached responses never vary by actor or expose protected resource IDs/fields.
+- [x] Consumers can register a simple resource with model/search/display fields or a complex resource resolver without exposing either choice to clients.
+- [x] Rich mentions survive create, update, revision, restore, delete, anonymization, missing resources, and access loss.
+- [x] Suggestion, resolution, projection, event, and reconciliation paths are authorized, bounded, batch-safe, and database-portable.
+- [x] Public cached responses never vary by actor or expose protected resource IDs/fields.

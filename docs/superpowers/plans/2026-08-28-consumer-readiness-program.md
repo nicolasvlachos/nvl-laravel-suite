@@ -66,9 +66,9 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-28 | [x] | Runtime profiles and minimal overlays | Configuration/Auth ergonomics plan | CR-03, CR-04, CR-27 | 1.4 | `8ffb3ee` |
 | CR-29 | [x] | Embedded-application Auth preset/adapter | Configuration/Auth ergonomics plan | CR-25, CR-27 | 1.4 | `ea47ab3` |
 | CR-30 | [ ] | KPO configuration/Auth simplification | Configuration/Auth ergonomics plan | CR-26, CR-28, CR-29 | 1.4 | — |
-| CR-31 | [ ] | Comments metadata schemas/selectors/projections | Comments metadata/mentions plan | CR-12 | 1.4 | — |
-| CR-32 | [ ] | Rich document and mention persistence | Comments metadata/mentions plan | CR-31 | 1.4 | — |
-| CR-33 | [ ] | Mention registry/search/resolve/events/diagnostics | Comments metadata/mentions plan | CR-32 | 1.4 | — |
+| CR-31 | [x] | Comments metadata schemas/selectors/projections | Comments metadata/mentions plan | CR-12 | 1.4 | `998547e`, `488a82a` |
+| CR-32 | [x] | Rich document and mention persistence | Comments metadata/mentions plan | CR-31 | 1.4 | `3d3ab7e`, `d0455aa` |
+| CR-33 | [x] | Mention registry/search/resolve/events/diagnostics | Comments metadata/mentions plan | CR-32 | 1.4 | `31fded0`, `24bec45`, `77db6b1` |
 | CR-34 | [ ] | KPO Comments metadata/mentions adoption | Comments metadata/mentions plan | CR-30, CR-31, CR-33 | 1.4 | — |
 
 ## Detailed plans
@@ -457,7 +457,7 @@ consumer suppression.
 - [x] CR-27 dependency approval, atomic list overrides, and value-free drift diagnostics are complete; CR-28 preserves KPO's unchanged seventeen-module selection.
 - [x] Execute CR-29; preserve host-owned Auth HTTP/UI through explicit ownership and policy mappings.
 - [ ] Execute CR-30 in KPO after publishing; remove copied defaults and bridge gates without behavior drift.
-- [ ] Execute CR-31 through CR-33; run Comments migration upgrades, database portability, generated types, cache safety, concurrency, and reconciliation gates.
+- [x] Execute CR-31 through CR-33; run Comments migration upgrades, database portability, generated types, cache safety, concurrency, and reconciliation gates.
 - [ ] Execute CR-34; remove KPO's Comments JSON/hash queries and prove its first policy-scoped rich resource mentions.
 - [ ] Re-run both proof consumers with minimal overlays and strict package-configuration inspection.
 - [ ] Run the full suite/KPO gates and previous-1.x upgrade rehearsal before drafting 1.4 release notes.
