@@ -21,6 +21,28 @@ metadata: Record<string, boolean | number | string | null>,
 expiresAt: string,
 resendCount: number,
 };
+export type InvitationReadData = {
+id: string,
+recipient: string,
+type: string,
+purpose: string,
+inviter: Nvl.Auth.Data.Display.AuthSubjectReferenceData | null,
+acceptedBy: Nvl.Auth.Data.Display.AuthSubjectReferenceData | null,
+roles: string[],
+permissions: string[],
+metadata: Record<string, boolean | number | string | null>,
+lifecycle: string,
+resendCount: number,
+lastSentAt: string | null,
+expiresAt: string,
+acceptedAt: string | null,
+revokedAt: string | null,
+deliveryStatus: Nvl.Auth.Enums.InvitationDeliveryStatus | null,
+deliveryAttemptedAt: string | null,
+deliveredAt: string | null,
+deliveryFailedAt: string | null,
+deliveryFailureCode: string | null,
+};
 export type PermissionGroupData = {
 value: string,
 label: string,
@@ -288,6 +310,7 @@ code: string,
 }
 namespace Queries {
 export type InvitationIndexQueryData = {
+types: string[] | null,
 recipient: string | null,
 type: string | null,
 purpose: string | null,
@@ -333,6 +356,7 @@ export type AuthFeature = 'authentication' | 'principal_management' | 'password'
 export type AuthMessageType = 'invitation' | 'magic_link' | 'security_code' | 'password_reset' | 'email_verification';
 export type AuthenticationPurpose = 'credential_login' | 'passwordless_login' | 'social_login' | 'password_reset';
 export type FeatureOperation = 'read' | 'enroll' | 'issue' | 'use' | 'update' | 'revoke' | 'cleanup';
+export type InvitationDeliveryStatus = 'pending' | 'delivered' | 'failed';
 export type PrincipalAttribute = 'id' | 'name' | 'email' | 'email_verified_at' | 'password' | 'active' | 'locale' | 'timezone' | 'profile' | 'preferences' | 'last_login_at' | 'last_login_ip' | 'locked_until' | 'remember_token' | 'created_at' | 'updated_at' | 'deleted_at';
 export type UserBulkOperation = 'enable' | 'disable' | 'delete' | 'restore';
 }

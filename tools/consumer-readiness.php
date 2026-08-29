@@ -7,6 +7,9 @@ use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Facades\ActivityLog;
 use Nvl\Activity\Services\ActivityReadService;
 use Nvl\Activity\Support\ActivitySubjectReference;
+use Nvl\Auth\Actions\Invitations\FindActiveInvitationAction;
+use Nvl\Auth\Actions\Invitations\ListInvitationProjectionsAction;
+use Nvl\Auth\Actions\Invitations\RecordInvitationDeliveryOutcomeAction;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Auth\Actions\Users\ListUsersAction;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
@@ -252,18 +255,29 @@ return [
         'auth' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListUsersAction::class, ShowRoleAnalyticsAction::class, AuthManagementAccess::class],
+                'symbols' => [
+                    ListUsersAction::class,
+                    ShowRoleAnalyticsAction::class,
+                    ListInvitationProjectionsAction::class,
+                    FindActiveInvitationAction::class,
+                    RecordInvitationDeliveryOutcomeAction::class,
+                    AuthManagementAccess::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics',
+                'documentation' => 'packages/nvl/auth/README.md#consumer-application-apis',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics']),
+                ...$pass([
+                    'packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics',
+                    'packages/nvl/auth/README.md#invitation-consumer-reads-and-delivery-outcomes',
+                ]),
                 'query_tests' => [
                     'packages/nvl/auth/tests/Feature/PrincipalManagementTest.php',
                     'packages/nvl/auth/tests/Feature/RbacManagementTest.php',
+                    'packages/nvl/auth/tests/Feature/InvitationLifecycleTest.php',
                 ],
-                'cache' => ['mode' => 'none', 'rationale' => 'Authorization-sensitive principal and RBAC reads are bounded and uncached so revocations are immediately visible.'],
+                'cache' => ['mode' => 'none', 'rationale' => 'Authorization-sensitive principal, RBAC, and invitation reads are bounded and uncached so lifecycle changes and revocations are immediately visible.'],
             ],
             'media_lifecycle' => $notApplicable('Auth does not own media associations.'),
             'locale_fallback' => $notApplicable('Auth owns identity state; UI strings remain Laravel translations.'),

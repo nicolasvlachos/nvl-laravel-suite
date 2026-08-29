@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Illuminate\Config\Repository;
 use Nvl\Activity\Support\ActivitySubjectReference;
+use Nvl\Auth\Actions\Invitations\FindActiveInvitationAction;
+use Nvl\Auth\Actions\Invitations\ListInvitationProjectionsAction;
+use Nvl\Auth\Actions\Invitations\RecordInvitationDeliveryOutcomeAction;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
@@ -325,18 +328,27 @@ it('limits explicit model query exceptions and built-in presets to reviewed capa
         ->and($presetPackages)->toBe(['content', 'media']);
 });
 
-it('publishes bounded Auth role analytics as a consumer-readiness seam', function (): void {
+it('publishes bounded Auth role and invitation consumer seams', function (): void {
+    $root = dirname(__DIR__, 2);
     $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
     $auth = $catalog['packages']['auth'];
+    $generatedTypes = file_get_contents($root.'/resources/js/types/generated/auth.d.ts');
 
     expect($auth['application_api']['symbols'])
         ->toContain(ShowRoleAnalyticsAction::class)
+        ->toContain(ListInvitationProjectionsAction::class)
+        ->toContain(FindActiveInvitationAction::class)
+        ->toContain(RecordInvitationDeliveryOutcomeAction::class)
         ->and($auth['application_api']['documentation'])
-        ->toBe('packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics')
+        ->toBe('packages/nvl/auth/README.md#consumer-application-apis')
         ->and($auth['performance']['evidence'])
         ->toContain('packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics')
+        ->toContain('packages/nvl/auth/README.md#invitation-consumer-reads-and-delivery-outcomes')
         ->and($auth['performance']['query_tests'])
-        ->toContain('packages/nvl/auth/tests/Feature/RbacManagementTest.php');
+        ->toContain('packages/nvl/auth/tests/Feature/RbacManagementTest.php')
+        ->toContain('packages/nvl/auth/tests/Feature/InvitationLifecycleTest.php')
+        ->and($generatedTypes)->toBeString()
+        ->toContain("export type InvitationIndexQueryData = {\ntypes: string[] | null,");
 });
 
 it('publishes bounded Activity event and subject-reference seams', function (): void {

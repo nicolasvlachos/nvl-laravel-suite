@@ -1757,16 +1757,33 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\StoreInvitationData $data, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
+                "Nvl\\Auth\\Actions\\Invitations\\FindActiveInvitationAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Invitations\\FindActiveInvitationAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata): mixed",
+                    "public function execute(string $recipient, string $purpose, ?array $types=null, ?string $context=null, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $issuance=null): ?Nvl\\Auth\\Data\\Display\\InvitationReadData",
+                    "@param list<string>|null $types"
+                ],
+                "Nvl\\Auth\\Actions\\Invitations\\ListInvitationProjectionsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Invitations\\ListInvitationProjectionsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction $invitations, Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData $filters=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
+                    "@return LengthAwarePaginator<int, InvitationReadData>"
+                ],
                 "Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\SecretHasher $hasher): mixed",
-                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData $filters=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData $filters=null, int $perPage=25): Illuminate\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, Invitation>"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\PreviewInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\PreviewInvitationAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher): mixed",
                     "public function execute(string $token): Nvl\\Auth\\Models\\Invitation"
+                ],
+                "Nvl\\Auth\\Actions\\Invitations\\RecordInvitationDeliveryOutcomeAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Invitations\\RecordInvitationDeliveryOutcomeAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function execute(string $invitationId, string $messageId, Nvl\\Auth\\Enums\\InvitationDeliveryStatus $status, Carbon\\CarbonImmutable $occurredAt, ?string $failureCode=null): void"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction",
@@ -1776,12 +1793,12 @@
                 "Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
-                    "public function execute(Nvl\\Auth\\Models\\Invitation $invitation, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?string $locale=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
+                    "public function execute(Nvl\\Auth\\Models\\Invitation|string $invitation, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?string $locale=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(Nvl\\Auth\\Models\\Invitation $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $actor): Nvl\\Auth\\Models\\Invitation"
+                    "public function execute(Nvl\\Auth\\Models\\Invitation|string $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $actor): Nvl\\Auth\\Models\\Invitation"
                 ],
                 "Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction",
@@ -2429,6 +2446,56 @@
                     "@param list<string> $roles",
                     "@param list<string> $permissions",
                     "@param array<string, bool|float|int|string|null> $metadata",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Auth\\Data\\Display\\InvitationReadData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Display\\InvitationReadData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $id",
+                    "public readonly string $recipient",
+                    "public readonly string $type",
+                    "public readonly string $purpose",
+                    "public readonly ?Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData $inviter",
+                    "public readonly ?Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData $acceptedBy",
+                    "public readonly array $roles",
+                    "public readonly array $permissions",
+                    "public readonly array $metadata",
+                    "public readonly string $lifecycle",
+                    "public readonly int $resendCount",
+                    "public readonly ?Carbon\\CarbonImmutable $lastSentAt",
+                    "public readonly Carbon\\CarbonImmutable $expiresAt",
+                    "public readonly ?Carbon\\CarbonImmutable $acceptedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $revokedAt",
+                    "public readonly ?Nvl\\Auth\\Enums\\InvitationDeliveryStatus $deliveryStatus",
+                    "public readonly ?Carbon\\CarbonImmutable $deliveryAttemptedAt",
+                    "public readonly ?Carbon\\CarbonImmutable $deliveredAt",
+                    "public readonly ?Carbon\\CarbonImmutable $deliveryFailedAt",
+                    "public readonly ?string $deliveryFailureCode",
+                    "public function __construct(string $id, string $recipient, string $type, string $purpose, ?Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData $inviter, ?Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData $acceptedBy, array $roles, array $permissions, array $metadata, string $lifecycle, int $resendCount, ?Carbon\\CarbonImmutable $lastSentAt, Carbon\\CarbonImmutable $expiresAt, ?Carbon\\CarbonImmutable $acceptedAt, ?Carbon\\CarbonImmutable $revokedAt, ?Nvl\\Auth\\Enums\\InvitationDeliveryStatus $deliveryStatus, ?Carbon\\CarbonImmutable $deliveryAttemptedAt, ?Carbon\\CarbonImmutable $deliveredAt, ?Carbon\\CarbonImmutable $deliveryFailedAt, ?string $deliveryFailureCode): mixed",
+                    "@param list<string> $roles",
+                    "@param list<string> $permissions",
+                    "@param array<string, bool|float|int|string|null> $metadata",
+                    "public static function fromModel(Nvl\\Auth\\Models\\Invitation $invitation, Nvl\\Auth\\Data\\Display\\InvitationDeliveryData $delivery): self",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
                     "@throws Exception",
@@ -3834,6 +3901,7 @@
                     "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
                     "final class Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData extends Spatie\\LaravelData\\Data",
+                    "public readonly ?array $types",
                     "public readonly ?string $recipient",
                     "public readonly ?string $type",
                     "public readonly ?string $purpose",
@@ -3842,7 +3910,8 @@
                     "public readonly ?string $expiresBefore",
                     "public readonly ?string $context",
                     "public readonly ?int $perPage",
-                    "public function __construct(?string $recipient=null, ?string $type=null, ?string $purpose=null, ?string $lifecycle=null, ?string $expiresAfter=null, ?string $expiresBefore=null, ?string $context=null, ?int $perPage=null): mixed",
+                    "public function __construct(?string $recipient=null, ?string $type=null, ?string $purpose=null, ?string $lifecycle=null, ?string $expiresAfter=null, ?string $expiresBefore=null, ?string $context=null, ?int $perPage=null, ?array $types=null): mixed",
+                    "@param list<string>|null $types",
                     "public static function rules(): array",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
@@ -4165,6 +4234,17 @@
                     "public readonly string $name",
                     "public readonly string $value",
                     "public function isContainment(): bool",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Auth\\Enums\\InvitationDeliveryStatus": [
+                    "enum Nvl\\Auth\\Enums\\InvitationDeliveryStatus implements BackedEnum, UnitEnum: string",
+                    "public const mixed Pending=Nvl\\Auth\\Enums\\InvitationDeliveryStatus::Pending=pending",
+                    "public const mixed Delivered=Nvl\\Auth\\Enums\\InvitationDeliveryStatus::Delivered=delivered",
+                    "public const mixed Failed=Nvl\\Auth\\Enums\\InvitationDeliveryStatus::Failed=failed",
+                    "public readonly string $name",
+                    "public readonly string $value",
                     "public static function cases(): array",
                     "public static function from(string|int $value): static",
                     "public static function tryFrom(string|int $value): ?static"
@@ -4865,14 +4945,20 @@
                     "@property list<string>|null $permissions",
                     "@property array<string, mixed>|null $metadata",
                     "@property int $resend_count",
+                    "@property string|null $current_delivery_message_id",
+                    "@property InvitationDeliveryStatus|null $delivery_status",
+                    "@property CarbonImmutable|null $delivery_attempted_at",
+                    "@property CarbonImmutable|null $delivered_at",
+                    "@property CarbonImmutable|null $delivery_failed_at",
+                    "@property string|null $delivery_failure_code",
                     "@property CarbonImmutable|null $last_sent_at",
                     "@property CarbonImmutable $expires_at",
                     "@property CarbonImmutable|null $accepted_at",
                     "@property CarbonImmutable|null $revoked_at",
                     "public const mixed TABLE=\"nvl_auth_invitations\"",
                     "protected mixed $table=\"nvl_auth_invitations\"",
-                    "protected mixed $fillable=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\",\"type\",\"purpose\",\"inviter_type\",\"inviter_id\",\"accepted_by_type\",\"accepted_by_id\",\"roles\",\"permissions\",\"metadata\",\"resend_count\",\"last_sent_at\",\"expires_at\",\"accepted_at\",\"revoked_at\"]",
-                    "protected mixed $hidden=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\"]",
+                    "protected mixed $fillable=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\",\"type\",\"purpose\",\"inviter_type\",\"inviter_id\",\"accepted_by_type\",\"accepted_by_id\",\"roles\",\"permissions\",\"metadata\",\"resend_count\",\"current_delivery_message_id\",\"delivery_status\",\"delivery_attempted_at\",\"delivered_at\",\"delivery_failed_at\",\"delivery_failure_code\",\"last_sent_at\",\"expires_at\",\"accepted_at\",\"revoked_at\"]",
+                    "protected mixed $hidden=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\",\"current_delivery_message_id\"]",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function isUsable(): bool",
@@ -6078,7 +6164,8 @@
             "migrations": {
                 "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "6b8d465f4405d4a802c3b8d8346fd33749ab974550dcf9dc2937145b1df6cf35",
                 "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "0f45180492a77baba154ffdaf9bc53fedc1413b4873f3d4c756f0e413b7e7d8c",
-                "database/migrations/2026_08_12_000000_add_auth_delivery_context_columns.php": "764d05d47efe24d564e39515b18125e9e2e7c8eb818b5dfc7c2ac4ab5505e253"
+                "database/migrations/2026_08_12_000000_add_auth_delivery_context_columns.php": "764d05d47efe24d564e39515b18125e9e2e7c8eb818b5dfc7c2ac4ab5505e253",
+                "database/migrations/2026_08_28_000000_add_invitation_delivery_outcomes.php": "64970d899844006fb5299be384b2b591965f1e72b48faff716defc09a5939771"
             }
         },
         "comments": {

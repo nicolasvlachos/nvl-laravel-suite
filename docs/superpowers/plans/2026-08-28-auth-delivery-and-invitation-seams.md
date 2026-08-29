@@ -148,7 +148,7 @@ git commit -m "feat(auth): carry safe delivery context"
 - Consumes: invitation model registry/configuration, `SecretHasher`, `ManagementAuthorizer`, issuance trust context, and CR-25a delivery projection.
 - Produces: DTO list/active reads, ID-based resend/revoke, and package-owned outcome mutation.
 
-- [ ] **Step 1: Write failing projection, lookup, and outcome tests**
+- [x] **Step 1: Write failing projection, lookup, and outcome tests**
 
 Cover authorized pagination, multiple type filters, lifecycle/context filters,
 actorless denial, explicit actorless authorization, recipient normalization,
@@ -156,13 +156,13 @@ active expiry, no recipient enumeration in errors, one-versus-100 query counts,
 ID-based resend/revoke, delivered/failed outcome transitions, concurrent duplicate
 outcomes, and event/audit ordering.
 
-- [ ] **Step 2: Run invitation tests and verify APIs are missing**
+- [x] **Step 2: Run invitation tests and verify APIs are missing**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Feature/InvitationLifecycleTest.php packages/nvl/auth/tests/Unit/OpenApiContractTest.php`
 
 Expected: FAIL because the projection/lookup/outcome APIs do not exist.
 
-- [ ] **Step 3: Implement bounded invitation list projections**
+- [x] **Step 3: Implement bounded invitation list projections**
 
 `InvitationReadData` contains ID, recipient, type, purpose, inviter reference,
 role/permission names, approved metadata, lifecycle, accepted/revoked/sent/
@@ -176,7 +176,7 @@ existing hashed recipient/context and lifecycle rules.
 LengthAwarePaginator` authorizes first, builds the same bounded query as the
 existing compatibility Action, and maps with paginator `through()`.
 
-- [ ] **Step 4: Implement trusted active lookup and ID-based resend/revoke**
+- [x] **Step 4: Implement trusted active lookup and ID-based resend/revoke**
 
 `FindActiveInvitationAction::execute(string $recipient, string $purpose,
 ?array $types = null, ?string $context = null, ?Authenticatable $actor = null,
@@ -187,7 +187,7 @@ newest deterministic DTO. Extend `ResendInvitationAction` and
 `RevokeInvitationAction` to accept `Invitation|string` and resolve/lock the ID
 internally while retaining existing model-call compatibility.
 
-- [ ] **Step 5: Implement delivery outcome mutation**
+- [x] **Step 5: Implement delivery outcome mutation**
 
 Do not overload encrypted application metadata with delivery state. Add a
 forward migration (never edit the released create migration) for nullable
@@ -205,7 +205,7 @@ dedicated columns. The same outcome is idempotent; a result for a superseded
 message ID is recorded as a bounded stale audit fact and cannot overwrite a
 newer resend. It never accepts an exception or arbitrary metadata.
 
-- [ ] **Step 6: Document and verify the consumer boundary**
+- [x] **Step 6: Document and verify the consumer boundary**
 
 Document delivery listeners using request projections, actorless lookup as a
 trusted server-only boundary, DTO listing, ID-based resend, and outcome writes.
