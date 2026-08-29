@@ -77,7 +77,10 @@ renders all keys explicitly and creates a timestamped sibling backup only when
 overwriting an existing file. Doctor no longer calls an omitted decision a
 warning in 2.0; it reports it as an intentional disabled state.
 
-- [x] **Step 5: Run upgrade, archive, and clean-consumer gates**
+- [ ] **Step 5: Run upgrade, archive, and clean-consumer gates**
+
+Package release cleanup and the final-1.x-to-2.0 rehearsal are deferred to
+Task 3 under the preflight ruling; this step is not yet complete.
 
 Run: `php artisan test --compact tests/Feature/SuiteDiagnosticsTest.php tests/Feature/SuiteConfigurationWriterTest.php tests/Contract/PackageArchiveToolsTest.php`
 

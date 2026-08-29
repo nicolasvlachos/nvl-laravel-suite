@@ -64,7 +64,10 @@ it('treats omitted legacy module decisions as intentionally disabled', function 
     expect($catalog->moduleDecision('auth'))->toBe('enabled')
         ->and($catalog->moduleDecision('forms'))->toBe('disabled')
         ->and($catalog->moduleDecision('pages'))->toBe('implicit')
+        ->and($catalog->moduleDecision('support'))->toBe('implicit')
         ->and($catalog->requested('pages'))->toBeFalse()
+        ->and($catalog->requested('support'))->toBeFalse()
+        ->and($catalog->selection()->enabled('support'))->toBeTrue()
         ->and($catalog->effectiveModules())->toBe(['support', 'data', 'auth']);
 
     $report = app(SuiteConfigurationInspector::class)->inspect();
@@ -78,7 +81,12 @@ it('treats omitted legacy module decisions as intentionally disabled', function 
         ->and($report['modules']['pages'])
         ->decision->toBe('implicit')
         ->explicit->toBeFalse()
-        ->enabled->toBeFalse();
+        ->enabled->toBeFalse()
+        ->and($report['modules']['support'])
+        ->requested->toBeFalse()
+        ->decision->toBe('implicit')
+        ->enabled->toBeTrue()
+        ->dependency->toBeTrue();
 });
 
 it('reports omitted legacy decisions as intentional disabled states in Doctor output', function (): void {

@@ -181,6 +181,81 @@ it('backs up exact overwritten configuration only when contents change', functio
     }
 });
 
+it('refuses a dangling backup symlink without replacing configuration or writing its target', function (): void {
+    $path = storage_path('framework/testing/nvl-suite-dangling-backup-'.bin2hex(random_bytes(4)).'.php');
+    $outside = sys_get_temp_dir().'/nvl-suite-backup-target-'.bin2hex(random_bytes(4)).'.php';
+    $original = "<?php\n\ndeclare(strict_types=1);\n\nreturn ['existing' => true];\n";
+    Carbon::setTestNow('2026-08-29 12:36:58');
+    $backupPath = $path.'.backup-20260829-123658';
+    File::put($path, $original);
+    File::delete($outside);
+    symlink($outside, $backupPath);
+
+    try {
+        expect(Artisan::call('nvl:suite:configure', [
+            '--profile' => 'auth-only',
+            '--minimal' => true,
+            '--path' => $path,
+            '--write' => true,
+            '--force' => true,
+            '--format' => 'json',
+        ]))->toBe(1)
+            ->and(File::get($path))->toBe($original)
+            ->and(is_link($backupPath))->toBeTrue()
+            ->and(readlink($backupPath))->toBe($outside)
+            ->and(File::exists($outside))->toBeFalse();
+    } finally {
+        Carbon::setTestNow();
+        File::delete($path, $outside);
+
+        if (is_link($backupPath)) {
+            unlink($backupPath);
+        }
+    }
+});
+
+it('refuses every existing non-dangling backup entry without overwriting it', function (string $entry): void {
+    $path = storage_path('framework/testing/nvl-suite-reserved-backup-'.bin2hex(random_bytes(4)).'.php');
+    $target = storage_path('framework/testing/nvl-suite-reserved-target-'.bin2hex(random_bytes(4)).'.php');
+    $original = "<?php\n\ndeclare(strict_types=1);\n\nreturn ['existing' => true];\n";
+    $reserved = 'reserved-backup-content';
+    Carbon::setTestNow('2026-08-29 12:37:59');
+    $backupPath = $path.'.backup-20260829-123759';
+    File::put($path, $original);
+
+    if ($entry === 'file') {
+        File::put($backupPath, $reserved);
+    } else {
+        File::put($target, $reserved);
+        symlink($target, $backupPath);
+    }
+
+    try {
+        expect(Artisan::call('nvl:suite:configure', [
+            '--profile' => 'auth-only',
+            '--minimal' => true,
+            '--path' => $path,
+            '--write' => true,
+            '--force' => true,
+            '--format' => 'json',
+        ]))->toBe(1)
+            ->and(File::get($path))->toBe($original)
+            ->and(File::get($backupPath))->toBe($reserved);
+    } finally {
+        Carbon::setTestNow();
+        File::delete($path, $target);
+
+        if (is_link($backupPath)) {
+            unlink($backupPath);
+        } else {
+            File::delete($backupPath);
+        }
+    }
+})->with([
+    'existing regular file' => ['file'],
+    'existing live symlink' => ['symlink'],
+]);
+
 it('rejects invalid selections formats and destinations without writing', function (): void {
     $outside = sys_get_temp_dir().'/nvl-suite-outside-'.bin2hex(random_bytes(4)).'.php';
     $directoryPath = storage_path('framework/testing/nvl-suite-directory-'.bin2hex(random_bytes(4)).'.php');
@@ -260,32 +335,36 @@ it('reports incomplete published module decisions and their operational reviews'
     $output = Artisan::output();
     $report = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
     $findings = collect($report['findings'] ?? []);
+    $missingModules = $findings->where('code', 'upgrade.module_missing')
+        ->values()
+        ->map(static fn (array $finding): array => [
+            'module' => $finding['module'],
+            'message' => $finding['message'],
+        ])
+        ->all();
 
     expect($report['healthy'] ?? null)->toBeFalse()
-        ->and($findings->where('code', 'upgrade.module_missing')->pluck('module'))
-        ->values()->all()->toBe([
-            'activity',
-            'comments',
-            'content',
-            'csv',
-            'data',
-            'filterable',
-            'forms',
-            'mail-notifications',
-            'media',
-            'metafields',
-            'pages',
-            'primitives',
-            'seo',
-            'settings',
-            'support',
-            'taxonomy',
-            'templates',
-            'translatable',
-            'translations',
+        ->and($missingModules)->toBe([
+            ['module' => 'activity', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'comments', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'content', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'csv', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'data', 'message' => 'The omitted module flag is requested-disabled and is effectively enabled in Suite 2.0 through dependency closure.'],
+            ['module' => 'filterable', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'forms', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'mail-notifications', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'media', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'metafields', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'pages', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'primitives', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'seo', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'settings', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'support', 'message' => 'The omitted module flag is requested-disabled and is effectively enabled in Suite 2.0 through dependency closure.'],
+            ['module' => 'taxonomy', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'templates', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'translatable', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'translations', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
         ])
-        ->and($findings->where('code', 'upgrade.module_missing')->pluck('message')->unique()->values()->all())
-        ->toBe(['The omitted module flag resolves to disabled in Suite 2.0.'])
         ->and($findings->where('code', 'upgrade.module_missing')->pluck('remediation')->unique()->values()->all())
         ->toBe(['Run nvl:suite:configure with a reviewed profile and --full, then use --write --force to replace the partial map with explicit decisions.'])
         ->and($findings->where('code', 'upgrade.required_contract_review')->pluck('symbol'))

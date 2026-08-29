@@ -108,7 +108,8 @@ Use the narrower documented profile that matches the consumer when the old
 omissions were intentional. The full-suite profile preserves the 1.x
 compatibility-enabled behavior. Review every generated boolean and the unified
 diff before writing. `nvl:suite:upgrade:check` reports one
-`upgrade.module_missing` error per omission, including its disabled 2.0 state
+`upgrade.module_missing` error per omission, including its requested-disabled
+state, its actual effective enabled/disabled 2.0 state after dependency closure,
 and this remediation. The legacy
 `adoption.require_explicit_module_decisions` setting may remain during the
 upgrade, but omitted flags are now intentional disabled states rather than

@@ -77,6 +77,7 @@ final readonly class SuiteUpgradeInspector
         }
 
         $definitions = $this->catalog->modules();
+        $validConfiguredModules = [];
 
         foreach ($configuredModules as $module => $enabled) {
             if (! is_string($module) || ! isset($definitions[$module])) {
@@ -101,8 +102,17 @@ final readonly class SuiteUpgradeInspector
                     'message' => 'The published module decision is not boolean.',
                     'remediation' => 'Set the module decision explicitly to true or false.',
                 ];
+
+                continue;
             }
+
+            $validConfiguredModules[$module] = $enabled;
         }
+
+        $selection = SuiteModuleSelection::fromConfiguration(
+            ['modules' => $validConfiguredModules],
+            $this->catalog,
+        );
 
         foreach ($definitions as $module => $definition) {
             if (array_key_exists($module, $configuredModules)) {
@@ -114,7 +124,9 @@ final readonly class SuiteUpgradeInspector
                 'severity' => 'error',
                 'module' => $module,
                 'symbol' => 'modules.'.$module,
-                'message' => 'The omitted module flag resolves to disabled in Suite 2.0.',
+                'message' => $selection->enabled($module)
+                    ? 'The omitted module flag is requested-disabled and is effectively enabled in Suite 2.0 through dependency closure.'
+                    : 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.',
                 'remediation' => 'Run nvl:suite:configure with a reviewed profile and --full, then use --write --force to replace the partial map with explicit decisions.',
             ];
 

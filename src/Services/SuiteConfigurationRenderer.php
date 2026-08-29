@@ -235,7 +235,9 @@ PHP,
         $backup = null;
 
         if ($this->filesystem->exists($path)) {
-            if ($this->filesystem->get($path) === $contents) {
+            $current = $this->filesystem->get($path);
+
+            if ($current === $contents) {
                 return null;
             }
 
@@ -244,19 +246,24 @@ PHP,
             }
 
             $backup = $path.'.backup-'.now()->format('Ymd-His');
-
-            if ($this->filesystem->exists($backup)) {
-                throw new RuntimeException('The timestamped suite configuration backup already exists; retry after the timestamp changes.');
-            }
-
-            if (! $this->filesystem->copy($path, $backup)) {
-                throw new RuntimeException('The existing suite configuration could not be backed up.');
-            }
+            $this->createExclusiveBackup($path, $backup);
         }
 
         $this->filesystem->replace($path, $contents);
 
         return $backup;
+    }
+
+    /**
+     * Create a byte-exact backup without following or replacing its destination.
+     */
+    private function createExclusiveBackup(string $source, string $destination): void
+    {
+        $realSource = realpath($source);
+
+        if ($realSource === false || ! @link($realSource, $destination)) {
+            throw new RuntimeException('The timestamped suite configuration backup could not be created exclusively.');
+        }
     }
 
     /**

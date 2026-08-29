@@ -41,11 +41,13 @@ creates an exact sibling backup named
 new file, or an already-matching file.
 
 The upgrade checker exits `1` with one `upgrade.module_missing` finding per
-omitted key. Each finding states: `The omitted module flag resolves to disabled
-in Suite 2.0.` Its remediation is: `Run nvl:suite:configure with a reviewed
-profile and --full, then use --write --force to replace the partial map with
-explicit decisions.` Unknown and non-boolean keys remain errors and must be
-removed or corrected before generating the replacement.
+omitted key. Each finding states that the omission is requested-disabled and
+reports its actual effective 2.0 state: dependencies may be effectively enabled
+through closure, while other omissions are effectively disabled. Its
+remediation is: `Run nvl:suite:configure with a reviewed profile and --full,
+then use --write --force to replace the partial map with explicit decisions.`
+Unknown and non-boolean keys remain errors and must be removed or corrected
+before generating the replacement.
 
 Profile/include/exclude selection is unchanged. A non-null legacy map remains
 runtime-authoritative, and mixing that map with profile/include/exclude remains
