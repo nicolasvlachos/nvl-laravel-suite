@@ -219,6 +219,30 @@ it('keeps an arrow-local package table assignment out of outer and sibling scope
             ->all())->toBe(['nvl_auth_roles']);
 });
 
+it('keeps a shadowed arrow parameter local to its nested explicit closure', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'app/ArrowShadowedRoleReader.php')
+        ->where('code', 'consumer.package_model_query')
+        ->pluck('symbol')
+        ->all();
+
+    expect($findings)->toBe([]);
+});
+
+it('tracks an arrow-local package model captured by a nested explicit closure', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'app/ArrowLocalRoleReader.php')
+        ->where('code', 'consumer.package_model_query')
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->all();
+
+    expect($findings)->toBe([
+        'Nvl\\Auth\\Models\\Role::query',
+        'Nvl\\Auth\\Models\\Role::permissions',
+    ]);
+});
+
 it('preserves the explicit allowed consumer model classifications', function (): void {
     $findings = collect(consumerAuditFixtureFindings());
 

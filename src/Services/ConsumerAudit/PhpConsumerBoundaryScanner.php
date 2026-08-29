@@ -1056,6 +1056,14 @@ final readonly class PhpConsumerBoundaryScanner
             $arrowBodies[$arrowScope] = $bounds['body'];
 
             for ($tokenIndex = $index; $tokenIndex <= $bounds['end']; $tokenIndex++) {
+                if ($tokens[$tokenIndex]->id === T_FUNCTION) {
+                    $functionScope = $scopes[$tokenIndex] ?? 0;
+
+                    if (($parents[$functionScope] ?? null) === $parentScope) {
+                        $parents[$functionScope] = $arrowScope;
+                    }
+                }
+
                 if (($scopes[$tokenIndex] ?? 0) === $parentScope) {
                     $scopes[$tokenIndex] = $arrowScope;
                 }
