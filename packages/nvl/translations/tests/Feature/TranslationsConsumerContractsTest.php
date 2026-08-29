@@ -234,8 +234,15 @@ test('returns authorized bounded translation catalog statistics with list filter
     DB::flushQueryLog();
     DB::enableQueryLog();
     $statistics = app(GetTranslationCatalogStatisticsAction::class)->execute();
-    $queryCount = count(DB::getQueryLog());
+    $queries = DB::getQueryLog();
     DB::disableQueryLog();
+    $grammar = DB::connection()->getQueryGrammar();
+    $localeQuery = collect($queries)->first(
+        static fn (array $query): bool => str_contains($query['query'], 'aggregate_key'),
+    );
+    $scopeQuery = collect($queries)->first(
+        static fn (array $query): bool => str_contains($query['query'], 'aggregate_type'),
+    );
 
     expect($statistics)->toBeInstanceOf(TranslationCatalogStatisticsData::class)
         ->and($statistics->toArray())->toBe([
@@ -246,7 +253,12 @@ test('returns authorized bounded translation catalog statistics with list filter
             'locales' => ['bg' => 2, 'en' => 2, 'de' => 1, 'fr' => 1],
             'scopes' => ['app' => 2, 'custom:shared' => 2, 'module:website' => 2],
         ])
-        ->and($queryCount)->toBe(3)
+        ->and($queries)->toHaveCount(3)
+        ->and($localeQuery['query'] ?? null)->toBeString()
+        ->toContain('group by '.$grammar->wrap('aggregate_key'))
+        ->and($scopeQuery['query'] ?? null)->toBeString()
+        ->toContain('group by '.$grammar->wrap('aggregate_type'))
+        ->toContain($grammar->wrap('aggregate_name'))
         ->and($authorization->abilities)->toBe([TranslationsAbility::ListEntries]);
 
     $schema = app(TranslationEntryFilterSchema::class)->make();
