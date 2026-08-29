@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Illuminate\Config\Repository;
 use Nvl\Suite\Quality\PackageQualityRunner;
+use Nvl\Suite\Support\SuiteModuleCatalog;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
@@ -868,6 +870,33 @@ it('leaves unreleased migrations in mutable PHPStan analysis', function (): void
             ->and($commands[1]['command'])->toContain($migration);
     } finally {
         removePackageQualityFixture($root);
+    }
+});
+
+it('uses one deep-map and atomic-list merger in every config-bearing provider', function (): void {
+    $catalog = new SuiteModuleCatalog(new Repository);
+    $configBearingModules = collect($catalog->modules())
+        ->filter(static fn (array $definition): bool => $definition['configuration'] !== null);
+
+    expect($configBearingModules)->toHaveCount(17);
+
+    foreach ($configBearingModules as $module => $definition) {
+        $providerPath = (new ReflectionClass($definition['provider']))->getFileName();
+
+        expect($providerPath)->toBeString()->toBeFile();
+
+        $source = (string) file_get_contents($providerPath);
+
+        expect($source)
+            ->toContain('use Nvl\Support\Traits\MergesPackageConfiguration;')
+            ->toContain('use MergesPackageConfiguration;')
+            ->toContain('mergePackageConfiguration(')
+            ->not->toContain(
+                'replaceConfigRecursivelyFrom(',
+                'mergeConfigFrom(',
+                'mergeConfigurationValues(',
+                'mergeConfigurationRecursively(',
+            );
     }
 });
 

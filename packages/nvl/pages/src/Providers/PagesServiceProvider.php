@@ -26,6 +26,7 @@ use Nvl\Pages\Services\PageResourceRegistry;
 use Nvl\Pages\Support\PagesConfiguration;
 use Nvl\Pages\Support\PagesMigrationRollbackGuard;
 use Nvl\Seo\Services\SitemapRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -33,12 +34,14 @@ use Nvl\Translatable\Services\TranslationResourceRegistry;
  */
 final class PagesServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Register validated Pages contracts and singleton registries.
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/pages.php', 'pages');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/pages.php', 'pages');
         $this->registerOwnerConfigurations();
         $authorization = config(
             'pages.authorization.class',

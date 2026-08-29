@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Nvl\Pages\Contracts\PageAuthorization;
+use Nvl\Suite\Services\SuitePackageConfigurationInspector;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 
 it('renders a dependency-complete profile without writing by default', function (): void {
@@ -24,7 +26,7 @@ it('renders a dependency-complete profile without writing by default', function 
         expect($report['written'] ?? null)->toBeFalse()
             ->and($report['modules']['data'] ?? null)->toBeTrue()
             ->and($report['modules']['auth'] ?? null)->toBeTrue()
-            ->and(collect($report['modules'] ?? [])->except(['data', 'auth'])->filter())
+            ->and(collect($report['modules'] ?? [])->except(['support', 'data', 'auth'])->filter())
             ->toBeEmpty();
     } finally {
         File::delete($path);
@@ -183,4 +185,91 @@ it('rejects a configuration source that does not return an array', function (): 
         '--format' => 'json',
     ]))->toBe(2)
         ->and(Artisan::output())->not->toContain('fixture-secret-value');
+});
+
+it('combines value-free package drift findings and supports repeatable module filters', function (): void {
+    $directory = storage_path('framework/testing/suite-upgrade-package-config-'.bin2hex(random_bytes(4)));
+    File::ensureDirectoryExists($directory);
+    File::put($directory.'/translations.php', <<<'PHP'
+<?php
+
+throw new RuntimeException('published configuration was executed');
+
+return [
+    'authorization' => [
+        'class' => 'must-never-appear',
+    ],
+];
+PHP);
+    app()->instance(
+        SuitePackageConfigurationInspector::class,
+        new SuitePackageConfigurationInspector(
+            filesystem: app(Filesystem::class),
+            catalog: app(SuiteModuleCatalog::class),
+            suiteRoot: base_path(),
+            configurationPath: $directory,
+        ),
+    );
+
+    try {
+        expect(Artisan::call('nvl:suite:upgrade:check', [
+            '--path' => base_path('config/nvl-suite.php'),
+            '--module' => ['translations'],
+            '--strict' => true,
+            '--format' => 'json',
+        ]))->toBe(1);
+
+        $output = Artisan::output();
+        $report = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+        $findings = collect($report['findings'] ?? []);
+
+        expect($report['modules'] ?? null)->toBe(['translations'])
+            ->and($findings->where('code', 'configuration.deprecated_key'))->toHaveCount(1)
+            ->and($findings->where('module', 'translations'))->toHaveCount(1)
+            ->and($output)->not->toContain('must-never-appear', 'published configuration was executed');
+    } finally {
+        app()->forgetInstance(SuitePackageConfigurationInspector::class);
+        File::deleteDirectory($directory);
+    }
+});
+
+it('keeps expanded-overlay warnings non-failing in strict upgrade checks', function (): void {
+    $directory = storage_path('framework/testing/suite-upgrade-package-config-'.bin2hex(random_bytes(4)));
+    File::ensureDirectoryExists($directory);
+    File::copy(base_path('packages/nvl/auth/config/nvl-auth.php'), $directory.'/nvl-auth.php');
+    app()->instance(
+        SuitePackageConfigurationInspector::class,
+        new SuitePackageConfigurationInspector(
+            filesystem: app(Filesystem::class),
+            catalog: app(SuiteModuleCatalog::class),
+            suiteRoot: base_path(),
+            configurationPath: $directory,
+        ),
+    );
+
+    try {
+        expect(Artisan::call('nvl:suite:upgrade:check', [
+            '--path' => base_path('config/nvl-suite.php'),
+            '--module' => ['auth'],
+            '--strict' => true,
+            '--format' => 'json',
+        ]))->toBe(0);
+
+        $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+
+        expect(collect($report['findings'] ?? [])->pluck('code'))
+            ->toContain('configuration.expanded_overlay')
+            ->not->toContain('configuration.unknown_key', 'configuration.deprecated_key');
+    } finally {
+        app()->forgetInstance(SuitePackageConfigurationInspector::class);
+        File::deleteDirectory($directory);
+    }
+});
+
+it('rejects unknown package configuration module filters', function (): void {
+    expect(Artisan::call('nvl:suite:upgrade:check', [
+        '--path' => base_path('config/nvl-suite.php'),
+        '--module' => ['unknown'],
+        '--format' => 'json',
+    ]))->toBe(2);
 });

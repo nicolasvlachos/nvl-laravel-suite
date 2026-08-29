@@ -19,6 +19,7 @@ use Nvl\Data\Services\TypeScriptConfigurator;
 use Nvl\Data\Services\TypeScriptPathGuard;
 use Nvl\Data\Services\TypeScriptSourceInspector;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use RuntimeException;
 use Spatie\LaravelData\LaravelDataServiceProvider;
 use Spatie\LaravelTypeScriptTransformer\TypeScriptTransformerServiceProvider;
@@ -28,6 +29,8 @@ use Spatie\LaravelTypeScriptTransformer\TypeScriptTransformerServiceProvider;
  */
 class DataServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Register configuration, discovery, and transformer services.
      */
@@ -36,7 +39,7 @@ class DataServiceProvider extends ServiceProvider
         $this->app->register(LaravelDataServiceProvider::class);
         $this->app->register(TypeScriptTransformerServiceProvider::class);
 
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/nvl-data.php', 'nvl-data');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/nvl-data.php', 'nvl-data');
 
         $this->app->singleton(TypeScriptPathGuard::class);
         $this->app->singleton(TypeScriptSourceRegistry::class);

@@ -9,18 +9,21 @@ use InvalidArgumentException;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
 use Nvl\Primitives\Contracts\ExchangeRateProvider;
 use Nvl\Primitives\Services\ConfiguredExchangeRateProvider;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 
 /**
  * Registers primitive configuration, contracts, type sources, and package resources.
  */
 final class PrimitivesServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Register package configuration and default boundary implementations.
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(
+        $this->mergePackageConfiguration(
             __DIR__.'/../../config/primitives.php',
             'primitives',
         );

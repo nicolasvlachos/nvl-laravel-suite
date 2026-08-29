@@ -30,6 +30,7 @@ use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoRouteConfiguration;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -37,12 +38,14 @@ use Nvl\Translatable\Services\TranslationResourceRegistry;
  */
 final class SeoServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Register configuration and package boundary contracts.
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/seo.php', 'seo');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/seo.php', 'seo');
 
         $imageResolver = config('seo.image_resolver', DirectSeoImageResolver::class);
 

@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Templates\Console\AdoptTemplatesCommand;
 use Nvl\Templates\Console\PublishTemplateViewsCommand;
 use Nvl\Templates\Console\RecoverTemplateRendersCommand;
@@ -39,12 +40,14 @@ use Nvl\Translatable\Services\TranslationResourceRegistry;
  */
 final class TemplatesServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Register package configuration, contracts, and renderer registry.
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/templates.php', 'templates');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/templates.php', 'templates');
         $authorization = config(
             'templates.authorization.class',
             ConfiguredTemplateAuthorization::class,

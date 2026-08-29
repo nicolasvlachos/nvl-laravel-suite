@@ -25,8 +25,10 @@ php artisan nvl:suite:doctor --strict
 ```
 
 The configuration command reports `MATCH` only when the effective enabled
-module set equals the dependency-complete profile. It never prints arbitrary
-configuration values or secrets.
+module set equals the dependency-complete profile. Its
+`package_configuration` section also reports structural drift in published
+package configuration files. It never prints arbitrary configuration values or
+secrets.
 
 Publish the skills for that same effective module set and verify their
 read-only ownership/content contract with:
@@ -47,13 +49,26 @@ current catalog and audit application source/runtime boundaries:
 
 ```bash
 php artisan nvl:suite:upgrade:check --strict
+php artisan nvl:suite:upgrade:check --strict --module=auth --module=comments
 php artisan nvl:suite:consumer-audit --strict
 ```
 
 The upgrade checker is read-only. It reports missing, unknown, and non-boolean
 module decisions and lists the migration ownership, host contracts, and
 feature-gated scheduler entries that need review for newly encountered modules.
-Neither command prints arbitrary configuration values or secrets.
+It also tokenizes published package configuration source without loading or
+executing it. The comparison retains only literal key paths and basic
+map/list/scalar kinds; catalog-declared extension maps stop recursion so
+consumer-owned aliases remain valid. `--module` limits this package-configuration
+inspection without changing the application module selection.
+
+Unknown or deprecated key paths and an incorrect package merge strategy are
+errors. A copied snapshot-shaped file produces
+`configuration.expanded_overlay`, and missing current branches are then listed
+for review. Those findings are warnings: even with `--strict`, warnings alone do
+not fail the command. A small overlay that declares only intentional host
+choices is valid and does not warn for omitted defaults. Neither command prints
+arbitrary configuration values or secrets.
 
 Both commands use stable process outcomes: exit `0` means the requested gate
 passed, exit `1` means actionable adoption or boundary findings remain, and
@@ -80,7 +95,7 @@ Enable `auth`.
 
 | Concern | Adoption requirement |
 |---|---|
-| Effective modules | `data`, `auth` |
+| Effective modules | `support`, `data`, `auth` |
 | Migrations | Choose package-owned or published application-owned Auth migrations before migrating. |
 | Required boundary | Review the resolved `AuthManagementAccess` and every enabled Auth feature contract reported by `nvl:auth:doctor`. |
 | Queues and scheduler | No mandatory queue or scheduler. `nvl:auth:prune` is an optional host-owned daily maintenance entry. |

@@ -22,6 +22,7 @@ use Nvl\Suite\Services\ConsumerAudit\SuiteRuntimeConsumerScanner;
 use Nvl\Suite\Services\SuiteConfigurationInspector;
 use Nvl\Suite\Services\SuiteConfigurationRenderer;
 use Nvl\Suite\Services\SuiteConsumerAuditor;
+use Nvl\Suite\Services\SuitePackageConfigurationInspector;
 use Nvl\Suite\Services\SuiteSkillManager;
 use Nvl\Suite\Services\SuiteUpgradeInspector;
 use Nvl\Suite\Support\SuiteModuleCatalog;
@@ -45,6 +46,15 @@ final class SuiteServiceProvider extends ServiceProvider
         );
         $this->app->singleton(SuiteConfigurationInspector::class);
         $this->app->singleton(SuiteConfigurationRenderer::class);
+        $this->app->singleton(
+            SuitePackageConfigurationInspector::class,
+            static fn (Application $app): SuitePackageConfigurationInspector => new SuitePackageConfigurationInspector(
+                filesystem: $app->make(Filesystem::class),
+                catalog: $app->make(SuiteModuleCatalog::class),
+                suiteRoot: dirname(__DIR__),
+                configurationPath: $app->configPath(),
+            ),
+        );
         $this->app->singleton(SuiteUpgradeInspector::class);
         $this->app->singleton(ComposerSourceRootLocator::class);
         $this->app->singleton(PhpConsumerBoundaryScanner::class);

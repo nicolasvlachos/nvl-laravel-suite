@@ -5,9 +5,10 @@
     "license": "MIT",
     "keywords": ["laravel", "data-transfer-object", "typescript", "spatie-data"],
     "require": {
-        "composer-runtime-api": "^2.2",
         "php": "^8.3",
+        "composer-runtime-api": "^2.2",
         "laravel/framework": "^12.0 || ^13.0",
+        "nvl/support": "^1.0",
         "spatie/laravel-data": "^4.23",
         "spatie/laravel-typescript-transformer": "^3.3",
         "spatie/typescript-transformer": "^3.3",

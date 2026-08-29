@@ -202,7 +202,7 @@ packages.
 - Consumes: package default arrays and Laravel's already-loaded host config.
 - Produces: one standalone-package-safe merge rule shared by every package provider.
 
-- [ ] **Step 1: Write failing merger semantics tests**
+- [x] **Step 1: Write failing merger semantics tests**
 
 Cover nested maps, scalar replacement, class strings, associative numeric keys,
 default lists, shorter host lists, empty host lists, nested lists, type changes,
@@ -217,14 +217,14 @@ Add a contract test that enumerates every package config provider and proves it
 uses the shared trait rather than Laravel's index-merging recursive helper or a
 private merge implementation.
 
-- [ ] **Step 2: Capture the current list-tail failure**
+- [x] **Step 2: Capture the current list-tail failure**
 
 In a provider fixture, set a two-entry host middleware/allowed-value list over a
 three-entry default and set another list to empty. Assert the current result
 retains stale entries. This is the red test; never use a KPO production config
 value in the fixture.
 
-- [ ] **Step 3: Implement the Support merger and provider trait**
+- [x] **Step 3: Implement the Support merger and provider trait**
 
 `PackageConfigurationMerger::merge(array $defaults, array $host): array` is a
 pure, fully typed recursive function. `MergesPackageConfiguration` mirrors
@@ -232,7 +232,7 @@ Laravel's configuration-cache guard, requires the package default file once,
 and writes the merged array into the Config repository. It neither logs nor
 normalizes values.
 
-- [ ] **Step 4: Adopt it across all seventeen config-bearing providers**
+- [x] **Step 4: Adopt it across all seventeen config-bearing providers**
 
 Replace `replaceConfigRecursivelyFrom`, Auth's `array_replace_recursive`, and
 Activity/Comments/Content private merge implementations. Do not alter default
@@ -241,7 +241,7 @@ manifests listed above; update dependency contracts/lockfile using Composer, not
 manual lock edits. Verify standalone archives still discover Support before the
 consumer package provider.
 
-- [ ] **Step 5: Run representative and full package gates**
+- [x] **Step 5: Run representative and full package gates**
 
 ```bash
 php tools/run-package-quality.php support auth comments content mail-notifications pages
@@ -254,7 +254,7 @@ composer test:packages
 Expected: shorter/empty list overrides are exact, map overlays retain defaults,
 and every standalone package dependency graph is valid.
 
-- [ ] **Step 6: Commit CR-27a**
+- [x] **Step 6: Commit CR-27a and CR-27b together after their shared catalog gate**
 
 ```bash
 git add packages/nvl composer.lock tools/package-contracts.json tests/Contract/PackageQualityWorkflowTest.php
@@ -281,16 +281,17 @@ git commit -m "fix(config): replace package lists atomically"
 - Consumes: package default config files, the host's published source config files, module catalog deprecation/open-map metadata, and CR-04 adoption decisions.
 - Produces: value-free findings in `nvl:suite:configuration` and `nvl:suite:upgrade:check --strict --format=table|json`.
 
-- [ ] **Step 1: Write failing KPO-shaped configuration tests**
+- [x] **Step 1: Write failing KPO-shaped configuration tests**
 
 Create fixtures that reproduce the observed structural cases without copying
-KPO values: obsolete `content.scopes.*`, obsolete
-`translations.authorization.class`, missing current Pages branches, one fully
+KPO values: valid consumer-owned `content.scopes.*`, obsolete Auth session-limit
+configuration, obsolete `translations.authorization.class`, missing current Pages branches, one fully
 copied Auth default tree, one minimal Comments overlay, and a dynamic map under
 a catalog-declared open key. Assert stable finding codes and no serialized
-values.
+values. The live package implementation confirms Content scopes remain a
+supported open map and must not be reported as stale.
 
-- [ ] **Step 2: Define catalog-owned configuration metadata**
+- [x] **Step 2: Define catalog-owned configuration metadata**
 
 Extend each module definition with its package config key/default file,
 published destination, open-map paths, deprecated paths, and replacement hint.
@@ -305,7 +306,7 @@ Stable codes:
 - `configuration.merge_strategy_mismatch` (error);
 - `configuration.source_unavailable` (warning).
 
-- [ ] **Step 3: Implement a value-free structural comparison**
+- [x] **Step 3: Implement a value-free structural comparison**
 
 Use `token_get_all()` to statically extract literal array-key trees and basic
 container/scalar kinds from published PHP config source; never `require` or
@@ -321,7 +322,7 @@ closed default tree; unit-test the thresholds against full, partial, and minimal
 fixtures. Missing defaults in a small intentional overlay are normal and produce
 no finding. Output counts and key paths sorted by module/severity/path.
 
-- [ ] **Step 4: Integrate upgrade-check and existing suite output**
+- [x] **Step 4: Integrate upgrade-check and existing suite output**
 
 `nvl:suite:configuration` gains a `package_configuration` section.
 `nvl:suite:upgrade:check` combines CR-04 module adoption changes, operational
@@ -329,7 +330,7 @@ requirements, and configuration drift. It is read-only and exits non-zero in
 strict mode only for error-severity findings. `--module=auth --module=comments`
 limits inspection without altering runtime configuration.
 
-- [ ] **Step 5: Verify cached and uncached behavior**
+- [x] **Step 5: Verify cached and uncached behavior**
 
 Run:
 
@@ -342,7 +343,7 @@ php tools/run-package-quality.php auth comments content pages translations
 Expected: fixtures classify the KPO-shaped cases deterministically; the real
 suite application produces no value-bearing JSON.
 
-- [ ] **Step 6: Commit CR-27**
+- [x] **Step 6: Commit CR-27**
 
 ```bash
 git add src tests/Feature/SuiteDiagnosticsTest.php tests/Contract/SuiteAdoptionDocumentationTest.php docs/installation-profiles.md

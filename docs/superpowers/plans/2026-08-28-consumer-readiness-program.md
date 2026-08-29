@@ -62,7 +62,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-24 | [ ] | Compatibility-query deprecations | 2.0 plan | CR-02, CR-21, CR-22, CR-34 | 2.0 | — |
 | CR-25 | [x] | Auth delivery, invitation projections, and outcomes | Auth delivery plan | CR-00, CR-01 | 1.4 | `ab5077a`, `d83b303` |
 | CR-26 | [ ] | KPO Auth delivery/invitation migration | Auth delivery plan | CR-25 | 1.4 | — |
-| CR-27 | [ ] | Atomic list/deep-map config merge and drift diagnostics | Configuration/Auth ergonomics plan | CR-00, CR-04, dependency approval | 1.4 | — |
+| CR-27 | [x] | Atomic list/deep-map config merge and drift diagnostics | Configuration/Auth ergonomics plan | CR-00, CR-04, dependency approval | 1.4 | Pending commit |
 | CR-28 | [ ] | Runtime profiles and minimal overlays | Configuration/Auth ergonomics plan | CR-03, CR-04, CR-27 | 1.4 | — |
 | CR-29 | [ ] | Embedded-application Auth preset/adapter | Configuration/Auth ergonomics plan | CR-25, CR-27 | 1.4 | — |
 | CR-30 | [ ] | KPO configuration/Auth simplification | Configuration/Auth ergonomics plan | CR-26, CR-28, CR-29 | 1.4 | — |
@@ -442,7 +442,7 @@ consumer suppression.
 
 - [x] Execute CR-25 and prove queued Auth delivery requires no Challenge/Invitation reload or metadata write.
 - [ ] Execute CR-26 as reversible KPO listener, read, and candidacy-timing waves.
-- [ ] Obtain CR-27a's internal dependency approval, execute CR-27 and CR-28, and prove atomic list overrides, value-free drift output, and KPO's unchanged seventeen-module selection.
+- [ ] CR-27 dependency approval, atomic list overrides, and value-free drift diagnostics are complete; execute CR-28 and prove KPO's unchanged seventeen-module selection.
 - [ ] Execute CR-29 and CR-30; preserve KPO's host-owned Auth HTTP/UI while removing copied defaults and bridge gates.
 - [ ] Execute CR-31 through CR-33; run Comments migration upgrades, database portability, generated types, cache safety, concurrency, and reconciliation gates.
 - [ ] Execute CR-34; remove KPO's Comments JSON/hash queries and prove its first policy-scoped rich resource mentions.

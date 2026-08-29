@@ -40,11 +40,17 @@ use Throwable;
  *     typescript: bool
  * }
  * @phpstan-type ProfileReport array{name: string, description: string, modules: list<string>, matches: bool}
+ * @phpstan-type PackageConfigurationReport array{
+ *     healthy: bool,
+ *     inspected_modules: list<string>,
+ *     findings: list<array<string, mixed>>
+ * }
  * @phpstan-type SuiteConfigurationReport array{
  *     profile: ProfileReport|null,
  *     profiles: array<string, ProfileDefinition>,
  *     modules: array<string, EffectiveModule>,
- *     morph_aliases: list<string>
+ *     morph_aliases: list<string>,
+ *     package_configuration: PackageConfigurationReport
  * }
  */
 final readonly class SuiteConfigurationInspector
@@ -54,6 +60,7 @@ final readonly class SuiteConfigurationInspector
         private Repository $configuration,
         private Schedule $schedule,
         private SuiteModuleCatalog $catalog,
+        private SuitePackageConfigurationInspector $packageConfiguration,
     ) {}
 
     /**
@@ -94,11 +101,19 @@ final readonly class SuiteConfigurationInspector
             ];
         }
 
+        $packageFindings = $this->packageConfiguration->inspect($effectiveModules);
+
         return [
             'profile' => $this->profile($profile, $effectiveModules),
             'profiles' => $this->catalog->profiles(),
             'modules' => $modules,
             'morph_aliases' => $this->morphAliases(),
+            'package_configuration' => [
+                'healthy' => collect($packageFindings)
+                    ->doesntContain(static fn (array $finding): bool => $finding['severity'] === 'error'),
+                'inspected_modules' => $effectiveModules,
+                'findings' => $packageFindings,
+            ],
         ];
     }
 

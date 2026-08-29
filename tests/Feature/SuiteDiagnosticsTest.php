@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Nvl\Settings\Contracts\SettingsAuthorization;
 use Nvl\Suite\Services\SuiteConfigurationInspector;
+use Nvl\Suite\Services\SuitePackageConfigurationInspector;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 use Symfony\Component\Console\Output\BufferedOutput;
 
@@ -25,6 +28,30 @@ function suiteDiagnosticModules(string ...$enabled): array
     }
 
     return $modules;
+}
+
+/**
+ * @param  array<string, string>  $sources
+ * @return array{string, SuitePackageConfigurationInspector}
+ */
+function suitePackageConfigurationInspector(array $sources): array
+{
+    $directory = storage_path('framework/testing/suite-package-config-'.bin2hex(random_bytes(4)));
+    File::ensureDirectoryExists($directory);
+
+    foreach ($sources as $file => $source) {
+        File::put($directory.'/'.$file, $source);
+    }
+
+    return [
+        $directory,
+        new SuitePackageConfigurationInspector(
+            filesystem: app(Filesystem::class),
+            catalog: app(SuiteModuleCatalog::class),
+            suiteRoot: base_path(),
+            configurationPath: $directory,
+        ),
+    ];
 }
 
 it('distinguishes explicit and implicit module decisions', function (): void {
@@ -88,6 +115,7 @@ it('provides dependency-complete installation profiles', function (): void {
         'communications',
         'full-suite',
     ])->and($catalog->profileModules('auth-only'))->toBe([
+        'support',
         'data',
         'auth',
     ])->and($catalog->profileModules('content-platform'))->toContain(
@@ -140,12 +168,177 @@ it('renders machine readable effective configuration and validates options', fun
     expect($report['profile']['name'] ?? null)->toBe('auth-only')
         ->and($report['profile']['matches'] ?? null)->toBeFalse()
         ->and($report['modules']['auth']['enabled'] ?? null)->toBeTrue()
+        ->and($report['package_configuration']['healthy'] ?? null)->toBeTrue()
+        ->and($report['package_configuration']['findings'] ?? null)->toBe([])
         ->and(Artisan::call('nvl:suite:configuration', [
             '--profile' => 'unknown',
         ]))->toBe(2)
         ->and(Artisan::call('nvl:suite:configuration', [
             '--format' => 'yaml',
         ]))->toBe(2);
+});
+
+it('classifies deprecated and unknown package configuration paths without evaluating values', function (): void {
+    [$directory, $inspector] = suitePackageConfigurationInspector([
+        'translations.php' => <<<'PHP'
+<?php
+
+throw new RuntimeException('consumer configuration was executed');
+
+return [
+    'authorization' => [
+        'class' => 'must-never-appear',
+        'ability' => null,
+    ],
+    'retired_branch' => ['secret' => 'must-never-appear'],
+];
+PHP,
+    ]);
+
+    try {
+        $findings = collect($inspector->inspect(['translations']));
+        $serialized = json_encode($findings->all(), JSON_THROW_ON_ERROR);
+
+        expect($findings->pluck('code'))
+            ->toContain('configuration.deprecated_key', 'configuration.unknown_key')
+            ->and($findings->firstWhere('code', 'configuration.deprecated_key')['path'] ?? null)
+            ->toBe('translations.authorization.class')
+            ->and($findings->firstWhere('code', 'configuration.unknown_key')['path'] ?? null)
+            ->toBe('translations.retired_branch')
+            ->and($serialized)->not->toContain('must-never-appear');
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
+it('treats extension maps and minimal package overlays as intentional configuration', function (): void {
+    [$directory, $inspector] = suitePackageConfigurationInspector([
+        'comments.php' => <<<'PHP'
+<?php
+
+$target = 'article';
+
+return [
+    'authorization' => ['class' => App\Comments\CommentAuthorization::class],
+    'targets' => [
+        $target => App\Comments\ArticleTarget::class,
+    ],
+    'routes' => [
+        'public' => ['enabled' => true],
+    ],
+];
+PHP,
+        'content.php' => <<<'PHP'
+<?php
+
+return array(
+    'scopes' => array(
+        'site' => array('key_pattern' => '/^[a-z]+$/'),
+    ),
+);
+PHP,
+    ]);
+
+    try {
+        $findings = collect($inspector->inspect(['comments', 'content']));
+
+        expect($findings->whereIn('code', [
+            'configuration.unknown_key',
+            'configuration.source_unavailable',
+            'configuration.expanded_overlay',
+            'configuration.missing_current_branch',
+        ]))->toBeEmpty();
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
+it('warns for expanded snapshots and reports only their missing current branch roots', function (): void {
+    [$directory, $inspector] = suitePackageConfigurationInspector([
+        'pages.php' => <<<'PHP'
+<?php
+
+return [
+    'connection' => null,
+    'tables' => ['pages' => 'pages', 'pages_i18n' => 'pages_i18n', 'page_tree_locks' => 'page_tree_locks'],
+    'migrations' => ['enabled' => true],
+    'hierarchy' => ['maximum_depth' => 4],
+    'transactions' => ['attempts' => 3],
+    'resources' => [],
+    'public' => ['default_site' => 'default'],
+    'authorization' => ['class' => App\Pages\Authorization::class],
+    'urls' => ['base_url' => 'https://example.test', 'locale_prefix' => false, 'default_locale' => 'en'],
+    'integrations' => ['seo_owner_alias' => 'page', 'metafield_owner_alias' => 'page', 'metafield_sections' => ['general']],
+    'routes' => [
+        'public' => ['enabled' => false, 'prefix' => 'api/pages', 'name' => 'pages.', 'middleware' => ['api']],
+        'management' => ['enabled' => false, 'prefix' => 'api/pages/manage', 'name' => 'pages.manage.', 'middleware' => ['api']],
+    ],
+    'limits' => ['per_page' => 25, 'maximum_per_page' => 100, 'maximum_path_bytes' => 768, 'maximum_resource_parameters' => 8],
+];
+PHP,
+    ]);
+
+    try {
+        $findings = collect($inspector->inspect(['pages']));
+        $missing = $findings->where('code', 'configuration.missing_current_branch')->pluck('path');
+
+        expect($findings->where('code', 'configuration.expanded_overlay'))->toHaveCount(1)
+            ->and($missing)->toContain(
+                'pages.public.context_resolver',
+                'pages.urls.generator',
+                'pages.limits.maximum_page_options',
+                'pages.limits.maximum_public_children',
+            );
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
+it('detects full copied defaults but does not serialize their values', function (): void {
+    $directory = storage_path('framework/testing/suite-package-config-'.bin2hex(random_bytes(4)));
+    File::ensureDirectoryExists($directory);
+    File::copy(base_path('packages/nvl/auth/config/nvl-auth.php'), $directory.'/nvl-auth.php');
+
+    try {
+        $inspector = new SuitePackageConfigurationInspector(
+            filesystem: app(Filesystem::class),
+            catalog: app(SuiteModuleCatalog::class),
+            suiteRoot: base_path(),
+            configurationPath: $directory,
+        );
+        $findings = $inspector->inspect(['auth']);
+        $serialized = json_encode($findings, JSON_THROW_ON_ERROR);
+
+        expect(collect($findings)->where('code', 'configuration.expanded_overlay'))
+            ->toHaveCount(1)
+            ->and($serialized)->not->toContain('NVL_AUTH_', 'Laravel');
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
+it('reports dynamic closed branches as source unavailable', function (): void {
+    [$directory, $inspector] = suitePackageConfigurationInspector([
+        'pages.php' => <<<'PHP'
+<?php
+
+$branch = 'unexpected';
+
+return [
+    $branch => ['private' => 'must-never-appear'],
+];
+PHP,
+    ]);
+
+    try {
+        $findings = collect($inspector->inspect(['pages']));
+        $serialized = json_encode($findings->all(), JSON_THROW_ON_ERROR);
+
+        expect($findings->where('code', 'configuration.source_unavailable'))->toHaveCount(1)
+            ->and($serialized)->not->toContain('must-never-appear', 'unexpected');
+    } finally {
+        File::deleteDirectory($directory);
+    }
 });
 
 it('runs every effective package doctor through the root strict command', function (): void {

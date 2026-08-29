@@ -15,7 +15,7 @@
             "Nvl\\Suite\\Console\\Commands\\SuiteDoctorCommand": "nvl:suite:doctor {--strict : Treat package warnings as failures} {--production : Enforce production-only deployment requirements} {--format=text : Output format: text or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteSkillsDoctorCommand": "nvl:suite:skills:doctor {--strict : Treat disabled managed skills as failures} {--format=text : Output format: text or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteSkillsPublishCommand": "nvl:suite:skills:publish {--force : Replace locally modified Suite-owned skills; unmanaged skills are never overwritten} {--format=text : Output format: text or json}",
-            "Nvl\\Suite\\Console\\Commands\\SuiteUpgradeCheckCommand": "nvl:suite:upgrade:check {--path= : Published suite configuration; defaults to config/nvl-suite.php} {--format=table : Output format: table or json} {--strict : Fail when any operational review warning is present}"
+            "Nvl\\Suite\\Console\\Commands\\SuiteUpgradeCheckCommand": "nvl:suite:upgrade:check {--path= : Published suite configuration; defaults to config/nvl-suite.php} {--module=* : Limit package configuration inspection to one or more suite modules} {--format=table : Output format: table or json} {--strict : Enable upgrade enforcement without promoting warnings to failures}"
         },
         "configuration": {
             "config/nvl-suite.php": "b80098d5ded51bdd6f845503757c4f92919b57741f2c40101ad8ee37eaf56d5f"
@@ -1230,7 +1230,8 @@
                     "public function registerTranslations(): void",
                     "protected function registerConfig(): void",
                     "public function provides(): array",
-                    "@return array<int, class-string>"
+                    "@return array<int, class-string>",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Activity\\Providers\\RouteServiceProvider": [
                     "final class Nvl\\Activity\\Providers\\RouteServiceProvider extends Illuminate\\Foundation\\Support\\Providers\\RouteServiceProvider",
@@ -5516,7 +5517,8 @@
                 "Nvl\\Auth\\Providers\\AuthServiceProvider": [
                     "final class Nvl\\Auth\\Providers\\AuthServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void"
+                    "public function boot(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Auth\\Providers\\RouteServiceProvider": [
                     "final class Nvl\\Auth\\Providers\\RouteServiceProvider extends Illuminate\\Support\\ServiceProvider",
@@ -7872,7 +7874,8 @@
                 "Nvl\\Comments\\Providers\\CommentsServiceProvider": [
                     "final class Nvl\\Comments\\Providers\\CommentsServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Illuminate\\Contracts\\Events\\Dispatcher $events): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Illuminate\\Contracts\\Events\\Dispatcher $events): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Comments\\Relations\\CommentTargetMorphTo": [
                     "final class Nvl\\Comments\\Relations\\CommentTargetMorphTo extends Illuminate\\Database\\Eloquent\\Relations\\MorphTo",
@@ -10470,7 +10473,8 @@
                 "Nvl\\Content\\Providers\\ContentServiceProvider": [
                     "final class Nvl\\Content\\Providers\\ContentServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Services\\ContentDefinitionLoader $loader, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $definitionMigrations, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentSchemaCompiler $schemaCompiler, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentReferenceRegistry $references): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Services\\ContentDefinitionLoader $loader, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $definitionMigrations, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentSchemaCompiler $schemaCompiler, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentReferenceRegistry $references): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Content\\Relations\\ExactTextValueComparison": [
                     "final readonly class Nvl\\Content\\Relations\\ExactTextValueComparison implements Illuminate\\Contracts\\Database\\Query\\Expression",
@@ -13267,7 +13271,8 @@
                 "Nvl\\Data\\Providers\\DataServiceProvider": [
                     "class Nvl\\Data\\Providers\\DataServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $sourceRegistry, Nvl\\Data\\Services\\GeneratedTypesRouteConfiguration $routeConfiguration): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $sourceRegistry, Nvl\\Data\\Services\\GeneratedTypesRouteConfiguration $routeConfiguration): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Data\\Providers\\DataTypeScriptTransformerServiceProvider": [
                     "final class Nvl\\Data\\Providers\\DataTypeScriptTransformerServiceProvider extends Illuminate\\Support\\ServiceProvider",
@@ -16781,7 +16786,8 @@
                     "public function registerTranslations(): void",
                     "protected function registerConfig(): void",
                     "public function provides(): array",
-                    "@return array<int, string>"
+                    "@return array<int, string>",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Forms\\Providers\\RouteServiceProvider": [
                     "final class Nvl\\Forms\\Providers\\RouteServiceProvider extends Illuminate\\Foundation\\Support\\Providers\\RouteServiceProvider",
@@ -18328,7 +18334,8 @@
                 "Nvl\\MailNotifications\\Providers\\MailNotificationsServiceProvider": [
                     "final class Nvl\\MailNotifications\\Providers\\MailNotificationsServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(): void"
+                    "public function boot(): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\MailNotifications\\Services\\ConfiguredMailNotificationReadAuthorization": [
                     "final class Nvl\\MailNotifications\\Services\\ConfiguredMailNotificationReadAuthorization implements Nvl\\MailNotifications\\Contracts\\MailNotificationReadAuthorization",
@@ -22747,7 +22754,8 @@
                     "protected function registerPolicies(): void",
                     "protected function registerTranslations(): void",
                     "public function provides(): array",
-                    "@return array<string>"
+                    "@return array<string>",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Media\\Providers\\RouteServiceProvider": [
                     "class Nvl\\Media\\Providers\\RouteServiceProvider extends Illuminate\\Foundation\\Support\\Providers\\RouteServiceProvider",
@@ -25240,7 +25248,8 @@
                     "public function registerTranslations(): void",
                     "protected function registerConfig(): void",
                     "public function provides(): array",
-                    "@return list<string>"
+                    "@return list<string>",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Metafields\\Providers\\RouteServiceProvider": [
                     "final class Nvl\\Metafields\\Providers\\RouteServiceProvider extends Illuminate\\Foundation\\Support\\Providers\\RouteServiceProvider",
@@ -26672,7 +26681,8 @@
                 "Nvl\\Pages\\Providers\\PagesServiceProvider": [
                     "final class Nvl\\Pages\\Providers\\PagesServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Contracts\\ContentOwnerRegistrar $contentOwners, Nvl\\Seo\\Services\\SitemapRegistry $sitemaps, Nvl\\Pages\\Services\\PageResourceRegistry $resources): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Contracts\\ContentOwnerRegistrar $contentOwners, Nvl\\Seo\\Services\\SitemapRegistry $sitemaps, Nvl\\Pages\\Services\\PageResourceRegistry $resources): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Pages\\Seo\\PageSitemapSource": [
                     "final readonly class Nvl\\Pages\\Seo\\PageSitemapSource implements Nvl\\Seo\\Contracts\\SitemapSource",
@@ -27054,7 +27064,8 @@
                 "Nvl\\Primitives\\Providers\\PrimitivesServiceProvider": [
                     "final class Nvl\\Primitives\\Providers\\PrimitivesServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Primitives\\Rules\\ValidPhoneNumber": [
                     "final readonly class Nvl\\Primitives\\Rules\\ValidPhoneNumber implements Illuminate\\Contracts\\Validation\\ValidationRule",
@@ -28459,7 +28470,8 @@
                 "Nvl\\Seo\\Providers\\SeoServiceProvider": [
                     "final class Nvl\\Seo\\Providers\\SeoServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Seo\\Services\\SitemapRegistry $sitemaps, Nvl\\Seo\\Services\\StructuredDataRegistry $structuredData): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Seo\\Services\\SitemapRegistry $sitemaps, Nvl\\Seo\\Services\\StructuredDataRegistry $structuredData): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Seo\\Relations\\StringMorphMany": [
                     "final class Nvl\\Seo\\Relations\\StringMorphMany extends Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
@@ -29202,7 +29214,8 @@
                 "Nvl\\Settings\\Providers\\SettingsServiceProvider": [
                     "final class Nvl\\Settings\\Providers\\SettingsServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Settings\\Rules\\IntegerListBetween": [
                     "final readonly class Nvl\\Settings\\Rules\\IntegerListBetween implements Illuminate\\Contracts\\Validation\\ValidationRule, Stringable",
@@ -29368,6 +29381,13 @@
             ],
             "commands": [],
             "symbols": {
+                "Nvl\\Support\\Config\\PackageConfigurationMerger": [
+                    "final class Nvl\\Support\\Config\\PackageConfigurationMerger",
+                    "public static function merge(array $defaults, array $host): array",
+                    "@param array<mixed> $defaults",
+                    "@param array<mixed> $host",
+                    "@return array<mixed>"
+                ],
                 "Nvl\\Support\\Contracts\\ResponseCode": [
                     "interface Nvl\\Support\\Contracts\\ResponseCode extends BackedEnum, UnitEnum"
                 ],
@@ -29396,6 +29416,11 @@
                 "Nvl\\Support\\Providers\\SupportServiceProvider": [
                     "final class Nvl\\Support\\Providers\\SupportServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function boot(): void"
+                ],
+                "Nvl\\Support\\Traits\\MergesPackageConfiguration": [
+                    "trait Nvl\\Support\\Traits\\MergesPackageConfiguration",
+                    "@mixin ServiceProvider",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ]
             },
             "configuration": [],
@@ -29916,7 +29941,8 @@
                 "Nvl\\Taxonomy\\Providers\\TaxonomyServiceProvider": [
                     "final class Nvl\\Taxonomy\\Providers\\TaxonomyServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Taxonomy\\Services\\TaxonomyOwnerRegistry $owners, Nvl\\Taxonomy\\Support\\TaxonomyRegistry $taxonomies): void"
+                    "public function boot(Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Taxonomy\\Services\\TaxonomyOwnerRegistry $owners, Nvl\\Taxonomy\\Support\\TaxonomyRegistry $taxonomies): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Taxonomy\\Relations\\StringMorphToMany": [
                     "final class Nvl\\Taxonomy\\Relations\\StringMorphToMany extends Illuminate\\Database\\Eloquent\\Relations\\MorphToMany",
@@ -31745,7 +31771,8 @@
                 "Nvl\\Templates\\Providers\\TemplatesServiceProvider": [
                     "final class Nvl\\Templates\\Providers\\TemplatesServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Templates\\Services\\TemplateDefinitionRegistry $definitions, Nvl\\Templates\\Services\\TemplateRendererRegistry $renderers, Nvl\\Templates\\Services\\TemplateOwnerRegistry $owners, Nvl\\Content\\Contracts\\ContentOwnerRegistrar $contentOwners): void"
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Templates\\Services\\TemplateDefinitionRegistry $definitions, Nvl\\Templates\\Services\\TemplateRendererRegistry $renderers, Nvl\\Templates\\Services\\TemplateOwnerRegistry $owners, Nvl\\Content\\Contracts\\ContentOwnerRegistrar $contentOwners): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Templates\\Rendering\\BladeTemplateRenderer": [
                     "final readonly class Nvl\\Templates\\Rendering\\BladeTemplateRenderer implements Nvl\\Templates\\Contracts\\TemplateRenderer",
@@ -32661,7 +32688,8 @@
                 "Nvl\\Translatable\\Providers\\TranslatableServiceProvider": [
                     "final class Nvl\\Translatable\\Providers\\TranslatableServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Translatable\\Services\\TranslationResourceRegistry $resources, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void"
+                    "public function boot(Nvl\\Translatable\\Services\\TranslationResourceRegistry $resources, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Translatable\\RelatedTranslationDefinition": [
                     "final readonly class Nvl\\Translatable\\RelatedTranslationDefinition extends Nvl\\Translatable\\TranslationDefinition",
@@ -33764,7 +33792,8 @@
                     "public function register(): void",
                     "protected function registerCommands(): void",
                     "protected function registerTranslations(): void",
-                    "protected function registerConfig(): void"
+                    "protected function registerConfig(): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Translations\\Rules\\StringOrList": [
                     "final class Nvl\\Translations\\Rules\\StringOrList implements Illuminate\\Contracts\\Validation\\ValidationRule",

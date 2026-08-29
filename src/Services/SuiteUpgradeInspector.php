@@ -133,7 +133,7 @@ final readonly class SuiteUpgradeInspector
     public function fails(array $findings, bool $strict): bool
     {
         foreach ($findings as $finding) {
-            if ($finding['severity'] === 'error' || $strict) {
+            if ($finding['severity'] === 'error') {
                 return true;
             }
         }

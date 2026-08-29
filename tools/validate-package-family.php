@@ -52,6 +52,7 @@ $releasedCorrectiveMigrations = [
     ],
     'auth' => [
         '2026_08_12_000000_add_auth_delivery_context_columns.php',
+        '2026_08_28_000000_add_invitation_delivery_outcomes.php',
     ],
 ];
 $requiredFiles = [
