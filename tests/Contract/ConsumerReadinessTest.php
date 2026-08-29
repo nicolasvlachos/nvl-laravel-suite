@@ -16,6 +16,11 @@ use Nvl\Content\Actions\ReplaceContentPlacementAction;
 use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
+use Nvl\Media\Actions\ClearOwnerMediaSlotAction;
+use Nvl\Media\Actions\CopyOwnerMediaSlotAction;
+use Nvl\Media\Actions\GetOwnerMediaSlotAction;
+use Nvl\Media\Actions\ReplaceOwnerMediaSlotAction;
+use Nvl\Media\Console\Commands\PruneMediaOwnerSlotOperationsCommand;
 use Nvl\Metafields\Actions\Metafields\ListAuthorizedOwnerMetafieldsAction;
 use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
 use Nvl\Pages\Actions\FindPageByKeyAction;
@@ -450,6 +455,30 @@ it('publishes bounded Page lookup option and public-child projections', function
         ->toContain('packages/nvl/pages/README.md#bounded-page-reads')
         ->and($pages['performance']['query_tests'])
         ->toContain('packages/nvl/pages/tests/Feature/PagesPackageTest.php');
+});
+
+it('publishes the complete Media owner-slot workflow and pruning boundary', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $media = $catalog['packages']['media'];
+
+    expect($media['application_api']['symbols'])
+        ->toContain(
+            GetOwnerMediaSlotAction::class,
+            ReplaceOwnerMediaSlotAction::class,
+            ClearOwnerMediaSlotAction::class,
+            CopyOwnerMediaSlotAction::class,
+        )
+        ->and($media['application_api']['documentation'])
+        ->toBe('packages/nvl/media/README.md#owner-slot-workflows')
+        ->and($media['media_lifecycle']['evidence'])
+        ->toContain('packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php')
+        ->and($media['operations']['prune'])
+        ->toBe([
+            'symbol' => PruneMediaOwnerSlotOperationsCommand::class,
+            'command' => 'nvl:media:owner-slots:prune',
+        ])
+        ->and($media['operations']['evidence'])
+        ->toContain('packages/nvl/media/docs/commands.md#nvlmediaowner-slotsprune');
 });
 
 it('publishes authorized metafield and complete Page composition reads', function (): void {

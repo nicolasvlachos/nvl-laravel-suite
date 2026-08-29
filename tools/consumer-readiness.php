@@ -45,7 +45,12 @@ use Nvl\MailNotifications\Contracts\TrackingLifecycle;
 use Nvl\MailNotifications\Definitions\Tables\MailNotificationsTables;
 use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
 use Nvl\MailNotifications\ValueObjects\TrackingContext;
+use Nvl\Media\Actions\ClearOwnerMediaSlotAction;
+use Nvl\Media\Actions\CopyOwnerMediaSlotAction;
+use Nvl\Media\Actions\GetOwnerMediaSlotAction;
+use Nvl\Media\Actions\ReplaceOwnerMediaSlotAction;
 use Nvl\Media\Console\Commands\MediaDoctorCommand;
+use Nvl\Media\Console\Commands\PruneMediaOwnerSlotOperationsCommand;
 use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\MediaLibrary;
 use Nvl\Media\Services\MediaFileExistence;
@@ -461,14 +466,26 @@ return [
         'media' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [MediaLibrary::class, MediaQueryService::class],
+                'symbols' => [
+                    MediaLibrary::class,
+                    MediaQueryService::class,
+                    GetOwnerMediaSlotAction::class,
+                    ReplaceOwnerMediaSlotAction::class,
+                    ClearOwnerMediaSlotAction::class,
+                    CopyOwnerMediaSlotAction::class,
+                ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/media/README.md#facade-and-injectable-service-api',
+                'documentation' => 'packages/nvl/media/README.md#owner-slot-workflows',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/media/README.md#retrieval-and-lifecycle']),
-                'query_tests' => ['tests/Feature/Integration/CrossPackageIntegrationTest.php'],
+                ...$pass([
+                    'packages/nvl/media/README.md#retrieval-and-lifecycle',
+                    'packages/nvl/media/README.md#owner-slot-workflows',
+                ]),
+                'query_tests' => [
+                    'tests/Feature/Integration/CrossPackageIntegrationTest.php',
+                ],
                 'cache' => [
                     'mode' => 'cached',
                     'owner' => MediaFileExistence::class,
@@ -479,15 +496,16 @@ return [
                     'stampede' => 'Idempotent existence probes may repeat on a miss; the short TTL avoids a blocking global lock around storage.',
                 ],
             ],
-            'media_lifecycle' => $pass(['packages/nvl/media/README.md#retrieval-and-lifecycle', 'packages/nvl/media/README.md#operations', 'packages/nvl/media/tests/Feature/ActionsTest.php', 'packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php']),
+            'media_lifecycle' => $pass(['packages/nvl/media/README.md#owner-slot-workflows', 'packages/nvl/media/README.md#retrieval-and-lifecycle', 'packages/nvl/media/README.md#operations', 'packages/nvl/media/tests/Feature/ActionsTest.php', 'packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php']),
             'locale_fallback' => $pass(['packages/nvl/media/README.md#localized-metadata']),
             'boundaries' => $pass(['packages/nvl/media/README.md#purpose-and-boundaries', 'docs/consumer-readiness.md#ownership-boundaries']),
             'presets' => $pass(['packages/nvl/media/README.md#variations-and-optimization', 'packages/nvl/media/tests/Unit/MediaConfiguredVariationServiceTest.php']),
             'operations' => [
-                ...$pass(['packages/nvl/media/README.md#database-schema-and-adoption', 'packages/nvl/media/UPGRADING.md#upgrading-to-the-production-hardened-1x-release']),
+                ...$pass(['packages/nvl/media/README.md#database-schema-and-adoption', 'packages/nvl/media/README.md#owner-slot-workflows', 'packages/nvl/media/docs/commands.md#nvlmediaowner-slotsprune', 'packages/nvl/media/UPGRADING.md#upgrading-to-the-production-hardened-1x-release']),
                 'doctor' => ['symbol' => MediaDoctorCommand::class, 'command' => 'nvl:media:doctor'],
+                'prune' => ['symbol' => PruneMediaOwnerSlotOperationsCommand::class, 'command' => 'nvl:media:owner-slots:prune'],
                 'adoption' => 'command',
-                'documentation' => 'packages/nvl/media/README.md#database-schema-and-adoption',
+                'documentation' => 'packages/nvl/media/README.md#owner-slot-workflows',
             ],
         ],
         'mail-notifications' => [
