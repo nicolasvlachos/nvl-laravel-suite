@@ -220,7 +220,7 @@ it('blocks a package table write captured by an explicit closure', function (): 
         ->toBeEmpty();
 });
 
-it('resolves aliased database facades without weakening migration severity', function (): void {
+it('resolves aliased database facades and method case without weakening migration severity', function (): void {
     $findings = collect(consumerAuditFixtureFindings())
         ->where('path', 'database/migrations/2026_01_12_000000_use_aliased_database_facades.php');
 

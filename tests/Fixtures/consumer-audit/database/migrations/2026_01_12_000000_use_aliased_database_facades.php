@@ -11,6 +11,6 @@ Database::table('nvl_auth_permissions')->insert([
     'name' => 'manage-suite',
     'guard_name' => 'web',
 ]);
-DatabaseSchema::create('nvl_auth_permissions', function (Blueprint $table): void {
+DatabaseSchema::CREATE('nvl_auth_permissions', function (Blueprint $table): void {
     $table->uuid('id')->primary();
 });

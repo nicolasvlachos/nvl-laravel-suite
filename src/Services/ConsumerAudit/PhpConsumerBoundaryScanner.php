@@ -1508,7 +1508,7 @@ final readonly class PhpConsumerBoundaryScanner
             || $tokens[$openingParenthesis]->text !== '('
             || $methodIndex === null
             || $tokens[$methodIndex]->id !== T_STRING
-            || $tokens[$methodIndex]->text !== $method
+            || strcasecmp($tokens[$methodIndex]->text, $method) !== 0
             || $operatorIndex === null
             || $tokens[$operatorIndex]->id !== T_DOUBLE_COLON
             || $classIndex === null) {
