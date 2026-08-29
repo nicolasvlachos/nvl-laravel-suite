@@ -120,14 +120,14 @@ git commit -m "feat!: disable omitted suite modules"
 - Consumes: DTO replacements shipped and exercised during 1.1–1.4.
 - Produces: DTO-returning management reads for Auth, Pages, Content, and SEO.
 
-- [ ] **Step 1: Inventory final 1.x consumers before changing signatures**
+- [x] **Step 1: Inventory final 1.x consumers before changing signatures**
 
 Run strict audit across KPO and both proof consumers, then search their source
 for every class/method listed in this task. Record caller counts and confirm each
 has a DTO mapping already exercised in 1.x. If any caller lacks a replacement,
 stop this task and add the replacement to the final 1.x line first.
 
-- [ ] **Step 2: Change package tests to require DTO paginator items**
+- [x] **Step 2: Change package tests to require DTO paginator items**
 
 Example:
 
@@ -140,7 +140,7 @@ expect($roles->items())->each->toBeInstanceOf(RoleListItemData::class);
 Add equivalent assertions for permission, page, block, placement, and SEO list
 items plus query-count parity and serialized TypeScript shapes.
 
-- [ ] **Step 3: Convert Auth and Pages list/detail reads**
+- [x] **Step 3: Convert Auth and Pages list/detail reads**
 
 Map Eloquent paginator collections with `through()` while preserving total,
 page, per-page, path/query options, ordering, authorization, and query ceilings.
@@ -150,7 +150,7 @@ and hierarchy labels already eager-loaded by their Actions, reusing the
 `RoleListItemData` and `PermissionListItemData` contracts shipped in 1.1 rather
 than adding a second catalog shape.
 
-- [ ] **Step 4: Convert Content and SEO list/detail reads**
+- [x] **Step 4: Convert Content and SEO list/detail reads**
 
 `GetContentBlockAction` returns `ContentBlockData`; block and placement lists map
 to existing DTOs; `Content::block()` and `Content::placements()` annotations and
@@ -160,7 +160,7 @@ time. Mutations keep their Action-returned model identity contracts.
 `GetSeoProfileAction` returns `SeoProfileData` through `SeoProfilePresenter`;
 `ListSeoProfilesAction` maps its paginator to the same DTO.
 
-- [ ] **Step 5: Run four package quality gates and generated types**
+- [x] **Step 5: Run four package quality gates and generated types**
 
 Run:
 
@@ -172,7 +172,7 @@ composer types:check
 
 Expected: all PASS.
 
-- [ ] **Step 6: Commit CR-24a**
+- [x] **Step 6: Commit CR-24a**
 
 ```bash
 git add packages/nvl/auth packages/nvl/pages packages/nvl/content packages/nvl/seo resources/js/types

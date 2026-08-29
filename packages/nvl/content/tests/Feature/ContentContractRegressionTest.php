@@ -220,11 +220,18 @@ it('provides model-first grouped compositions through the facade and trait', fun
     $primary = Content::render($owner, 'primary', 'en', $actor);
     $snapshot = Content::capture($owner, 'secondary', $actor);
 
-    expect($owner->contentPlacements()->count())->toBe(2)
+    $placements = Content::placements($owner, 'primary', $actor);
+
+    expect($block)->toBeInstanceOf(ContentBlock::class)
+        ->and($primaryPlacement)->toBeInstanceOf(ContentPlacement::class)
+        ->and($owner->contentPlacements()->count())->toBe(2)
         ->and($owner->contentPlacements()->first()?->owner)->toBeInstanceOf(TestContentOwner::class)
         ->and(Content::groups($owner, $actor)->all())
         ->toBe(['default', 'homepage', 'main', 'primary', 'secondary'])
-        ->and(Content::placements($owner, 'primary', $actor))->toHaveCount(1)
+        ->and($placements)->toHaveCount(1)
+        ->and($placements->keys()->all())->toBe([0])
+        ->and($placements->first())->toBeInstanceOf(ContentPlacementData::class)
+        ->and($placements->first()?->id)->toBe($primaryPlacement->id)
         ->and($primary->group)->toBe('primary')
         ->and($primary->value('hero.title'))->toBe('Grouped title')
         ->and($snapshot->group)->toBe('secondary')
@@ -251,8 +258,15 @@ it('provides block reads through the same canonical application surface', functi
         $actor,
     );
 
-    expect(Content::block($block->id, $actor)->is($block))->toBeTrue()
-        ->and(Content::blocks(FilterSet::none(), $actor)->total())->toBe(1);
+    $read = Content::block($block->id, $actor);
+    $blocks = Content::blocks(FilterSet::none(), $actor);
+
+    expect($read)->toBeInstanceOf(ContentBlockData::class)
+        ->and($read->id)->toBe($block->id)
+        ->and($read->translations['en']['title'] ?? null)->toBe('Canonical query')
+        ->and($blocks->total())->toBe(1)
+        ->and($blocks->items())->each->toBeInstanceOf(ContentBlockData::class)
+        ->and($blocks->items()[0]->id)->toBe($block->id);
 });
 
 it('resolves complete localized content through ordered bounded scope fallback', function (): void {
@@ -730,13 +744,14 @@ it('makes placed block disclosure explicit without changing legacy placement con
     $action = app(ListContentPlacementsAction::class);
     $actor = new ContentActorData('user', 'projection-policy');
 
-    $action->execute($owner, 'homepage', $actor);
-    $action->execute($owner, 'homepage', $actor, includeBlocks: true);
+    $withoutBlocks = $action->execute($owner, 'homepage', $actor);
+    $withBlocks = $action->execute($owner, 'homepage', $actor, includeBlocks: true);
 
     expect($authorization->contexts)->toBe([
         ['group' => 'homepage'],
         ['group' => 'homepage', 'includes_blocks' => true],
-    ]);
+    ])->and($withoutBlocks)->each->toBeInstanceOf(ContentPlacementData::class)
+        ->and($withBlocks)->each->toBeInstanceOf(ContentPlacementData::class);
 });
 
 it('authorizes editor catalogs before reading placement or block storage', function (): void {
@@ -2953,7 +2968,7 @@ it('rejects conflicting keyed definition identities and normalized property alia
         ->toThrow(InvalidArgumentException::class);
 });
 
-it('canonicalizes model block reads and does not load unused placements', function (): void {
+it('canonicalizes DTO block reads and does not query unused placements', function (): void {
     $actor = ContentActorData::system();
     $block = app(CreateContentBlockAction::class)->execute(
         new CreateContentBlockData(
@@ -2965,9 +2980,28 @@ it('canonicalizes model block reads and does not load unused placements', functi
         ),
         $actor,
     );
-    $read = app(GetContentBlockAction::class)->execute($block, $actor);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
 
-    expect($read->relationLoaded('placements'))->toBeFalse();
+    try {
+        $read = app(GetContentBlockAction::class)->execute($block, $actor);
+        $queryCount = count(DB::getQueryLog());
+        $read->toArray();
+        $queries = collect(DB::getQueryLog());
+
+        expect($read)->toBeInstanceOf(ContentBlockData::class)
+            ->and($read->id)->toBe($block->id)
+            ->and($read->translations['en']['title'] ?? null)->toBe('Canonical model read')
+            ->and($queries)->toHaveCount($queryCount)
+            ->and($queries->contains(
+                static fn (array $query): bool => str_contains(
+                    $query['query'],
+                    'content_placements',
+                ),
+            ))->toBeFalse();
+    } finally {
+        DB::disableQueryLog();
+    }
 
     ContentBlock::query()->whereKey($block->id)->delete();
     $deleted = ContentBlock::withTrashed()->findOrFail($block->id);
@@ -3026,7 +3060,8 @@ it('applies trusted actor scope before caller-controlled block filters', functio
     );
 
     expect($page->total())->toBe(1)
-        ->and($page->items()[0]->scope_key)->toBe('tenant-a')
+        ->and($page->items())->each->toBeInstanceOf(ContentBlockData::class)
+        ->and($page->items()[0]->scopeKey)->toBe('tenant-a')
         ->and($forged->total())->toBe(0);
 });
 

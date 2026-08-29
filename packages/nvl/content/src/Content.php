@@ -29,6 +29,7 @@ use Nvl\Content\Actions\UpdateContentBlockAction;
 use Nvl\Content\Actions\UpdateContentPlacementAction;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Data\ContentCompositionSnapshotData;
 use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Data\ContentDefinitionMigrationPlanData;
@@ -36,6 +37,7 @@ use Nvl\Content\Data\ContentDefinitionMigrationResultData;
 use Nvl\Content\Data\ContentDefinitionSyncPlanData;
 use Nvl\Content\Data\ContentEditorData;
 use Nvl\Content\Data\ContentFieldPresetData;
+use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Data\ContentScopeData;
 use Nvl\Content\Data\ContentScopeResolutionData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
@@ -104,7 +106,7 @@ final readonly class Content
     /**
      * Return a filtered, authorized page of reusable Content blocks.
      *
-     * @return LengthAwarePaginator<int, ContentBlock>
+     * @return LengthAwarePaginator<int, ContentBlockData>
      */
     public function blocks(
         FilterSet $filters,
@@ -141,7 +143,7 @@ final readonly class Content
     public function block(
         ContentBlock|string $block,
         ContentActorData $actor,
-    ): ContentBlock {
+    ): ContentBlockData {
         return $this->getBlock->execute($block, $actor);
     }
 
@@ -256,7 +258,7 @@ final readonly class Content
     /**
      * Return every editable placement in one owner composition group.
      *
-     * @return Collection<int, ContentPlacement>
+     * @return Collection<int, ContentPlacementData>
      */
     public function placements(
         Model&ContentOwner $owner,

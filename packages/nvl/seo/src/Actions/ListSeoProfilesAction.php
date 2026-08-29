@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Nvl\Seo\Data\SeoProfileData;
 use Nvl\Seo\Data\SeoProfileQuery;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SeoOwnerRegistry;
+use Nvl\Seo\Services\SeoProfilePresenter;
 use Nvl\Seo\Support\SeoScope;
 
 /**
@@ -18,10 +20,13 @@ final class ListSeoProfilesAction
     /**
      * Create the profile-list action.
      */
-    public function __construct(private readonly SeoOwnerRegistry $owners) {}
+    public function __construct(
+        private readonly SeoOwnerRegistry $owners,
+        private readonly SeoProfilePresenter $presenter,
+    ) {}
 
     /**
-     * @return LengthAwarePaginator<int, SeoProfile>
+     * @return LengthAwarePaginator<int, SeoProfileData>
      */
     public function execute(SeoProfileQuery $query): LengthAwarePaginator
     {
@@ -29,7 +34,7 @@ final class ListSeoProfilesAction
             ? null
             : $this->owners->morphTypeForAlias($query->ownerAlias);
 
-        return SeoProfile::query()
+        $profiles = SeoProfile::query()
             ->with('translations')
             ->when(
                 $query->scope !== null,
@@ -55,5 +60,9 @@ final class ListSeoProfilesAction
                 perPage: $query->perPage,
                 page: $query->page,
             );
+
+        return $profiles->through(
+            fn (SeoProfile $profile): SeoProfileData => $this->presenter->present($profile),
+        );
     }
 }

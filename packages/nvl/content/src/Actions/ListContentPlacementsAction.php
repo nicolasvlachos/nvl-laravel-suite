@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentOwnerRegistry;
@@ -29,7 +30,7 @@ final readonly class ListContentPlacementsAction
     /**
      * Return every placement fact in one authorized owner group.
      *
-     * @return Collection<int, ContentPlacement>
+     * @return Collection<int, ContentPlacementData>
      */
     public function execute(
         Model&ContentOwner $owner,
@@ -97,6 +98,8 @@ final readonly class ListContentPlacementsAction
             );
         }
 
-        return $placements;
+        return $placements->map(
+            static fn (ContentPlacement $placement): ContentPlacementData => ContentPlacementData::fromModel($placement),
+        );
     }
 }

@@ -16,7 +16,6 @@ use Nvl\Content\Data\Mutations\UpdateContentPlacementData;
 use Nvl\Content\Data\Queries\ExpectedRevisionData;
 use Nvl\Content\Http\ContentResponseData;
 use Nvl\Content\Models\ContentBlock;
-use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Support\ContentActorFactory;
 use Nvl\Filterable\Http\QueryFilterSetFactory;
@@ -83,9 +82,7 @@ final class ContentBlocksController extends ContentController
 
         return response()->json([
             'data' => array_map(
-                static fn (ContentBlock $block): array => ContentResponseData::block(
-                    ContentBlockData::fromModel($block),
-                ),
+                static fn (ContentBlockData $block): array => ContentResponseData::block($block),
                 $blocks->items(),
             ),
             'meta' => [
@@ -133,9 +130,7 @@ final class ContentBlocksController extends ContentController
                     $actors->fromRequest($request),
                 ),
             )->map(
-                static fn (ContentPlacement $placement): array => ContentResponseData::placement(
-                    ContentPlacementData::fromModel($placement),
-                ),
+                static fn (ContentPlacementData $placement): array => ContentResponseData::placement($placement),
             )->all(),
         ]);
     }
@@ -185,10 +180,8 @@ final class ContentBlocksController extends ContentController
         Content $content,
     ): JsonResponse {
         return response()->json([
-            'data' => ContentResponseData::block(ContentBlockData::fromModel(
-                $this->content(
-                    fn () => $content->block($block, $actors->fromRequest($request)),
-                ),
+            'data' => ContentResponseData::block($this->content(
+                fn () => $content->block($block, $actors->fromRequest($request)),
             )),
         ]);
     }

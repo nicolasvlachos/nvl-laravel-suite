@@ -10,6 +10,7 @@ use Nvl\Filterable\Services\EloquentFilterApplier;
 use Nvl\Pages\Contracts\PageAuthorization;
 use Nvl\Pages\Data\PageActorData;
 use Nvl\Pages\Data\PageAuthorizationContextData;
+use Nvl\Pages\Data\PageListItemData;
 use Nvl\Pages\Enums\PageAbility;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Services\PageFilterSchema;
@@ -32,7 +33,7 @@ final readonly class ListPagesAction
     /**
      * Return one authorized site-scoped management paginator.
      *
-     * @return LengthAwarePaginator<int, Page>
+     * @return LengthAwarePaginator<int, PageListItemData>
      */
     public function execute(
         FilterSet $filters,
@@ -50,9 +51,13 @@ final readonly class ListPagesAction
             ->with('translations');
         $this->filters->apply($query, $filters, $this->schema->make());
 
-        return $query->paginate(max(
+        $pages = $query->paginate(max(
             1,
             min(PagesConfiguration::limit('maximum_per_page', 100), $perPage),
         ));
+
+        return $pages->through(
+            static fn (Page $page): PageListItemData => PageListItemData::fromModel($page),
+        );
     }
 }

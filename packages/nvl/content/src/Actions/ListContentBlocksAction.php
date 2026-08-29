@@ -8,6 +8,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentBlockQueryScope;
 use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Filterable\Data\FilterSet;
@@ -24,7 +25,7 @@ final readonly class ListContentBlocksAction
     ) {}
 
     /**
-     * @return LengthAwarePaginator<int, ContentBlock>
+     * @return LengthAwarePaginator<int, ContentBlockData>
      */
     public function execute(
         FilterSet $filterSet,
@@ -40,6 +41,10 @@ final readonly class ListContentBlocksAction
 
         $this->filters->apply($query, $filterSet, ContentBlock::filterSchema());
 
-        return $query->paginate(max(1, min(100, $perPage)));
+        $blocks = $query->paginate(max(1, min(100, $perPage)));
+
+        return $blocks->through(
+            static fn (ContentBlock $block): ContentBlockData => ContentBlockData::fromModel($block),
+        );
     }
 }

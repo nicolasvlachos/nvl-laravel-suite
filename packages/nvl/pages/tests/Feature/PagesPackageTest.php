@@ -38,6 +38,7 @@ use Nvl\Pages\Actions\CreatePageAction;
 use Nvl\Pages\Actions\DeletePageAction;
 use Nvl\Pages\Actions\FindPageByKeyAction;
 use Nvl\Pages\Actions\GetNavigationAction;
+use Nvl\Pages\Actions\GetPageAction;
 use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
 use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
 use Nvl\Pages\Actions\ListPageEditorSummariesAction;
@@ -62,6 +63,7 @@ use Nvl\Pages\Data\PageData;
 use Nvl\Pages\Data\PageEditorBootstrapData;
 use Nvl\Pages\Data\PageEditorSummaryData;
 use Nvl\Pages\Data\PageKeyAvailabilityData;
+use Nvl\Pages\Data\PageListItemData;
 use Nvl\Pages\Data\PageOptionData;
 use Nvl\Pages\Data\PageRequestContextData;
 use Nvl\Pages\Data\PublicPageData;
@@ -429,14 +431,64 @@ it('always scopes management lists to one explicit site', function (): void {
         ),
         PageActorData::system(),
     );
-    $pages = app(ListPagesAction::class)->execute(
-        FilterSet::none(),
-        'default',
-        PageActorData::system(),
-    );
+    DB::flushQueryLog();
+    DB::enableQueryLog();
 
-    expect($pages->total())->toBe(1)
-        ->and($pages->items()[0]->id)->toBe($default->id);
+    try {
+        $pages = app(ListPagesAction::class)->execute(
+            FilterSet::none(),
+            'default',
+            PageActorData::system(),
+            perPage: 1,
+        );
+        $queryCount = count(DB::getQueryLog());
+        $item = $pages->items()[0] ?? null;
+        $serialized = $item?->toArray();
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount)
+            ->and($queryCount)->toBeLessThanOrEqual(3)
+            ->and($pages->total())->toBe(1)
+            ->and($pages->currentPage())->toBe(1)
+            ->and($pages->perPage())->toBe(1)
+            ->and($pages->getOptions()['path'] ?? null)->toBe($pages->path())
+            ->and($pages->appends(['site' => 'default'])->url(2))->toContain(
+                'page=2',
+                'site=default',
+            )
+            ->and($item)->toBeInstanceOf(PageListItemData::class)
+            ->and($item?->id)->toBe($default->id)
+            ->and($item?->translations['en']['title'] ?? null)->toBe('Default-site')
+            ->and(array_keys($serialized ?? []))->toBe([
+                'id',
+                'parentId',
+                'key',
+                'site',
+                'slug',
+                'path',
+                'kind',
+                'resource',
+                'status',
+                'position',
+                'isNavigable',
+                'sitemapIncluded',
+                'sitemapPriority',
+                'sitemapChangeFrequency',
+                'publishedAt',
+                'expiresAt',
+                'revision',
+                'translations',
+                'createdAt',
+                'updatedAt',
+            ]);
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $page = app(GetPageAction::class)->execute($default, PageActorData::system());
+
+    expect($page)->toBeInstanceOf(PageData::class)
+        ->and($page->id)->toBe($default->id)
+        ->and($page->translations['en']['title'] ?? null)->toBe('Default-site');
 });
 
 it('finds site-scoped page keys and reports the real global key constraint', function (): void {

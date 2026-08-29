@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentEditorData;
-use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 
@@ -53,9 +52,7 @@ final readonly class GetOwnerContentEditorAction
             definitions: $definitions,
             presets: $presets,
             groups: $groups,
-            placements: array_values($placements
-                ->map(ContentPlacementData::fromModel(...))
-                ->all()),
+            placements: array_values($placements->all()),
             placementLimit: ContentConfiguration::positiveInteger(
                 'content.placements.maximum_per_group',
                 1_000,

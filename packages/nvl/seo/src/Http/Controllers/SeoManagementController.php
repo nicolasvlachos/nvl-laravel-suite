@@ -12,7 +12,6 @@ use Nvl\Data\Data\PaginationMeta;
 use Nvl\Seo\Actions\ArchiveSeoProfileAction;
 use Nvl\Seo\Actions\DeleteSeoProfileAction;
 use Nvl\Seo\Actions\DuplicateSeoProfileAction;
-use Nvl\Seo\Actions\GetSeoProfileAction;
 use Nvl\Seo\Actions\ListSeoProfilesAction;
 use Nvl\Seo\Actions\PreviewSeoProfileAction;
 use Nvl\Seo\Actions\SeoProfileStatusAction;
@@ -62,7 +61,7 @@ final class SeoManagementController extends Controller
 
         foreach ($profiles->items() as $profile) {
             $items[] = $this->stringKeyed(
-                $this->presenter->present($profile)->toArray(),
+                $profile->toArray(),
             );
         }
         $collection = new PaginatedCollection(
@@ -83,9 +82,9 @@ final class SeoManagementController extends Controller
     /**
      * Return one authorized management profile.
      */
-    public function show(string $profile, GetSeoProfileAction $action): JsonResponse
+    public function show(string $profile): JsonResponse
     {
-        $profileModel = $action->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::View, $profileModel);
 
         return response()->json([
@@ -124,10 +123,9 @@ final class SeoManagementController extends Controller
     public function update(
         UpdateSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         SyncSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $owner = $this->authorizeProfile(SeoAbility::Update, $profileModel);
         $updated = $action->execute($owner, $request->payload(), $profileModel->scope);
 
@@ -140,10 +138,9 @@ final class SeoManagementController extends Controller
     public function duplicate(
         DuplicateSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         DuplicateSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $ownerAlias = $request->ownerAlias();
         $target = $this->owners->resolve($ownerAlias, $request->ownerId());
         $sourceOwner = $profileModel->seoable()->firstOrFail();
@@ -174,10 +171,9 @@ final class SeoManagementController extends Controller
     public function archive(
         ArchiveSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         ArchiveSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Archive, $profileModel);
         $updated = $action->execute(
             $profileModel,
@@ -194,10 +190,9 @@ final class SeoManagementController extends Controller
     public function destroy(
         DeleteSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         DeleteSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Delete, $profileModel);
 
         return response()->json([
@@ -216,10 +211,9 @@ final class SeoManagementController extends Controller
     public function preview(
         PreviewSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         PreviewSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Preview, $profileModel);
 
         return response()->json([
@@ -263,6 +257,16 @@ final class SeoManagementController extends Controller
         ));
 
         return $owner;
+    }
+
+    /**
+     * Load one management profile model for route-owned authorization and mutations.
+     */
+    private function profileModel(string $profile): SeoProfile
+    {
+        return SeoProfile::query()
+            ->with('translations')
+            ->findOrFail($profile);
     }
 
     /**

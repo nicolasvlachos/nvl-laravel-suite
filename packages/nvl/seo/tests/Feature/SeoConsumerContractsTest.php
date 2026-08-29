@@ -9,10 +9,13 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Nvl\Seo\Actions\ArchiveSeoProfileAction;
 use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
 use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Actions\GetSeoProfileAction;
 use Nvl\Seo\Actions\ImportSeoProfilesAction;
 use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
+use Nvl\Seo\Actions\ListSeoProfilesAction;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Actions\SyncSeoRedirectAction;
 use Nvl\Seo\Contracts\SeoAuthorization;
@@ -25,6 +28,7 @@ use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
 use Nvl\Seo\Data\SeoImage;
 use Nvl\Seo\Data\SeoOwnerRevisionData;
 use Nvl\Seo\Data\SeoProfileData;
+use Nvl\Seo\Data\SeoProfileQuery;
 use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Data\StructuredDataNodeData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
@@ -55,6 +59,74 @@ function seoConsumerOwner(string $name = 'Consumer owner'): TestSeoOwner
 {
     return TestSeoOwner::query()->create(['name' => $name]);
 }
+
+it('returns management profile details and pages as stable DTOs without mapping queries', function (): void {
+    $olderOwner = seoConsumerOwner('Older management profile');
+    $newerOwner = seoConsumerOwner('Newer management profile');
+    $older = app(SyncSeoProfileAction::class)->execute(
+        $olderOwner,
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Older profile']],
+        ]),
+    );
+    $newer = app(SyncSeoProfileAction::class)->execute(
+        $newerOwner,
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Newer profile']],
+        ]),
+    );
+    SeoProfile::query()->whereKey($older->id)->update(['updated_at' => now()->subMinute()]);
+    SeoProfile::query()->whereKey($newer->id)->update(['updated_at' => now()]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $profiles = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+            page: 1,
+            perPage: 1,
+        ));
+        $queryCount = count(DB::getQueryLog());
+        $item = $profiles->items()[0] ?? null;
+        $serialized = $item?->toArray();
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount)
+            ->and($queryCount)->toBeLessThanOrEqual(3)
+            ->and($profiles->total())->toBe(2)
+            ->and($profiles->currentPage())->toBe(1)
+            ->and($profiles->perPage())->toBe(1)
+            ->and($profiles->getOptions()['path'] ?? null)->toBe($profiles->path())
+            ->and($profiles->appends(['status' => 'active'])->url(2))->toContain(
+                'page=2',
+                'status=active',
+            )
+            ->and($item)->toBeInstanceOf(SeoProfileData::class)
+            ->and($item?->id)->toBe($newer->id)
+            ->and($item?->ownerAlias)->toBe('article')
+            ->and($item?->translations['en']->title ?? null)->toBe('Newer profile')
+            ->and(array_keys($serialized ?? []))->toContain(
+                'id',
+                'ownerAlias',
+                'ownerId',
+                'translations',
+            );
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $profile = app(GetSeoProfileAction::class)->execute($newer->id);
+    $archived = app(ArchiveSeoProfileAction::class)->execute(
+        $newer,
+        true,
+        $newer->revision,
+    );
+
+    expect($profile)->toBeInstanceOf(SeoProfileData::class)
+        ->and($profile->id)->toBe($newer->id)
+        ->and($profile->translations['en']->title ?? null)->toBe('Newer profile')
+        ->and($older)->toBeInstanceOf(SeoProfile::class)
+        ->and($archived)->toBeInstanceOf(SeoProfile::class);
+});
 
 it('returns authorized owner-centric profile and revision projections', function (): void {
     $owner = seoConsumerOwner('Owner-centric reads');

@@ -9012,7 +9012,7 @@
                 "Nvl\\Content\\Actions\\GetContentBlockAction": [
                     "final readonly class Nvl\\Content\\Actions\\GetContentBlockAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization): mixed",
-                    "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock"
+                    "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentBlockData"
                 ],
                 "Nvl\\Content\\Actions\\GetOwnerContentEditorAction": [
                     "final readonly class Nvl\\Content\\Actions\\GetOwnerContentEditorAction",
@@ -9023,7 +9023,7 @@
                     "final readonly class Nvl\\Content\\Actions\\ListContentBlocksAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Filterable\\Services\\EloquentFilterApplier $filters): mixed",
                     "public function execute(Nvl\\Filterable\\Data\\FilterSet $filterSet, Nvl\\Content\\Data\\ContentActorData $actor, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
-                    "@return LengthAwarePaginator<int, ContentBlock>"
+                    "@return LengthAwarePaginator<int, ContentBlockData>"
                 ],
                 "Nvl\\Content\\Actions\\ListContentDefinitionsAction": [
                     "final readonly class Nvl\\Content\\Actions\\ListContentDefinitionsAction",
@@ -9041,7 +9041,7 @@
                     "final readonly class Nvl\\Content\\Actions\\ListContentPlacementsAction",
                     "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners): mixed",
                     "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor, bool $includeBlocks=false): Illuminate\\Support\\Collection",
-                    "@return Collection<int, ContentPlacement>"
+                    "@return Collection<int, ContentPlacementData>"
                 ],
                 "Nvl\\Content\\Actions\\ListContentPresetsAction": [
                     "final readonly class Nvl\\Content\\Actions\\ListContentPresetsAction",
@@ -9153,10 +9153,10 @@
                     "public function presets(Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentFieldPresetData>",
                     "public function blocks(Nvl\\Filterable\\Data\\FilterSet $filters, Nvl\\Content\\Data\\ContentActorData $actor, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
-                    "@return LengthAwarePaginator<int, ContentBlock>",
+                    "@return LengthAwarePaginator<int, ContentBlockData>",
                     "public function resolveScopes(array $scopes, string $locale, Nvl\\Content\\Data\\ContentActorData $actor, ?int $limit=null, bool $publicOnly=true): Nvl\\Content\\Data\\ContentScopeResolutionData",
                     "@param list<ContentScopeData> $scopes",
-                    "public function block(Nvl\\Content\\Models\\ContentBlock|string $block, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock",
+                    "public function block(Nvl\\Content\\Models\\ContentBlock|string $block, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentBlockData",
                     "public function syncDefinitions(Nvl\\Content\\Data\\ContentActorData $actor, bool $dryRun=false): Nvl\\Content\\Data\\ContentDefinitionSyncPlanData",
                     "public function planDefinitionMigrations(Nvl\\Content\\Data\\ContentActorData $actor, ?string $definition=null, ?int $limit=null): Nvl\\Content\\Data\\ContentDefinitionMigrationPlanData",
                     "public function applyDefinitionMigrations(Nvl\\Content\\Data\\ContentDefinitionMigrationPlanData $plan, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentDefinitionMigrationResultData",
@@ -9169,7 +9169,7 @@
                     "public function groups(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
                     "@return Collection<int, string>",
                     "public function placements(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor): Illuminate\\Support\\Collection",
-                    "@return Collection<int, ContentPlacement>",
+                    "@return Collection<int, ContentPlacementData>",
                     "public function editor(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentEditorData",
                     "public function place(Nvl\\Content\\Models\\ContentBlock|string $block, Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\Mutations\\PlaceContentBlockData $data, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentPlacement",
                     "public function updatePlacement(Nvl\\Content\\Models\\ContentPlacement|string $placement, Nvl\\Content\\Data\\Mutations\\UpdateContentPlacementData $data, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentPlacement",
@@ -10776,8 +10776,8 @@
                     "final class Nvl\\Content\\Facades\\Content extends Illuminate\\Support\\Facades\\Facade",
                     "@method static Collection<int, ContentDefinitionData> definitions(ContentActorData $actor)",
                     "@method static Collection<int, ContentFieldPresetData> presets(ContentActorData $actor)",
-                    "@method static LengthAwarePaginator<int, ContentBlock> blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)",
-                    "@method static ContentBlock block(ContentBlock|string $block, ContentActorData $actor)",
+                    "@method static LengthAwarePaginator<int, ContentBlockData> blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)",
+                    "@method static ContentBlockData block(ContentBlock|string $block, ContentActorData $actor)",
                     "@method static ContentScopeResolutionData resolveScopes(list<ContentScopeData> $scopes, string $locale, ContentActorData $actor, ?int $limit = null, bool $publicOnly = true)",
                     "@method static ContentDefinitionSyncPlanData syncDefinitions(ContentActorData $actor, bool $dryRun = false)",
                     "@method static ContentDefinitionMigrationPlanData planDefinitionMigrations(ContentActorData $actor, ?string $definition = null, ?int $limit = null)",
@@ -10789,7 +10789,7 @@
                     "@method static void deleteBlock(ContentBlock|string $block, int $expectedRevision, ContentActorData $actor)",
                     "@method static ContentBlock restoreBlock(ContentBlock|string $block, int $expectedRevision, ContentActorData $actor)",
                     "@method static Collection<int, string> groups(Model&ContentOwner $owner, ContentActorData $actor)",
-                    "@method static Collection<int, ContentPlacement> placements(Model&ContentOwner $owner, string $group, ContentActorData $actor)",
+                    "@method static Collection<int, ContentPlacementData> placements(Model&ContentOwner $owner, string $group, ContentActorData $actor)",
                     "@method static ContentEditorData editor(Model&ContentOwner $owner, string $group, ContentActorData $actor)",
                     "@method static ContentPlacement place(ContentBlock|string $block, Model&ContentOwner $owner, string $group, PlaceContentBlockData $data, ContentActorData $actor)",
                     "@method static ContentPlacement updatePlacement(ContentPlacement|string $placement, UpdateContentPlacementData $data, ContentActorData $actor)",
@@ -26396,7 +26396,7 @@
                 "Nvl\\Pages\\Actions\\GetPageAction": [
                     "final readonly class Nvl\\Pages\\Actions\\GetPageAction",
                     "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization): mixed",
-                    "public function execute(Nvl\\Pages\\Models\\Page|string $page, Nvl\\Pages\\Data\\PageActorData $actor): Nvl\\Pages\\Models\\Page"
+                    "public function execute(Nvl\\Pages\\Models\\Page|string $page, Nvl\\Pages\\Data\\PageActorData $actor): Nvl\\Pages\\Data\\PageData"
                 ],
                 "Nvl\\Pages\\Actions\\GetPageEditorBootstrapAction": [
                     "final readonly class Nvl\\Pages\\Actions\\GetPageEditorBootstrapAction",
@@ -26424,7 +26424,7 @@
                     "final readonly class Nvl\\Pages\\Actions\\ListPagesAction",
                     "public function __construct(Nvl\\Pages\\Contracts\\PageAuthorization $authorization, Nvl\\Filterable\\Services\\EloquentFilterApplier $filters, Nvl\\Pages\\Services\\PageFilterSchema $schema): mixed",
                     "public function execute(Nvl\\Filterable\\Data\\FilterSet $filters, string $site, Nvl\\Pages\\Data\\PageActorData $actor, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
-                    "@return LengthAwarePaginator<int, Page>"
+                    "@return LengthAwarePaginator<int, PageListItemData>"
                 ],
                 "Nvl\\Pages\\Actions\\ListPublicChildPagesAction": [
                     "final readonly class Nvl\\Pages\\Actions\\ListPublicChildPagesAction",
@@ -26903,6 +26903,55 @@
                     "public readonly bool $available",
                     "public readonly ?string $conflictingPageId",
                     "public function __construct(string $site, string $key, bool $available, ?string $conflictingPageId): mixed",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Pages\\Data\\PageListItemData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Pages\\Data\\PageListItemData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $id",
+                    "public readonly ?string $parentId",
+                    "public readonly string $key",
+                    "public readonly string $site",
+                    "public readonly string $slug",
+                    "public readonly string $path",
+                    "public readonly Nvl\\Pages\\Enums\\PageKind $kind",
+                    "public readonly ?string $resource",
+                    "public readonly Nvl\\Pages\\Enums\\PageStatus $status",
+                    "public readonly int $position",
+                    "public readonly bool $isNavigable",
+                    "public readonly bool $sitemapIncluded",
+                    "public readonly ?string $sitemapPriority",
+                    "public readonly ?Nvl\\Seo\\Enums\\SitemapChangeFrequency $sitemapChangeFrequency",
+                    "public readonly ?string $publishedAt",
+                    "public readonly ?string $expiresAt",
+                    "public readonly int $revision",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, { title: string; navigationLabel: string | null; summary: string | null }>\")]",
+                    "public readonly array $translations",
+                    "public readonly string $createdAt",
+                    "public readonly string $updatedAt",
+                    "public function __construct(string $id, ?string $parentId, string $key, string $site, string $slug, string $path, Nvl\\Pages\\Enums\\PageKind $kind, ?string $resource, Nvl\\Pages\\Enums\\PageStatus $status, int $position, bool $isNavigable, bool $sitemapIncluded, ?string $sitemapPriority, ?Nvl\\Seo\\Enums\\SitemapChangeFrequency $sitemapChangeFrequency, ?string $publishedAt, ?string $expiresAt, int $revision, #[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"Record<string, { title: string; navigationLabel: string | null; summary: string | null }>\")] array $translations, string $createdAt, string $updatedAt): mixed",
+                    "@param array<string, array{title: string, navigationLabel: string|null, summary: string|null}> $translations",
+                    "public static function fromModel(Nvl\\Pages\\Models\\Page $page): self",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
                     "@throws Exception",
@@ -28324,8 +28373,9 @@
                     "public function execute(Illuminate\\Database\\Eloquent\\Model $owner, ?string $scope=null): Nvl\\Seo\\Data\\SeoOwnerRevisionData"
                 ],
                 "Nvl\\Seo\\Actions\\GetSeoProfileAction": [
-                    "final class Nvl\\Seo\\Actions\\GetSeoProfileAction",
-                    "public function execute(Nvl\\Seo\\Models\\SeoProfile|string $profile): Nvl\\Seo\\Models\\SeoProfile"
+                    "final readonly class Nvl\\Seo\\Actions\\GetSeoProfileAction",
+                    "public function __construct(Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
+                    "public function execute(Nvl\\Seo\\Models\\SeoProfile|string $profile): Nvl\\Seo\\Data\\SeoProfileData"
                 ],
                 "Nvl\\Seo\\Actions\\ImportSeoProfilesAction": [
                     "final readonly class Nvl\\Seo\\Actions\\ImportSeoProfilesAction",
@@ -28341,9 +28391,9 @@
                 ],
                 "Nvl\\Seo\\Actions\\ListSeoProfilesAction": [
                     "final class Nvl\\Seo\\Actions\\ListSeoProfilesAction",
-                    "public function __construct(Nvl\\Seo\\Services\\SeoOwnerRegistry $owners): mixed",
+                    "public function __construct(Nvl\\Seo\\Services\\SeoOwnerRegistry $owners, Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
                     "public function execute(Nvl\\Seo\\Data\\SeoProfileQuery $query): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
-                    "@return LengthAwarePaginator<int, SeoProfile>"
+                    "@return LengthAwarePaginator<int, SeoProfileData>"
                 ],
                 "Nvl\\Seo\\Actions\\PreviewSeoProfileAction": [
                     "final readonly class Nvl\\Seo\\Actions\\PreviewSeoProfileAction",
@@ -28979,13 +29029,13 @@
                     "final class Nvl\\Seo\\Http\\Controllers\\SeoManagementController extends Illuminate\\Routing\\Controller",
                     "public function __construct(Nvl\\Seo\\Contracts\\SeoAuthorization $authorization, Nvl\\Seo\\Services\\SeoOwnerRegistry $owners, Nvl\\Seo\\Services\\SeoProfilePresenter $presenter): mixed",
                     "public function index(Nvl\\Seo\\Http\\Requests\\ListSeoProfilesRequest $request, Nvl\\Seo\\Actions\\ListSeoProfilesAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function show(string $profile, Nvl\\Seo\\Actions\\GetSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function show(string $profile): Illuminate\\Http\\JsonResponse",
                     "public function store(Nvl\\Seo\\Http\\Requests\\StoreSeoProfileRequest $request, Nvl\\Seo\\Actions\\SyncSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function update(Nvl\\Seo\\Http\\Requests\\UpdateSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\GetSeoProfileAction $get, Nvl\\Seo\\Actions\\SyncSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function duplicate(Nvl\\Seo\\Http\\Requests\\DuplicateSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\GetSeoProfileAction $get, Nvl\\Seo\\Actions\\DuplicateSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function archive(Nvl\\Seo\\Http\\Requests\\ArchiveSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\GetSeoProfileAction $get, Nvl\\Seo\\Actions\\ArchiveSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function destroy(Nvl\\Seo\\Http\\Requests\\DeleteSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\GetSeoProfileAction $get, Nvl\\Seo\\Actions\\DeleteSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function preview(Nvl\\Seo\\Http\\Requests\\PreviewSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\GetSeoProfileAction $get, Nvl\\Seo\\Actions\\PreviewSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function update(Nvl\\Seo\\Http\\Requests\\UpdateSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\SyncSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function duplicate(Nvl\\Seo\\Http\\Requests\\DuplicateSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\DuplicateSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function archive(Nvl\\Seo\\Http\\Requests\\ArchiveSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\ArchiveSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function destroy(Nvl\\Seo\\Http\\Requests\\DeleteSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\DeleteSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function preview(Nvl\\Seo\\Http\\Requests\\PreviewSeoProfileRequest $request, string $profile, Nvl\\Seo\\Actions\\PreviewSeoProfileAction $action): Illuminate\\Http\\JsonResponse",
                     "public function status(Nvl\\Seo\\Http\\Requests\\SeoProfileStatusRequest $request, Nvl\\Seo\\Actions\\SeoProfileStatusAction $action): Illuminate\\Http\\JsonResponse"
                 ],
                 "Nvl\\Seo\\Http\\Controllers\\SitemapChunkController": [
