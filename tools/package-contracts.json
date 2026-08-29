@@ -19073,10 +19073,20 @@
                     "@param array<int, string> $tags Tags to add",
                     "@return int Number of tagged records"
                 ],
+                "Nvl\\Media\\Actions\\ClearOwnerMediaSlotAction": [
+                    "final readonly class Nvl\\Media\\Actions\\ClearOwnerMediaSlotAction",
+                    "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotWorkflow $workflow): mixed",
+                    "public function execute(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, ?string $idempotencyKey=null): void"
+                ],
                 "Nvl\\Media\\Actions\\CompleteMultipartUploadAction": [
                     "final readonly class Nvl\\Media\\Actions\\CompleteMultipartUploadAction",
                     "public function __construct(Nvl\\Media\\Contracts\\MultipartUploadGateway $gateway, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaMultipartLock $lock, Nvl\\Media\\Services\\MediaMultipartSessionMapper $sessionMapper): mixed",
                     "public function execute(Nvl\\Media\\Data\\Multipart\\CompleteMultipartUploadData $completion, Nvl\\Media\\Data\\MediaActorData $actor): Nvl\\Media\\Models\\Media"
+                ],
+                "Nvl\\Media\\Actions\\CopyOwnerMediaSlotAction": [
+                    "final readonly class Nvl\\Media\\Actions\\CopyOwnerMediaSlotAction",
+                    "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotCopyWorkflow $workflow): mixed",
+                    "public function execute(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, string $sourceMediaId, ?string $idempotencyKey=null): Nvl\\Media\\Data\\Display\\MediaLibraryItem"
                 ],
                 "Nvl\\Media\\Actions\\DeleteMediaAction": [
                     "final class Nvl\\Media\\Actions\\DeleteMediaAction implements Nvl\\Media\\Contracts\\DeleteMediaContract",
@@ -22932,11 +22942,22 @@
                     "final class Nvl\\Media\\Services\\MediaOwnedSourceLifecycle",
                     "public function deleteAfterCommit(string $path): void"
                 ],
+                "Nvl\\Media\\Services\\MediaOwnerSlotCopyWorkflow": [
+                    "final readonly class Nvl\\Media\\Services\\MediaOwnerSlotCopyWorkflow",
+                    "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotResolver $resolver, Nvl\\Media\\Services\\MediaStagingPolicy $stagingPolicy, Nvl\\Media\\Contracts\\MediaAuthorization $authorization, Nvl\\Media\\Contracts\\AttachMediaContract $attachMedia, Nvl\\Media\\Contracts\\DetachMediaContract $detachMedia, Nvl\\Media\\Contracts\\DeleteMediaContract $deleteMedia, Nvl\\Media\\Contracts\\UploadMediaContract $uploadMedia, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaOwnerSlotIdempotency $idempotency, Nvl\\Media\\Services\\MediaLibraryItemDataFactory $items, Nvl\\Media\\Services\\MediaLocalFileMaterializer $materializer): mixed",
+                    "public function copy(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, string $sourceMediaId, ?string $idempotencyKey=null): Nvl\\Media\\Data\\Display\\MediaLibraryItem"
+                ],
                 "Nvl\\Media\\Services\\MediaOwnerSlotIdempotency": [
                     "final class Nvl\\Media\\Services\\MediaOwnerSlotIdempotency",
                     "public function begin(string $key, Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model $owner, string $slot, Nvl\\Media\\Enums\\MediaOwnerSlotOperationType $operation, array $payload): Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
                     "@param array<array-key, mixed> $payload",
+                    "public function completed(string $key, Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model $owner, string $slot, Nvl\\Media\\Enums\\MediaOwnerSlotOperationType $operation, array $payload): ?Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
+                    "@param array<array-key, mixed> $payload",
+                    "public function checkpointed(string $key, Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model $owner, string $slot, Nvl\\Media\\Enums\\MediaOwnerSlotOperationType $operation, array $payload): ?Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
+                    "@param array<array-key, mixed> $payload",
                     "public function complete(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, ?string $resultMediaId, ?array $resultPayload=null): void",
+                    "@param array<string, mixed>|null $resultPayload",
+                    "public function checkpoint(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, ?string $resultMediaId, ?array $resultPayload=null): void",
                     "@param array<string, mixed>|null $resultPayload",
                     "public function fail(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, string $failureCode): void",
                     "public function renew(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim): void",
@@ -22955,7 +22976,8 @@
                     "final readonly class Nvl\\Media\\Services\\MediaOwnerSlotWorkflow",
                     "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotResolver $resolver, Nvl\\Media\\Services\\MediaStagingPolicy $stagingPolicy, Nvl\\Media\\Contracts\\MediaAuthorization $authorization, Nvl\\Media\\Contracts\\AttachMediaContract $attachMedia, Nvl\\Media\\Contracts\\DetachMediaContract $detachMedia, Nvl\\Media\\Contracts\\DeleteMediaContract $deleteMedia, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaOwnerSlotIdempotency $idempotency, Nvl\\Media\\Services\\MediaLibraryItemDataFactory $items): mixed",
                     "public function get(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot): ?Nvl\\Media\\Data\\Display\\MediaLibraryItem",
-                    "public function replace(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, string $mediaId, ?string $idempotencyKey=null): Nvl\\Media\\Data\\Display\\MediaLibraryItem"
+                    "public function replace(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, string $mediaId, ?string $idempotencyKey=null): Nvl\\Media\\Data\\Display\\MediaLibraryItem",
+                    "public function clear(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, ?string $idempotencyKey=null): void"
                 ],
                 "Nvl\\Media\\Services\\MediaPathResolver": [
                     "final class Nvl\\Media\\Services\\MediaPathResolver",
@@ -23045,7 +23067,7 @@
                     "@throws AuthorizationException",
                     "@throws FileUnacceptableForCollection",
                     "@throws MediaUploadException",
-                    "public function assertFitsSlot(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Slots\\MediaSlot $slot): void",
+                    "public function assertFitsSlot(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Slots\\MediaSlot $slot, bool $customAcceptorSatisfied=false): void",
                     "@throws FileUnacceptableForCollection",
                     "@throws MediaUploadException"
                 ],
@@ -23326,6 +23348,13 @@
                     "@param string $mimeType Full MIME type string",
                     "@return string File extension without dot, defaults to 'bin' for unknown MIME types"
                 ],
+                "Nvl\\Media\\Support\\MediaOwnerSlotMutationState": [
+                    "final class Nvl\\Media\\Support\\MediaOwnerSlotMutationState",
+                    "public function markCommitted(): void",
+                    "public function committed(): bool",
+                    "public function recordResult(Nvl\\Media\\Data\\Display\\MediaLibraryItem $result): void",
+                    "public function result(): ?Nvl\\Media\\Data\\Display\\MediaLibraryItem"
+                ],
                 "Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim": [
                     "final readonly class Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
                     "public readonly string $operationId",
@@ -23436,7 +23465,7 @@
                 ]
             },
             "configuration": {
-                "config/media.php": "aa72c44189b327267e031c756079cbf3d7ebdaba7c1cb4994e055d8dede25262"
+                "config/media.php": "f52efa8418aaf1c98dc6f2f0a8aafeae8d1bff820bda1bc75c361fa0d366d056"
             },
             "routes": {
                 "routes/api.php": "85bb1199819a207493a61fe48f6772fcf696358d949b010f5c5939b28d4a4ff9",
