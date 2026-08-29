@@ -45,7 +45,7 @@
 - Consumes: CR-04 configure/audit commands, CR-05–08 Auth reads, CR-09 Activity, CR-10 Mail, CR-12 Settings identity.
 - Produces: a sealed-artifact smoke command covering Auth, Settings, Activity, and Mail Notifications.
 
-- [ ] **Step 1: Write the failing fixture contract test**
+- [x] **Step 1: Write the failing fixture contract test**
 
 ```php
 expect($fixtureRoot.'/app/Auth/AuthConsumerProbe.php')->toBeFile()
@@ -57,13 +57,13 @@ Assert exact fixture files, enabled module flags, authorization bindings,
 TypeScript DTO usage, runner commands, package/application migration modes, and
 strict audit/Doctor invocations.
 
-- [ ] **Step 2: Run the contract test and verify the fixture is absent**
+- [x] **Step 2: Run the contract test and verify the fixture is absent**
 
 Run: `php artisan test --compact tests/Contract/AuthProductionConsumerWorkflowTest.php`
 
 Expected: FAIL because the fixture and runner do not exist.
 
-- [ ] **Step 3: Implement the fixture provider and probe**
+- [x] **Step 3: Implement the fixture provider and probe**
 
 Enable exactly Support, Data, Auth, Settings, Activity, and Mail Notifications
 plus transitive dependencies. Bind real deny-by-default authorization adapters,
@@ -78,7 +78,7 @@ mail notifiable alias, and array transport. The probe must:
 - assert mailer/category statistics and safe correlation;
 - assert denied actors see none of the management data.
 
-- [ ] **Step 4: Implement a dry-run-first production runner**
+- [x] **Step 4: Implement a dry-run-first production runner**
 
 Follow the existing Comments production runner pattern. Create a fresh Laravel
 13 application in a temporary directory, install the copied archive, copy the
@@ -87,7 +87,7 @@ strict audit, type generation/check, TypeScript compile, and smoke command.
 Repeat after rollback using published application-owned migrations. Never use a
 symlink and never use `QUEUE_CONNECTION=sync` for the queued-mail pass.
 
-- [ ] **Step 5: Run the fixture contract and production runner**
+- [x] **Step 5: Run the fixture contract and production runner**
 
 Run: `php artisan test --compact tests/Contract/AuthProductionConsumerWorkflowTest.php`
 
@@ -95,12 +95,31 @@ Run: `bash tools/run-auth-production-consumer.sh`
 
 Expected: PASS in both migration modes with no audit suppression.
 
-- [ ] **Step 6: Commit CR-19**
+- [x] **Step 6: Commit CR-19**
 
 ```bash
 git add tools/fixtures/auth-production-consumer tools/run-auth-production-consumer.sh tests/Contract/AuthProductionConsumerWorkflowTest.php
 git commit -m "test: add Auth production consumer"
 ```
+
+Completed in `9ee766d`. A sealed, copied Suite archive now installs into fresh
+Laravel 13 applications in both package-owned and application-owned migration
+modes. The proof consumer configures explicit deny-by-default Auth, Settings,
+and Mail authorization, synchronizes RBAC and role assignment through traceable
+system Actions, exercises every CR-05–08 read, records Settings Activity,
+projects accepted/failed Mail history without private correlation, and proves a
+real opt-in tracked Mailable through the database queue worker.
+
+The production runner passes config/route cache, strict production Doctor,
+strict consumer audit with zero suppressions/findings, managed skill
+publication, generated-type freshness, strict TypeScript compilation, Composer
+security audit, and full rollback in both modes. The rehearsal also exposed and
+fixed the Suite audit's requirement for disabled-module table configuration.
+Independent review drove permanent isolated PHPStan/Pint coverage for the
+fixture and reported no remaining findings with Ready: Yes. The root suite
+passed 167 tests with 9,450 assertions; both maximum-level PHPStan scans,
+optimized autoloading, package distributions/contracts, generated types, and
+formatting passed. The original suite checkout and KPO remained read-only.
 
 ### Task 2 (CR-20): Build the Content production consumer
 

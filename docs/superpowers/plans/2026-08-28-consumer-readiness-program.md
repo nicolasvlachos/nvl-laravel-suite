@@ -54,7 +54,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-16 | [x] | Page editor/publication composition | Pages/Content plan | CR-12, CR-13, CR-15 | 1.2 | `9ffc48c` |
 | CR-17 | [x] | Media slot reads and replacement | Media plan | CR-01 | 1.3 | `68e4f3e` |
 | CR-18 | [ ] | Media slot clear/copy/idempotency | Media plan | CR-17 | 1.3 | — |
-| CR-19 | [ ] | Auth proof consumer | Validation plan | CR-04, CR-08, CR-12 | 1.3 | — |
+| CR-19 | [x] | Auth proof consumer | Validation plan | CR-04, CR-08, CR-12 | 1.3 | `9ee766d` |
 | CR-20 | [ ] | Content proof consumer | Validation plan | CR-16, CR-18 | 1.3 | — |
 | CR-21 | [ ] | KPO bounded migration waves | Validation plan | CR-08, CR-10, CR-16, CR-18 | 1.3 | — |
 | CR-22 | [ ] | Golden journeys and release matrix | Validation plan | CR-19, CR-20, CR-21 | 1.3 | — |
@@ -365,6 +365,21 @@ gate pass. Record the implementation commit beside the task before checking it.
   and diff hygiene passed. The PostgreSQL/MySQL two-worker tests activate in the
   database matrix and cover occupied and initially empty slots. KPO and the
   original suite checkout remained read-only.
+- 2026-08-29 — CR-19 completed in `9ee766d`. The Auth production consumer
+  installs a sealed, non-symlinked Suite archive into fresh Laravel 13 apps and
+  passes both package-owned and application-owned migration modes. It proves
+  explicit Auth/Settings/Mail authorization, system-authorized RBAC bootstrap
+  and assignment, every CR-05–08 read, optimistic Settings mutation plus
+  Activity projection, safe Mail aggregates, denied-principal behavior, and a
+  real queued tracked Mailable through the database worker. Both modes pass
+  config/route cache, skill publication, generated types, strict production
+  Doctor, zero-finding strict consumer audit, strict TypeScript, security audit,
+  and rollback. The rehearsal found and fixed disabled-module configuration
+  leakage in the consumer auditor. Independent review required durable isolated
+  PHPStan/Pint coverage, then reported no remaining findings and Ready Yes. The
+  final root gate passed 167 tests with 9,450 assertions, both max-level PHPStan
+  scans, optimized autoloading, distributions/contracts, generated types, and
+  formatting. KPO and the original suite checkout remained read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
