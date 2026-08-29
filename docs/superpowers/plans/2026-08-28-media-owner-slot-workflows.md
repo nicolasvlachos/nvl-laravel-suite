@@ -221,7 +221,7 @@ git commit -m "feat(media): replace owner media slots safely"
 - Consumes: CR-17 workflow, `MediaLocalFileMaterializer`, Media ingestion/upload pipeline, and operation ledger.
 - Produces: clear and copy APIs from the design spec.
 
-- [ ] **Step 1: Write failing clear/copy lifecycle tests**
+- [x] **Step 1: Write failing clear/copy lifecycle tests**
 
 ```php
 $copy = app(CopyOwnerMediaSlotAction::class)->execute(
@@ -241,13 +241,13 @@ source view denial, missing source object, source checksum mismatch, private
 signed URL non-use, metadata/tag allowlist, uploader attribution, exclusive
 destination identity, copy rollback cleanup, and copy replay.
 
-- [ ] **Step 2: Run the workflow test and verify missing Actions fail**
+- [x] **Step 2: Run the workflow test and verify missing Actions fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/media/phpunit.xml.dist --compact packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php`
 
 Expected: FAIL because clear/copy Actions do not exist.
 
-- [ ] **Step 3: Implement slot clear**
+- [x] **Step 3: Implement slot clear**
 
 Signature:
 
@@ -265,7 +265,7 @@ detach the exact association, and route orphan exclusive media through
 `DeleteMediaAction`. A missing attachment is a successful no-op. Complete the
 ledger with a null result.
 
-- [ ] **Step 4: Implement slot copy through canonical ingestion**
+- [x] **Step 4: Implement slot copy through canonical ingestion**
 
 Authorize `View` on source and `Associate` on destination. Materialize the
 source through `MediaLocalFileMaterializer`, verify its existing digest and
@@ -275,18 +275,25 @@ tags; never preserve provider payloads, redaction metadata, storage hash/path,
 association metadata, or visibility contrary to the destination slot. Attribute
 the copy to the actor. Release the materialized local file in `finally`.
 
-- [ ] **Step 5: Run Media quality**
+- [x] **Step 5: Run Media quality**
 
 Run: `php tools/run-package-quality.php media`
 
 Expected: PASS, including dependency analysis and security audit.
 
-- [ ] **Step 6: Commit CR-18a**
+- [x] **Step 6: Commit CR-18a**
 
 ```bash
 git add packages/nvl/media/src/Actions/ClearOwnerMediaSlotAction.php packages/nvl/media/src/Actions/CopyOwnerMediaSlotAction.php packages/nvl/media/src/Services/MediaOwnerSlotWorkflow.php packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php
 git commit -m "feat(media): clear and copy owner media slots"
 ```
+
+Completed in `ad289df`. The final implementation also covers split-ledger
+immutable checkpoints, consumer-owned outer transactions, rollback recovery,
+under-lock claim fencing, explicit metadata allowlisting, and displaced replay
+without remutating a newer slot occupant. Independent review reported no
+findings and Ready: Yes. Media quality passed 990 tests (987 passed, 3 skipped)
+with 3,219 assertions, Pint, and PHPStan.
 
 ### Task 4 (CR-18b): Operationalize and document owner-slot workflows
 
