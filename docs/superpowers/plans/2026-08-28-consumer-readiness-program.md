@@ -325,6 +325,26 @@ gate pass. Record the implementation commit beside the task before checking it.
   autoloading, PHPStan level max, dependency/distribution validation, contracts,
   generated types, and `tsc`. KPO and the original suite checkout remained
   read-only.
+- 2026-08-29 — CR-17a established Media's owner-slot operation identity in
+  `05aafae` without marking the full CR-17 read/replace workflow complete.
+  The additive ledger provides canonical request hashing, insert-or-lock exact
+  replay, stable failure codes, nullable clear results, failed-attempt retry,
+  renewable processing leases, stale-attempt UUID rotation, terminal-only
+  bounded pruning, configurable isolated storage, and strict Doctor coverage.
+  `MediaAbility::ManageStaging` and selected-association
+  `MediaLibraryItem` projection are generated public contracts. Read-only KPO
+  inspection confirmed that `HasSingleDocumentMedia` currently duplicates
+  staging ownership, ambient authorization, MIME/size checks, destructive
+  replacement, cleanup, and copy semantics that CR-17b/CR-18 will move into
+  Media. Independent review found one permanent-processing-claim risk; lease
+  recovery, heartbeat renewal, stale-claim invalidation, and explicit
+  cross-connection saga guidance resolved it, and re-review reported no
+  Critical or Important findings with Ready Yes. Media quality passed 959 tests
+  with 2,986 assertions and one environment-dependent skip, including Pint and
+  PHPStan level max; focused root readiness/integration passed 34 tests with
+  1,753 assertions, and public contracts, generated types, `tsc`, mirrored
+  skills, and diff hygiene passed. KPO and the original suite checkout remained
+  read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.

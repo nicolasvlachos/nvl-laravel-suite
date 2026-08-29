@@ -41,7 +41,7 @@
 - Consumes: existing Media table configuration, UUID conventions, model factories, and `MediaLibraryItem`.
 - Produces: idempotency begin/complete/fail boundary, `ManageStaging` ability, and a projection method that accepts a slot association.
 
-- [ ] **Step 1: Write failing schema and idempotency tests**
+- [x] **Step 1: Write failing schema and idempotency tests**
 
 ```php
 $claim = app(MediaOwnerSlotIdempotency::class)->begin(
@@ -60,13 +60,13 @@ Add assertions for exact replay, payload mismatch, owner/actor mismatch,
 in-progress contention, failed retry, nullable clear results, expired-operation
 pruning, configurable table/connection, and Doctor detection.
 
-- [ ] **Step 2: Run the new workflow test and verify missing schema/classes fail**
+- [x] **Step 2: Run the new workflow test and verify missing schema/classes fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/media/phpunit.xml.dist --compact packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php packages/nvl/media/tests/Feature/MediaDoctorTest.php`
 
 Expected: FAIL because the operation ledger does not exist.
 
-- [ ] **Step 3: Add the forward migration and model**
+- [x] **Step 3: Add the forward migration and model**
 
 The table contains UUID `id`, UUID `idempotency_key`, actor type/ID, owner type/ID,
 slot, operation, SHA-256 `request_hash`, status, nullable result media ID, nullable
@@ -75,7 +75,7 @@ failure code, completed/failed/created/updated timestamps, and a unique index on
 uses the Media configured connection/table and exposes casts only; it contains
 no workflow logic.
 
-- [ ] **Step 4: Implement idempotency claims**
+- [x] **Step 4: Implement idempotency claims**
 
 `begin()` validates a UUID key, canonicalizes the scalar payload with recursive
 key sorting, hashes actor/owner/slot/operation/payload, and uses insert-or-lock
@@ -85,14 +85,14 @@ operation ID, replay flag, and nullable result media ID. `complete()` and
 failure codes, not exception messages or payloads. Retention defaults to seven
 days and pruning uses bounded chunks.
 
-- [ ] **Step 5: Add `ManageStaging` and slot-aware projection support**
+- [x] **Step 5: Add `ManageStaging` and slot-aware projection support**
 
 Append `MediaAbility::ManageStaging`. Add a factory method that receives a
 loaded Media plus the selected `MediaAssociation`, sets the DTO `collection`
 from that association, and still uses the existing safe URL resolver. Existing
 library projection behavior remains unchanged.
 
-- [ ] **Step 6: Run migration, Doctor, and portability-focused tests**
+- [x] **Step 6: Run migration, Doctor, and portability-focused tests**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/media/phpunit.xml.dist --compact packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php packages/nvl/media/tests/Feature/MediaDoctorTest.php packages/nvl/media/tests/Feature/MediaArchitectureTest.php`
 
@@ -104,7 +104,7 @@ Run: `composer types:check`
 
 Expected: PASS with `MediaAbility::ManageStaging` generated.
 
-- [ ] **Step 7: Commit CR-17a**
+- [x] **Step 7: Commit CR-17a**
 
 ```bash
 git add packages/nvl/media/database/migrations/2026_08_28_000000_create_media_owner_slot_operations_table.php packages/nvl/media/src/Models/MediaOwnerSlotOperation.php packages/nvl/media/src/Enums packages/nvl/media/src/Services/MediaOwnerSlotIdempotency.php packages/nvl/media/src/Definitions/Tables/MediaTables.php packages/nvl/media/src/Services/MediaLibraryItemDataFactory.php packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php packages/nvl/media/tests/Feature/MediaDoctorTest.php resources/js/types
