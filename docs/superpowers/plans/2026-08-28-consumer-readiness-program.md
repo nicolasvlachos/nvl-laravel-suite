@@ -52,7 +52,7 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-14 | [x] | Content placement find/replace/reorder | Pages/Content plan | CR-13 | 1.2 | `42113d8` |
 | CR-15 | [x] | Page lookup/options/public children | Pages/Content plan | CR-01 | 1.2 | `aa352a2` |
 | CR-16 | [x] | Page editor/publication composition | Pages/Content plan | CR-12, CR-13, CR-15 | 1.2 | `9ffc48c` |
-| CR-17 | [ ] | Media slot reads and replacement | Media plan | CR-01 | 1.3 | — |
+| CR-17 | [x] | Media slot reads and replacement | Media plan | CR-01 | 1.3 | `68e4f3e` |
 | CR-18 | [ ] | Media slot clear/copy/idempotency | Media plan | CR-17 | 1.3 | — |
 | CR-19 | [ ] | Auth proof consumer | Validation plan | CR-04, CR-08, CR-12 | 1.3 | — |
 | CR-20 | [ ] | Content proof consumer | Validation plan | CR-16, CR-18 | 1.3 | — |
@@ -345,6 +345,26 @@ gate pass. Record the implementation commit beside the task before checking it.
   1,753 assertions, and public contracts, generated types, `tsc`, mirrored
   skills, and diff hygiene passed. KPO and the original suite checkout remained
   read-only.
+- 2026-08-29 — CR-17 completed in `68e4f3e`. Media now exposes actor-aware
+  owner-slot reads and atomic replacement through DTO-returning Actions. The
+  workflow validates registered one-to-one slots, availability, visibility,
+  MIME, size, custom acceptors, exact uploader identity, public reuse, and
+  `ManageStaging`; it composes the existing attach, detach, delete, lock, URL,
+  and after-commit lifecycle boundaries. Same-media requests are quiet, shared
+  predecessors are preserved, exclusive orphans follow deletion lifecycle, and
+  immutable result snapshots keep an exact idempotent response after later
+  replacement. Same-connection owner-row locks serialize both occupied and
+  initially empty slots; cross-connection owners retain the required shared
+  mutation-lock boundary. Independent review first exposed mutable replay and
+  empty-slot serialization gaps, then an unmatched snapshot-size limit that
+  could fail after commit. Regression-driven fixes resolved all three; final
+  re-review reported no Critical or Important findings and Ready Yes. Media
+  quality passed 973 tests with 3,077 assertions and three environment-dependent
+  skips, including Pint and PHPStan level max; focused root readiness/integration
+  passed 34 tests with 1,753 assertions, and contracts, generated types, `tsc`,
+  and diff hygiene passed. The PostgreSQL/MySQL two-worker tests activate in the
+  database matrix and cover occupied and initially empty slots. KPO and the
+  original suite checkout remained read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.

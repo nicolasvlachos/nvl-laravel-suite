@@ -70,20 +70,21 @@ Expected: FAIL because the operation ledger does not exist.
 
 The table contains UUID `id`, UUID `idempotency_key`, actor type/ID, owner type/ID,
 slot, operation, SHA-256 `request_hash`, status, nullable result media ID, nullable
-failure code, completed/failed/created/updated timestamps, and a unique index on
-`idempotency_key`. Add lookup indexes for owner+slot and created time. The model
-uses the Media configured connection/table and exposes casts only; it contains
-no workflow logic.
+immutable result projection, nullable failure code, completed/failed/created/updated
+timestamps, and a unique index on `idempotency_key`. Add lookup indexes for
+owner+slot and created time. The model uses the Media configured connection/table
+and exposes casts only; it contains no workflow logic.
 
 - [x] **Step 4: Implement idempotency claims**
 
 `begin()` validates a UUID key, canonicalizes the scalar payload with recursive
 key sorting, hashes actor/owner/slot/operation/payload, and uses insert-or-lock
 semantics portable across all supported databases. Return a readonly claim with
-operation ID, replay flag, and nullable result media ID. `complete()` and
-`fail()` require the claimed request hash and transition once. Store stable
-failure codes, not exception messages or payloads. Retention defaults to seven
-days and pruning uses bounded chunks.
+operation ID, replay flag, nullable result media ID, and nullable immutable
+result projection. `complete()` and `fail()` require the claimed request hash
+and transition once. Store stable failure codes and completed result projections,
+never request payloads or exception messages. Retention defaults to seven days
+and pruning uses bounded chunks.
 
 - [x] **Step 5: Add `ManageStaging` and slot-aware projection support**
 
@@ -126,7 +127,7 @@ git commit -m "feat(media): add owner-slot operation identity"
 - Consumes: CR-17a idempotency/projection, `MediaAuthorization`, `AttachMediaAction`, `DetachMediaAction`, `DeleteMediaAction`, `MediaMutationLock`, and registered `MediaSlot` definitions.
 - Produces: the read and replace APIs from the design spec.
 
-- [ ] **Step 1: Write failing authorization and replacement tests**
+- [x] **Step 1: Write failing authorization and replacement tests**
 
 ```php
 $result = app(ReplaceOwnerMediaSlotAction::class)->execute(
@@ -148,13 +149,13 @@ actor-owned staging association, administrative `ManageStaging`, same-media
 no-op, single-file replacement, shared old media detach, exclusive orphan
 deletion, non-orphan preservation, rollback, event ordering, and exact replay.
 
-- [ ] **Step 2: Run the workflow test and verify missing Actions fail**
+- [x] **Step 2: Run the workflow test and verify missing Actions fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/media/phpunit.xml.dist --compact packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php`
 
 Expected: FAIL because the resolver/workflow/Actions do not exist.
 
-- [ ] **Step 3: Implement slot and staging policy resolution**
+- [x] **Step 3: Implement slot and staging policy resolution**
 
 `MediaOwnerSlotResolver` validates owner persistence, resolves the registered
 slot, canonical owner type/ID, and current association(s). It rejects multiple
@@ -168,7 +169,7 @@ rows in a single-file slot as corrupt state. `MediaStagingPolicy` accepts:
 System actors require `system: true`; anonymous actor data cannot adopt staged
 private media. Compare all identifiers as normalized strings.
 
-- [ ] **Step 4: Implement read and replace workflow**
+- [x] **Step 4: Implement read and replace workflow**
 
 Read signature:
 
@@ -188,20 +189,20 @@ delete a now-orphaned exclusive previous asset through the existing lifecycle
 after the durable transition. On success, complete idempotency and return the
 fresh projection; on exception, mark the claim failed and rethrow.
 
-- [ ] **Step 5: Prove concurrency and file-effect safety**
+- [x] **Step 5: Prove concurrency and file-effect safety**
 
 Add two-worker tests for competing replacements on PostgreSQL and the package's
 available MySQL concurrency job. Assert one final association, no missing file
 for the winner, no deletion before outer commit, and rollback preservation of
 both database rows and files.
 
-- [ ] **Step 6: Run focused Media gates**
+- [x] **Step 6: Run focused Media gates**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/media/phpunit.xml.dist --compact packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php packages/nvl/media/tests/Feature/MediaEventContractTest.php packages/nvl/media/tests/Unit/MediaSlotModeTest.php`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit CR-17b**
+- [x] **Step 7: Commit CR-17b**
 
 ```bash
 git add packages/nvl/media/src/Services/MediaOwnerSlotResolver.php packages/nvl/media/src/Services/MediaStagingPolicy.php packages/nvl/media/src/Services/MediaOwnerSlotWorkflow.php packages/nvl/media/src/Actions/GetOwnerMediaSlotAction.php packages/nvl/media/src/Actions/ReplaceOwnerMediaSlotAction.php packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php packages/nvl/media/tests/Feature/MediaEventContractTest.php
