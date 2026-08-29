@@ -152,6 +152,48 @@ it('keeps adoption reads advisory while failing raw package table writes', funct
         ]);
 });
 
+it('blocks package table writes through same-scope literal variables', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'database/migrations/2026_01_06_000000_write_indirect_auth_tables_for_adoption.php');
+
+    expect($findings
+        ->where('code', 'consumer.package_table_reference')
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->sort()
+        ->values()
+        ->all())->toBe([
+            'nvl_auth_permissions::insert',
+            'nvl_auth_roles::update',
+        ])
+        ->and($findings->where('code', 'consumer.package_migration_reference'))
+        ->toBeEmpty();
+});
+
+it('keeps indirect package table reads advisory', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'database/migrations/2026_01_07_000000_read_indirect_auth_table_for_adoption.php');
+
+    expect($findings->where('severity', 'error'))->toBeEmpty()
+        ->and($findings
+            ->where('code', 'consumer.package_migration_reference')
+            ->where('severity', 'warning')
+            ->pluck('symbol')
+            ->all())->toBe(['nvl_auth_roles']);
+});
+
+it('does not attribute an outer consumer table write to a nested package read', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'database/migrations/2026_01_08_000000_read_auth_subquery_before_consumer_write.php');
+
+    expect($findings->where('severity', 'error'))->toBeEmpty()
+        ->and($findings
+            ->where('code', 'consumer.package_migration_reference')
+            ->where('severity', 'warning')
+            ->pluck('symbol')
+            ->all())->toBe(['nvl_auth_roles']);
+});
+
 it('preserves the explicit allowed consumer model classifications', function (): void {
     $findings = collect(consumerAuditFixtureFindings());
 

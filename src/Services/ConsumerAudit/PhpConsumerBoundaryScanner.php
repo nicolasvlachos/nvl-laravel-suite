@@ -1056,6 +1056,14 @@ final readonly class PhpConsumerBoundaryScanner
         $findings = [];
         $reported = [];
         $tokens = PhpToken::tokenize($source, TOKEN_PARSE);
+        $scopeMap = $this->tokenScopes($tokens);
+        $indirectTableWrites = $migration
+            ? $this->indirectTableWriteMethods(
+                $tokens,
+                $tableOwners,
+                $scopeMap['tokens'],
+            )
+            : [];
 
         foreach ($tokens as $index => $token) {
             if ($token->id !== T_CONSTANT_ENCAPSED_STRING) {
@@ -1076,7 +1084,7 @@ final readonly class PhpConsumerBoundaryScanner
                     $source,
                 ) === 1;
             $writeMethod = $migration
-                ? $this->rawTableWriteMethod($tokens, $index)
+                ? ($indirectTableWrites[$index] ?? $this->rawTableWriteMethod($tokens, $index))
                 : null;
             $code = match (true) {
                 $duplicate => 'consumer.duplicate_package_migration',
@@ -1122,36 +1130,194 @@ final readonly class PhpConsumerBoundaryScanner
     }
 
     /**
+     * Resolve mutations made through same-scope literal package-table variables.
+     *
+     * @param  array<PhpToken>  $tokens
+     * @param  array<string, string>  $tableOwners
+     * @param  array<array-key, int>  $scopes
+     * @return array<int, PhpToken>
+     */
+    private function indirectTableWriteMethods(
+        array $tokens,
+        array $tableOwners,
+        array $scopes,
+    ): array {
+        /** @var array<int, array<string, int>> $variables */
+        $variables = [];
+        $writes = [];
+
+        foreach ($tokens as $index => $token) {
+            if ($token->id !== T_VARIABLE) {
+                continue;
+            }
+
+            $scope = $scopes[$index] ?? 0;
+            $nextIndex = $this->nextMeaningfulToken($tokens, $index + 1);
+            $next = $nextIndex === null ? null : $tokens[$nextIndex];
+
+            if ($next !== null && $this->assignmentOperator($next)) {
+                unset($variables[$scope][$token->text]);
+
+                if ($next->text !== '=') {
+                    continue;
+                }
+
+                $literalIndex = $this->nextMeaningfulToken($tokens, $nextIndex + 1);
+                $literal = $literalIndex === null ? null : $tokens[$literalIndex];
+
+                if ($literal !== null
+                    && $literal->id === T_CONSTANT_ENCAPSED_STRING
+                    && isset($tableOwners[$this->literalValue($literal->text)])) {
+                    $variables[$scope][$token->text] = $literalIndex;
+                }
+
+                continue;
+            }
+
+            $literalIndex = $variables[$scope][$token->text] ?? null;
+
+            if ($literalIndex === null || ! $this->staticTableCallArgument($tokens, $index)) {
+                continue;
+            }
+
+            $writeMethod = $this->rawTableWriteMethod($tokens, $index);
+
+            if ($writeMethod !== null) {
+                $writes[$literalIndex] ??= $writeMethod;
+            }
+        }
+
+        return $writes;
+    }
+
+    /**
+     * Return whether a token mutates a tracked variable assignment.
+     */
+    private function assignmentOperator(PhpToken $token): bool
+    {
+        return in_array($token->text, [
+            '=',
+            '+=',
+            '-=',
+            '*=',
+            '/=',
+            '.=',
+            '%=',
+            '&=',
+            '|=',
+            '^=',
+            '<<=',
+            '>>=',
+            '??=',
+            '**=',
+        ], true);
+    }
+
+    /**
      * Return the first raw query-builder mutation chained from a package table literal.
      *
      * @param  array<PhpToken>  $tokens
      */
     private function rawTableWriteMethod(array $tokens, int $index): ?PhpToken
     {
-        $count = count($tokens);
+        if (! $this->staticTableCallArgument($tokens, $index)) {
+            return null;
+        }
 
-        while ($index < $count && $tokens[$index]->text !== ';') {
-            if ($tokens[$index]->id !== T_OBJECT_OPERATOR) {
-                $index++;
+        $openingParenthesis = $this->previousMeaningfulToken($tokens, $index - 1);
+        $closingParenthesis = $openingParenthesis === null
+            ? null
+            : $this->matchingClosingParenthesis($tokens, $openingParenthesis);
+        $operatorIndex = $closingParenthesis === null
+            ? null
+            : $this->nextMeaningfulToken($tokens, $closingParenthesis + 1);
 
-                continue;
-            }
-
-            $methodIndex = $this->nextMeaningfulToken($tokens, $index + 1);
+        while ($operatorIndex !== null
+            && in_array($tokens[$operatorIndex]->id, [T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR], true)) {
+            $methodIndex = $this->nextMeaningfulToken($tokens, $operatorIndex + 1);
             $method = $methodIndex === null ? null : $tokens[$methodIndex];
-            $openingParenthesis = $methodIndex === null
+            $methodOpeningParenthesis = $methodIndex === null
                 ? null
                 : $this->nextMeaningfulToken($tokens, $methodIndex + 1);
 
-            if ($method !== null
-                && $method->id === T_STRING
-                && $openingParenthesis !== null
-                && $tokens[$openingParenthesis]->text === '('
-                && in_array($method->text, self::RAW_TABLE_WRITE_METHODS, true)) {
+            if ($method === null
+                || $method->id !== T_STRING
+                || $methodOpeningParenthesis === null
+                || $tokens[$methodOpeningParenthesis]->text !== '(') {
+                return null;
+            }
+
+            if (in_array($method->text, self::RAW_TABLE_WRITE_METHODS, true)) {
                 return $method;
             }
 
-            $index++;
+            $methodClosingParenthesis = $this->matchingClosingParenthesis(
+                $tokens,
+                $methodOpeningParenthesis,
+            );
+            $operatorIndex = $methodClosingParenthesis === null
+                ? null
+                : $this->nextMeaningfulToken($tokens, $methodClosingParenthesis + 1);
+        }
+
+        return null;
+    }
+
+    /**
+     * Return whether a token is the first argument of a DB or Schema table call.
+     *
+     * @param  array<PhpToken>  $tokens
+     */
+    private function staticTableCallArgument(array $tokens, int $index): bool
+    {
+        $openingParenthesis = $this->previousMeaningfulToken($tokens, $index - 1);
+        $methodIndex = $openingParenthesis === null
+            ? null
+            : $this->previousMeaningfulToken($tokens, $openingParenthesis - 1);
+        $operatorIndex = $methodIndex === null
+            ? null
+            : $this->previousMeaningfulToken($tokens, $methodIndex - 1);
+        $classIndex = $operatorIndex === null
+            ? null
+            : $this->previousMeaningfulToken($tokens, $operatorIndex - 1);
+
+        if ($openingParenthesis === null
+            || $tokens[$openingParenthesis]->text !== '('
+            || $methodIndex === null
+            || $tokens[$methodIndex]->id !== T_STRING
+            || $tokens[$methodIndex]->text !== 'table'
+            || $operatorIndex === null
+            || $tokens[$operatorIndex]->id !== T_DOUBLE_COLON
+            || $classIndex === null) {
+            return false;
+        }
+
+        return preg_match('/(?:^|\\\\)(?:DB|Schema)$/', $tokens[$classIndex]->text) === 1;
+    }
+
+    /**
+     * Return the closing parenthesis paired with an opening parenthesis.
+     *
+     * @param  array<PhpToken>  $tokens
+     */
+    private function matchingClosingParenthesis(array $tokens, int $openingParenthesis): ?int
+    {
+        $depth = 0;
+
+        foreach ($tokens as $index => $token) {
+            if ($index < $openingParenthesis) {
+                continue;
+            }
+
+            if ($token->text === '(') {
+                $depth++;
+            } elseif ($token->text === ')') {
+                $depth--;
+
+                if ($depth === 0) {
+                    return $index;
+                }
+            }
         }
 
         return null;
