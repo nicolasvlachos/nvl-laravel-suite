@@ -63,8 +63,8 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-25 | [x] | Auth delivery, invitation projections, and outcomes | Auth delivery plan | CR-00, CR-01 | 1.4 | `ab5077a`, `d83b303` |
 | CR-26 | [ ] | KPO Auth delivery/invitation migration | Auth delivery plan | CR-25 | 1.4 | — |
 | CR-27 | [x] | Atomic list/deep-map config merge and drift diagnostics | Configuration/Auth ergonomics plan | CR-00, CR-04, dependency approval | 1.4 | `7961e03` |
-| CR-28 | [ ] | Runtime profiles and minimal overlays | Configuration/Auth ergonomics plan | CR-03, CR-04, CR-27 | 1.4 | — |
-| CR-29 | [ ] | Embedded-application Auth preset/adapter | Configuration/Auth ergonomics plan | CR-25, CR-27 | 1.4 | — |
+| CR-28 | [x] | Runtime profiles and minimal overlays | Configuration/Auth ergonomics plan | CR-03, CR-04, CR-27 | 1.4 | `8ffb3ee` |
+| CR-29 | [x] | Embedded-application Auth preset/adapter | Configuration/Auth ergonomics plan | CR-25, CR-27 | 1.4 | `ea47ab3` |
 | CR-30 | [ ] | KPO configuration/Auth simplification | Configuration/Auth ergonomics plan | CR-26, CR-28, CR-29 | 1.4 | — |
 | CR-31 | [ ] | Comments metadata schemas/selectors/projections | Comments metadata/mentions plan | CR-12 | 1.4 | — |
 | CR-32 | [ ] | Rich document and mention persistence | Comments metadata/mentions plan | CR-31 | 1.4 | — |
@@ -397,6 +397,18 @@ gate pass. Record the implementation commit beside the task before checking it.
   contract passed 4 tests with 174 assertions, and the full matrix passed 3,449
   tests with 30,235 assertions and 14 environment-dependent skips. KPO and the
   original suite checkout remained read-only.
+- 2026-08-29 — CR-27, CR-28, and CR-29 completed in `7961e03`, `8ffb3ee`,
+  and `ea47ab3`. Package configuration now merges deep maps while replacing
+  atomic lists, reports value-free source drift, supports minimal explicit
+  module overlays, and provides an embedded Auth preset with host ownership,
+  policy-backed management decisions, and fail-closed diagnostics. Review
+  hardened empty host-route evidence, dry-run overwrite diffs, policy-model
+  compatibility, and aggregate RBAC defaults, then reported no remaining
+  findings. Auth quality passed 186 tests with 2,572 assertions, root tests
+  passed 188 tests with 9,888 assertions, and formatting, max-level PHPStan,
+  contracts, dependencies, distributions, optimized autoloading, and cached
+  configuration inspection passed. KPO and the original suite checkout
+  remained read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
@@ -442,8 +454,9 @@ consumer suppression.
 
 - [x] Execute CR-25 and prove queued Auth delivery requires no Challenge/Invitation reload or metadata write.
 - [ ] Execute CR-26 as reversible KPO listener, read, and candidacy-timing waves.
-- [ ] CR-27 dependency approval, atomic list overrides, and value-free drift diagnostics are complete; execute CR-28 and prove KPO's unchanged seventeen-module selection.
-- [ ] Execute CR-29 and CR-30; preserve KPO's host-owned Auth HTTP/UI while removing copied defaults and bridge gates.
+- [x] CR-27 dependency approval, atomic list overrides, and value-free drift diagnostics are complete; CR-28 preserves KPO's unchanged seventeen-module selection.
+- [x] Execute CR-29; preserve host-owned Auth HTTP/UI through explicit ownership and policy mappings.
+- [ ] Execute CR-30 in KPO after publishing; remove copied defaults and bridge gates without behavior drift.
 - [ ] Execute CR-31 through CR-33; run Comments migration upgrades, database portability, generated types, cache safety, concurrency, and reconciliation gates.
 - [ ] Execute CR-34; remove KPO's Comments JSON/hash queries and prove its first policy-scoped rich resource mentions.
 - [ ] Re-run both proof consumers with minimal overlays and strict package-configuration inspection.

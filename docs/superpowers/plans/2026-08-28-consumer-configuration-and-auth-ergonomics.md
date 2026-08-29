@@ -524,7 +524,7 @@ php artisan config:clear
 Expected: package tests pass and the fixture has complete deny-by-default
 management coverage without per-ability Gate registration.
 
-- [ ] **Step 7: Commit CR-29**
+- [x] **Step 7: Commit CR-29**
 
 ```bash
 git add packages/nvl/auth/config packages/nvl/auth/src packages/nvl/auth/tests packages/nvl/auth/README.md
