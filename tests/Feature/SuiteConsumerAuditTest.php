@@ -194,6 +194,31 @@ it('does not attribute an outer consumer table write to a nested package read', 
             ->all())->toBe(['nvl_auth_roles']);
 });
 
+it('blocks an arrow write through an implicitly captured package table variable', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'database/migrations/2026_01_09_000000_write_captured_auth_table_from_arrow.php');
+
+    expect($findings
+        ->where('code', 'consumer.package_table_reference')
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->all())->toBe(['nvl_auth_roles::update'])
+        ->and($findings->where('code', 'consumer.package_migration_reference'))
+        ->toBeEmpty();
+});
+
+it('keeps an arrow-local package table assignment out of outer and sibling scopes', function (): void {
+    $findings = collect(consumerAuditFixtureFindings())
+        ->where('path', 'database/migrations/2026_01_10_000000_keep_arrow_table_assignment_local.php');
+
+    expect($findings->where('severity', 'error'))->toBeEmpty()
+        ->and($findings
+            ->where('code', 'consumer.package_migration_reference')
+            ->where('severity', 'warning')
+            ->pluck('symbol')
+            ->all())->toBe(['nvl_auth_roles']);
+});
+
 it('preserves the explicit allowed consumer model classifications', function (): void {
     $findings = collect(consumerAuditFixtureFindings());
 

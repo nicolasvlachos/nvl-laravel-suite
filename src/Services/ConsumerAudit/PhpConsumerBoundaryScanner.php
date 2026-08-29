@@ -295,6 +295,7 @@ final readonly class PhpConsumerBoundaryScanner
         $scopeMap = $this->tokenScopes($tokens);
         $scopes = $scopeMap['tokens'];
         $scopeParents = $scopeMap['parents'];
+        $arrowBodies = $scopeMap['arrow_bodies'];
         $variableModels = [];
         $variableReturnModels = [];
         $propertyReturnModels = $this->propertyPackageModelReturns(
@@ -308,7 +309,33 @@ final readonly class PhpConsumerBoundaryScanner
         foreach ($tokens as $index => $token) {
             $scope = $scopes[$index] ?? 0;
 
+            if ($token->id === T_FN) {
+                $parentScope = $scopeParents[$scope] ?? null;
+
+                if ($parentScope !== null) {
+                    $variableModels[$scope] = $variableModels[$parentScope] ?? [];
+                    $variableReturnModels[$scope] = $variableReturnModels[$parentScope] ?? [];
+                }
+
+                continue;
+            }
+
             if ($token->id === T_VARIABLE) {
+                if (isset($arrowBodies[$scope]) && $index < $arrowBodies[$scope]) {
+                    $variableModels = $this->withVariableModel(
+                        $variableModels,
+                        $scope,
+                        $token->text,
+                        null,
+                    );
+                    $variableReturnModels = $this->withVariableModel(
+                        $variableReturnModels,
+                        $scope,
+                        $token->text,
+                        null,
+                    );
+                }
+
                 $assignment = $this->nextMeaningfulToken($tokens, $index + 1);
 
                 if ($assignment !== null && $tokens[$assignment]->text === '=') {
@@ -974,12 +1001,17 @@ final readonly class PhpConsumerBoundaryScanner
 
     /**
      * @param  array<PhpToken>  $tokens
-     * @return array{tokens: array<array-key, int>, parents: array<int, int>}
+     * @return array{
+     *     tokens: array<array-key, int>,
+     *     parents: array<int, int>,
+     *     arrow_bodies: array<int, int>
+     * }
      */
     private function tokenScopes(array $tokens): array
     {
         $scopes = [];
         $parents = [];
+        $arrowBodies = [];
         $scope = 0;
         $nextScope = 0;
         $pendingFunction = null;
@@ -1007,10 +1039,97 @@ final readonly class PhpConsumerBoundaryScanner
             }
         }
 
+        foreach ($tokens as $index => $token) {
+            if ($token->id !== T_FN) {
+                continue;
+            }
+
+            $bounds = $this->arrowFunctionBounds($tokens, $index);
+
+            if ($bounds === null) {
+                continue;
+            }
+
+            $parentScope = $scopes[$index] ?? 0;
+            $arrowScope = ++$nextScope;
+            $parents[$arrowScope] = $parentScope;
+            $arrowBodies[$arrowScope] = $bounds['body'];
+
+            for ($tokenIndex = $index; $tokenIndex <= $bounds['end']; $tokenIndex++) {
+                if (($scopes[$tokenIndex] ?? 0) === $parentScope) {
+                    $scopes[$tokenIndex] = $arrowScope;
+                }
+            }
+        }
+
         return [
             'tokens' => $scopes,
             'parents' => $parents,
+            'arrow_bodies' => $arrowBodies,
         ];
+    }
+
+    /**
+     * Resolve the body and expression boundary of an arrow function.
+     *
+     * @param  array<PhpToken>  $tokens
+     * @return array{body: int, end: int}|null
+     */
+    private function arrowFunctionBounds(array $tokens, int $index): ?array
+    {
+        $count = count($tokens);
+        $doubleArrow = null;
+
+        while ($index < $count) {
+            if ($tokens[$index]->id === T_DOUBLE_ARROW) {
+                $doubleArrow = $index;
+
+                break;
+            }
+
+            if ($tokens[$index]->text === ';') {
+                return null;
+            }
+
+            $index++;
+        }
+
+        $body = $doubleArrow === null
+            ? null
+            : $this->nextMeaningfulToken($tokens, $doubleArrow + 1);
+
+        if ($body === null) {
+            return null;
+        }
+
+        $depth = 0;
+        $end = $body;
+
+        for ($index = $body; $index < $count; $index++) {
+            $text = $tokens[$index]->text;
+
+            if (in_array($text, ['(', '[', '{'], true)) {
+                $depth++;
+            } elseif (in_array($text, [')', ']', '}'], true)) {
+                if ($depth === 0) {
+                    return [
+                        'body' => $body,
+                        'end' => $this->previousMeaningfulToken($tokens, $index - 1) ?? $body,
+                    ];
+                }
+
+                $depth--;
+            } elseif ($depth === 0 && in_array($text, [',', ';'], true)) {
+                return [
+                    'body' => $body,
+                    'end' => $this->previousMeaningfulToken($tokens, $index - 1) ?? $body,
+                ];
+            }
+
+            $end = $index;
+        }
+
+        return ['body' => $body, 'end' => $end];
     }
 
     /**
@@ -1062,6 +1181,8 @@ final readonly class PhpConsumerBoundaryScanner
                 $tokens,
                 $tableOwners,
                 $scopeMap['tokens'],
+                $scopeMap['parents'],
+                $scopeMap['arrow_bodies'],
             )
             : [];
 
@@ -1135,28 +1256,49 @@ final readonly class PhpConsumerBoundaryScanner
      * @param  array<PhpToken>  $tokens
      * @param  array<string, string>  $tableOwners
      * @param  array<array-key, int>  $scopes
+     * @param  array<int, int>  $scopeParents
+     * @param  array<int, int>  $arrowBodies
      * @return array<int, PhpToken>
      */
     private function indirectTableWriteMethods(
         array $tokens,
         array $tableOwners,
         array $scopes,
+        array $scopeParents,
+        array $arrowBodies,
     ): array {
-        /** @var array<int, array<string, int>> $variables */
+        /** @var array<int, array<string, int|null>> $variables */
         $variables = [];
         $writes = [];
 
         foreach ($tokens as $index => $token) {
+            $scope = $scopes[$index] ?? 0;
+
+            if ($token->id === T_FN) {
+                $parentScope = $scopeParents[$scope] ?? null;
+
+                if ($parentScope !== null) {
+                    $variables[$scope] = $variables[$parentScope] ?? [];
+                }
+
+                continue;
+            }
+
             if ($token->id !== T_VARIABLE) {
                 continue;
             }
 
-            $scope = $scopes[$index] ?? 0;
+            if (isset($arrowBodies[$scope]) && $index < $arrowBodies[$scope]) {
+                $variables[$scope][$token->text] = null;
+
+                continue;
+            }
+
             $nextIndex = $this->nextMeaningfulToken($tokens, $index + 1);
             $next = $nextIndex === null ? null : $tokens[$nextIndex];
 
             if ($next !== null && $this->assignmentOperator($next)) {
-                unset($variables[$scope][$token->text]);
+                $variables[$scope][$token->text] = null;
 
                 if ($next->text !== '=') {
                     continue;
