@@ -1754,7 +1754,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\StoreInvitationData $data, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction": [
@@ -1775,7 +1775,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
                     "public function execute(Nvl\\Auth\\Models\\Invitation $invitation, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?string $locale=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction": [
@@ -2210,7 +2210,7 @@
                     "final class Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand extends Illuminate\\Console\\Command",
                     "protected mixed $signature=\"nvl:auth:doctor\\n        {--strict : Fail for configured integrations owned by disabled features}\\n        {--format=text : Output format: text or json}\"",
                     "protected mixed $description=\"Validate NVL Auth schema and enabled feature readiness\"",
-                    "public function handle(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\FeatureManifest $manifest, Nvl\\Auth\\Services\\FeatureGate $features, Illuminate\\Routing\\Router $router, Illuminate\\Contracts\\Container\\Container $container, Nvl\\Auth\\Services\\AuthSchemaManager $schemaManager, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes): int"
+                    "public function handle(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\FeatureManifest $manifest, Nvl\\Auth\\Services\\FeatureGate $features, Illuminate\\Routing\\Router $router, Illuminate\\Contracts\\Container\\Container $container, Nvl\\Auth\\Services\\AuthSchemaManager $schemaManager, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): int"
                 ],
                 "Nvl\\Auth\\Console\\Commands\\InstallAuthSchemaCommand": [
                     "final class Nvl\\Auth\\Console\\Commands\\InstallAuthSchemaCommand extends Illuminate\\Console\\Command",
@@ -2381,6 +2381,74 @@
                 "Nvl\\Auth\\Contracts\\SystemMutationAccess": [
                     "interface Nvl\\Auth\\Contracts\\SystemMutationAccess",
                     "public abstract function allows(Nvl\\Auth\\ValueObjects\\SystemMutationContext $context, string $ability, mixed $target=null): bool"
+                ],
+                "Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $type",
+                    "public readonly string $id",
+                    "public function __construct(string $type, string $id): mixed",
+                    "public static function fromReference(Nvl\\Auth\\ValueObjects\\SubjectReference $reference): self",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Auth\\Data\\Display\\InvitationDeliveryData": [
+                    "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Display\\InvitationDeliveryData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $id",
+                    "public readonly string $type",
+                    "public readonly string $purpose",
+                    "public readonly string $recipient",
+                    "public readonly ?Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData $inviter",
+                    "public readonly array $roles",
+                    "public readonly array $permissions",
+                    "public readonly array $metadata",
+                    "public readonly Carbon\\CarbonImmutable $expiresAt",
+                    "public readonly int $resendCount",
+                    "public function __construct(string $id, string $type, string $purpose, string $recipient, ?Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData $inviter, array $roles, array $permissions, array $metadata, Carbon\\CarbonImmutable $expiresAt, int $resendCount): mixed",
+                    "@param list<string> $roles",
+                    "@param list<string> $permissions",
+                    "@param array<string, bool|float|int|string|null> $metadata",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
                 ],
                 "Nvl\\Auth\\Data\\Display\\PermissionGroupData": [
                     "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -4224,7 +4292,12 @@
                     "public readonly string $type",
                     "public readonly string $purpose",
                     "public readonly Nvl\\Auth\\ValueObjects\\SubjectReference $subject",
-                    "public function __construct(string $invitationId, string $type, string $purpose, Nvl\\Auth\\ValueObjects\\SubjectReference $subject): mixed",
+                    "public readonly ?Carbon\\CarbonImmutable $acceptedAt",
+                    "public function __construct(string $invitationId, string $type, string $purpose, Nvl\\Auth\\ValueObjects\\SubjectReference $subject, ?Carbon\\CarbonImmutable $acceptedAt=null): mixed",
+                    "public function __serialize(): array",
+                    "@return array<string, mixed>",
+                    "public function __unserialize(array $data): void",
+                    "@param array{",
                     "public static function dispatch(mixed ...$arguments): mixed",
                     "@param mixed ...$arguments",
                     "@return mixed",
@@ -5546,6 +5619,12 @@
                     "@return array<string, FeatureDefinition>",
                     "public function definition(Nvl\\Auth\\Enums\\AuthFeature $feature): Nvl\\Auth\\ValueObjects\\FeatureDefinition"
                 ],
+                "Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy": [
+                    "final readonly class Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function configurationIsValid(): bool",
+                    "public function deliveryData(Nvl\\Auth\\Models\\Invitation $invitation): Nvl\\Auth\\Data\\Display\\InvitationDeliveryData"
+                ],
                 "Nvl\\Auth\\Services\\LaravelGateAuthManagementAccess": [
                     "final readonly class Nvl\\Auth\\Services\\LaravelGateAuthManagementAccess implements Nvl\\Auth\\Contracts\\AuthManagementAccess",
                     "public function __construct(Illuminate\\Contracts\\Auth\\Access\\Gate $gate): mixed",
@@ -5780,11 +5859,17 @@
                     "public readonly Carbon\\CarbonImmutable $expiresAt",
                     "public readonly ?string $locale",
                     "public readonly array $metadata",
-                    "public function __construct(string $messageId, Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $type, string $recipient, array $payload, Carbon\\CarbonImmutable $expiresAt, ?string $locale=null, array $metadata=[]): mixed",
+                    "public readonly ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject",
+                    "public readonly ?Nvl\\Auth\\Data\\Display\\InvitationDeliveryData $invitation",
+                    "public function __construct(string $messageId, Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $type, string $recipient, array $payload, Carbon\\CarbonImmutable $expiresAt, ?string $locale=null, array $metadata=[], ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?Nvl\\Auth\\Data\\Display\\InvitationDeliveryData $invitation=null): mixed",
                     "@param array<string, mixed> $payload",
                     "@param array<string, mixed> $metadata",
                     "public function __debugInfo(): array",
-                    "@return array<string, mixed>"
+                    "@return array<string, mixed>",
+                    "public function __serialize(): array",
+                    "@return array<string, mixed>",
+                    "public function __unserialize(array $data): void",
+                    "@param array{"
                 ],
                 "Nvl\\Auth\\ValueObjects\\AuthPipelineContext": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\AuthPipelineContext",
@@ -5963,7 +6048,7 @@
                 ]
             },
             "configuration": {
-                "config/nvl-auth.php": "8eb09472e4a833a0f0e73842d1d1a16b038fa9ef8b9da1f2dac927a3871d093b"
+                "config/nvl-auth.php": "fbba0b44984567899381c1625214d61a779053b175cedad538b3c8f4198048de"
             },
             "routes": {
                 "routes/account/api_tokens.php": "87625e4b2170c152d7d47882b8023bd652474efdfa2c82bf1ec5ed8eac35e81e",

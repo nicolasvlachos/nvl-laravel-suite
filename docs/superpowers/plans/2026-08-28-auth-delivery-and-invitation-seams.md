@@ -43,7 +43,7 @@
 - Consumes: existing `SubjectReference`, invitation fields, delivery payload redaction, and after-commit events.
 - Produces: optional `AuthDeliveryRequest::$subject`, optional `::$invitation`, and `InvitationAccepted::$acceptedAt`.
 
-- [ ] **Step 1: Write failing event-context and privacy tests**
+- [x] **Step 1: Write failing event-context and privacy tests**
 
 Assert a Magic Link request carries the challenged subject reference, an
 Invitation request carries `InvitationDeliveryData`, and acceptance carries the
@@ -51,13 +51,13 @@ durable accepted timestamp. Serialize/queue round-trip each event. Assert debug
 output and JSON snapshots do not contain `token`, hashes, active keys, nested
 objects, rejected metadata keys, or protected values.
 
-- [ ] **Step 2: Run focused tests and verify missing context fails**
+- [x] **Step 2: Run focused tests and verify missing context fails**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/auth/phpunit.xml.dist --compact packages/nvl/auth/tests/Unit/AuthDeliveryRequestTest.php packages/nvl/auth/tests/Feature/ChallengeLifecycleTest.php packages/nvl/auth/tests/Feature/InvitationLifecycleTest.php`
 
 Expected: FAIL because the delivery/acceptance projections do not exist.
 
-- [ ] **Step 3: Implement the safe invitation delivery DTO**
+- [x] **Step 3: Implement the safe invitation delivery DTO**
 
 `AuthSubjectReferenceData` is a camel-case `#[TypeScript]` Data contract with
 `type` and `id` strings plus `fromReference(SubjectReference $reference)`. Use
@@ -88,7 +88,7 @@ projection while the package-owned Invitation row is already available inside
 create/resend transactions. Doctor validates the allowlist without displaying
 metadata values.
 
-- [ ] **Step 4: Append compatible subject and acceptance context**
+- [x] **Step 4: Append compatible subject and acceptance context**
 
 Append `?SubjectReference $subject = null` and
 `?InvitationDeliveryData $invitation = null` to `AuthDeliveryRequest`. Populate
@@ -98,7 +98,7 @@ the locked accepted row, and retain null only for manually constructed legacy
 events. Update `__debugInfo()` to reveal presence/type only, not projection
 values.
 
-- [ ] **Step 5: Generate types and run Auth quality**
+- [x] **Step 5: Generate types and run Auth quality**
 
 Run: `php artisan nvl:data:types:generate --fail-on-warning`
 
@@ -108,12 +108,19 @@ Run: `php tools/run-package-quality.php auth`
 
 Expected: all PASS.
 
-- [ ] **Step 6: Commit CR-25a**
+- [x] **Step 6: Commit CR-25a**
 
 ```bash
 git add packages/nvl/auth/config/nvl-auth.php packages/nvl/auth/src/Data/Display/AuthSubjectReferenceData.php packages/nvl/auth/src/Data/Display/InvitationDeliveryData.php packages/nvl/auth/src/Services/InvitationDeliveryMetadataPolicy.php packages/nvl/auth/src/ValueObjects/AuthDeliveryRequest.php packages/nvl/auth/src/Events/InvitationAccepted.php packages/nvl/auth/src/Actions/Challenges/IssueChallengeAction.php packages/nvl/auth/src/Actions/Invitations packages/nvl/auth/tests resources/js/types
 git commit -m "feat(auth): carry safe delivery context"
 ```
+
+**Evidence (2026-08-29):**
+
+- Focused context, privacy, legacy-queue, malformed-grant, and Doctor tests: 36 passed, 270 assertions.
+- `php tools/run-package-quality.php auth`: passed with 168 tests and 2,400 assertions.
+- `composer contracts:check`, `composer types:check`, and the production-consumer PHPStan fixture: passed.
+- Independent review found no critical issues; rolling-deploy defaults, grant bounds, and `active_key` rejection were hardened before commit.
 
 ### Task 2 (CR-25b): Add invitation projections, active lookup, and delivery outcomes
 

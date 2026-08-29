@@ -5,6 +5,22 @@ declare namespace Nvl {
 namespace Auth {
 namespace Data {
 namespace Display {
+export type AuthSubjectReferenceData = {
+type: string,
+id: string,
+};
+export type InvitationDeliveryData = {
+id: string,
+type: string,
+purpose: string,
+recipient: string,
+inviter: Nvl.Auth.Data.Display.AuthSubjectReferenceData | null,
+roles: string[],
+permissions: string[],
+metadata: Record<string, boolean | number | string | null>,
+expiresAt: string,
+resendCount: number,
+};
 export type PermissionGroupData = {
 value: string,
 label: string,
