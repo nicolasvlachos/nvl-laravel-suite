@@ -6362,7 +6362,7 @@
                     "final class Nvl\\Comments\\Console\\CommentsDoctorCommand extends Illuminate\\Console\\Command",
                     "protected mixed $signature=\"nvl:comments:doctor {--strict} {--format=text}\"",
                     "protected mixed $description=\"Inspect the NVL Comments installation without changing state\"",
-                    "public function handle(Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Services\\CommentMutationLockStore $mutationLockStore, Nvl\\Comments\\Services\\CommentMetadataRegistry $metadata, Illuminate\\Contracts\\Container\\Container $container): int"
+                    "public function handle(Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Services\\CommentMutationLockStore $mutationLockStore, Nvl\\Comments\\Services\\CommentMetadataRegistry $metadata, Nvl\\Comments\\Services\\CommentMentionResourceRegistry $mentionResources, Illuminate\\Contracts\\Container\\Container $container): int"
                 ],
                 "Nvl\\Comments\\Console\\CommentsReconcileCommand": [
                     "final class Nvl\\Comments\\Console\\CommentsReconcileCommand extends Illuminate\\Console\\Command",
@@ -7983,7 +7983,7 @@
                 ],
                 "Nvl\\Comments\\Http\\Controllers\\CommentsManagementController": [
                     "final class Nvl\\Comments\\Http\\Controllers\\CommentsManagementController extends Illuminate\\Routing\\Controller",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
                     "public function index(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, Nvl\\Comments\\Actions\\ListModerationCommentsAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function storeRich(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Comments\\Actions\\CreateRichCommentAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function mentionSuggestions(Illuminate\\Http\\Request $request, string $target, string $targetId, string $resource, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Comments\\Actions\\SuggestCommentMentionResourcesAction $action): Illuminate\\Http\\JsonResponse",
@@ -8001,7 +8001,7 @@
                 ],
                 "Nvl\\Comments\\Http\\Controllers\\MemberCommentsController": [
                     "final class Nvl\\Comments\\Http\\Controllers\\MemberCommentsController extends Illuminate\\Routing\\Controller",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Media\\Services\\MediaQueryService $mediaQueries): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Media\\Services\\MediaQueryService $mediaQueries): mixed",
                     "public function index(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Filterable\\Http\\QueryFilterSetFactory $filterFactory, Nvl\\Comments\\Actions\\ListCommentsAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function store(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Comments\\Actions\\CreateCommentAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
                     "public function storeRich(Illuminate\\Http\\Request $request, string $target, string $targetId, Nvl\\Comments\\Services\\CommentTargetRegistry $targets, Nvl\\Comments\\Contracts\\CommentActorResolver $actors, Nvl\\Comments\\Actions\\CreateRichCommentAction $action, Nvl\\Comments\\Services\\CommentProjectionFactory $projections): Illuminate\\Http\\JsonResponse",
@@ -8631,7 +8631,9 @@
                     "public function isViewerIndependent(string $alias): bool",
                     "public function has(string $alias): bool",
                     "public function aliases(): array",
-                    "@return list<string>"
+                    "@return list<string>",
+                    "public function diagnostics(): array",
+                    "@return array{aliases: list<string>, ready: bool, registered: int, truncated: bool}"
                 ],
                 "Nvl\\Comments\\Services\\CommentMentionWriter": [
                     "final readonly class Nvl\\Comments\\Services\\CommentMentionWriter",
