@@ -6,12 +6,18 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Events\MigrationStarted;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Nvl\Content\Actions\CreateContentBlockAction;
 use Nvl\Content\Actions\PlaceContentBlockAction;
 use Nvl\Content\Actions\PublishContentBlockAction;
@@ -1528,4 +1534,290 @@ it('yields sitemap ownership only to a matching SEO profile that can emit an ent
 
     expect($urls)->not->toContain('https://pages.test/info')
         ->and($urls)->toContain("https://pages.test/records-map/{$resource->id}");
+});
+
+it('guards rollback of the released self-referencing Pages migration on SQLite', function (): void {
+    config()->set([
+        'database.connections.pages_rollback' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ],
+        'pages.connection' => 'pages_rollback',
+        'pages.tables.pages' => 'rollback_pages',
+    ]);
+    $migration = require __DIR__.'/../../database/migrations/2026_07_28_100001_create_pages_table.php';
+    $migration->up();
+    $now = now();
+    $parentId = (string) Str::uuid();
+    $childId = (string) Str::uuid();
+    DB::connection('pages_rollback')->table('rollback_pages')->insert([
+        [
+            'id' => $parentId,
+            'parent_id' => null,
+            'key' => 'rollback.parent',
+            'slug' => 'parent',
+            'path' => 'parent',
+            'path_hash' => hash('sha256', 'parent'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+        [
+            'id' => $childId,
+            'parent_id' => $parentId,
+            'key' => 'rollback.child',
+            'slug' => 'child',
+            'path' => 'parent/child',
+            'path_hash' => hash('sha256', 'parent/child'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+    ]);
+
+    $started = new MigrationStarted(
+        $migration,
+        'down',
+        '2026_07_28_100001_create_pages_table',
+    );
+    Event::dispatch($started);
+    $migration->down();
+
+    expect(Schema::connection('pages_rollback')->hasTable('rollback_pages'))->toBeFalse()
+        ->and((bool) DB::connection('pages_rollback')->scalar('PRAGMA foreign_keys'))->toBeTrue();
+
+    DB::purge('pages_rollback');
+});
+
+it('preserves SQLite protection when host tables still reference Pages', function (): void {
+    config()->set([
+        'database.connections.pages_rollback_external' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ],
+        'pages.connection' => 'pages_rollback_external',
+        'pages.tables.pages' => 'guarded_pages',
+    ]);
+    $schema = Schema::connection('pages_rollback_external');
+    $migration = require __DIR__.'/../../database/migrations/2026_07_28_100001_create_pages_table.php';
+    $migration->up();
+    $pageId = (string) Str::uuid();
+    $now = now();
+
+    DB::connection('pages_rollback_external')->table('guarded_pages')->insert([
+        'id' => $pageId,
+        'parent_id' => null,
+        'key' => 'guarded.page',
+        'slug' => 'guarded',
+        'path' => 'guarded',
+        'path_hash' => hash('sha256', 'guarded'),
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+    $schema->create('host_page_links', function (Blueprint $table): void {
+        $table->id();
+        $table->uuid('page_id');
+        $table->foreign('page_id')->references('id')->on('guarded_pages')->restrictOnDelete();
+    });
+    $started = new MigrationStarted(
+        $migration,
+        'down',
+        '2026_07_28_100001_create_pages_table',
+    );
+    expect(fn () => Event::dispatch($started))->toThrow(LogicException::class)
+        ->and(DB::connection('pages_rollback_external')->scalar('PRAGMA foreign_keys'))->toBe(1)
+        ->and($schema->hasTable('guarded_pages'))->toBeTrue()
+        ->and($schema->hasTable('host_page_links'))->toBeTrue();
+
+    $schema->withoutForeignKeyConstraints(function () use ($schema): void {
+        $schema->dropIfExists('host_page_links');
+        $schema->dropIfExists('guarded_pages');
+    });
+    DB::purge('pages_rollback_external');
+});
+
+it('does not mutate Pages for an unrelated migration with the same conventional name', function (): void {
+    config()->set([
+        'database.connections.pages_rollback_unrelated' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ],
+        'pages.connection' => 'pages_rollback_unrelated',
+        'pages.tables.pages' => 'unrelated_guard_pages',
+    ]);
+    $packageMigration = require __DIR__.'/../../database/migrations/2026_07_28_100001_create_pages_table.php';
+    $packageMigration->up();
+    $parentId = (string) Str::uuid();
+    $childId = (string) Str::uuid();
+    $now = now();
+
+    DB::connection('pages_rollback_unrelated')->table('unrelated_guard_pages')->insert([
+        [
+            'id' => $parentId,
+            'parent_id' => null,
+            'key' => 'unrelated.parent',
+            'slug' => 'parent',
+            'path' => 'parent',
+            'path_hash' => hash('sha256', 'parent'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+        [
+            'id' => $childId,
+            'parent_id' => $parentId,
+            'key' => 'unrelated.child',
+            'slug' => 'child',
+            'path' => 'parent/child',
+            'path_hash' => hash('sha256', 'parent/child'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+    ]);
+    $unrelatedMigration = new class extends Migration {};
+
+    Event::dispatch(new MigrationStarted(
+        $unrelatedMigration,
+        'down',
+        '2026_08_29_100001_create_pages_table',
+    ));
+
+    expect(DB::connection('pages_rollback_unrelated')
+        ->table('unrelated_guard_pages')
+        ->where('id', $childId)
+        ->value('parent_id'))->toBe($parentId);
+
+    Schema::connection('pages_rollback_unrelated')->withoutForeignKeyConstraints(
+        fn () => Schema::connection('pages_rollback_unrelated')->dropIfExists('unrelated_guard_pages'),
+    );
+    DB::purge('pages_rollback_unrelated');
+});
+
+it('guards Pages rollback on prefixed SQLite connections', function (): void {
+    config()->set([
+        'database.connections.pages_rollback_prefixed' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => 'pre_',
+            'foreign_key_constraints' => true,
+        ],
+        'pages.connection' => 'pages_rollback_prefixed',
+        'pages.tables.pages' => 'prefixed_pages',
+    ]);
+    $schema = Schema::connection('pages_rollback_prefixed');
+    $migration = require __DIR__.'/../../database/migrations/2026_07_28_100001_create_pages_table.php';
+    $migration->up();
+    $now = now();
+    $parentId = (string) Str::uuid();
+    $childId = (string) Str::uuid();
+
+    DB::connection('pages_rollback_prefixed')->table('prefixed_pages')->insert([
+        [
+            'id' => $parentId,
+            'parent_id' => null,
+            'key' => 'prefixed.parent',
+            'slug' => 'parent',
+            'path' => 'parent',
+            'path_hash' => hash('sha256', 'parent'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+        [
+            'id' => $childId,
+            'parent_id' => $parentId,
+            'key' => 'prefixed.child',
+            'slug' => 'child',
+            'path' => 'parent/child',
+            'path_hash' => hash('sha256', 'parent/child'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+    ]);
+    $schema->create('host_page_links', function (Blueprint $table): void {
+        $table->id();
+        $table->uuid('page_id');
+        $table->foreign('page_id')->references('id')->on('prefixed_pages')->restrictOnDelete();
+    });
+    $started = new MigrationStarted(
+        $migration,
+        'down',
+        '2026_07_28_100001_create_pages_table',
+    );
+
+    expect(fn () => Event::dispatch($started))->toThrow(LogicException::class)
+        ->and($schema->hasTable('prefixed_pages'))->toBeTrue()
+        ->and($schema->hasTable('host_page_links'))->toBeTrue()
+        ->and(DB::connection('pages_rollback_prefixed')->scalar('PRAGMA foreign_keys'))->toBe(1);
+
+    $schema->dropIfExists('host_page_links');
+    Event::dispatch($started);
+    $migration->down();
+
+    expect($schema->hasTable('prefixed_pages'))->toBeFalse()
+        ->and(DB::connection('pages_rollback_prefixed')->scalar('PRAGMA foreign_keys'))->toBe(1);
+
+    DB::purge('pages_rollback_prefixed');
+});
+
+it('guards prefixed Pages from case-insensitive unprefixed host references in the same SQLite database', function (): void {
+    $databasePath = tempnam(sys_get_temp_dir(), 'nvl-pages-rollback-');
+
+    expect($databasePath)->toBeString();
+
+    config()->set([
+        'database.connections.pages_rollback_mixed_prefix' => [
+            'driver' => 'sqlite',
+            'database' => $databasePath,
+            'prefix' => 'pre_',
+            'foreign_key_constraints' => true,
+        ],
+        'database.connections.pages_rollback_mixed_host' => [
+            'driver' => 'sqlite',
+            'database' => $databasePath,
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ],
+        'pages.connection' => 'pages_rollback_mixed_prefix',
+        'pages.tables.pages' => 'mixed_pages',
+    ]);
+    $pagesSchema = Schema::connection('pages_rollback_mixed_prefix');
+    $hostSchema = Schema::connection('pages_rollback_mixed_host');
+    $migration = require __DIR__.'/../../database/migrations/2026_07_28_100001_create_pages_table.php';
+    $migration->up();
+    $hostSchema->create('host_page_links', function (Blueprint $table): void {
+        $table->id();
+        $table->uuid('page_id');
+        $table->foreign('page_id')->references('id')->on('PRE_MIXED_PAGES')->restrictOnDelete();
+    });
+    $started = new MigrationStarted(
+        $migration,
+        'down',
+        '2026_07_28_100001_create_pages_table',
+    );
+
+    try {
+        expect(fn () => Event::dispatch($started))->toThrow(LogicException::class)
+            ->and($pagesSchema->hasTable('mixed_pages'))->toBeTrue()
+            ->and($hostSchema->hasTable('host_page_links'))->toBeTrue();
+
+        $hostSchema->dropIfExists('host_page_links');
+        Event::dispatch($started);
+        $migration->down();
+
+        expect($pagesSchema->hasTable('mixed_pages'))->toBeFalse();
+    } finally {
+        $hostSchema->withoutForeignKeyConstraints(function () use ($hostSchema): void {
+            $hostSchema->dropIfExists('host_page_links');
+            $hostSchema->dropIfExists('pre_mixed_pages');
+        });
+        DB::purge('pages_rollback_mixed_prefix');
+        DB::purge('pages_rollback_mixed_host');
+
+        if (is_file($databasePath)) {
+            unlink($databasePath);
+        }
+    }
 });

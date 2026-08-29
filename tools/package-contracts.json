@@ -26612,6 +26612,11 @@
                     "public static function limit(string $key, int $default): int",
                     "public static function alias(string $integration, string $default): string"
                 ],
+                "Nvl\\Pages\\Support\\PagesMigrationRollbackGuard": [
+                    "final class Nvl\\Pages\\Support\\PagesMigrationRollbackGuard",
+                    "public function __construct(Illuminate\\Database\\DatabaseManager $database): mixed",
+                    "public function before(Illuminate\\Database\\Events\\MigrationStarted $event): void"
+                ],
                 "Nvl\\Pages\\Support\\PagesRouteConfiguration": [
                     "final class Nvl\\Pages\\Support\\PagesRouteConfiguration",
                     "public static function path(string $group): string",
