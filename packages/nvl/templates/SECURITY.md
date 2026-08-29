@@ -1,7 +1,7 @@
 # Security Policy
 
-Security fixes are provided for the current `1.x` line on PHP 8.3–8.4 and
-Laravel 12–13. Report vulnerabilities privately through the repository host's
+Security fixes are provided for the current `2.x` line on PHP 8.3–8.4 and
+Laravel 13. Report vulnerabilities privately through the repository host's
 security-advisory feature.
 
 Include the definition key, renderer alias, route group, owner scope, payload

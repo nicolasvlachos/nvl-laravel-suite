@@ -1,6 +1,6 @@
 ---
 name: nvl-filterable
-description: Implement, integrate, test, or review nvl/filterable in Laravel 12–13. Use for allowlisted Eloquent filters, typed filter sets, HTTP query parsing, safe relation filtering, sort aliases, operator rules, complexity limits, or database-portable filtering.
+description: Implement, integrate, test, or review nvl/filterable in Laravel 13. Use for allowlisted Eloquent filters, typed filter sets, HTTP query parsing, safe relation filtering, sort aliases, operator rules, complexity limits, or database-portable filtering.
 ---
 
 # NVL Filterable

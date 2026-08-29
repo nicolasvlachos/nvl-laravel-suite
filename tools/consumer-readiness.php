@@ -527,7 +527,7 @@ return [
             'boundaries' => $pass(['packages/nvl/media/README.md#purpose-and-boundaries', 'docs/consumer-readiness.md#ownership-boundaries']),
             'presets' => $pass(['packages/nvl/media/README.md#variations-and-optimization', 'packages/nvl/media/tests/Unit/MediaConfiguredVariationServiceTest.php']),
             'operations' => [
-                ...$pass(['packages/nvl/media/README.md#database-schema-and-adoption', 'packages/nvl/media/README.md#owner-slot-workflows', 'packages/nvl/media/docs/commands.md#nvlmediaowner-slotsprune', 'packages/nvl/media/UPGRADING.md#upgrading-to-the-production-hardened-1x-release']),
+                ...$pass(['packages/nvl/media/README.md#database-schema-and-adoption', 'packages/nvl/media/README.md#owner-slot-workflows', 'packages/nvl/media/docs/commands.md#nvlmediaowner-slotsprune', 'packages/nvl/media/UPGRADING.md#upgrading-to-the-production-hardened-2x-release']),
                 'doctor' => ['symbol' => MediaDoctorCommand::class, 'command' => 'nvl:media:doctor'],
                 'prune' => ['symbol' => PruneMediaOwnerSlotOperationsCommand::class, 'command' => 'nvl:media:owner-slots:prune'],
                 'adoption' => 'command',

@@ -6,13 +6,13 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/translations` |
 | PHP namespace | `Nvl\Translations` |
 | Service provider | `Nvl\Translations\Providers\TranslationsServiceProvider` |
 | Configuration | `config/translations.php` |
 
-The suite's Laravel 12–13 file-catalog module for reading, scanning, editing, synchronizing, and resaving PHP-array and JSON translation files.
+The suite's Laravel 13 file-catalog module for reading, scanning, editing, synchronizing, and resaving PHP-array and JSON translation files.
 
 Use `nvl/translatable` for locale-specific Eloquent content. This package only manages Laravel language files.
 
@@ -30,11 +30,11 @@ The database is an editing and synchronization workspace. It is not installed as
 ## Requirements and installation
 
 - PHP 8.4+
-- Laravel 12 or 13
+- Laravel 13
 - `nvl/data`, `nvl/filterable`, and `nvl/support`
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 php artisan vendor:publish --tag=translations-config
 php artisan vendor:publish --tag=translations-skills
@@ -78,7 +78,7 @@ lang/
 
 ## Configure source locations
 
-The application source defaults to Laravel's `lang_path()`, which is the root `lang` directory in Laravel 12–13:
+The application source defaults to Laravel's `lang_path()`, which is the root `lang` directory in Laravel 13:
 
 ```php
 'paths' => [

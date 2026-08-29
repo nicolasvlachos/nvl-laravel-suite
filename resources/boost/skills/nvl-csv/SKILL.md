@@ -1,6 +1,6 @@
 ---
 name: nvl-csv
-description: Implement, integrate, test, or review nvl/csv in Laravel 12–13. Use for CSV analysis, typed import/export options, field mappings, validation, transformations, streaming, duplicate policies, memory limits, or queued chunk processing.
+description: Implement, integrate, test, or review nvl/csv in Laravel 13. Use for CSV analysis, typed import/export options, field mappings, validation, transformations, streaming, duplicate policies, memory limits, or queued chunk processing.
 ---
 
 # NVL CSV

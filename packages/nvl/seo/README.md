@@ -6,13 +6,13 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/seo` |
 | PHP namespace | `Nvl\Seo` |
 | Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
 | Configuration | `config/seo.php` |
 
-A standalone localized SEO system for Laravel 12 and 13: polymorphic profiles,
+A standalone localized SEO system for Laravel 13: polymorphic profiles,
 deterministic translations, canonical and hreflang URLs, social cards, safe
 JSON-LD, media integration, robots policies, and bounded cached XML sitemaps.
 
@@ -35,13 +35,13 @@ It does not own an admin UI, application roles/policies, content routing, analyt
 ## Requirements and installation
 
 - PHP 8.4+
-- Laravel 12–13
+- Laravel 13
 - `nvl/translatable` 1.x
 - `nvl/data` 1.x
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 php artisan vendor:publish --tag=seo-config
 php artisan vendor:publish --tag=seo-skills
@@ -729,7 +729,7 @@ composer install
 composer quality
 ```
 
-The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. The monorepo adds dependency analysis, Composer audit, integration tests, and Laravel 12/13 gates.
+The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. The monorepo adds dependency analysis, Composer audit, integration tests, and Laravel 13 gates.
 
 See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CHANGELOG.md](CHANGELOG.md).
 

@@ -79,7 +79,7 @@ git pull --ff-only origin main
 git status --short --branch
 ```
 
-Choose a semantic version without a `v` prefix, for example `1.1.0`. Follow
+Choose a semantic version without a `v` prefix, for example `2.0.0`. Follow
 semantic versioning across the complete suite:
 
 - Patch: compatible fixes, such as `1.0.1`.
@@ -146,7 +146,7 @@ release prerequisite or publication gate.
 Optionally rehearse the Composer archive with the chosen version:
 
 ```bash
-COMPOSER_ROOT_VERSION=1.1.0 composer archive \
+COMPOSER_ROOT_VERSION=2.0.0 composer archive \
     --format=zip \
     --dir=/tmp/nvl-suite-archive
 ```
@@ -169,7 +169,7 @@ git add CHANGELOG.md README.md CONTRIBUTING.md docs packages/nvl
 
 git diff --cached --check
 git diff --cached
-git commit -m "release: prepare v1.1.0"
+git commit -m "release: prepare v2.0.0"
 git push origin main
 ```
 
@@ -183,7 +183,7 @@ jobs:
 
 1. Formatting, analysis, manifests and contracts.
 2. PHP 8.4 / Laravel 13 / SQLite.
-3. PHP 8.4 / Laravel 12 / lowest.
+3. PHP 8.4 / Laravel 13 / lowest.
 4. PostgreSQL stateful packages.
 5. MySQL 8.4 and MariaDB 12.3 stateful packages.
 6. Changed-package coverage.
@@ -204,12 +204,12 @@ Never run `git tag vX.Y.Z` or `git push origin vX.Y.Z` yourself. The release
 workflow is the only supported tag publisher.
 
 From GitHub, open **Actions -> Package release -> Run workflow**, select `main`,
-and enter the version without the `v` prefix, such as `1.1.0`.
+and enter the version without the `v` prefix, such as `2.0.0`.
 
 The equivalent GitHub CLI commands are:
 
 ```bash
-gh workflow run package-release.yml --ref main -f version=1.1.0
+gh workflow run package-release.yml --ref main -f version=2.0.0
 gh run list --workflow package-release.yml --branch main --limit 5
 gh run watch RUN_ID --exit-status
 ```
@@ -243,17 +243,17 @@ After the release workflow is green, synchronize the tag locally:
 
 ```bash
 git fetch --tags --prune
-git tag -n1 --list 'v1.1.0'
-git ls-remote origin 'refs/tags/v1.1.0' 'refs/tags/v1.1.0^{}'
+git tag -n1 --list 'v2.0.0'
+git ls-remote origin 'refs/tags/v2.0.0' 'refs/tags/v2.0.0^{}'
 ```
 
 Verify all of the following before announcing the release:
 
 - The GitHub Actions release run is green.
-- `https://github.com/nicolasvlachos/nvl-laravel-suite/releases/tag/v1.1.0`
+- `https://github.com/nicolasvlachos/nvl-laravel-suite/releases/tag/v2.0.0`
   exists, is not a draft or prerelease, and contains one
-  `nvl-laravel-suite-1.1.0.zip` asset.
-- [Packagist](https://packagist.org/packages/nvl/laravel-suite) lists `v1.1.0`
+  `nvl-laravel-suite-2.0.0.zip` asset.
+- [Packagist](https://packagist.org/packages/nvl/laravel-suite) lists `v2.0.0`
   as a stable version.
 
 Packagist is configured to update automatically from GitHub. A new changelog
@@ -269,7 +269,7 @@ composer create-project --no-interaction --no-dev \
     --prefer-dist laravel/laravel:^13.0 /tmp/nvl-suite-consumer
 cd /tmp/nvl-suite-consumer
 composer require --no-interaction --update-no-dev \
-    --with-all-dependencies nvl/laravel-suite:^1.1
+    --with-all-dependencies nvl/laravel-suite:^2.0
 php artisan package:discover
 php artisan config:cache
 php artisan route:cache

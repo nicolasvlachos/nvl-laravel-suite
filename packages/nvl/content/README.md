@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/content` |
 | PHP namespace | `Nvl\Content` |
 | Service provider | `Nvl\Content\Providers\ContentServiceProvider` |
@@ -72,7 +72,7 @@ Composer installs these declared dependencies automatically.
 ## Installation
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 php artisan nvl:content:definitions:sync --dry-run
 php artisan nvl:content:definitions:sync

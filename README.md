@@ -44,7 +44,7 @@ Real consumer defects and adoption gaps are maintained in the
 [implementation issue tracker](docs/implementation-issues.md). Its groups are
 the required implementation and commit boundaries for follow-up work.
 
-The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.4+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
+The suite is auto-discoverable and supports Laravel 13 on PHP 8.4+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
 
 ## Staged module adoption
 
@@ -152,7 +152,7 @@ enum case remains writable, including later additions such as `expired`.
 Install a stable suite release from [Packagist](https://packagist.org/packages/nvl/laravel-suite):
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 ```
 
 Composer installs the clean distribution archive for the selected tag by
@@ -411,21 +411,21 @@ composer validate --strict
 composer audit --locked --no-interaction
 git add <reviewed-paths>
 git diff --cached
-git commit -m "release: prepare v1.1.0"
+git commit -m "release: prepare v2.0.0"
 git push origin main
 
-gh workflow run package-release.yml --ref main -f version=1.1.0
+gh workflow run package-release.yml --ref main -f version=2.0.0
 ```
 
 Wait for the six `Package quality` jobs to pass before dispatching `Package
-release`. Supply `1.1.0`, not `v1.1.0`. The release workflow reruns those gates
+release`. Supply `2.0.0`, not `v2.0.0`. The release workflow reruns those gates
 and requires its PHP 8.5, archive, prepared-final-1.x, and Auth/Content proof
 consumer jobs before publication. Never create or push a version tag manually:
 the workflow builds and installs the clean archive, creates the annotated
-`v1.1.0` tag, publishes the GitHub Release, and lets Packagist discover the
+`v2.0.0` tag, publishes the GitHub Release, and lets Packagist discover the
 stable version.
 
-Do not publish `dev-main` as a stable dependency. Consumers should use the `^1.0` line.
+Do not publish `dev-main` as a stable dependency. Consumers should use the `^2.0` line.
 Choose one migration owner per application. Automatic vendor loading is the
 default. Host-owned migrations must be published before the first migration,
 with every relevant `<package>.migrations.enabled` setting changed to `false`;

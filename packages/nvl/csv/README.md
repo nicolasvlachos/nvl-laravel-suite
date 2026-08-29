@@ -6,13 +6,13 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/csv` |
 | PHP namespace | `Nvl\Csv` |
 | Service provider | `Nvl\Csv\Providers\CsvServiceProvider` |
 | Configuration | None; behavior is supplied through typed options and services |
 
-Typed, memory-conscious CSV analysis, validation, transformation, import, export, and queued chunk processing for Laravel 12 and 13.
+Typed, memory-conscious CSV analysis, validation, transformation, import, export, and queued chunk processing for Laravel 13.
 
 ## Purpose
 
@@ -23,14 +23,14 @@ The public namespace is `Nvl\Csv`. Its fluent import/export surface is compatibl
 ## Requirements and installation
 
 - PHP 8.4 or newer
-- Laravel 12 or 13
+- Laravel 13
 - `ext-filter`, `ext-iconv`, `ext-json`, and `ext-mbstring`
-- `nvl/data:^1.0`
+- `nvl/data:^2.0`
 
 Install with Composer:
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 ```
 
 Laravel discovers `Nvl\Csv\Providers\CsvServiceProvider` automatically. There is no package configuration or migration to publish for synchronous analysis, import, or export.

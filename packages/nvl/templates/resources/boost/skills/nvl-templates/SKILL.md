@@ -1,6 +1,6 @@
 ---
 name: nvl-templates
-description: Implement, integrate, test, or review nvl/templates in Laravel 12–13. Use for directly constructed Template values, typed renderer/PDF options, Blade views, Content compositions, stored template definitions and versions, assignments, queued renders, output responses, view publication, APIs, or package architecture.
+description: Implement, integrate, test, or review nvl/templates in Laravel 13. Use for directly constructed Template values, typed renderer/PDF options, Blade views, Content compositions, stored template definitions and versions, assignments, queued renders, output responses, view publication, APIs, or package architecture.
 ---
 
 # NVL Templates

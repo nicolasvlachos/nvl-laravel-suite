@@ -11,14 +11,14 @@ it('keeps Activity in the complete and PostgreSQL routine suites', function (): 
     expect($workflow)->toBeArray();
 
     $current = activityWorkflowCommands($workflow['jobs']['current-tests'] ?? []);
-    $lowest = activityWorkflowCommands($workflow['jobs']['laravel12-lowest'] ?? []);
+    $lowest = activityWorkflowCommands($workflow['jobs']['laravel13-lowest'] ?? []);
     $postgresJob = $workflow['jobs']['postgresql'] ?? [];
     $postgres = activityWorkflowCommands($postgresJob);
     $statefulStep = collect($postgresJob['steps'] ?? [])->firstWhere('name', 'Stateful package tests');
 
     expect($current)->toContain('composer test')
         ->and($lowest)->toContain(
-            '"laravel/framework:^12.0"',
+            '"laravel/framework:^13.0"',
             'composer test:packages',
         )
         ->and($postgres)->toContain('for package in activity auth comments content')

@@ -1,6 +1,6 @@
 ---
 name: nvl-content
-description: Implement, integrate, test, or review nvl/content in Laravel 12–13. Use for source-controlled block definitions, typed or custom fields, localized content, Media and reference values, placements, regions, trees, rendering, immutable composition snapshots, Blade starting views, APIs, or package architecture.
+description: Implement, integrate, test, or review nvl/content in Laravel 13. Use for source-controlled block definitions, typed or custom fields, localized content, Media and reference values, placements, regions, trees, rendering, immutable composition snapshots, Blade starting views, APIs, or package architecture.
 ---
 
 # NVL Content
@@ -211,7 +211,7 @@ $pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
   middleware must fail closed.
 - Run `nvl:content:doctor --strict --format=json`, definition dry runs, Pest,
   Pint, PHPStan at maximum strictness, `nvl:data:types:check`, database
-  matrices, and clean `nvl/laravel-suite` consumer tests on Laravel 12/13.
+  matrices, and clean `nvl/laravel-suite` consumer tests on Laravel 13.
 - Treat pending block versions or missing migration paths as deployment
   failures. Require the doctor to verify semantic columns, indexes, and
   foreign keys. Migration plans/events must never contain content values.

@@ -1,6 +1,6 @@
 ---
 name: nvl-translations
-description: Implement, integrate, test, or review nvl/translations in Laravel 12–13. Use for PHP or JSON language-file scanning, database workspace synchronization, status and conflicts, deterministic file export, source or target profiles, backups, pruning, path safety, locks, atomic writes, or translation API authorization.
+description: Implement, integrate, test, or review nvl/translations in Laravel 13. Use for PHP or JSON language-file scanning, database workspace synchronization, status and conflicts, deterministic file export, source or target profiles, backups, pruning, path safety, locks, atomic writes, or translation API authorization.
 ---
 
 # NVL Translations

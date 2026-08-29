@@ -1,6 +1,6 @@
 ---
 name: nvl-seo
-description: Implement, integrate, test, or review nvl/seo in Laravel 12–13. Use for polymorphic SEO profiles, localized metadata through nvl/translatable, canonical and hreflang URLs, Open Graph and Twitter cards, media-backed social images, safe JSON-LD, robots directives, sitemap sources/routes, path uniqueness, Blade head rendering, or SEO package architecture.
+description: Implement, integrate, test, or review nvl/seo in Laravel 13. Use for polymorphic SEO profiles, localized metadata through nvl/translatable, canonical and hreflang URLs, Open Graph and Twitter cards, media-backed social images, safe JSON-LD, robots directives, sitemap sources/routes, path uniqueness, Blade head rendering, or SEO package architecture.
 ---
 
 # NVL SEO
@@ -148,4 +148,4 @@ output, provider priority and resource matching, graph identity/merge rules,
 JSON-LD limits, sitemap indexes, cache invalidation, authorization, query
 counts, and cascade deletion. Run `nvl:seo:doctor --strict --format=json`, the
 package Pest suite, Pint, PHPStan at maximum strictness, dependency audit, and
-Laravel 12/13 gates.
+Laravel 13 gates.

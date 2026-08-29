@@ -63,6 +63,39 @@ it('keeps Composer update hooks independent of optional development tools', func
         ->not->toContain('@php artisan boost:update --ansi');
 });
 
+it('declares Laravel 13 and Testbench 11 as the suite support floor', function (): void {
+    $root = dirname(__DIR__, 2);
+    $suiteManifest = json_decode(
+        file_get_contents($root.'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $catalog = require $root.'/tools/package-family.php';
+
+    expect($suiteManifest['require']['laravel/framework'] ?? null)->toBe('^13.0')
+        ->and($suiteManifest['require-dev']['laravel/tinker'] ?? null)->toBe('^3.0')
+        ->and($suiteManifest['require-dev']['orchestra/testbench'] ?? null)->toBe('^11.0')
+        ->and($suiteManifest['extra']['branch-alias']['dev-main'] ?? null)->toBe('2.x-dev');
+
+    foreach ($catalog['packages'] as $package) {
+        $manifest = json_decode(
+            file_get_contents($root.'/packages/nvl/'.$package.'/composer.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        expect($manifest['require']['laravel/framework'] ?? null)->toBe('^13.0')
+            ->and($manifest['require-dev']['orchestra/testbench'] ?? null)->toBe('^11.0')
+            ->and($manifest['extra']['branch-alias']['dev-main'] ?? null)->toBe('2.x-dev');
+
+        foreach ($manifest['require'] as $dependency => $constraint) {
+            if (str_starts_with($dependency, 'nvl/')) {
+                expect($constraint)->toBe('^2.0');
+            }
+        }
+    }
+});
+
 it('enforces Activitylog v5 and its PHP 8.4 runtime floor', function (): void {
     $root = dirname(__DIR__, 2);
     $suiteManifest = json_decode(
@@ -76,7 +109,7 @@ it('enforces Activitylog v5 and its PHP 8.4 runtime floor', function (): void {
         flags: JSON_THROW_ON_ERROR,
     );
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
-    $lowestSteps = $workflow['jobs']['laravel12-lowest']['steps'] ?? [];
+    $lowestSteps = $workflow['jobs']['laravel13-lowest']['steps'] ?? [];
     $setupPhp = collect($lowestSteps)->firstWhere('uses', SUITE_SETUP_PHP_ACTION);
 
     expect($suiteManifest['require']['php'] ?? null)->toBe('^8.4')
@@ -116,7 +149,7 @@ it('runs six routine gates without scheduled fan-out', function (): void {
     expect(array_keys($jobs))->toBe([
         'quality',
         'current-tests',
-        'laravel12-lowest',
+        'laravel13-lowest',
         'postgresql',
         'mysql-family',
         'changed-coverage',
@@ -173,7 +206,7 @@ it('documents one discoverable push and automated release path', function (): vo
         '.github/workflows/package-quality.yml',
         '.github/workflows/package-release.yml',
         'git push origin main',
-        'gh workflow run package-release.yml --ref main -f version=1.1.0',
+        'gh workflow run package-release.yml --ref main -f version=2.0.0',
         'Never run `git tag vX.Y.Z`',
         'A commit is not a release, a push is not a version',
         'Leave a blank `Unreleased` section for future work.',
@@ -383,14 +416,14 @@ it('exposes the root package quality runner through Composer', function (): void
         ->toBe('@php tools/run-package-quality.php');
 });
 
-it('tests the current stack Laravel 12 lowest and every supported database family', function (): void {
+it('tests the current stack Laravel 13 lowest and every supported database family', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
     $jobs = $workflow['jobs'] ?? [];
     $currentCommands = workflowCommands($jobs['current-tests'] ?? []);
-    $lowestCommands = workflowCommands($jobs['laravel12-lowest'] ?? []);
+    $lowestCommands = workflowCommands($jobs['laravel13-lowest'] ?? []);
     $postgresCommands = workflowCommands($jobs['postgresql'] ?? []);
     $mysqlCommands = workflowCommands($jobs['mysql-family'] ?? []);
 
@@ -400,9 +433,9 @@ it('tests the current stack Laravel 12 lowest and every supported database famil
         'composer test',
     )
         ->and($lowestCommands)->toContain(
-            '"laravel/framework:^12.0"',
-            '"laravel/tinker:^2.10.1"',
-            '"orchestra/testbench:^10.0"',
+            '"laravel/framework:^13.0"',
+            '"laravel/tinker:^3.0"',
+            '"orchestra/testbench:^11.0"',
             '--prefer-lowest',
             'composer test:integration',
             'composer test:packages',

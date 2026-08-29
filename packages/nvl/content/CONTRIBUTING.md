@@ -1,6 +1,6 @@
 # Contributing
 
-Use PHP 8.3 or 8.4 and test against Laravel 12 and 13. Keep the package headless,
+Use PHP 8.3 or 8.4 and test against Laravel 13. Keep the package headless,
 strictly typed, consumer-neutral, and limited to its declared dependencies.
 
 Run `composer validate --strict`, `composer format`, `composer analyse`, and
