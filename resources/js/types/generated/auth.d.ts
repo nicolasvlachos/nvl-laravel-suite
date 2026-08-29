@@ -353,6 +353,7 @@ limit: number | null,
 }
 namespace Enums {
 export type AuthFeature = 'authentication' | 'principal_management' | 'password' | 'email_verification' | 'magic_links' | 'security_codes' | 'invitations' | 'totp' | 'passkeys' | 'recovery_codes' | 'social_identities' | 'clients' | 'sessions' | 'api_tokens' | 'rbac' | 'audit';
+export type AuthIntegrationPreset = 'embedded-application';
 export type AuthMessageType = 'invitation' | 'magic_link' | 'security_code' | 'password_reset' | 'email_verification';
 export type AuthenticationPurpose = 'credential_login' | 'passwordless_login' | 'social_login' | 'password_reset';
 export type FeatureOperation = 'read' | 'enroll' | 'issue' | 'use' | 'update' | 'revoke' | 'cleanup';

@@ -52,6 +52,7 @@ body?: string,
 format?: Nvl.Comments.Enums.CommentFormat,
 locale?: string | null,
 tags?: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 actorType?: string | null,
 actorId?: string | null,
 status: Nvl.Comments.Enums.CommentStatus,
@@ -81,6 +82,10 @@ anonymizationReason: string | null,
 createdAt: string,
 updatedAt: string,
 };
+export type CommentMetadataProjectionData = {
+namespace: string,
+values: Record<string, string | number | boolean | null>,
+};
 export type CommentReactionSummaryData = {
 type: string,
 count: number,
@@ -102,6 +107,8 @@ identityFingerprintMismatches: number,
 missingTargetComments: number,
 invalidAttachmentAssociations: number,
 healthy: boolean,
+missingMetadataIndexValues: number,
+staleMetadataIndexValues: number,
 };
 export type CommentReportManagementData = {
 id: string,
@@ -126,6 +133,7 @@ body: string,
 format: Nvl.Comments.Enums.CommentFormat,
 locale: string | null,
 tags: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 createdAt: string,
 };
 export type CommentTargetReportQueueData = {
@@ -141,6 +149,7 @@ body?: string,
 format?: Nvl.Comments.Enums.CommentFormat,
 locale?: string | null,
 tags?: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 revision: number,
 deleted?: boolean,
 replyCount: number,
@@ -171,6 +180,7 @@ body?: string,
 format?: Nvl.Comments.Enums.CommentFormat,
 locale?: string | null,
 tags?: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 revision: number,
 deleted?: boolean,
 replyCount: number,
@@ -241,6 +251,7 @@ metadata?: Record<string, unknown>,
 namespace Queries {
 export type CommentSelectorData = {
 tags: Array<string>,
+metadataEquals: Record<string, string | number | boolean | null>,
 status: Nvl.Comments.Enums.CommentStatus | null,
 };
 }
@@ -250,6 +261,7 @@ export type CommentAbility = 'list' | 'view' | 'view_identity' | 'create' | 'rep
 export type CommentAudience = 'public' | 'member' | 'management';
 export type CommentChangeOperation = 'created' | 'updated' | 'deleted' | 'restored' | 'anonymized' | 'moderated' | 'report_reviewed' | 'revision_restored';
 export type CommentFormat = 'plain' | 'markdown';
+export type CommentMetadataValueType = 'string' | 'integer' | 'boolean' | 'uuid';
 export type CommentReportStatus = 'open' | 'resolved' | 'dismissed';
 export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'hidden' | 'spam';
 export type CommentVisibility = 'public' | 'private' | 'internal';

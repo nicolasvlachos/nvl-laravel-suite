@@ -15,11 +15,15 @@ use Nvl\Auth\Actions\Users\ListUsersAction;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
 use Nvl\Auth\Contracts\AuthManagementAccess;
 use Nvl\Auth\Definitions\Tables\AuthTables;
+use Nvl\Comments\Actions\DeleteLatestTargetCommentAction;
 use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Actions\ListCommentsAction;
 use Nvl\Comments\Console\CommentsDoctorCommand;
+use Nvl\Comments\Contracts\CommentMetadataSchema;
 use Nvl\Comments\Contracts\HasComments;
+use Nvl\Comments\Data\CommentMetadataProjectionData;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Comments\Definitions\CommentMetadataField;
 use Nvl\Comments\Definitions\Tables\CommentsTables;
 use Nvl\Content\Actions\FindContentBlockByKeyAction;
 use Nvl\Content\Actions\FindContentPlacementAction;
@@ -595,12 +599,16 @@ return [
                 'symbols' => [
                     ListCommentsAction::class,
                     FindLatestTargetCommentAction::class,
+                    DeleteLatestTargetCommentAction::class,
                     CommentSelectorData::class,
+                    CommentMetadataSchema::class,
+                    CommentMetadataField::class,
+                    CommentMetadataProjectionData::class,
                     HasComments::class,
                 ],
                 'direct_model_access' => 'compatibility_1x',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/comments/README.md#latest-target-comment-read',
+                'documentation' => 'packages/nvl/comments/README.md#registered-metadata-and-selectors',
             ],
             'performance' => [
                 ...$pass(['packages/nvl/comments/README.md#filtering-and-pagination']),

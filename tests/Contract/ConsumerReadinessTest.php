@@ -8,8 +8,12 @@ use Nvl\Auth\Actions\Invitations\FindActiveInvitationAction;
 use Nvl\Auth\Actions\Invitations\ListInvitationProjectionsAction;
 use Nvl\Auth\Actions\Invitations\RecordInvitationDeliveryOutcomeAction;
 use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
+use Nvl\Comments\Actions\DeleteLatestTargetCommentAction;
 use Nvl\Comments\Actions\FindLatestTargetCommentAction;
+use Nvl\Comments\Contracts\CommentMetadataSchema;
+use Nvl\Comments\Data\CommentMetadataProjectionData;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Comments\Definitions\CommentMetadataField;
 use Nvl\Content\Actions\FindContentBlockByKeyAction;
 use Nvl\Content\Actions\FindContentPlacementAction;
 use Nvl\Content\Actions\GetOwnerContentEditorAction;
@@ -403,9 +407,16 @@ it('publishes stable Comments Settings and SEO consumer seams', function (): voi
     $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
 
     expect($catalog['packages']['comments']['application_api']['symbols'])
-        ->toContain(FindLatestTargetCommentAction::class, CommentSelectorData::class)
+        ->toContain(
+            FindLatestTargetCommentAction::class,
+            DeleteLatestTargetCommentAction::class,
+            CommentSelectorData::class,
+            CommentMetadataSchema::class,
+            CommentMetadataField::class,
+            CommentMetadataProjectionData::class,
+        )
         ->and($catalog['packages']['comments']['application_api']['documentation'])
-        ->toBe('packages/nvl/comments/README.md#latest-target-comment-read')
+        ->toBe('packages/nvl/comments/README.md#registered-metadata-and-selectors')
         ->and($catalog['packages']['settings']['application_api']['symbols'])
         ->toContain(SettingChanged::class, SettingSubjectReferenceData::class)
         ->and($catalog['packages']['settings']['application_api']['documentation'])
