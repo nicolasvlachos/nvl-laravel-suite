@@ -1572,6 +1572,8 @@
             ],
             "commands": {
                 "Nvl\\Auth\\Console\\Commands\\AdoptPrincipalsCommand": "nvl:auth:adopt-principals {manifest : Absolute or application-relative JSON manifest path} {--stage : Rename canonical-name legacy tables before package schema installation} {--apply : Apply the validated stage or import plan} {--format=text : Output text or json}",
+                "Nvl\\Auth\\Console\\Commands\\AuthConfigurationCommand": "nvl:auth:configuration {--format=text : Output format: text or json}",
+                "Nvl\\Auth\\Console\\Commands\\AuthConfigureCommand": "nvl:auth:configure {--preset= : Integration preset} {--user-model= : Host principal model class} {--enable=* : Explicitly enable one Auth feature} {--disable=* : Explicitly disable one Auth feature} {--path= : Destination inside the application; defaults to config/nvl-auth.php} {--write : Atomically write the destination instead of previewing it} {--force : Allow --write to replace an existing file after reviewing a dry-run diff} {--format=text : Output format: text or json}",
                 "Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand": "nvl:auth:doctor {--strict : Fail for configured integrations owned by disabled features} {--format=text : Output format: text or json}",
                 "Nvl\\Auth\\Console\\Commands\\InstallAuthSchemaCommand": "nvl:auth:schema {--apply : Create missing tables required by enabled features} {--format=text : Output text or json}",
                 "Nvl\\Auth\\Console\\Commands\\ListAuthFeaturesCommand": "nvl:auth:features {--format=table : table or json}",
@@ -2223,6 +2225,18 @@
                     "protected mixed $signature=\"nvl:auth:adopt-principals\\n        {manifest : Absolute or application-relative JSON manifest path}\\n        {--stage : Rename canonical-name legacy tables before package schema installation}\\n        {--apply : Apply the validated stage or import plan}\\n        {--format=text : Output text or json}\"",
                     "protected mixed $description=\"Plan, stage, or apply a reconciled legacy principal adoption\"",
                     "public function handle(Nvl\\Auth\\Actions\\AdoptPrincipalsAction $adopt): int"
+                ],
+                "Nvl\\Auth\\Console\\Commands\\AuthConfigurationCommand": [
+                    "final class Nvl\\Auth\\Console\\Commands\\AuthConfigurationCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:auth:configuration\\n        {--format=text : Output format: text or json}\"",
+                    "protected mixed $description=\"Explain NVL Auth features, ownership, models, adapters, and policy coverage\"",
+                    "public function handle(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthManagementAbilityCatalog $abilities, Nvl\\Auth\\Services\\FeatureManifest $manifest, Illuminate\\Contracts\\Container\\Container $container, Illuminate\\Routing\\Router $router): int"
+                ],
+                "Nvl\\Auth\\Console\\Commands\\AuthConfigureCommand": [
+                    "final class Nvl\\Auth\\Console\\Commands\\AuthConfigureCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:auth:configure\\n        {--preset= : Integration preset}\\n        {--user-model= : Host principal model class}\\n        {--enable=* : Explicitly enable one Auth feature}\\n        {--disable=* : Explicitly disable one Auth feature}\\n        {--path= : Destination inside the application; defaults to config/nvl-auth.php}\\n        {--write : Atomically write the destination instead of previewing it}\\n        {--force : Allow --write to replace an existing file after reviewing a dry-run diff}\\n        {--format=text : Output format: text or json}\"",
+                    "protected mixed $description=\"Preview or write a focused NVL Auth consumer configuration\"",
+                    "public function handle(Illuminate\\Foundation\\Application $application, Illuminate\\Filesystem\\Filesystem $filesystem): int"
                 ],
                 "Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand": [
                     "final class Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand extends Illuminate\\Console\\Command",
@@ -4198,6 +4212,15 @@
                     "public static function from(string|int $value): static",
                     "public static function tryFrom(string|int $value): ?static"
                 ],
+                "Nvl\\Auth\\Enums\\AuthIntegrationPreset": [
+                    "enum Nvl\\Auth\\Enums\\AuthIntegrationPreset implements BackedEnum, UnitEnum: string",
+                    "public const mixed EmbeddedApplication=Nvl\\Auth\\Enums\\AuthIntegrationPreset::EmbeddedApplication=embedded-application",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
                 "Nvl\\Auth\\Enums\\AuthMessageType": [
                     "enum Nvl\\Auth\\Enums\\AuthMessageType implements BackedEnum, UnitEnum: string",
                     "public const mixed Invitation=Nvl\\Auth\\Enums\\AuthMessageType::Invitation=invitation",
@@ -5631,6 +5654,17 @@
                     "public function positiveInteger(string $path, int $default): int",
                     "public function integerBetween(string $path, int $default, int $minimum, int $maximum): int"
                 ],
+                "Nvl\\Auth\\Services\\AuthManagementAbilityCatalog": [
+                    "final class Nvl\\Auth\\Services\\AuthManagementAbilityCatalog",
+                    "public function definitions(): array",
+                    "@return array<string, array{",
+                    "public function definition(string $alias): array",
+                    "@return array{",
+                    "public function forAbility(string $ability): ?array",
+                    "@return array{",
+                    "public function abilitiesFor(Nvl\\Auth\\Enums\\AuthFeature $feature): array",
+                    "@return list<string>"
+                ],
                 "Nvl\\Auth\\Services\\AuthModelRegistry": [
                     "final readonly class Nvl\\Auth\\Services\\AuthModelRegistry",
                     "public function userClass(): string",
@@ -5656,6 +5690,12 @@
                     "final readonly class Nvl\\Auth\\Services\\ConfiguredApiTokenAbilityProvider implements Nvl\\Auth\\Contracts\\ApiTokenAbilityProvider",
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
                     "public function abilities(Illuminate\\Contracts\\Auth\\Authenticatable $subject): array"
+                ],
+                "Nvl\\Auth\\Services\\ConfiguredPolicyAuthManagementAccess": [
+                    "final readonly class Nvl\\Auth\\Services\\ConfiguredPolicyAuthManagementAccess implements Nvl\\Auth\\Contracts\\AuthManagementAccess",
+                    "public function __construct(Illuminate\\Contracts\\Auth\\Access\\Gate $gate, Illuminate\\Contracts\\Config\\Repository $configuration, Nvl\\Auth\\Services\\AuthManagementAbilityCatalog $catalog): mixed",
+                    "public function allows(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $ability, mixed $target=null): bool",
+                    "public function configurationReady(string $ability): bool"
                 ],
                 "Nvl\\Auth\\Services\\ConfiguredPrincipalAttributeMapper": [
                     "final class Nvl\\Auth\\Services\\ConfiguredPrincipalAttributeMapper implements Nvl\\Auth\\Contracts\\PrincipalAttributeMapper",
@@ -6136,7 +6176,7 @@
                 ]
             },
             "configuration": {
-                "config/nvl-auth.php": "fbba0b44984567899381c1625214d61a779053b175cedad538b3c8f4198048de"
+                "config/nvl-auth.php": "14f9943c8ff2303406c31ae1a8c6527e0cc4c599f14d50a499ac1f8782c55001"
             },
             "routes": {
                 "routes/account/api_tokens.php": "87625e4b2170c152d7d47882b8023bd652474efdfa2c82bf1ec5ed8eac35e81e",

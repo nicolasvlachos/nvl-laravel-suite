@@ -357,10 +357,23 @@ return array(
     ),
 );
 PHP,
+        'nvl-auth.php' => <<<'PHP'
+<?php
+
+return [
+    'management' => [
+        'abilities' => ['users.viewAny' => 'viewAny'],
+        'policy_models' => ['users' => App\Models\User::class],
+    ],
+    'ownership' => [
+        'host_routes' => ['authentication.public' => ['login']],
+    ],
+];
+PHP,
     ]);
 
     try {
-        $findings = collect($inspector->inspect(['comments', 'content']));
+        $findings = collect($inspector->inspect(['comments', 'content', 'auth']));
 
         expect($findings->whereIn('code', [
             'configuration.unknown_key',

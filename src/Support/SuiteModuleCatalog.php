@@ -486,7 +486,12 @@ final readonly class SuiteModuleCatalog
             'key' => 'nvl-auth',
             'default' => 'packages/nvl/auth/config/nvl-auth.php',
             'published' => 'nvl-auth.php',
-            'open_maps' => ['features.social_identities.settings.providers'],
+            'open_maps' => [
+                'features.social_identities.settings.providers',
+                'management.abilities',
+                'management.policy_models',
+                'ownership.host_routes',
+            ],
             'deprecated' => [
                 'features.sessions.settings.maximum_concurrent_sessions' => 'Enforce session concurrency through Nvl\\Auth\\Contracts\\PrincipalSessionContainment.',
             ],

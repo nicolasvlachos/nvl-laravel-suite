@@ -24,7 +24,7 @@
 
 - Existing `config/nvl-suite.php` and package configuration files continue to work unchanged in 1.x.
 - Configuration inspection reports key paths and classifications only; it never logs secret values or evaluates arbitrary PHP in a subprocess.
-- Commands default to read-only output. Writing requires `--write`; overwriting an existing file requires `--force` and a generated diff.
+- Commands default to read-only output. Writing requires `--write`; overwriting an existing file requires reviewing a dry-run diff and then passing `--write --force`.
 - Profiles select modules, not business features. Host business vocabulary never enters the package catalog.
 - Dependencies are always closed transitively and cannot be excluded while a selected module requires them.
 - Auth presets configure ownership and adapters; they do not generate KPO controllers, routes, policies, mailables, or frontend code.
@@ -453,21 +453,21 @@ git commit -m "feat(suite): support minimal module selections"
 - Consumes: feature catalog, route ownership, configured User model, package management abilities, host Gate/policy abilities, and CR-27 drift output.
 - Produces: dry-run configuration commands, `nvl-auth.services.management_access`, and one validated package-ability-to-host-ability map.
 
-- [ ] **Step 1: Write failing embedded-host tests**
+- [x] **Step 1: Write failing embedded-host tests**
 
 Create a host fixture with package routes disabled, a custom User model, selected
 features, and three host policies. Assert it boots without seventeen explicit
 `Gate::define('nvl-auth.*')` declarations, denies unmapped abilities, delegates
 mapped abilities with the correct subject, and produces cache-safe config.
 
-- [ ] **Step 2: Catalog every package management ability**
+- [x] **Step 2: Catalog every package management ability**
 
 Move the hardcoded ability strings used by `LaravelGateAuthManagementAccess`
 into `AuthManagementAbilityCatalog`. For each ability declare required feature,
 operation, expected subject kind, and safe default mapping. Doctor must prove
 that every enabled management workflow has a resolvable decision.
 
-- [ ] **Step 3: Add the configurable adapter**
+- [x] **Step 3: Add the configurable adapter**
 
 Add `nvl-auth.services.management_access` and bind it instead of hardcoding the
 current adapter. `ConfiguredPolicyAuthManagementAccess` reads a validated map:
@@ -492,7 +492,7 @@ Keys are package catalog aliases, not arbitrary Gate names received over HTTP.
 Missing mappings deny. A custom `AuthManagementAccess` class remains supported
 for domains whose policy mapping is more complex.
 
-- [ ] **Step 4: Add ownership-aware Auth configuration commands**
+- [x] **Step 4: Add ownership-aware Auth configuration commands**
 
 `nvl:auth:configure --preset=embedded-application --user-model=<class>` prints a
 minimal overlay with package HTTP routes disabled, host-owned delivery selected,
@@ -501,14 +501,14 @@ the configured User model, and only explicitly selected feature overrides.
 reports feature state, route ownership, models, adapters, management coverage,
 and CR-27 key-path drift; it reports no secrets or scalar config values.
 
-- [ ] **Step 5: Extend Doctor for ownership conflicts**
+- [x] **Step 5: Extend Doctor for ownership conflicts**
 
 Detect enabled package and host routes with the same purpose, absent host route
 evidence for enabled host-owned flows as warnings, missing management decisions,
 invalid custom models, and non-container-resolvable adapters. Do not require a
 package route when a flow is deliberately service-only.
 
-- [ ] **Step 6: Verify Auth quality and cached configuration**
+- [x] **Step 6: Verify Auth quality and cached configuration**
 
 Run:
 
