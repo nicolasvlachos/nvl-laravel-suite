@@ -224,8 +224,10 @@ The workflow performs the complete publication transaction:
 8. Upgrades the prepared final-1.x Auth proof consumer to that same sealed ZIP
    and verifies explicit configuration, caches, migrations, generated types,
    strict Doctor/audit, queue-backed smoke behavior, and TypeScript compilation.
-9. Creates and pushes the annotated clean `vX.Y.Z` tag.
-10. Creates the GitHub Release and attaches the verified ZIP.
+9. Runs both Auth and Content proof consumers against that same sealed ZIP before
+   publication can proceed.
+10. Creates and pushes the annotated clean `vX.Y.Z` tag.
+11. Creates the GitHub Release and attaches the verified ZIP.
 
 No tag is created when validation, quality, or archive verification fails.
 

@@ -23,16 +23,81 @@ final readonly class PhpConsumerBoundaryScanner
 {
     /** @var list<string> */
     private const array WRITE_METHODS = [
+        'attach',
         'create',
-        'update',
-        'updateOrCreate',
-        'upsert',
-        'insert',
-        'save',
+        'createMany',
+        'createManyQuietly',
+        'createOrFirst',
+        'createQuietly',
+        'decrement',
+        'decrementEach',
         'delete',
+        'deleteOrFail',
+        'deleteQuietly',
+        'destroy',
+        'detach',
+        'forceCreate',
+        'forceCreateMany',
+        'forceCreateManyQuietly',
+        'forceCreateQuietly',
         'forceDelete',
+        'forceDeleteQuietly',
+        'forceDestroy',
+        'firstOrCreate',
+        'increment',
+        'incrementEach',
+        'incrementOrCreate',
+        'insert',
+        'insertGetId',
+        'insertOrIgnore',
+        'insertOrIgnoreReturning',
+        'insertOrIgnoreUsing',
+        'insertUsing',
+        'push',
+        'pushQuietly',
         'restore',
+        'restoreQuietly',
+        'save',
+        'saveMany',
+        'saveManyQuietly',
+        'saveOrFail',
+        'saveOrIgnore',
+        'saveQuietly',
+        'sync',
+        'syncWithPivotValues',
+        'syncWithoutDetaching',
+        'toggle',
+        'touch',
+        'touchQuietly',
         'truncate',
+        'update',
+        'updateExistingPivot',
+        'updateFrom',
+        'updateOrFail',
+        'updateOrInsert',
+        'updateOrCreate',
+        'updateQuietly',
+        'upsert',
+    ];
+
+    /** @var list<string> */
+    private const array RAW_TABLE_WRITE_METHODS = [
+        'decrement',
+        'decrementEach',
+        'delete',
+        'increment',
+        'incrementEach',
+        'insert',
+        'insertGetId',
+        'insertOrIgnore',
+        'insertOrIgnoreReturning',
+        'insertOrIgnoreUsing',
+        'insertUsing',
+        'truncate',
+        'update',
+        'updateFrom',
+        'updateOrInsert',
+        'upsert',
     ];
 
     /** @var list<string> */
@@ -67,6 +132,8 @@ final readonly class PhpConsumerBoundaryScanner
     /** @var list<string> */
     private const array MODEL_RESULT_METHODS = [
         'create',
+        'createOrFirst',
+        'createQuietly',
         'find',
         'findOrFail',
         'first',
@@ -75,6 +142,8 @@ final readonly class PhpConsumerBoundaryScanner
         'firstOrCreate',
         'firstWhere',
         'sole',
+        'forceCreate',
+        'forceCreateQuietly',
         'updateOrCreate',
     ];
 
@@ -223,9 +292,16 @@ final readonly class PhpConsumerBoundaryScanner
         array $namespaceModules,
     ): array {
         $tokens = PhpToken::tokenize($source, TOKEN_PARSE);
-        $scopes = $this->tokenScopes($tokens);
+        $scopeMap = $this->tokenScopes($tokens);
+        $scopes = $scopeMap['tokens'];
+        $scopeParents = $scopeMap['parents'];
         $variableModels = [];
         $variableReturnModels = [];
+        $propertyReturnModels = $this->propertyPackageModelReturns(
+            $tokens,
+            $imports,
+            $namespaceModules,
+        );
         $findings = [];
         $adoptionMigration = preg_match('~(?:^|/)database/migrations/~', $path) === 1;
 
@@ -247,10 +323,19 @@ final readonly class PhpConsumerBoundaryScanner
                         );
                     $model ??= $rightHandSide === null
                         ? null
+                        : $this->assignedNewPackageModel(
+                            $tokens,
+                            $rightHandSide,
+                            $imports,
+                            $namespaceModules,
+                        );
+                    $model ??= $rightHandSide === null
+                        ? null
                         : $this->assignedPackageModelReturn(
                             $tokens,
                             $rightHandSide,
                             $variableReturnModels[$scope] ?? [],
+                            $propertyReturnModels,
                         );
 
                     $variableModels = $this->withVariableModel(
@@ -265,6 +350,27 @@ final readonly class PhpConsumerBoundaryScanner
                         $token->text,
                         null,
                     );
+
+                    continue;
+                }
+
+                if ($this->closureCaptureVariable($tokens, $index)) {
+                    $parentScope = $scopeParents[$scope] ?? null;
+
+                    if ($parentScope !== null) {
+                        $variableModels = $this->withVariableModel(
+                            $variableModels,
+                            $scope,
+                            $token->text,
+                            $variableModels[$parentScope][$token->text] ?? null,
+                        );
+                        $variableReturnModels = $this->withVariableModel(
+                            $variableReturnModels,
+                            $scope,
+                            $token->text,
+                            $variableReturnModels[$parentScope][$token->text] ?? null,
+                        );
+                    }
 
                     continue;
                 }
@@ -338,6 +444,32 @@ final readonly class PhpConsumerBoundaryScanner
                     line: $writeMethod->line,
                     symbol: $model['class'].'::'.$writeMethod->text,
                 );
+
+                continue;
+            }
+
+            if ($token->id === T_NEW) {
+                $classIndex = $this->nextMeaningfulToken($tokens, $index + 1);
+                $model = $classIndex === null
+                    ? null
+                    : $this->resolvedPackageModel(
+                        $tokens[$classIndex],
+                        $imports,
+                        $namespaceModules,
+                    );
+                $writeMethod = $model === null
+                    ? null
+                    : $this->chainedWriteMethod($tokens, $classIndex);
+
+                if ($model !== null && $writeMethod !== null) {
+                    $findings[] = $this->modelFinding(
+                        code: 'consumer.package_model_write',
+                        package: $model['package'],
+                        path: $path,
+                        line: $writeMethod->line,
+                        symbol: $model['class'].'::'.$writeMethod->text,
+                    );
+                }
 
                 continue;
             }
@@ -480,6 +612,34 @@ final readonly class PhpConsumerBoundaryScanner
     }
 
     /**
+     * Resolve a package model assigned from direct construction.
+     *
+     * @param  array<PhpToken>  $tokens
+     * @param  array<string, string>  $namespaceModules
+     * @return ModelReference|null
+     */
+    private function assignedNewPackageModel(
+        array $tokens,
+        int $rightHandSide,
+        PhpImportMap $imports,
+        array $namespaceModules,
+    ): ?array {
+        if ($tokens[$rightHandSide]->id !== T_NEW) {
+            return null;
+        }
+
+        $classIndex = $this->nextMeaningfulToken($tokens, $rightHandSide + 1);
+
+        return $classIndex === null
+            ? null
+            : $this->resolvedPackageModel(
+                $tokens[$classIndex],
+                $imports,
+                $namespaceModules,
+            );
+    }
+
+    /**
      * Resolve the package model returned by an imported package callable.
      *
      * @param  array<string, string>  $namespaceModules
@@ -514,22 +674,103 @@ final readonly class PhpConsumerBoundaryScanner
     }
 
     /**
+     * Resolve package-model return types for promoted or declared Action properties.
+     *
+     * @param  array<PhpToken>  $tokens
+     * @param  array<string, string>  $namespaceModules
+     * @return array<string, ModelReference>
+     */
+    private function propertyPackageModelReturns(
+        array $tokens,
+        PhpImportMap $imports,
+        array $namespaceModules,
+    ): array {
+        $properties = [];
+
+        foreach ($tokens as $index => $token) {
+            if ($token->id !== T_VARIABLE) {
+                continue;
+            }
+
+            $typeIndex = $this->previousMeaningfulToken($tokens, $index - 1);
+
+            if ($typeIndex === null || ! $this->propertyTypeDeclaration($tokens, $typeIndex)) {
+                continue;
+            }
+
+            $model = $this->resolvedPackageModelReturn(
+                $tokens[$typeIndex],
+                $imports,
+                $namespaceModules,
+            );
+
+            if ($model !== null) {
+                $properties[$token->text] = $model;
+            }
+        }
+
+        return $properties;
+    }
+
+    /**
+     * Return whether a type token belongs to a declared or promoted property.
+     *
+     * @param  array<PhpToken>  $tokens
+     */
+    private function propertyTypeDeclaration(array $tokens, int $typeIndex): bool
+    {
+        $index = $this->previousMeaningfulToken($tokens, $typeIndex - 1);
+
+        while ($index !== null) {
+            $token = $tokens[$index];
+
+            if (in_array($token->id, [T_PRIVATE, T_PROTECTED, T_PUBLIC], true)) {
+                return true;
+            }
+
+            if (! in_array($token->id, [T_READONLY, T_STATIC], true)) {
+                return false;
+            }
+
+            $index = $this->previousMeaningfulToken($tokens, $index - 1);
+        }
+
+        return false;
+    }
+
+    /**
      * Resolve an assignment from a typed package callable's execute result.
      *
      * @param  array<PhpToken>  $tokens
      * @param  array<string, ModelReference>  $variableReturnModels
+     * @param  array<string, ModelReference>  $propertyReturnModels
      * @return ModelReference|null
      */
     private function assignedPackageModelReturn(
         array $tokens,
         int $rightHandSide,
         array $variableReturnModels,
+        array $propertyReturnModels,
     ): ?array {
         $variable = $tokens[$rightHandSide];
         $model = $variable->id === T_VARIABLE
             ? ($variableReturnModels[$variable->text] ?? null)
             : null;
         $operator = $this->nextMeaningfulToken($tokens, $rightHandSide + 1);
+
+        if ($variable->id === T_VARIABLE
+            && $variable->text === '$this'
+            && $operator !== null
+            && $tokens[$operator]->id === T_OBJECT_OPERATOR) {
+            $propertyIndex = $this->nextMeaningfulToken($tokens, $operator + 1);
+            $property = $propertyIndex === null ? null : $tokens[$propertyIndex];
+
+            if ($property !== null && $property->id === T_STRING) {
+                $model = $propertyReturnModels['$'.$property->text] ?? null;
+                $operator = $this->nextMeaningfulToken($tokens, $propertyIndex + 1);
+            }
+        }
+
         $methodIndex = $operator === null
             ? null
             : $this->nextMeaningfulToken($tokens, $operator + 1);
@@ -637,11 +878,15 @@ final readonly class PhpConsumerBoundaryScanner
 
         if ($method === null
             || $method->id !== T_STRING
-            || $openingParenthesis === null
-            || $tokens[$openingParenthesis]->text !== '('
             || in_array($method->text, self::ALLOWED_IDENTITY_METHODS, true)
             || $this->allowedOwnerTraitMethod($modelClass, $method->text)) {
             return null;
+        }
+
+        if ($openingParenthesis === null || $tokens[$openingParenthesis]->text !== '(') {
+            return $this->relationMethod($modelClass, $method->text)
+                ? $method
+                : null;
         }
 
         if (in_array($method->text, self::INSTANCE_QUERY_METHODS, true)
@@ -729,11 +974,12 @@ final readonly class PhpConsumerBoundaryScanner
 
     /**
      * @param  array<PhpToken>  $tokens
-     * @return array<array-key, int>
+     * @return array{tokens: array<array-key, int>, parents: array<int, int>}
      */
     private function tokenScopes(array $tokens): array
     {
         $scopes = [];
+        $parents = [];
         $scope = 0;
         $nextScope = 0;
         $pendingFunction = null;
@@ -742,6 +988,7 @@ final readonly class PhpConsumerBoundaryScanner
         foreach ($tokens as $index => $token) {
             if ($token->id === T_FUNCTION) {
                 $pendingFunction = ++$nextScope;
+                $parents[$pendingFunction] = $scope;
             }
 
             $scopes[$index] = $pendingFunction ?? $scope;
@@ -760,7 +1007,37 @@ final readonly class PhpConsumerBoundaryScanner
             }
         }
 
-        return $scopes;
+        return [
+            'tokens' => $scopes,
+            'parents' => $parents,
+        ];
+    }
+
+    /**
+     * Return whether a variable is declared in a closure use list.
+     *
+     * @param  array<PhpToken>  $tokens
+     */
+    private function closureCaptureVariable(array $tokens, int $index): bool
+    {
+        $index = $this->previousMeaningfulToken($tokens, $index - 1);
+
+        while ($index !== null) {
+            $token = $tokens[$index];
+
+            if ($token->id === T_USE) {
+                return true;
+            }
+
+            if (in_array($token->id, [T_FUNCTION, T_FN], true)
+                || in_array($token->text, ['{', '}', ';'], true)) {
+                return false;
+            }
+
+            $index = $this->previousMeaningfulToken($tokens, $index - 1);
+        }
+
+        return false;
     }
 
     /**
@@ -778,8 +1055,9 @@ final readonly class PhpConsumerBoundaryScanner
         $enabled = array_fill_keys($enabledPackages, true);
         $findings = [];
         $reported = [];
+        $tokens = PhpToken::tokenize($source, TOKEN_PARSE);
 
-        foreach (PhpToken::tokenize($source, TOKEN_PARSE) as $token) {
+        foreach ($tokens as $index => $token) {
             if ($token->id !== T_CONSTANT_ENCAPSED_STRING) {
                 continue;
             }
@@ -797,13 +1075,19 @@ final readonly class PhpConsumerBoundaryScanner
                     '/(?:Schema|\\\\Illuminate\\\\Support\\\\Facades\\\\Schema)\\s*::\\s*create\\s*\\(\\s*[\'\"]'.preg_quote($table, '/').'[\'\"]/i',
                     $source,
                 ) === 1;
+            $writeMethod = $migration
+                ? $this->rawTableWriteMethod($tokens, $index)
+                : null;
             $code = match (true) {
                 $duplicate => 'consumer.duplicate_package_migration',
+                $writeMethod !== null => 'consumer.package_table_reference',
                 $migration => 'consumer.package_migration_reference',
                 default => 'consumer.package_table_reference',
             };
-            $severity = $migration && ! $duplicate ? 'warning' : 'error';
-            $reportedKey = $code.'|'.$table;
+            $severity = $migration && ! $duplicate && $writeMethod === null
+                ? 'warning'
+                : 'error';
+            $reportedKey = $code.'|'.$table.'|'.($writeMethod->text ?? 'reference');
 
             if (isset($reported[$reportedKey])
                 || (! $migration && ! $this->isRawTableReference($source, $table))) {
@@ -818,19 +1102,59 @@ final readonly class PhpConsumerBoundaryScanner
                 package: $package,
                 path: $path,
                 line: $token->line,
-                symbol: $table,
+                symbol: $writeMethod === null ? $table : $table.'::'.$writeMethod->text,
                 message: match ($code) {
                     'consumer.duplicate_package_migration' => 'A consumer migration creates a table owned by an enabled package.',
                     'consumer.package_migration_reference' => 'A consumer adoption migration references a package-owned table.',
-                    default => 'Application code references a package-owned table name directly.',
+                    default => $writeMethod === null
+                        ? 'Application code references a package-owned table name directly.'
+                        : 'A consumer adoption migration writes directly to a package-owned table.',
                 },
-                remediation: $duplicate
-                    ? 'Remove the duplicate migration and use the package migration ownership switch.'
-                    : 'Use the package table definition or a documented package API.',
+                remediation: match (true) {
+                    $duplicate => 'Remove the duplicate migration and use the package migration ownership switch.',
+                    $writeMethod !== null => 'Move the mutation behind a documented package Action or adoption API.',
+                    default => 'Use the package table definition or a documented package API.',
+                },
             );
         }
 
         return $findings;
+    }
+
+    /**
+     * Return the first raw query-builder mutation chained from a package table literal.
+     *
+     * @param  array<PhpToken>  $tokens
+     */
+    private function rawTableWriteMethod(array $tokens, int $index): ?PhpToken
+    {
+        $count = count($tokens);
+
+        while ($index < $count && $tokens[$index]->text !== ';') {
+            if ($tokens[$index]->id !== T_OBJECT_OPERATOR) {
+                $index++;
+
+                continue;
+            }
+
+            $methodIndex = $this->nextMeaningfulToken($tokens, $index + 1);
+            $method = $methodIndex === null ? null : $tokens[$methodIndex];
+            $openingParenthesis = $methodIndex === null
+                ? null
+                : $this->nextMeaningfulToken($tokens, $methodIndex + 1);
+
+            if ($method !== null
+                && $method->id === T_STRING
+                && $openingParenthesis !== null
+                && $tokens[$openingParenthesis]->text === '('
+                && in_array($method->text, self::RAW_TABLE_WRITE_METHODS, true)) {
+                return $method;
+            }
+
+            $index++;
+        }
+
+        return null;
     }
 
     private function isRawTableReference(string $source, string $table): bool

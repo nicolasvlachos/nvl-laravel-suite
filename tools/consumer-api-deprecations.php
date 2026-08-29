@@ -2,11 +2,24 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+use Nvl\Auth\Actions\Rbac\ListPermissionsAction;
+use Nvl\Auth\Actions\Rbac\ListRolesAction;
 use Nvl\Auth\Data\Display\PermissionListItemData;
 use Nvl\Auth\Data\Display\RoleListItemData;
+use Nvl\Content\Actions\GetContentBlockAction;
+use Nvl\Content\Actions\ListContentBlocksAction;
+use Nvl\Content\Actions\ListContentPlacementsAction;
+use Nvl\Content\Content;
 use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Data\ContentPlacementData;
+use Nvl\Content\Facades\Content as ContentFacade;
+use Nvl\Pages\Actions\GetPageAction;
+use Nvl\Pages\Actions\ListPagesAction;
 use Nvl\Pages\Data\PageData;
+use Nvl\Seo\Actions\GetSeoProfileAction;
+use Nvl\Seo\Actions\ListSeoProfilesAction;
 use Nvl\Seo\Data\SeoProfileData;
 use Nvl\Suite\Console\Commands\SuiteConfigureCommand;
 
@@ -29,6 +42,17 @@ return [
             'new_return' => 'omitted => disabled unless dependency-enabled by an explicit root',
             'replacement' => SuiteConfigureCommand::class,
             'replacement_api' => 'php artisan nvl:suite:configure --profile=full-suite --full --write --force',
+            'contract' => [
+                'surface' => 'command',
+                'class' => SuiteConfigureCommand::class,
+                'method' => 'handle',
+                'parameters' => [
+                    'Nvl\\Suite\\Services\\SuiteConfigurationRenderer $renderer',
+                    'Nvl\\Suite\\Support\\SuiteModuleCatalog $catalog',
+                ],
+                'return_type' => 'int',
+                'command_signature' => 'nvl:suite:configure {--profile= : Start with a documented installation profile} {--add=* : Add a module and its transitive dependencies} {--remove=* : Exclude a module when no retained root requires it} {--minimal : Render only profile, include, and exclude} {--full : Render every resolved module boolean} {--path= : Destination inside the application; defaults to config/nvl-suite.php} {--write : Atomically write the destination instead of previewing it} {--force : Allow --write to replace an existing file after showing its diff} {--format=table : Output format: table or json}',
+            ],
             'test_evidence' => [
                 'tests/Feature/SuiteDiagnosticsTest.php',
                 'tests/Feature/SuiteConfigurationWriterTest.php',
@@ -44,6 +68,18 @@ return [
             'new_return' => 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator<int, Nvl\\Auth\\Data\\Display\\RoleListItemData>',
             'replacement' => RoleListItemData::class,
             'replacement_api' => 'Nvl\\Auth\\Actions\\Rbac\\ListRolesAction::execute(Authenticatable $actor, ?string $search = null, int $perPage = 25)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => ListRolesAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Illuminate\\Contracts\\Auth\\Authenticatable $actor',
+                    '?string $search = null',
+                    'int $perPage = 25',
+                ],
+                'return_type' => LengthAwarePaginator::class,
+                'generic_return' => 'LengthAwarePaginator<int, RoleListItemData>',
+            ],
             'test_evidence' => ['packages/nvl/auth/tests/Feature/RbacManagementTest.php'],
             'guide_anchor' => 'auth-role-and-permission-list-results',
         ],
@@ -56,6 +92,19 @@ return [
             'new_return' => 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator<int, Nvl\\Auth\\Data\\Display\\PermissionListItemData>',
             'replacement' => PermissionListItemData::class,
             'replacement_api' => 'Nvl\\Auth\\Actions\\Rbac\\ListPermissionsAction::execute(Authenticatable $actor, ?string $search = null, ?string $group = null, int $perPage = 25)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => ListPermissionsAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Illuminate\\Contracts\\Auth\\Authenticatable $actor',
+                    '?string $search = null',
+                    '?string $group = null',
+                    'int $perPage = 25',
+                ],
+                'return_type' => LengthAwarePaginator::class,
+                'generic_return' => 'LengthAwarePaginator<int, PermissionListItemData>',
+            ],
             'test_evidence' => ['packages/nvl/auth/tests/Feature/RbacManagementTest.php'],
             'guide_anchor' => 'auth-role-and-permission-list-results',
         ],
@@ -68,6 +117,16 @@ return [
             'new_return' => 'Nvl\\Pages\\Data\\PageData',
             'replacement' => PageData::class,
             'replacement_api' => 'Nvl\\Pages\\Actions\\GetPageAction::execute(Page|string $page, PageActorData $actor): PageData',
+            'contract' => [
+                'surface' => 'method',
+                'class' => GetPageAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Nvl\\Pages\\Models\\Page|string $page',
+                    'Nvl\\Pages\\Data\\PageActorData $actor',
+                ],
+                'return_type' => PageData::class,
+            ],
             'test_evidence' => ['packages/nvl/pages/tests/Feature/PagesPackageTest.php'],
             'guide_anchor' => 'pages-read-results',
         ],
@@ -80,6 +139,19 @@ return [
             'new_return' => 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator<int, Nvl\\Pages\\Data\\PageData>',
             'replacement' => PageData::class,
             'replacement_api' => 'Nvl\\Pages\\Actions\\ListPagesAction::execute(FilterSet $filters, string $site, PageActorData $actor, int $perPage = 25)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => ListPagesAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Nvl\\Filterable\\Data\\FilterSet $filters',
+                    'string $site',
+                    'Nvl\\Pages\\Data\\PageActorData $actor',
+                    'int $perPage = 25',
+                ],
+                'return_type' => LengthAwarePaginator::class,
+                'generic_return' => 'LengthAwarePaginator<int, PageData>',
+            ],
             'test_evidence' => ['packages/nvl/pages/tests/Feature/PagesPackageTest.php'],
             'guide_anchor' => 'pages-read-results',
         ],
@@ -92,6 +164,16 @@ return [
             'new_return' => 'Nvl\\Content\\Data\\ContentBlockData',
             'replacement' => ContentBlockData::class,
             'replacement_api' => 'Nvl\\Content\\Actions\\GetContentBlockAction::execute(ContentBlock|string $block, ContentActorData $actor): ContentBlockData',
+            'contract' => [
+                'surface' => 'method',
+                'class' => GetContentBlockAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Nvl\\Content\\Models\\ContentBlock|string $block',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                ],
+                'return_type' => ContentBlockData::class,
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -104,6 +186,18 @@ return [
             'new_return' => 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator<int, Nvl\\Content\\Data\\ContentBlockData>',
             'replacement' => ContentBlockData::class,
             'replacement_api' => 'Nvl\\Content\\Actions\\ListContentBlocksAction::execute(FilterSet $filterSet, ContentActorData $actor, int $perPage = 25)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => ListContentBlocksAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Nvl\\Filterable\\Data\\FilterSet $filterSet',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                    'int $perPage = 25',
+                ],
+                'return_type' => LengthAwarePaginator::class,
+                'generic_return' => 'LengthAwarePaginator<int, ContentBlockData>',
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -116,6 +210,19 @@ return [
             'new_return' => 'Illuminate\\Support\\Collection<int, Nvl\\Content\\Data\\ContentPlacementData>',
             'replacement' => ContentPlacementData::class,
             'replacement_api' => 'Nvl\\Content\\Actions\\ListContentPlacementsAction::execute(Model&ContentOwner $owner, string $group, ContentActorData $actor, bool $includeBlocks = false)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => ListContentPlacementsAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner',
+                    'string $group',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                    'bool $includeBlocks = false',
+                ],
+                'return_type' => Collection::class,
+                'generic_return' => 'Collection<int, ContentPlacementData>',
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -128,6 +235,16 @@ return [
             'new_return' => 'Nvl\\Content\\Data\\ContentBlockData',
             'replacement' => ContentBlockData::class,
             'replacement_api' => 'Nvl\\Content\\Content::block(ContentBlock|string $block, ContentActorData $actor): ContentBlockData',
+            'contract' => [
+                'surface' => 'method',
+                'class' => Content::class,
+                'method' => 'block',
+                'parameters' => [
+                    'Nvl\\Content\\Models\\ContentBlock|string $block',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                ],
+                'return_type' => ContentBlockData::class,
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -140,6 +257,18 @@ return [
             'new_return' => 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator<int, Nvl\\Content\\Data\\ContentBlockData>',
             'replacement' => ContentBlockData::class,
             'replacement_api' => 'Nvl\\Content\\Content::blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => Content::class,
+                'method' => 'blocks',
+                'parameters' => [
+                    'Nvl\\Filterable\\Data\\FilterSet $filters',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                    'int $perPage = 25',
+                ],
+                'return_type' => LengthAwarePaginator::class,
+                'generic_return' => 'LengthAwarePaginator<int, ContentBlockData>',
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -152,6 +281,18 @@ return [
             'new_return' => 'Illuminate\\Support\\Collection<int, Nvl\\Content\\Data\\ContentPlacementData>',
             'replacement' => ContentPlacementData::class,
             'replacement_api' => 'Nvl\\Content\\Content::placements(Model&ContentOwner $owner, string $group, ContentActorData $actor)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => Content::class,
+                'method' => 'placements',
+                'parameters' => [
+                    'Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner',
+                    'string $group',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                ],
+                'return_type' => Collection::class,
+                'generic_return' => 'Collection<int, ContentPlacementData>',
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -164,6 +305,18 @@ return [
             'new_return' => 'Nvl\\Content\\Data\\ContentBlockData',
             'replacement' => ContentBlockData::class,
             'replacement_api' => 'Nvl\\Content\\Facades\\Content::block(ContentBlock|string $block, ContentActorData $actor): ContentBlockData',
+            'contract' => [
+                'surface' => 'facade',
+                'class' => ContentFacade::class,
+                'target_class' => Content::class,
+                'method' => 'block',
+                'parameters' => [
+                    'Nvl\\Content\\Models\\ContentBlock|string $block',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                ],
+                'return_type' => ContentBlockData::class,
+                'facade_declaration' => '@method static ContentBlockData block(ContentBlock|string $block, ContentActorData $actor)',
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -176,6 +329,20 @@ return [
             'new_return' => 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator<int, Nvl\\Content\\Data\\ContentBlockData>',
             'replacement' => ContentBlockData::class,
             'replacement_api' => 'Nvl\\Content\\Facades\\Content::blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)',
+            'contract' => [
+                'surface' => 'facade',
+                'class' => ContentFacade::class,
+                'target_class' => Content::class,
+                'method' => 'blocks',
+                'parameters' => [
+                    'Nvl\\Filterable\\Data\\FilterSet $filters',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                    'int $perPage = 25',
+                ],
+                'return_type' => LengthAwarePaginator::class,
+                'generic_return' => 'LengthAwarePaginator<int, ContentBlockData>',
+                'facade_declaration' => '@method static LengthAwarePaginator<int, ContentBlockData> blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)',
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -188,6 +355,20 @@ return [
             'new_return' => 'Illuminate\\Support\\Collection<int, Nvl\\Content\\Data\\ContentPlacementData>',
             'replacement' => ContentPlacementData::class,
             'replacement_api' => 'Nvl\\Content\\Facades\\Content::placements(Model&ContentOwner $owner, string $group, ContentActorData $actor)',
+            'contract' => [
+                'surface' => 'facade',
+                'class' => ContentFacade::class,
+                'target_class' => Content::class,
+                'method' => 'placements',
+                'parameters' => [
+                    'Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner',
+                    'string $group',
+                    'Nvl\\Content\\Data\\ContentActorData $actor',
+                ],
+                'return_type' => Collection::class,
+                'generic_return' => 'Collection<int, ContentPlacementData>',
+                'facade_declaration' => '@method static Collection<int, ContentPlacementData> placements(Model&ContentOwner $owner, string $group, ContentActorData $actor)',
+            ],
             'test_evidence' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
             'guide_anchor' => 'content-read-results',
         ],
@@ -200,6 +381,15 @@ return [
             'new_return' => 'Nvl\\Seo\\Data\\SeoProfileData',
             'replacement' => SeoProfileData::class,
             'replacement_api' => 'Nvl\\Seo\\Actions\\GetSeoProfileAction::execute(SeoProfile|string $profile): SeoProfileData',
+            'contract' => [
+                'surface' => 'method',
+                'class' => GetSeoProfileAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Nvl\\Seo\\Models\\SeoProfile|string $profile',
+                ],
+                'return_type' => SeoProfileData::class,
+            ],
             'test_evidence' => ['packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php'],
             'guide_anchor' => 'seo-read-results',
         ],
@@ -212,6 +402,16 @@ return [
             'new_return' => 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator<int, Nvl\\Seo\\Data\\SeoProfileData>',
             'replacement' => SeoProfileData::class,
             'replacement_api' => 'Nvl\\Seo\\Actions\\ListSeoProfilesAction::execute(SeoProfileQuery $query)',
+            'contract' => [
+                'surface' => 'method',
+                'class' => ListSeoProfilesAction::class,
+                'method' => 'execute',
+                'parameters' => [
+                    'Nvl\\Seo\\Data\\SeoProfileQuery $query',
+                ],
+                'return_type' => LengthAwarePaginator::class,
+                'generic_return' => 'LengthAwarePaginator<int, SeoProfileData>',
+            ],
             'test_evidence' => ['packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php'],
             'guide_anchor' => 'seo-read-results',
         ],

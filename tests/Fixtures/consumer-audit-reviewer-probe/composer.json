@@ -1,0 +1,12 @@
+{
+    "name": "nvl/consumer-audit-reviewer-probe",
+    "type": "project",
+    "require": {
+        "nvl/laravel-suite": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Consumer\\": "app/"
+        }
+    }
+}

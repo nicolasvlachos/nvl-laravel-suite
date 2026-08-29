@@ -115,6 +115,59 @@ function expectedConsumerApiDeprecations(): array
     ];
 }
 
+/**
+ * Render one reflected parameter as catalog metadata.
+ */
+function consumerDeprecationParameterContract(ReflectionParameter $parameter): string
+{
+    $contract = ($parameter->hasType() ? (string) $parameter->getType().' ' : '')
+        .'$'.$parameter->getName();
+
+    if (! $parameter->isDefaultValueAvailable()) {
+        return $contract;
+    }
+
+    $default = $parameter->getDefaultValue();
+    $rendered = match (true) {
+        $default === null => 'null',
+        is_bool($default) => $default ? 'true' : 'false',
+        is_string($default) => "'".$default."'",
+        default => (string) $default,
+    };
+
+    return $contract.' = '.$rendered;
+}
+
+/**
+ * Render the method declaration shape stored by the package public-contract baseline.
+ */
+function consumerDeprecationPublicMethodContract(ReflectionMethod $method): string
+{
+    $parameters = array_map(
+        static fn (ReflectionParameter $parameter): string => str_replace(
+            ' = ',
+            '=',
+            consumerDeprecationParameterContract($parameter),
+        ),
+        $method->getParameters(),
+    );
+
+    return 'public function '.$method->getName().'('.implode(', ', $parameters).'): '
+        .($method->hasReturnType() ? (string) $method->getReturnType() : 'mixed');
+}
+
+/**
+ * Shorten reflected class names to the readable type names used by the guide.
+ */
+function consumerDeprecationGuideParameterContract(string $parameter): string
+{
+    return preg_replace(
+        '/(?:[A-Z][A-Za-z0-9_]*\\\\)+([A-Za-z_][A-Za-z0-9_]*)/',
+        '$1',
+        $parameter,
+    ) ?? $parameter;
+}
+
 it('catalogs every 2.0 consumer break with exact final 1.x replacement metadata', function (): void {
     $root = dirname(__DIR__, 2);
     $catalogPath = $root.'/tools/consumer-api-deprecations.php';
@@ -153,6 +206,85 @@ it('catalogs every 2.0 consumer break with exact final 1.x replacement metadata'
         foreach ($entry['test_evidence'] as $evidence) {
             expect($evidence)->toBeString()->not->toBeEmpty()
                 ->and($root.'/'.$evidence)->toBeFile();
+        }
+    }
+});
+
+it('binds every replacement API to reflected methods and package public contracts', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/consumer-api-deprecations.php';
+    $publicContracts = json_decode(
+        file_get_contents($root.'/tools/package-contracts.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+
+    foreach ($catalog['deprecations'] ?? [] as $symbol => $entry) {
+        $contract = $entry['contract'] ?? null;
+
+        expect($contract)->toBeArray()
+            ->and($contract['surface'] ?? null)->toBeIn([
+                'command',
+                'method',
+                'facade',
+            ])
+            ->and($contract['class'] ?? null)->toBeString()
+            ->and(class_exists($contract['class'] ?? ''))->toBeTrue()
+            ->and($contract['method'] ?? null)->toBeString()->not->toBeEmpty()
+            ->and($contract['parameters'] ?? null)->toBeArray()
+            ->and($contract['return_type'] ?? null)->toBeString()->not->toBeEmpty();
+
+        $targetClass = $contract['target_class'] ?? $contract['class'];
+        $method = new ReflectionMethod($targetClass, $contract['method']);
+        $parameters = array_map(
+            consumerDeprecationParameterContract(...),
+            $method->getParameters(),
+        );
+
+        expect($method->isPublic())->toBeTrue()
+            ->and($parameters)->toBe($contract['parameters'])
+            ->and((string) $method->getReturnType())->toBe($contract['return_type']);
+
+        if ($contract['surface'] === 'command') {
+            expect($publicContracts['suite']['commands'][$contract['class']] ?? null)
+                ->toBe($contract['command_signature'] ?? null)
+                ->and($entry['replacement_api'])->toContain('nvl:suite:configure');
+
+            continue;
+        }
+
+        $guideParameters = array_map(
+            consumerDeprecationGuideParameterContract(...),
+            $parameters,
+        );
+        $guideSignature = $contract['class'].'::'.$contract['method']
+            .'('.implode(', ', $guideParameters).')';
+
+        expect($symbol)->toBe($contract['class'].'::'.$contract['method'])
+            ->and($entry['replacement_api'])->toStartWith($guideSignature);
+
+        $symbolContracts = $publicContracts['packages'][$entry['package']]['symbols'][$contract['class']] ?? null;
+
+        expect($symbolContracts)->toBeArray();
+
+        if ($contract['surface'] === 'facade') {
+            $declaration = $contract['facade_declaration'] ?? null;
+            $docComment = (new ReflectionClass($contract['class']))->getDocComment();
+
+            expect($declaration)->toBeString()->not->toBeEmpty()
+                ->and($docComment)->toBeString()->toContain($declaration)
+                ->and($symbolContracts)->toContain($declaration);
+        } else {
+            expect($symbolContracts)->toContain(
+                consumerDeprecationPublicMethodContract($method),
+            );
+        }
+
+        $genericReturn = $contract['generic_return'] ?? null;
+
+        if ($genericReturn !== null) {
+            expect($method->getDocComment())->toBeString()
+                ->toContain('@return '.$genericReturn);
         }
     }
 });

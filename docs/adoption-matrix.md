@@ -32,8 +32,13 @@ php artisan nvl:suite:consumer-audit --strict
 
 The first command is a non-mutating preview. The second is the only command here
 that writes, and it atomically replaces the selected in-application PHP config.
-The two checks are read-only. They exit `0` on success, `1` for findings, and `2`
-for invalid input or policy. Before leaving 1.x, render and review the complete
+The two checks are read-only. They exit `0` when no finding is blocking, exit
+`1` only when a finding is blocking under that command policy, and exit `2` for
+invalid input or policy. Consumer-audit errors are always blocking;
+`consumer.implicit_module_decision` can become blocking under `--strict` when
+explicit decisions are required. The advisory warning
+`consumer.package_migration_reference` remains advisory and visible without
+changing the exit code. Before leaving 1.x, render and review the complete
 module map, then set `adoption.require_explicit_module_decisions=true`. In 2.0,
 an omitted key in a published legacy module map is requested-disabled unless an
 explicit root enables it through dependency closure.

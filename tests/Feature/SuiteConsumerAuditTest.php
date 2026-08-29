@@ -89,6 +89,69 @@ it('classifies every unallowlisted package model query as an error', function ()
             ->all())->toBe(['Nvl\\Auth\\Models\\Role::permissions']);
 });
 
+it('matches the reviewer probe for lazy closure and property Action query dataflow', function (): void {
+    $findings = collect(resolve(SuiteConsumerAuditor::class)->audit(
+        base_path('tests/Fixtures/consumer-audit-reviewer-probe'),
+    ));
+
+    expect($findings
+        ->where('path', 'app/ConsumerBoundaryProbe.php')
+        ->where('code', 'consumer.package_model_query')
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->all())->toBe([
+            'Nvl\\Auth\\Models\\Role::permissions',
+            'Nvl\\Auth\\Models\\Role::permissions',
+            'Nvl\\Auth\\Models\\Role::permissions',
+        ]);
+});
+
+it('reports newly instantiated and quiet package model writes', function (): void {
+    $symbols = collect(consumerAuditFixtureFindings())
+        ->where('path', 'app/UnsafeQuietRoleWriter.php')
+        ->where('code', 'consumer.package_model_write')
+        ->pluck('symbol')
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($symbols)->toBe([
+        'Nvl\\Auth\\Models\\Role::createQuietly',
+        'Nvl\\Auth\\Models\\Role::deleteQuietly',
+        'Nvl\\Auth\\Models\\Role::pushQuietly',
+        'Nvl\\Auth\\Models\\Role::saveQuietly',
+        'Nvl\\Auth\\Models\\Role::touchQuietly',
+        'Nvl\\Auth\\Models\\Role::updateQuietly',
+        'Nvl\\Pages\\Models\\Page::forceDeleteQuietly',
+        'Nvl\\Pages\\Models\\Page::restoreQuietly',
+    ]);
+});
+
+it('keeps adoption reads advisory while failing raw package table writes', function (): void {
+    $findings = collect(consumerAuditFixtureFindings());
+    $read = $findings
+        ->where('path', 'database/migrations/2026_01_02_000000_reference_auth_roles_table.php')
+        ->first();
+    $writes = $findings
+        ->where('path', 'database/migrations/2026_01_05_000000_write_auth_table_for_adoption.php')
+        ->where('code', 'consumer.package_table_reference')
+        ->where('severity', 'error')
+        ->pluck('symbol')
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($read)
+        ->not->toBeNull()
+        ->code->toBe('consumer.package_migration_reference')
+        ->severity->toBe('warning')
+        ->and($writes)->toBe([
+            'nvl_auth_roles::delete',
+            'nvl_auth_roles::insert',
+            'nvl_auth_roles::update',
+        ]);
+});
+
 it('preserves the explicit allowed consumer model classifications', function (): void {
     $findings = collect(consumerAuditFixtureFindings());
 

@@ -5,7 +5,8 @@ set -euo pipefail
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 fixture_root="$repository_root/tools/fixtures/auth-production-consumer"
 consumer_workspace="$(mktemp -d "${TMPDIR:-/tmp}/nvl-auth-consumer.XXXXXX")"
-artifact_version="1.99.0"
+artifact_version="${NVL_CANDIDATE_VERSION:-1.99.0}"
+candidate_archive="${NVL_CANDIDATE_ARCHIVE:-}"
 
 cleanup() {
     rm -rf "$consumer_workspace"
@@ -14,12 +15,18 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$consumer_workspace/archives" "$consumer_workspace/artifact"
-(
-    cd "$repository_root"
-    COMPOSER_ROOT_VERSION="$artifact_version" composer archive \
-        --format=zip \
-        --dir="$consumer_workspace/archives"
-)
+
+if [[ -n "$candidate_archive" ]]; then
+    test -f "$candidate_archive"
+    cp "$candidate_archive" "$consumer_workspace/archives/"
+else
+    (
+        cd "$repository_root"
+        COMPOSER_ROOT_VERSION="$artifact_version" composer archive \
+            --format=zip \
+            --dir="$consumer_workspace/archives"
+    )
+fi
 
 archive="$(find "$consumer_workspace/archives" -maxdepth 1 -name 'nvl-laravel-suite-*.zip' -print -quit)"
 

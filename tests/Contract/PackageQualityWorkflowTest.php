@@ -476,15 +476,18 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
     $php85 = $jobs['php85'] ?? [];
     $archive = $jobs['archive'] ?? [];
     $previousMinor = $jobs['previous-minor'] ?? [];
+    $proofConsumers = $jobs['proof-consumers'] ?? [];
     $publish = $jobs['publish-release'] ?? [];
     $validateCommands = workflowCommands($jobs['validate'] ?? []);
     $php85Commands = workflowCommands($php85);
     $archiveCommands = workflowCommands($archive);
     $previousMinorCommands = workflowCommands($previousMinor);
+    $proofConsumerCommands = workflowCommands($proofConsumers);
     $publishCommands = workflowCommands($publish);
     $php85Setup = collect($php85['steps'] ?? [])->firstWhere('uses', SUITE_SETUP_PHP_ACTION);
     $previousMinorCheckout = collect($previousMinor['steps'] ?? [])->firstWhere('uses', SUITE_CHECKOUT_ACTION);
     $previousMinorDownload = collect($previousMinor['steps'] ?? [])->firstWhere('uses', SUITE_DOWNLOAD_ARTIFACT_ACTION);
+    $proofConsumerDownload = collect($proofConsumers['steps'] ?? [])->firstWhere('uses', SUITE_DOWNLOAD_ARTIFACT_ACTION);
     $publishCheckout = collect($publish['steps'] ?? [])->firstWhere('uses', SUITE_CHECKOUT_ACTION);
 
     expect(array_keys($jobs))->toBe([
@@ -493,6 +496,7 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
         'php85',
         'archive',
         'previous-minor',
+        'proof-consumers',
         'publish-release',
     ])
         ->and($validateCommands)->toContain(
@@ -551,7 +555,21 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
             'NVL_CANDIDATE_ARCHIVE="$candidate_archive"',
             'NVL_CANDIDATE_VERSION="$PACKAGE_VERSION"',
         )
-        ->and($publish['needs'] ?? null)->toBe('previous-minor')
+        ->and($proofConsumers['needs'] ?? null)->toBe('archive')
+        ->and($proofConsumers['strategy']['matrix']['consumer'] ?? null)->toBe([
+            'auth',
+            'content',
+        ])
+        ->and($proofConsumerDownload)->toBeArray()
+        ->and($proofConsumerCommands)->toContain(
+            'NVL_CANDIDATE_ARCHIVE="$candidate_archive"',
+            'NVL_CANDIDATE_VERSION="$PACKAGE_VERSION"',
+            'tools/run-${{ matrix.consumer }}-production-consumer.sh',
+        )
+        ->and($publish['needs'] ?? null)->toBe([
+            'previous-minor',
+            'proof-consumers',
+        ])
         ->and($publishCommands)->toContain(
             'git read-tree --empty',
             'git --work-tree="$release_tree" add --all --force -- .',
@@ -573,6 +591,26 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
             'actions/deploy-pages',
             'actions/upload-pages-artifact',
         );
+});
+
+it('lets both proof-consumer runners reuse the candidate archive without rebuilding it', function (): void {
+    $root = dirname(__DIR__, 2);
+
+    foreach (['auth', 'content'] as $consumer) {
+        $script = (string) file_get_contents(
+            $root.'/tools/run-'.$consumer.'-production-consumer.sh',
+        );
+
+        expect($script)->toContain(
+            'artifact_version="${NVL_CANDIDATE_VERSION:-1.99.0}"',
+            'candidate_archive="${NVL_CANDIDATE_ARCHIVE:-}"',
+            'if [[ -n "$candidate_archive" ]]',
+            'cp "$candidate_archive" "$consumer_workspace/archives/"',
+        )->not->toContain(
+            '--ignore-platform-reqs',
+            'sleep ',
+        );
+    }
 });
 
 it('rehearses the prepared final 1.x archive through the complete 2.0 consumer boundary', function (): void {

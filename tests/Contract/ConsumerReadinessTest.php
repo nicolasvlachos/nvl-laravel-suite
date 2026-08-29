@@ -124,6 +124,20 @@ it('keeps one canonical four-class consumer boundary across machine and rendered
     }
 });
 
+it('documents blocking and advisory consumer-audit exit behavior exactly', function (): void {
+    $adoption = (string) file_get_contents(
+        dirname(__DIR__, 2).'/docs/adoption-matrix.md',
+    );
+
+    expect($adoption)->toContain(
+        'only when a finding is blocking under that command policy',
+        '`consumer.implicit_module_decision` can become blocking under `--strict`',
+        '`consumer.package_migration_reference` remains advisory',
+        'exit `2` for',
+        'invalid input or policy',
+    )->not->toContain('`1` for findings');
+});
+
 it('keeps development guardrail metadata synchronized with the shipped runtime catalog', function (): void {
     $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
     $runtime = new SuiteModuleCatalog(new Repository([
