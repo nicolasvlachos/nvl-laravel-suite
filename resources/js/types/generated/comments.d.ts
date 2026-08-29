@@ -81,7 +81,7 @@ anonymizedAt: string | null,
 anonymizationReason: string | null,
 createdAt: string,
 updatedAt: string,
-document?: Record<string, unknown>,
+document?: Nvl.Comments.Data.CommentViewerDocumentData,
 mentions?: Nvl.Comments.Data.CommentMentionData[],
 };
 export type CommentMentionChangeData = {
@@ -182,6 +182,15 @@ export type CommentTargetReportQueueData = {
 report: Nvl.Comments.Data.CommentReportManagementData,
 comment: Nvl.Comments.Data.CommentManagementData,
 };
+export type CommentViewerDocumentBlockData = {
+type: 'paragraph',
+children: Array<Nvl.Comments.Data.CommentViewerDocumentNodeData>,
+};
+export type CommentViewerDocumentData = {
+version: 1,
+blocks: Array<Nvl.Comments.Data.CommentViewerDocumentBlockData>,
+};
+export type CommentViewerDocumentNodeData = { type: 'text'; text: string } | { type: 'hard_break' } | { type: 'mention'; tokenId: string; resource: string; state: Nvl.Comments.Enums.CommentMentionState; label: string };
 export type MemberCommentData = {
 id: string,
 rootId: string | null,
@@ -207,7 +216,7 @@ isAuthor?: boolean,
 abilities?: Nvl.Comments.Data.CommentAbilitiesData,
 createdAt: string,
 updatedAt: string,
-document?: Record<string, unknown>,
+document?: Nvl.Comments.Data.CommentViewerDocumentData,
 mentions?: Nvl.Comments.Data.CommentMentionData[],
 };
 export type MemberCommentReactionSummaryData = {
@@ -236,7 +245,7 @@ author?: Nvl.Comments.Data.CommentAuthorData | null,
 reactions?: Nvl.Comments.Data.CommentReactionSummaryData[],
 createdAt: string,
 updatedAt: string,
-document?: Record<string, unknown>,
+document?: Nvl.Comments.Data.CommentViewerDocumentData,
 mentions?: Nvl.Comments.Data.CommentMentionData[],
 };
 namespace Mutations {
@@ -247,10 +256,15 @@ reason: string,
 export type AttachCommentMediaData = {
 mediaId: string,
 };
-export type CommentDocumentData = {
-version: number,
-blocks: Array<Record<string, unknown>>,
+export type CommentDocumentBlockData = {
+type: 'paragraph',
+children: Array<Nvl.Comments.Data.Mutations.CommentDocumentNodeData>,
 };
+export type CommentDocumentData = {
+version: 1,
+blocks: Array<Nvl.Comments.Data.Mutations.CommentDocumentBlockData>,
+};
+export type CommentDocumentNodeData = { type: 'text'; text: string } | { type: 'hard_break' } | { type: 'mention'; tokenId: string; resource: string; id: string | number };
 export type CreateCommentData = {
 body: string,
 format?: Nvl.Comments.Enums.CommentFormat,
