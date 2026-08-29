@@ -72,6 +72,7 @@ use Nvl\Content\Services\ContentRenderResources;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Tests\Fixtures\TestContentOwner;
 use Nvl\Content\Tests\Fixtures\TestIntegerContentOwner;
+use Nvl\Content\Tests\Fixtures\TestStringContentOwner;
 use Nvl\Content\Validation\ContentValidationContext;
 use Nvl\Content\Validation\ContentValueValidator;
 use Nvl\Filterable\Data\FilterCriterion;
@@ -631,8 +632,14 @@ it('uses serialization-safe canonical keys for mixed string and integer owners',
         'integer-page',
         TestIntegerContentOwner::class,
     );
-    TestContentOwner::query()->forceCreate(['id' => '1', 'name' => 'String one']);
-    $stringOwner = TestContentOwner::query()->findOrFail('1');
+    app(ContentOwnerRegistry::class)->register(
+        'string-page',
+        TestStringContentOwner::class,
+    );
+    $stringOwner = TestStringContentOwner::query()->create([
+        'id' => '1',
+        'name' => 'String one',
+    ]);
     $integerOwner = TestIntegerContentOwner::query()->create(['name' => 'Integer one']);
 
     expect($integerOwner->getKey())->toBe(1);
@@ -643,7 +650,7 @@ it('uses serialization-safe canonical keys for mixed string and integer owners',
         ContentActorData::system(),
     );
 
-    expect(array_keys($summaries))->toBe(['page:1', 'integer-page:1'])
+    expect(array_keys($summaries))->toBe(['string-page:1', 'integer-page:1'])
         ->and(json_encode($summaries, JSON_THROW_ON_ERROR))->toStartWith('{');
 });
 
