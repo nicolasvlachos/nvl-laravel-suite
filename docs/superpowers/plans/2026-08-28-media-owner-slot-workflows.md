@@ -313,7 +313,7 @@ with 3,219 assertions, Pint, and PHPStan.
 - Consumes: CR-17/18 operation ledger and Actions.
 - Produces: bounded pruning, Doctor checks, consumer guidance, and release evidence.
 
-- [ ] **Step 1: Write failing command and Doctor tests**
+- [x] **Step 1: Write failing command and Doctor tests**
 
 ```php
 expect(Artisan::call('nvl:media:owner-slots:prune', [
@@ -326,20 +326,20 @@ Assert production requires `--force` only when deleting non-expired rows,
 normal pruning never exceeds chunk 1,000, and Doctor checks schema/table/index,
 retention configuration, lock store, and registered owner slot integrity.
 
-- [ ] **Step 2: Run focused operational tests and verify command/checks fail**
+- [x] **Step 2: Run focused operational tests and verify command/checks fail**
 
 Run: `vendor/bin/pest --configuration=packages/nvl/media/phpunit.xml.dist --compact packages/nvl/media/tests/Feature/MediaDoctorTest.php packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php`
 
 Expected: FAIL because pruning and Doctor checks are absent.
 
-- [ ] **Step 3: Implement bounded pruning and diagnostics**
+- [x] **Step 3: Implement bounded pruning and diagnostics**
 
 Add `owner_slots.idempotency.retention_days` default 7 and `prune_chunk` default
 500 with hard maximum 1,000. Delete only completed/failed rows older than the
 cutoff in deterministic ID chunks. Doctor reports missing table/indexes,
 invalid bounds, and a cache store without atomic locks.
 
-- [ ] **Step 4: Document the KPO replacement pattern**
+- [x] **Step 4: Document the KPO replacement pattern**
 
 Include exact slot declaration and Action calls:
 
@@ -355,7 +355,7 @@ $document = $replaceOwnerMediaSlot->execute($actor, $report, 'document', $mediaI
 Explain staging rules, custom acceptor limitation, shared versus exclusive
 cleanup, idempotency, queue/file-effect behavior, and migration ownership.
 
-- [ ] **Step 5: Run package and suite contracts**
+- [x] **Step 5: Run package and suite contracts**
 
 Run: `php tools/run-package-quality.php media`
 
@@ -365,12 +365,28 @@ Run: `composer contracts:check` and `composer types:check`.
 
 Expected: all PASS.
 
-- [ ] **Step 6: Commit CR-18b**
+- [x] **Step 6: Commit CR-18b**
 
 ```bash
 git add packages/nvl/media/src/Console/Commands/PruneMediaOwnerSlotOperationsCommand.php packages/nvl/media/src/Providers/MediaServiceProvider.php packages/nvl/media/src/Services/MediaDoctor.php packages/nvl/media/src/Console/Commands/MediaDoctorCommand.php packages/nvl/media/config/media.php packages/nvl/media/tests packages/nvl/media/README.md packages/nvl/media/UPGRADING.md tools/consumer-readiness.php tests/Contract/ConsumerReadinessTest.php
 git commit -m "docs(media): operationalize owner slot workflows"
 ```
+
+Completed in `1c01752`. The pruning command deletes only terminal claims in
+bounded deterministic chunks, protects the configured production retention
+window, and is registered as a public package command. Doctor now verifies
+ledger readiness, lifecycle bounds, atomic mutation-lock support, and the
+bounded set of owner/slot registrations observed in the retained ledger. The
+consumer guide documents all four KPO-style Actions and their authorization,
+staging, cleanup, idempotency, transaction, and metadata-copy contracts.
+
+Independent review found and then verified the fix for Laravel's recursive
+numeric-list merge behavior: a consumer `metadata_keys` allowlist now replaces
+the package list exactly. Review reported no remaining findings and Ready: Yes.
+The Media quality gate passed 994 tests (991 passed, 3 skipped) with 3,239
+assertions, Pint, and PHPStan. Root readiness/integration passed 35 tests with
+1,785 assertions; public contracts and generated TypeScript declarations are
+current.
 
 ### Workstream acceptance gate
 
