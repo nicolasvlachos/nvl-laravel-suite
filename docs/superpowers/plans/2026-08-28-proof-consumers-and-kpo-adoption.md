@@ -147,7 +147,7 @@ formatting passed. The original suite checkout and KPO remained read-only.
 - Consumes: CR-04 audit/adoption, CR-12 SEO, CR-13–16 editor/Page APIs, and CR-17/18 Media slot workflows.
 - Produces: a sealed-artifact smoke command covering Pages, Content, Media, SEO, Metafields, Translatable, and Translations.
 
-- [ ] **Step 1: Write the failing fixture contract test**
+- [x] **Step 1: Write the failing fixture contract test**
 
 ```php
 $probe = file_get_contents($fixtureRoot.'/app/Content/ContentConsumerProbe.php');
@@ -164,13 +164,13 @@ expect($probe)->not->toContain(
 Assert exact bindings/aliases, bilingual locales, page resource handler, document
 slot declaration, editor DTOs, TypeScript contracts, runners, and audit gates.
 
-- [ ] **Step 2: Run the contract test and verify the fixture is absent**
+- [x] **Step 2: Run the contract test and verify the fixture is absent**
 
 Run: `php artisan test --compact tests/Contract/ContentProductionConsumerWorkflowTest.php`
 
 Expected: FAIL because the fixture and runner do not exist.
 
-- [ ] **Step 3: Implement the fixture's golden workflow**
+- [x] **Step 3: Implement the fixture's golden workflow**
 
 The probe must:
 
@@ -184,14 +184,14 @@ The probe must:
 - assert locale fallback provenance and strict authorization denial;
 - compare editor query counts for one and twenty-five placements.
 
-- [ ] **Step 4: Implement both migration ownership and storage passes**
+- [x] **Step 4: Implement both migration ownership and storage passes**
 
 The production runner follows CR-19 but additionally runs Media with local
 private storage and queued variation effects, checks file existence before and
 after rollback, runs the Media operation-prune command, and validates Pages /
 Content / Media / SEO / Metafields / Translatable / Translations Doctors.
 
-- [ ] **Step 5: Run the fixture contract and production runner**
+- [x] **Step 5: Run the fixture contract and production runner**
 
 Run: `php artisan test --compact tests/Contract/ContentProductionConsumerWorkflowTest.php`
 
@@ -199,12 +199,36 @@ Run: `bash tools/run-content-production-consumer.sh`
 
 Expected: PASS in both migration modes with no direct-query finding.
 
-- [ ] **Step 6: Commit CR-20**
+- [x] **Step 6: Commit CR-20**
 
 ```bash
 git add tools/fixtures/content-production-consumer tools/run-content-production-consumer.sh tests/Contract/ContentProductionConsumerWorkflowTest.php
 git commit -m "test: add Content production consumer"
 ```
+
+Completed in `18171c3`, with the SQLite Pages rollback compatibility fix in
+`d4368e8`. The sealed, non-symlinked Suite archive passes fresh Laravel 13
+consumers with package-owned and application-owned migrations. It proves
+bilingual static and resource Pages, constant-query editor composition,
+Content placement mutations, localized Metafields and SEO, translation
+scan/import/update/export, all four Media owner-slot workflows, queued image
+variations, six authorization denials, production caches, strict Doctor, and a
+zero-finding strict consumer audit. Storage assertions span the full migration
+rollback: retained document media remains present and package-cleared cover
+media remains absent.
+
+The production rehearsal exposed SQLite's populated self-reference rollback
+limitation. The additive guard identifies the exact immutable released
+migration, preserves foreign-key enforcement, refuses external host
+references, supports prefixed and mixed-prefix connections, and handles
+SQLite's case-insensitive identifiers. Independent review reported no findings
+and Ready: Yes. Pages quality passed 45 tests with 610 assertions; the fixture
+contract passed 4 tests with 174 assertions. The full root/package matrix passed
+3,449 tests with 30,235 assertions and 14 environment-dependent skips.
+Maximum-level PHPStan, Pint, optimized autoloading, 20 package distributions,
+public contracts, generated TypeScript, strict `tsc`, Composer/npm audits, and
+both sealed migration modes passed. KPO and the original suite checkout
+remained read-only.
 
 ### Task 3 (CR-21a): Prepare a safe KPO migration baseline
 

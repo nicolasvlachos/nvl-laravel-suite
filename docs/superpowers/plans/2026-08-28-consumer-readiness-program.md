@@ -53,9 +53,9 @@ gate pass. Record the implementation commit beside the task before checking it.
 | CR-15 | [x] | Page lookup/options/public children | Pages/Content plan | CR-01 | 1.2 | `aa352a2` |
 | CR-16 | [x] | Page editor/publication composition | Pages/Content plan | CR-12, CR-13, CR-15 | 1.2 | `9ffc48c` |
 | CR-17 | [x] | Media slot reads and replacement | Media plan | CR-01 | 1.3 | `68e4f3e` |
-| CR-18 | [ ] | Media slot clear/copy/idempotency | Media plan | CR-17 | 1.3 | — |
+| CR-18 | [x] | Media slot clear/copy/idempotency | Media plan | CR-17 | 1.3 | `ad289df`, `1c01752` |
 | CR-19 | [x] | Auth proof consumer | Validation plan | CR-04, CR-08, CR-12 | 1.3 | `9ee766d` |
-| CR-20 | [ ] | Content proof consumer | Validation plan | CR-16, CR-18 | 1.3 | — |
+| CR-20 | [x] | Content proof consumer | Validation plan | CR-16, CR-18 | 1.3 | `18171c3` |
 | CR-21 | [ ] | KPO bounded migration waves | Validation plan | CR-08, CR-10, CR-16, CR-18 | 1.3 | — |
 | CR-22 | [ ] | Golden journeys and release matrix | Validation plan | CR-19, CR-20, CR-21 | 1.3 | — |
 | CR-23 | [ ] | Missing module flags disabled | 2.0 plan | CR-03, CR-04, CR-22, CR-34 | 2.0 | — |
@@ -380,6 +380,23 @@ gate pass. Record the implementation commit beside the task before checking it.
   final root gate passed 167 tests with 9,450 assertions, both max-level PHPStan
   scans, optimized autoloading, distributions/contracts, generated types, and
   formatting. KPO and the original suite checkout remained read-only.
+- 2026-08-29 — CR-20 completed in `18171c3`, with the SQLite Pages rollback
+  compatibility fix in `d4368e8`. The Content production consumer installs a
+  sealed, non-symlinked Suite archive into fresh Laravel 13 apps and passes both
+  package-owned and application-owned migration modes. It proves bilingual
+  static/resource Pages, constant-query editor composition, Content mutations,
+  localized Metafields/SEO, translation lifecycle, Media slot
+  replace/copy/read/clear/idempotency/conflict, queued variations, and strict
+  authorization denial. Both modes pass production caches, skills, generated
+  types, strict Doctor, zero-finding consumer audit, Composer/npm audit, storage
+  assertions across rollback, and complete migration rollback. The Pages guard
+  keeps foreign-key enforcement active, targets only the immutable released
+  migration, refuses host references, and supports prefixed, mixed-prefix, and
+  case-insensitive SQLite identifiers. Independent review reported no findings
+  and Ready Yes. Pages quality passed 45 tests with 610 assertions, the fixture
+  contract passed 4 tests with 174 assertions, and the full matrix passed 3,449
+  tests with 30,235 assertions and 14 environment-dependent skips. KPO and the
+  original suite checkout remained read-only.
 
 **Gate M0:** The suite can diagnose consumer-boundary violations and implicit
 adoption decisions without changing existing 1.x runtime behavior.
@@ -410,9 +427,9 @@ without initiating a Pages, Content, SEO, or Metafields model query.
 
 ## Milestone 3: release 1.3 owner-slot workflows
 
-- [ ] Execute CR-17 and prove slot resolution, authorization, staging ownership, MIME, size, replacement, and rollback behavior.
-- [ ] Execute CR-18 and prove clear, copy, idempotency, after-commit effects, and safe projections.
-- [ ] Execute CR-19 and CR-20 against package-owned and application-owned migrations.
+- [x] Execute CR-17 and prove slot resolution, authorization, staging ownership, MIME, size, replacement, and rollback behavior.
+- [x] Execute CR-18 and prove clear, copy, idempotency, after-commit effects, and safe projections.
+- [x] Execute CR-19 and CR-20 against package-owned and application-owned migrations.
 - [ ] Execute CR-21 as separate reversible KPO commits for Auth, Mail, editor reads, Media, and listener context.
 - [ ] Execute CR-22 and run archive plus clean-consumer rehearsals.
 - [ ] Run the full suite and KPO test suites before drafting 1.3 release notes.
