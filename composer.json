@@ -189,7 +189,11 @@
             "Nvl\\Templates\\Tests\\": "packages/nvl/templates/tests/",
             "Nvl\\Translatable\\Tests\\": "packages/nvl/translatable/tests/",
             "Nvl\\Translations\\Tests\\": "packages/nvl/translations/tests/"
-        }
+        },
+        "exclude-from-classmap": [
+            "tests/Fixtures/consumer-audit/",
+            "tests/Fixtures/consumer-audit-reviewer-probe/"
+        ]
     },
     "scripts": {
         "setup": [
