@@ -19102,6 +19102,11 @@
                     "public function execute(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Conversions\\ConversionDefinition $definition, ?int $expectedRevision=null): ?Nvl\\Media\\Models\\MediaImageVariation",
                     "@return MediaImageVariation|null Null for unsupported media or stale work"
                 ],
+                "Nvl\\Media\\Actions\\GetOwnerMediaSlotAction": [
+                    "final readonly class Nvl\\Media\\Actions\\GetOwnerMediaSlotAction",
+                    "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotWorkflow $workflow): mixed",
+                    "public function execute(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot): ?Nvl\\Media\\Data\\Display\\MediaLibraryItem"
+                ],
                 "Nvl\\Media\\Actions\\InitiateMultipartUploadAction": [
                     "final readonly class Nvl\\Media\\Actions\\InitiateMultipartUploadAction",
                     "public function __construct(Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaPathResolver $paths, Nvl\\Media\\Contracts\\MediaAuthorization $authorization, Nvl\\Media\\Contracts\\MultipartUploadGateway $gateway, Nvl\\Media\\Services\\MediaFileTypePolicy $fileTypes, Nvl\\Media\\Services\\MediaMultipartSessionMapper $sessionMapper): mixed",
@@ -19134,6 +19139,11 @@
                     "public function __construct(Nvl\\Media\\Services\\MediaReplacementStager $stager, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaVariationDispatcher $variationDispatcher): mixed",
                     "public function execute(Nvl\\Media\\Models\\Media|string $media, Illuminate\\Http\\UploadedFile $file): Nvl\\Media\\Models\\Media",
                     "@throws Throwable"
+                ],
+                "Nvl\\Media\\Actions\\ReplaceOwnerMediaSlotAction": [
+                    "final readonly class Nvl\\Media\\Actions\\ReplaceOwnerMediaSlotAction",
+                    "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotWorkflow $workflow): mixed",
+                    "public function execute(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, string $mediaId, ?string $idempotencyKey=null): Nvl\\Media\\Data\\Display\\MediaLibraryItem"
                 ],
                 "Nvl\\Media\\Actions\\ReusePublicMediaAction": [
                     "final readonly class Nvl\\Media\\Actions\\ReusePublicMediaAction implements Nvl\\Media\\Contracts\\ReusePublicMediaContract",
@@ -22444,12 +22454,13 @@
                     "@property string $request_hash",
                     "@property MediaOwnerSlotOperationStatus $status",
                     "@property string|null $result_media_id",
+                    "@property array<string, mixed>|null $result_payload",
                     "@property string|null $failure_code",
                     "@property Carbon|null $completed_at",
                     "@property Carbon|null $failed_at",
                     "@property Carbon|null $created_at",
                     "@property Carbon|null $updated_at",
-                    "protected mixed $fillable=[\"idempotency_key\",\"actor_type\",\"actor_id\",\"owner_type\",\"owner_id\",\"slot\",\"operation\",\"request_hash\",\"status\",\"result_media_id\",\"failure_code\",\"completed_at\",\"failed_at\"]",
+                    "protected mixed $fillable=[\"idempotency_key\",\"actor_type\",\"actor_id\",\"owner_type\",\"owner_id\",\"slot\",\"operation\",\"request_hash\",\"status\",\"result_media_id\",\"result_payload\",\"failure_code\",\"completed_at\",\"failed_at\"]",
                     "public function getTable(): string",
                     "public function getConnectionName(): ?string",
                     "protected function casts(): array",
@@ -22925,10 +22936,26 @@
                     "final class Nvl\\Media\\Services\\MediaOwnerSlotIdempotency",
                     "public function begin(string $key, Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model $owner, string $slot, Nvl\\Media\\Enums\\MediaOwnerSlotOperationType $operation, array $payload): Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
                     "@param array<array-key, mixed> $payload",
-                    "public function complete(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, ?string $resultMediaId): void",
+                    "public function complete(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, ?string $resultMediaId, ?array $resultPayload=null): void",
+                    "@param array<string, mixed>|null $resultPayload",
                     "public function fail(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim, string $failureCode): void",
                     "public function renew(Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim $claim): void",
                     "public function prune(?int $retentionDays=null, ?int $chunkSize=null): int"
+                ],
+                "Nvl\\Media\\Services\\MediaOwnerSlotResolver": [
+                    "final readonly class Nvl\\Media\\Services\\MediaOwnerSlotResolver",
+                    "public function slot(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot): Nvl\\Media\\Slots\\MediaSlot",
+                    "public function ownerIdentity(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner): array",
+                    "@return array{type: string, id: string}",
+                    "public function associations(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, bool $lockForUpdate=false): Illuminate\\Database\\Eloquent\\Collection",
+                    "@return Collection<int, MediaAssociation>",
+                    "public function currentAssociation(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, bool $lockForUpdate=false): ?Nvl\\Media\\Models\\MediaAssociation"
+                ],
+                "Nvl\\Media\\Services\\MediaOwnerSlotWorkflow": [
+                    "final readonly class Nvl\\Media\\Services\\MediaOwnerSlotWorkflow",
+                    "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotResolver $resolver, Nvl\\Media\\Services\\MediaStagingPolicy $stagingPolicy, Nvl\\Media\\Contracts\\MediaAuthorization $authorization, Nvl\\Media\\Contracts\\AttachMediaContract $attachMedia, Nvl\\Media\\Contracts\\DetachMediaContract $detachMedia, Nvl\\Media\\Contracts\\DeleteMediaContract $deleteMedia, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaOwnerSlotIdempotency $idempotency, Nvl\\Media\\Services\\MediaLibraryItemDataFactory $items): mixed",
+                    "public function get(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot): ?Nvl\\Media\\Data\\Display\\MediaLibraryItem",
+                    "public function replace(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, string $mediaId, ?string $idempotencyKey=null): Nvl\\Media\\Data\\Display\\MediaLibraryItem"
                 ],
                 "Nvl\\Media\\Services\\MediaPathResolver": [
                     "final class Nvl\\Media\\Services\\MediaPathResolver",
@@ -23007,6 +23034,19 @@
                     "public function fromDisk(string $key, ?string $disk=null): Illuminate\\Http\\UploadedFile",
                     "@throws MediaUploadException",
                     "public function fromRequest(Illuminate\\Http\\Request $request, string $key): Illuminate\\Http\\UploadedFile",
+                    "@throws MediaUploadException"
+                ],
+                "Nvl\\Media\\Services\\MediaStagingPolicy": [
+                    "final readonly class Nvl\\Media\\Services\\MediaStagingPolicy",
+                    "public function __construct(Nvl\\Media\\Contracts\\MediaAuthorization $authorization): mixed",
+                    "public function removableAssociations(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, Nvl\\Media\\Slots\\MediaSlot $slot, Nvl\\Media\\Models\\Media $media, Illuminate\\Database\\Eloquent\\Collection $associations): Illuminate\\Database\\Eloquent\\Collection",
+                    "@param Collection<int, MediaAssociation> $associations",
+                    "@return Collection<int, MediaAssociation>",
+                    "@throws AuthorizationException",
+                    "@throws FileUnacceptableForCollection",
+                    "@throws MediaUploadException",
+                    "public function assertFitsSlot(Nvl\\Media\\Models\\Media $media, Nvl\\Media\\Slots\\MediaSlot $slot): void",
+                    "@throws FileUnacceptableForCollection",
                     "@throws MediaUploadException"
                 ],
                 "Nvl\\Media\\Services\\MediaTemporaryFileRegistry": [
@@ -23292,7 +23332,9 @@
                     "public readonly string $requestHash",
                     "public readonly bool $replayed",
                     "public readonly ?string $resultMediaId",
-                    "public function __construct(string $operationId, string $requestHash, bool $replayed, ?string $resultMediaId): mixed"
+                    "public readonly ?array $resultPayload",
+                    "public function __construct(string $operationId, string $requestHash, bool $replayed, ?string $resultMediaId, ?array $resultPayload=null): mixed",
+                    "@param array<string, mixed>|null $resultPayload"
                 ],
                 "Nvl\\Media\\Support\\MediaQueueConfiguration": [
                     "final class Nvl\\Media\\Support\\MediaQueueConfiguration",
@@ -23406,7 +23448,7 @@
                 "database/migrations/2024_02_01_000003_create_media_image_variations_table.php": "89b381b8d24335e9704eb382c56015d5e4ce71fc5369a6c687804cf84677845e",
                 "database/migrations/2024_02_01_000004_create_media_i18n_table.php": "61916648befa9fead9fff0fbbd147b0444b28ad090cfc4b2cf513674db32c0f6",
                 "database/migrations/2026_07_28_000003_create_media_multipart_uploads_table.php": "351c188d9e14481174e4fd73dfc0c7578a795d7a27063b09039925b65de3bc2e",
-                "database/migrations/2026_08_28_000000_create_media_owner_slot_operations_table.php": "07b69f0b783963d8e53c6d2cec87a154c052de17e960cb6b8a87ef52a5214325"
+                "database/migrations/2026_08_28_000000_create_media_owner_slot_operations_table.php": "7ef1a483de948d75de2ddf77492437f07aedb7be43593bdc235712f3acaa1a5d"
             }
         },
         "metafields": {
