@@ -13,6 +13,7 @@ use Nvl\Content\Actions\CreateContentBlockAction;
 use Nvl\Content\Actions\DeleteContentBlockAction;
 use Nvl\Content\Actions\DeleteContentPlacementAction;
 use Nvl\Content\Actions\GetContentBlockAction;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
 use Nvl\Content\Actions\ListContentBlocksAction;
 use Nvl\Content\Actions\ListContentDefinitionsAction;
 use Nvl\Content\Actions\ListContentGroupsAction;
@@ -28,6 +29,7 @@ use Nvl\Content\Actions\UpdateContentBlockAction;
 use Nvl\Content\Actions\UpdateContentPlacementAction;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Data\ContentCompositionSnapshotData;
 use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Data\ContentDefinitionMigrationPlanData;
@@ -78,6 +80,7 @@ final readonly class Content
         private ContentRenderer $renderer,
         private ContentSnapshotService $snapshots,
         private ResolveContentScopesAction $resolveScopes,
+        private ?GetOwnerContentEditorAction $getOwnerEditor = null,
     ) {}
 
     /**
@@ -103,7 +106,7 @@ final readonly class Content
     /**
      * Return a filtered, authorized page of reusable Content blocks.
      *
-     * @return LengthAwarePaginator<int, ContentBlock>
+     * @return LengthAwarePaginator<int, ContentBlockData>
      */
     public function blocks(
         FilterSet $filters,
@@ -140,7 +143,7 @@ final readonly class Content
     public function block(
         ContentBlock|string $block,
         ContentActorData $actor,
-    ): ContentBlock {
+    ): ContentBlockData {
         return $this->getBlock->execute($block, $actor);
     }
 
@@ -255,7 +258,7 @@ final readonly class Content
     /**
      * Return every editable placement in one owner composition group.
      *
-     * @return Collection<int, ContentPlacement>
+     * @return Collection<int, ContentPlacementData>
      */
     public function placements(
         Model&ContentOwner $owner,
@@ -273,20 +276,15 @@ final readonly class Content
         string $group,
         ContentActorData $actor,
     ): ContentEditorData {
-        $ownerType = $this->owners->type($owner);
-        $ownerId = $this->owners->id($owner);
-
-        return new ContentEditorData(
-            ownerType: $ownerType,
-            ownerId: $ownerId,
-            group: $group,
-            definitions: array_values($this->definitions($actor)->all()),
-            presets: array_values($this->presets($actor)->all()),
-            groups: array_values($this->groups($owner, $actor)->all()),
-            placements: array_values($this->placements($owner, $group, $actor)
-                ->map(ContentPlacementData::fromModel(...))
-                ->all()),
+        $action = $this->getOwnerEditor ?? new GetOwnerContentEditorAction(
+            $this->listDefinitions,
+            $this->listPresets,
+            $this->listGroups,
+            $this->listPlacements,
+            $this->owners,
         );
+
+        return $action->execute($owner, $group, $actor);
     }
 
     /**

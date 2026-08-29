@@ -52,17 +52,12 @@ final class SeoManagementController extends Controller
         ListSeoProfilesAction $action,
     ): JsonResponse {
         $query = $request->profileQuery();
-        $this->authorization->authorize(new SeoAuthorizationContext(
-            ability: SeoAbility::List,
-            ownerAlias: $query->ownerAlias,
-            scope: $query->scope === null ? null : SeoScope::normalize($query->scope),
-        ));
         $profiles = $action->execute($query);
         $items = [];
 
         foreach ($profiles->items() as $profile) {
             $items[] = $this->stringKeyed(
-                $this->presenter->present($profile)->toArray(),
+                $profile->toArray(),
             );
         }
         $collection = new PaginatedCollection(
@@ -85,11 +80,8 @@ final class SeoManagementController extends Controller
      */
     public function show(string $profile, GetSeoProfileAction $action): JsonResponse
     {
-        $profileModel = $action->execute($profile);
-        $this->authorizeProfile(SeoAbility::View, $profileModel);
-
         return response()->json([
-            'data' => $this->presenter->present($profileModel)->toArray(),
+            'data' => $action->execute($profile)->toArray(),
         ]);
     }
 
@@ -124,10 +116,9 @@ final class SeoManagementController extends Controller
     public function update(
         UpdateSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         SyncSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $owner = $this->authorizeProfile(SeoAbility::Update, $profileModel);
         $updated = $action->execute($owner, $request->payload(), $profileModel->scope);
 
@@ -140,10 +131,9 @@ final class SeoManagementController extends Controller
     public function duplicate(
         DuplicateSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         DuplicateSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $ownerAlias = $request->ownerAlias();
         $target = $this->owners->resolve($ownerAlias, $request->ownerId());
         $sourceOwner = $profileModel->seoable()->firstOrFail();
@@ -159,7 +149,7 @@ final class SeoManagementController extends Controller
             scope: $scope,
         ));
         $duplicate = $action->execute(
-            $profileModel,
+            $profile,
             $target,
             $scope,
             $request->copyPaths(),
@@ -174,13 +164,12 @@ final class SeoManagementController extends Controller
     public function archive(
         ArchiveSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         ArchiveSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Archive, $profileModel);
         $updated = $action->execute(
-            $profileModel,
+            $profile,
             $request->archived(),
             $request->expectedRevision(),
         );
@@ -194,16 +183,15 @@ final class SeoManagementController extends Controller
     public function destroy(
         DeleteSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         DeleteSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Delete, $profileModel);
 
         return response()->json([
             'data' => [
                 'deleted' => $action->execute(
-                    $profileModel,
+                    $profile,
                     $request->expectedRevision(),
                 ),
             ],
@@ -216,10 +204,9 @@ final class SeoManagementController extends Controller
     public function preview(
         PreviewSeoProfileRequest $request,
         string $profile,
-        GetSeoProfileAction $get,
         PreviewSeoProfileAction $action,
     ): JsonResponse {
-        $profileModel = $get->execute($profile);
+        $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Preview, $profileModel);
 
         return response()->json([
@@ -263,6 +250,16 @@ final class SeoManagementController extends Controller
         ));
 
         return $owner;
+    }
+
+    /**
+     * Load one profile model for mutation and preview authorization contexts.
+     */
+    private function profileModel(string $profile): SeoProfile
+    {
+        return SeoProfile::query()
+            ->with('translations')
+            ->findOrFail($profile);
     }
 
     /**

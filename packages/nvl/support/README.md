@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/support` |
 | PHP namespace | `Nvl\Support` |
 | Service provider | `Nvl\Support\Providers\SupportServiceProvider` |
@@ -14,14 +14,14 @@
 
 ## Purpose
 
-`nvl/support` is the smallest foundation in the NVL package family. It provides transport-neutral business exceptions and stable response-code contracts for Laravel 12–13 on PHP 8.4+.
+`nvl/support` is the smallest foundation in the NVL package family. It provides transport-neutral business exceptions and stable response-code contracts for Laravel 13 on PHP 8.4+.
 
 It deliberately has no internal NVL dependency, configuration, migrations, models, routes, controllers, DTOs, pagination, TypeScript registry, global state, or consumer-domain helper.
 
 ## Requirements and installation
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 ```
 
 Laravel auto-discovers `Nvl\Support\Providers\SupportServiceProvider`. The provider has no runtime boot side effects. Agent guidance is optional:

@@ -9,7 +9,9 @@ use Nvl\Settings\Actions\ListSettingsAction;
 use Nvl\Settings\Actions\SetSettingAction;
 use Nvl\Settings\Data\SettingListQueryData;
 use Nvl\Settings\Data\SettingMutationData;
+use Nvl\Settings\Data\SettingSubjectReferenceData;
 use Nvl\Settings\Enums\SettingType;
+use Nvl\Settings\Events\SettingChanged;
 use Nvl\Settings\Exceptions\InvalidDefinitionException;
 use Nvl\Settings\Exceptions\StaleSettingVersionException;
 use Nvl\Settings\Services\SettingsDoctor;
@@ -19,6 +21,35 @@ use Nvl\Settings\Support\SettingsRouteConfiguration;
 use Nvl\Settings\Testing\InteractsWithSettings;
 
 uses(InteractsWithSettings::class);
+
+it('exposes a stable value-free subject reference on setting change events', function (): void {
+    $event = new SettingChanged(
+        id: 'setting-123',
+        key: 'core.currency.default',
+        revision: 2,
+        operation: 'set',
+    );
+    $parameters = array_map(
+        static fn (ReflectionParameter $parameter): string => $parameter->getName(),
+        (new ReflectionMethod(SettingChanged::class, '__construct'))->getParameters(),
+    );
+
+    expect($event->subject)->toBeInstanceOf(SettingSubjectReferenceData::class)
+        ->and($event->subject->type)->toBe('nvl_setting')
+        ->and($event->subject->id)->toBe('setting-123')
+        ->and($event->subject->toArray())->toBe([
+            'type' => 'nvl_setting',
+            'id' => 'setting-123',
+        ])
+        ->and($parameters)->not->toContain('subject')
+        ->and(property_exists($event, 'value'))->toBeFalse()
+        ->and(fn () => new SettingSubjectReferenceData('   '))
+        ->toThrow(InvalidArgumentException::class, 'between 1 and 100')
+        ->and(fn () => new SettingSubjectReferenceData(str_repeat('x', 101)))
+        ->toThrow(InvalidArgumentException::class, 'between 1 and 100')
+        ->and(fn () => new SettingSubjectReferenceData("setting\0id"))
+        ->toThrow(InvalidArgumentException::class, 'without NUL bytes');
+});
 
 it('enforces every public setting codec boundary', function (): void {
     $date = new DateTimeImmutable('2026-08-02T12:30:00+03:00');

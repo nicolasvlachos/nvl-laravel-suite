@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use Symfony\Component\Yaml\Yaml;
 
-it('keeps Comments in the complete and Laravel 12 compatibility suites', function (): void {
+it('keeps Comments in the complete and Laravel 13 lowest-dependency suites', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = commentsWorkflowDefinition($root);
     $jobs = commentsWorkflowArray($workflow, 'jobs');
     $current = commentsWorkflowArray($jobs, 'current-tests');
-    $lowest = commentsWorkflowArray($jobs, 'laravel12-lowest');
+    $lowest = commentsWorkflowArray($jobs, 'laravel13-lowest');
     $currentStep = commentsWorkflowStep($current, 'Complete test suite');
     $lowestStep = commentsWorkflowStep($lowest, 'Compatibility tests');
 

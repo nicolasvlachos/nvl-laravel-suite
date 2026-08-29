@@ -1,18 +1,55 @@
 # Installation profiles
 
-Installation profiles are adoption examples, not new runtime configuration.
-Publish `config/nvl-suite.php`, disable every module, enable the profile's direct
-modules, and let `SuiteServiceProvider` add transitive dependencies in canonical
-order. Compare the resulting application with:
+Installation profiles are reproducible runtime module selections, not hidden
+modes. New installations default to `full-suite`. Consumers can keep a small
+Laravel configuration overlay while the suite resolves all transitive
+dependencies in canonical order:
 
 ```bash
-php artisan nvl:suite:configuration --profile=auth-only
+php artisan nvl:suite:configure --profile=content-platform --minimal
+php artisan nvl:suite:configure --profile=content-platform --minimal --write
+php artisan config:clear
+```
+
+`nvl:suite:configure` is dry-run-first and always prints the generated PHP.
+`--minimal` emits only `profile`, `include`, and `exclude`; `--full` emits all
+twenty resolved module booleans and remains the default for command
+compatibility. Use repeatable `--add` options for capability roots and
+`--remove` only for modules that no retained root requires. For example:
+
+```bash
+php artisan nvl:suite:configure --profile=auth-only --add=comments --remove=forms --minimal
+```
+
+The command writes only with `--write`. A new destination is written
+atomically. Replacing an existing file additionally requires `--force`, and the
+command returns a unified diff for review. An actual replacement creates an
+exact sibling backup named `nvl-suite.php.backup-YYYYMMDD-HHMMSS`; a dry run,
+new file, or already-matching file creates no backup. Destinations must be
+readable `.php` files inside the application root; symlink escapes are rejected.
+
+At runtime, a non-null legacy `modules` map remains authoritative. Otherwise,
+the suite resolves `profile`, then `include`, validates `exclude`, and closes
+dependencies. The upgrade checker rejects a host file that mixes the legacy map
+with declarative keys, even though runtime keeps the legacy map authoritative
+for backward compatibility. In a legacy map, omitted module flags resolve to
+disabled in 2.0; an explicitly enabled root still re-enables its transitive
+dependencies. Minimal overlays work identically with cached and uncached
+Laravel configuration.
+
+Compare the booted application with the selected profile after configuring
+migration ownership, contracts, registries, queues, and schedules:
+
+```bash
+php artisan nvl:suite:configuration --profile=content-platform
 php artisan nvl:suite:doctor --strict
 ```
 
 The configuration command reports `MATCH` only when the effective enabled
-module set equals the dependency-complete profile. It never prints arbitrary
-configuration values or secrets.
+module set equals the dependency-complete profile. Its
+`package_configuration` section also reports structural drift in published
+package configuration files. It never prints arbitrary configuration values or
+secrets.
 
 Publish the skills for that same effective module set and verify their
 read-only ownership/content contract with:
@@ -26,13 +63,66 @@ The publisher manages only directories recorded in
 `.agents/skills/.nvl-suite-skills.json`. It never replaces an unmanaged skill,
 even when `--force` is used.
 
+## Upgrade and audit gate
+
+Before changing the suite version, run the published configuration through the
+current catalog and audit application source/runtime boundaries:
+
+```bash
+php artisan nvl:suite:upgrade:check --strict
+php artisan nvl:suite:upgrade:check --strict --module=auth --module=comments
+php artisan nvl:suite:consumer-audit --strict
+```
+
+The upgrade checker is read-only. It reports missing, unknown, and non-boolean
+module decisions and lists the migration ownership, host contracts, and
+feature-gated scheduler entries that need review for newly encountered modules.
+It also tokenizes published package configuration source without loading or
+executing it. The comparison retains only literal key paths and basic
+map/list/scalar kinds; catalog-declared extension maps stop recursion so
+consumer-owned aliases remain valid. `--module` limits this package-configuration
+inspection without changing the application module selection.
+
+Unknown or deprecated key paths and an incorrect package merge strategy are
+errors. A copied snapshot-shaped file produces
+`configuration.expanded_overlay`, and missing current branches are then listed
+for review. Those findings are warnings: even with `--strict`, warnings alone do
+not fail the command. A small overlay that declares only intentional host
+choices is valid and does not warn for omitted defaults. Neither command prints
+arbitrary configuration values or secrets.
+
+Both commands use stable process outcomes: exit `0` means the requested gate
+passed, exit `1` means actionable adoption or boundary findings remain, and
+exit `2` means the arguments, destination, configuration source, or audit policy
+is invalid.
+
+Suite 2.0 disables every omitted flag in a non-null legacy `modules` map. Before
+upgrading a partial 1.x map, generate the replacement with a reviewed profile:
+
+```bash
+php artisan nvl:suite:configure --profile=full-suite --full
+php artisan nvl:suite:configure --profile=full-suite --full --write --force
+```
+
+Use the narrower documented profile that matches the consumer when the old
+omissions were intentional. The full-suite profile preserves the 1.x
+compatibility-enabled behavior. Review every generated boolean and the unified
+diff before writing. `nvl:suite:upgrade:check` reports one
+`upgrade.module_missing` error per omission, including its requested-disabled
+state, its actual effective enabled/disabled 2.0 state after dependency closure,
+and this remediation. The legacy
+`adoption.require_explicit_module_decisions` setting may remain during the
+upgrade, but omitted flags are now intentional disabled states rather than
+strict Doctor warnings. See [UPGRADING.md](../UPGRADING.md) for the exact
+before/after configuration.
+
 ## Auth only
 
 Enable `auth`.
 
 | Concern | Adoption requirement |
 |---|---|
-| Effective modules | `data`, `auth` |
+| Effective modules | `support`, `data`, `auth` |
 | Migrations | Choose package-owned or published application-owned Auth migrations before migrating. |
 | Required boundary | Review the resolved `AuthManagementAccess` and every enabled Auth feature contract reported by `nvl:auth:doctor`. |
 | Queues and scheduler | No mandatory queue or scheduler. `nvl:auth:prune` is an optional host-owned daily maintenance entry. |

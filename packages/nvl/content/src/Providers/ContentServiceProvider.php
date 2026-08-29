@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Providers;
 
-use Illuminate\Contracts\Foundation\CachesConfiguration;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
 use Nvl\Content\Console\ContentDoctorCommand;
 use Nvl\Content\Console\MigrateContentDefinitionsCommand;
 use Nvl\Content\Console\PublishContentViewsCommand;
@@ -53,6 +54,7 @@ use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Support\ContentUriSchemePolicy;
 use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Opis\JsonSchema\Validator;
 
@@ -61,9 +63,11 @@ use Opis\JsonSchema\Validator;
  */
 final class ContentServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     public function register(): void
     {
-        $this->mergeConfiguration(__DIR__.'/../../config/content.php', 'content');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/content.php', 'content');
         $this->validateUriSchemeConfiguration();
         $authorization = config(
             'content.authorization.class',
@@ -89,51 +93,12 @@ final class ContentServiceProvider extends ServiceProvider
         $this->app->singleton(ContentReferenceRegistry::class);
         $this->app->singleton(ContentSchemaCompiler::class);
         $this->app->scoped(Content::class);
+        $this->app->when(Content::class)
+            ->needs(GetOwnerContentEditorAction::class)
+            ->give(static fn (Container $container): GetOwnerContentEditorAction => $container->make(
+                GetOwnerContentEditorAction::class,
+            ));
         $this->app->singleton(Validator::class);
-    }
-
-    private function mergeConfiguration(string $path, string $key): void
-    {
-        if ($this->app instanceof CachesConfiguration
-            && $this->app->configurationIsCached()) {
-            return;
-        }
-
-        $defaults = require $path;
-        $configured = $this->app->make('config')->get($key, []);
-
-        if (! is_array($defaults) || ! is_array($configured)) {
-            throw new InvalidArgumentException(
-                "The [{$key}] configuration root must be an array.",
-            );
-        }
-
-        $this->app->make('config')->set(
-            $key,
-            $this->mergeConfigurationValues($defaults, $configured),
-        );
-    }
-
-    /**
-     * Recursively fill associative maps while replacing configured lists wholesale.
-     *
-     * @param  array<array-key, mixed>  $defaults
-     * @param  array<array-key, mixed>  $configured
-     * @return array<array-key, mixed>
-     */
-    private function mergeConfigurationValues(array $defaults, array $configured): array
-    {
-        foreach ($configured as $key => $value) {
-            $default = $defaults[$key] ?? null;
-            $defaults[$key] = is_array($default)
-                && is_array($value)
-                && ! array_is_list($default)
-                && ! array_is_list($value)
-                    ? $this->mergeConfigurationValues($default, $value)
-                    : $value;
-        }
-
-        return $defaults;
     }
 
     private function validateUriSchemeConfiguration(): void

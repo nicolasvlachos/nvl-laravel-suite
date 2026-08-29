@@ -1,6 +1,6 @@
 ---
 name: nvl-forms
-description: Implement, integrate, test, or review nvl/forms in Laravel 12–13. Use for headless localized form definitions, secure public submissions, entries, idempotency, origins, throttling, spam contracts, renderer or handler registries, privacy operations, management authorization, or optional activity integration.
+description: Implement, integrate, test, or review nvl/forms in Laravel 13. Use for headless localized form definitions, secure public submissions, entries, idempotency, origins, throttling, spam contracts, renderer or handler registries, privacy operations, management authorization, or optional activity integration.
 ---
 
 # NVL Forms

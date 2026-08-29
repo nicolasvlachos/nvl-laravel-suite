@@ -39,6 +39,37 @@ translations: Record<string, { title: string; navigationLabel: string | null; su
 createdAt: string,
 updatedAt: string,
 };
+export type PageEditorBootstrapData = {
+page: Nvl.Pages.Data.PageData,
+content: Nvl.Content.Data.ContentEditorData,
+seo: Nvl.Seo.Data.SeoProfileData | null,
+metafields: Nvl.Metafields.Data.OwnerMetafieldField[],
+pageKinds: Array<string>,
+pageStatuses: Array<string>,
+resourceAliases: Array<string>,
+maximumDepth: number,
+};
+export type PageEditorSummaryData = {
+page: Nvl.Pages.Data.PageData,
+label: string,
+placements: Nvl.Content.Data.ContentPlacementData[],
+seo: Nvl.Seo.Data.SeoProfileData | null,
+};
+export type PageKeyAvailabilityData = {
+site: string,
+key: string,
+available: boolean,
+conflictingPageId: string | null,
+};
+export type PageOptionData = {
+id: string,
+key: string,
+label: string,
+path: string,
+kind: Nvl.Pages.Enums.PageKind,
+status: Nvl.Pages.Enums.PageStatus,
+revision: number,
+};
 export type PageResourceData = {
 type: string,
 id: string,
@@ -64,6 +95,7 @@ summary: string | null,
 titleLocale: string | null,
 navigationLabelLocale: string | null,
 summaryLocale: string | null,
+publishedAt?: string,
 };
 export type ResolvedPageData = {
 page: Nvl.Pages.Data.PublicPageData,
@@ -131,6 +163,7 @@ namespace Enums {
 export type PageAbility = 'list' | 'view' | 'view_navigation' | 'preview' | 'create' | 'update' | 'move' | 'publish' | 'archive' | 'delete' | 'restore';
 export type PageKind = 'static' | 'resource';
 export type PageStatus = 'draft' | 'scheduled' | 'published' | 'archived';
+export type PublicChildPageOrder = 'sibling' | 'newest';
 }
 }
 }

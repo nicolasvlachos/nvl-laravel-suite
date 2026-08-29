@@ -36,11 +36,14 @@ use Nvl\Auth\Enums\AuthFeature;
 use Nvl\Auth\Enums\FeatureOperation;
 use Nvl\Auth\Enums\PrincipalAttribute;
 use Nvl\Auth\Services\AuthConfiguration;
+use Nvl\Auth\Services\AuthManagementAbilityCatalog;
 use Nvl\Auth\Services\AuthModelRegistry;
 use Nvl\Auth\Services\AuthSchemaManager;
 use Nvl\Auth\Services\ConfiguredApiTokenAbilityProvider;
+use Nvl\Auth\Services\ConfiguredPolicyAuthManagementAccess;
 use Nvl\Auth\Services\FeatureGate;
 use Nvl\Auth\Services\FeatureManifest;
+use Nvl\Auth\Services\InvitationDeliveryMetadataPolicy;
 use Nvl\Auth\Services\LaravelGateAuthManagementAccess;
 use Nvl\Auth\Services\SocialProviderConfiguration;
 use Nvl\Auth\Services\UnavailableApiTokenManager;
@@ -91,7 +94,7 @@ final class AuthDoctorCommand extends Command
         AuthTables::PasswordResetTokens => ['email', 'token', 'created_at'],
         AuthTables::Clients => ['id', 'name', 'surface', 'base_url', 'return_paths', 'allowed_origins', 'allowed_flows', 'metadata', 'is_active', 'last_used_at', 'created_at', 'updated_at'],
         AuthTables::ClientSessions => ['id', 'client_id', 'subject_type', 'subject_id', 'session_id_hash', 'ip_address', 'user_agent', 'metadata', 'authenticated_at', 'last_seen_at', 'ended_at', 'end_reason', 'created_at', 'updated_at'],
-        AuthTables::Invitations => ['id', 'token_hash', 'active_key', 'recipient', 'recipient_hash', 'context_hash', 'type', 'purpose', 'inviter_type', 'inviter_id', 'accepted_by_type', 'accepted_by_id', 'roles', 'permissions', 'metadata', 'resend_count', 'last_sent_at', 'expires_at', 'accepted_at', 'revoked_at', 'created_at', 'updated_at'],
+        AuthTables::Invitations => ['id', 'token_hash', 'active_key', 'recipient', 'recipient_hash', 'context_hash', 'type', 'purpose', 'inviter_type', 'inviter_id', 'accepted_by_type', 'accepted_by_id', 'roles', 'permissions', 'metadata', 'resend_count', 'current_delivery_message_id', 'delivery_status', 'delivery_attempted_at', 'delivered_at', 'delivery_failed_at', 'delivery_failure_code', 'last_sent_at', 'expires_at', 'accepted_at', 'revoked_at', 'created_at', 'updated_at'],
         AuthTables::Challenges => ['id', 'type', 'purpose', 'subject_type', 'subject_id', 'recipient_hash', 'secret_hash', 'secondary_secret_hash', 'active_key', 'payload', 'attempts', 'max_attempts', 'expires_at', 'consumed_at', 'revoked_at', 'created_at', 'updated_at'],
         AuthTables::TotpCredentials => ['id', 'subject_type', 'subject_id', 'name', 'secret', 'algorithm', 'digits', 'period', 'allowed_drift', 'last_accepted_timestep', 'confirmed_at', 'last_used_at', 'revoked_at', 'created_at', 'updated_at'],
         AuthTables::Passkeys => ['id', 'subject_type', 'subject_id', 'name', 'credential_id', 'credential_id_hash', 'public_key', 'user_handle', 'signature_counter', 'transports', 'backup_eligible', 'backed_up', 'last_used_at', 'revoked_at', 'created_at', 'updated_at'],
@@ -104,6 +107,7 @@ final class AuthDoctorCommand extends Command
     private const TABLE_INDEXES = [
         AuthTables::Invitations => [
             'nvl_auth_invitations_context_hash_index' => false,
+            'nvl_auth_invitations_delivery_status_index' => false,
         ],
         AuthTables::Challenges => [
             'nvl_auth_challenges_secondary_secret_hash_unique' => true,
@@ -154,6 +158,7 @@ final class AuthDoctorCommand extends Command
         Container $container,
         AuthSchemaManager $schemaManager,
         PrincipalAttributeMapper $principalAttributes,
+        ?InvitationDeliveryMetadataPolicy $deliveryMetadata = null,
     ): int {
         $format = $this->option('format');
 
@@ -231,6 +236,10 @@ final class AuthDoctorCommand extends Command
             $this->ownedModelsReady($container),
             'Configured User, Role, Permission, or PersonalAccessToken models do not extend their package model.',
         );
+        $checks = [
+            ...$checks,
+            ...$this->ownershipChecks($configuration, $manifest, $router),
+        ];
         $principalTable = $this->configuredTable($configuration, AuthTables::Users);
         $attributeCollisions = $configuration->featureEnabled(AuthFeature::PrincipalManagement)
             && $schema->hasTable($principalTable)
@@ -320,6 +329,13 @@ final class AuthDoctorCommand extends Command
         }
 
         if ($configuration->featureEnabled(AuthFeature::Invitations)) {
+            $checks[] = $this->check(
+                'configuration.invitations.delivery_metadata_keys',
+                ($deliveryMetadata ?? new InvitationDeliveryMetadataPolicy(
+                    $configuration,
+                ))->configurationIsValid(),
+                'Invitation delivery metadata keys must be a bounded safe allowlist.',
+            );
             $checks[] = $this->check(
                 'contract.invitation_registration_mapper',
                 $this->integration($container, InvitationRegistrationMapper::class) instanceof InvitationRegistrationMapper,
@@ -500,11 +516,26 @@ final class AuthDoctorCommand extends Command
             }
         }
 
+        $managementAccess = $this->integration($container, AuthManagementAccess::class);
+
+        if ($managementAccess instanceof ConfiguredPolicyAuthManagementAccess) {
+            $checks[] = $this->check(
+                'configuration.management',
+                $this->managementConfigurationReady(
+                    $configuration,
+                    new AuthManagementAbilityCatalog,
+                ),
+                'Management policy mappings contain unknown aliases, invalid operations, or invalid model classes.',
+            );
+        }
+
         foreach ($this->managementAbilities($configuration, $manifest) as $ability) {
             $checks[] = $this->check(
                 "authorization.{$ability}",
-                $this->managementAbilityReady($configuration, $container, $ability),
-                "Management routes require package RBAC or Laravel Gate authorization for [{$ability}].",
+                $this->managementAbilityReady($configuration, $container, $ability, $managementAccess),
+                $managementAccess instanceof ConfiguredPolicyAuthManagementAccess
+                    ? "Management authorization has no resolvable policy decision for [{$ability}]."
+                    : "Management routes require package RBAC or Laravel Gate authorization for [{$ability}].",
             );
         }
 
@@ -756,7 +787,7 @@ final class AuthDoctorCommand extends Command
     }
 
     /**
-     * Return abilities required by effective management route families.
+     * Return abilities owned by enabled management features.
      *
      * @return list<string>
      */
@@ -767,8 +798,7 @@ final class AuthDoctorCommand extends Command
         $abilities = [];
 
         foreach ($manifest->definitions() as $definition) {
-            if (! $configuration->featureEnabled($definition->feature)
-                || ! $this->routeSurfaceConfigured($configuration, $definition->feature, 'management')) {
+            if (! $configuration->featureEnabled($definition->feature)) {
                 continue;
             }
 
@@ -787,11 +817,16 @@ final class AuthDoctorCommand extends Command
         AuthConfiguration $configuration,
         Container $container,
         string $ability,
+        ?object $access = null,
     ): bool {
-        $access = $this->integration($container, AuthManagementAccess::class);
+        $access ??= $this->integration($container, AuthManagementAccess::class);
 
         if (! $access instanceof AuthManagementAccess) {
             return false;
+        }
+
+        if ($access instanceof ConfiguredPolicyAuthManagementAccess) {
+            return $access->configurationReady($ability);
         }
 
         if (! $access instanceof LaravelGateAuthManagementAccess) {
@@ -809,6 +844,195 @@ final class AuthDoctorCommand extends Command
         return $configuration->featureEnabled(AuthFeature::Rbac)
             && is_string($superAdminRole)
             && trim($superAdminRole) !== '';
+    }
+
+    /**
+     * Validate every configured alias, host operation, and policy model.
+     */
+    private function managementConfigurationReady(
+        AuthConfiguration $configuration,
+        AuthManagementAbilityCatalog $catalog,
+    ): bool {
+        $abilities = $configuration->get('management.abilities', []);
+        $policyModels = $configuration->get('management.policy_models', []);
+
+        if (! is_array($abilities) || ! is_array($policyModels)) {
+            return false;
+        }
+
+        $definitions = $catalog->definitions();
+        $policyDefaults = [];
+
+        foreach ($definitions as $definition) {
+            $policyDefaults[$definition['policy']] = $definition['default_model'];
+        }
+
+        foreach ($abilities as $alias => $operation) {
+            if (! is_string($alias)
+                || ! array_key_exists($alias, $definitions)
+                || ! is_string($operation)
+                || preg_match('/\A[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,119}\z/', $operation) !== 1) {
+                return false;
+            }
+        }
+
+        foreach ($policyModels as $policy => $model) {
+            $defaultModel = is_string($policy) ? ($policyDefaults[$policy] ?? null) : null;
+
+            if (! is_string($policy)
+                || ! is_string($defaultModel)
+                || ! is_string($model)
+                || ! is_a($model, Model::class, true)
+                || ! is_a($model, $defaultModel, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate explicit HTTP and delivery ownership declarations.
+     *
+     * @return list<array{name: string, severity: string, passed: bool, message: string}>
+     */
+    private function ownershipChecks(
+        AuthConfiguration $configuration,
+        FeatureManifest $manifest,
+        Router $router,
+    ): array {
+        $checks = [
+            $this->check(
+                'ownership.http',
+                in_array($configuration->get('ownership.http'), ['host', 'package'], true),
+                'Auth HTTP ownership must be host or package.',
+            ),
+            $this->check(
+                'ownership.delivery',
+                in_array($configuration->get('ownership.delivery'), ['host', 'package'], true),
+                'Auth delivery ownership must be host or package.',
+            ),
+        ];
+        $hostRoutes = $configuration->get('ownership.host_routes', []);
+        $serviceOnly = $configuration->get('ownership.service_only', []);
+
+        if (! is_array($hostRoutes) || ! is_array($serviceOnly)) {
+            $checks[] = $this->check(
+                'ownership.host_routes',
+                false,
+                'Auth host route evidence and service-only flows must be arrays.',
+            );
+
+            return $checks;
+        }
+
+        $configuredServiceOnlyCount = count($serviceOnly);
+        $serviceOnly = array_values(array_filter($serviceOnly, 'is_string'));
+        $serviceOnlyReady = count($serviceOnly) === $configuredServiceOnlyCount;
+
+        foreach ($serviceOnly as $purpose) {
+            $serviceOnlyReady = $serviceOnlyReady
+                && $this->hostFlowDefinition($manifest, $purpose) !== null;
+        }
+
+        $checks[] = $this->check(
+            'ownership.service_only',
+            $serviceOnlyReady,
+            'Auth service-only flows must use known feature surfaces.',
+        );
+        $router->getRoutes()->refreshNameLookups();
+        $registered = $router->getRoutes()->getRoutesByName();
+        $routeEvidence = [];
+
+        foreach ($hostRoutes as $purpose => $routes) {
+            $definition = is_string($purpose)
+                ? $this->hostFlowDefinition($manifest, $purpose)
+                : null;
+            $routeNames = is_array($routes)
+                ? array_values(array_filter(
+                    $routes,
+                    static fn (mixed $route): bool => is_string($route) && trim($route) !== '',
+                ))
+                : [];
+            $routeEvidenceReady = is_array($routes)
+                && array_is_list($routes)
+                && count($routeNames) === count($routes);
+            $hasEvidence = $routeNames !== [] && count(array_filter(
+                $routeNames,
+                static fn (string $route): bool => isset($registered[$route]),
+            )) === count($routeNames);
+
+            $checks[] = $this->check(
+                'ownership.host_routes.'.(is_string($purpose) ? $purpose : 'invalid'),
+                $definition !== null && $routeEvidenceReady,
+                'Auth host route evidence must contain known feature surfaces and non-empty route-name lists.',
+            );
+
+            if ($definition === null || ! $routeEvidenceReady) {
+                continue;
+            }
+
+            $routeEvidence[$purpose] = $hasEvidence;
+
+            $packageOwnsFlow = $this->routeSurfaceConfigured(
+                $configuration,
+                $definition['feature'],
+                $definition['surface'],
+            );
+            $checks[] = $this->check(
+                "ownership.host_routes.{$purpose}.conflict",
+                ! ($packageOwnsFlow && $hasEvidence),
+                "Auth flow [{$purpose}] is owned by both package and host routes.",
+            );
+        }
+
+        if ($configuration->get('ownership.http') === 'host') {
+            foreach ($manifest->definitions() as $definition) {
+                if (! $configuration->featureEnabled($definition->feature)) {
+                    continue;
+                }
+
+                foreach (array_keys($definition->routeNames) as $surface) {
+                    $purpose = "{$definition->feature->value}.{$surface}";
+
+                    if (in_array($purpose, $serviceOnly, true)) {
+                        continue;
+                    }
+
+                    $checks[] = $this->check(
+                        "ownership.host_routes.{$purpose}.evidence",
+                        $routeEvidence[$purpose] ?? false,
+                        "Host-owned Auth flow [{$purpose}] has no registered route evidence.",
+                        'warning',
+                    );
+                }
+            }
+        }
+
+        return $checks;
+    }
+
+    /**
+     * Resolve one declared host flow against the closed feature manifest.
+     *
+     * @return array{feature: AuthFeature, surface: string}|null
+     */
+    private function hostFlowDefinition(FeatureManifest $manifest, string $purpose): ?array
+    {
+        [$featureName, $surface] = array_pad(explode('.', $purpose, 2), 2, null);
+        $feature = is_string($featureName) ? AuthFeature::tryFrom($featureName) : null;
+
+        if ($feature === null || ! is_string($surface)) {
+            return null;
+        }
+
+        $definition = $manifest->definition($feature);
+
+        if (! array_key_exists($surface, $definition->routeNames)) {
+            return null;
+        }
+
+        return ['feature' => $feature, 'surface' => $surface];
     }
 
     /**

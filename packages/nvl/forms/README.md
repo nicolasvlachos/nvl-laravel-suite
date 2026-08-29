@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/forms` |
 | PHP namespace | `Nvl\Forms` |
 | Service provider | `Nvl\Forms\Providers\FormsServiceProvider` |
@@ -14,14 +14,14 @@
 
 ## Purpose
 
-`nvl/forms` is a headless form-definition and submission engine for Laravel 12–13 on PHP 8.4+. It owns secure form definitions, localized nested content, public rendering contracts, submissions, stored entries, analytics, and privacy operations. It does not ship an admin UI, frontend scaffold, mail provider, application-specific form types, or a required audit system.
+`nvl/forms` is a headless form-definition and submission engine for Laravel 13 on PHP 8.4+. It owns secure form definitions, localized nested content, public rendering contracts, submissions, stored entries, analytics, and privacy operations. It does not ship an admin UI, frontend scaffold, mail provider, application-specific form types, or a required audit system.
 
 Forms depends on `nvl/data`, `nvl/filterable`, `nvl/support`, and `nvl/translatable`. `nvl/activity` is an optional event-driven integration.
 
 ## Requirements and installation
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 ```
 

@@ -155,5 +155,11 @@ abstract class TestCase extends Orchestra
             $table->string('name');
             $table->timestamps();
         });
+
+        Schema::create('content_string_test_owners', function (Blueprint $table): void {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->timestamps();
+        });
     }
 }

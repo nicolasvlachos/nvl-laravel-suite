@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/auth` |
 | PHP namespace | `Nvl\Auth` |
 | Service provider | `Nvl\Auth\Providers\AuthServiceProvider` |
@@ -28,7 +28,7 @@ push, or another transport without coupling Auth to delivery infrastructure.
 ## Installation
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan vendor:publish --tag=auth-config
 php artisan vendor:publish --tag=auth-skills
 php artisan vendor:publish --tag=auth-adoption
@@ -83,6 +83,63 @@ consumer that needs application relationships subclasses it and changes only
 to operate on the configured class. Host schemas may map every package principal
 attribute to a different physical column through
 `features.principal_management.settings.attributes`.
+
+### Embedded applications and host policies
+
+Applications that own their pages and HTTP controllers can preview a focused
+overlay instead of publishing the full package configuration:
+
+```bash
+php artisan nvl:auth:configure \
+    --preset=embedded-application \
+    --user-model='App\Models\User'
+```
+
+The command is a dry run by default. Add `--write` to create a missing file. To
+replace an existing file, first run the dry run with the intended options and
+review its unified diff, then repeat it with `--write --force`. Repeatable
+`--enable` and `--disable` options add only explicit feature overrides. The
+preset keeps package HTTP routes off, marks HTTP and delivery as host-owned,
+configures the host User model, and selects the policy adapter.
+
+The adapter removes the need to define one Laravel Gate for every
+`nvl-auth.*` ability. Map closed package aliases to methods on registered Laravel
+policies instead:
+
+```php
+use App\Models\User;
+use Nvl\Auth\Models\Permission;
+use Nvl\Auth\Models\Role;
+
+'management' => [
+    'abilities' => [
+        'users.viewAny' => 'viewAny',
+        'users.view' => 'view',
+        'users.create' => 'create',
+        'users.update' => 'update',
+        'rbac.view' => 'viewRbac',
+        'rbac.manageRoles' => 'manageRoles',
+        'rbac.managePermissions' => 'managePermissions',
+        'rbac.synchronize' => 'synchronizeRbac',
+    ],
+    'policy_models' => [
+        'users' => User::class,
+        'roles' => Role::class,
+        'permissions' => Permission::class,
+    ],
+],
+```
+
+Register those model policies through Laravel's normal policy discovery or
+`Gate::policy`. Unknown aliases, missing mappings, invalid model classes, and
+wrong target types deny access. A custom `AuthManagementAccess` implementation
+remains the supported escape hatch for domain authorization that cannot be
+expressed as model-policy decisions.
+
+Use `php artisan nvl:auth:configuration --format=json` to inspect effective
+features, route ownership, model classes, adapters, policy coverage, and Suite
+configuration drift without printing configuration values or secrets. Run
+`php artisan nvl:auth:doctor --strict` after registering host routes and policies.
 
 ## Features
 
@@ -233,6 +290,38 @@ explicit host `SystemMutationAccess` grant. Destructive lifecycle Actions invoke
 the replaceable `PrincipalSessionContainment` contract for API tokens, remember
 credentials, Laravel database sessions, and host extensions.
 
+## RBAC consumer reads and analytics
+
+Use RBAC Actions for option lists, suggestions, catalogs, name availability,
+mixed ID/name resolution, assignments, and analytics. Consumers must not start
+queries from `Role` or `Permission`; the Actions own feature admission,
+authorization, configured models and guards, input bounds, and portable query
+semantics.
+
+Per-role analytics is an identity-free projection. It counts principals using
+the configured active-column mapping, aggregates canonical permission groups,
+and traverses the role hierarchy with a bounded number of queries. Activity is
+intentionally a separate package concern and can be composed from the identity
+returned by `ShowRoleAction`:
+
+```php
+use Nvl\Activity\Services\ActivityReadService;
+use Nvl\Auth\Actions\Rbac\ShowRoleAction;
+use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
+
+$role = app(ShowRoleAction::class)->execute($actor, $roleId);
+$analytics = app(ShowRoleAnalyticsAction::class)->execute($actor, $roleId);
+$activity = app(ActivityReadService::class)->paginateForSubjectKey(
+    $role->getMorphClass(),
+    $role->getKey(),
+    20,
+);
+```
+
+The Action-returned role may be used only as the authorized identity/result for
+that composition. A consumer-initiated role query is still outside the public
+application boundary.
+
 ## Passkeys and tokens
 
 Passkeys work without a host ceremony class. Enable the feature and configure a
@@ -254,22 +343,81 @@ final class DeliverAuthMessage
 {
     public function handle(AuthDeliveryRequested $event): void
     {
-        // Map $event->request into nvl/mail-notifications or another transport.
+        $request = $event->request;
+
+        // Render from $request->subject or $request->invitation when present,
+        // then deliver the secret-bearing $request->payload.
     }
 }
 ```
 
 Each delivery feature owns exactly one message type. Magic-link delivery
 includes `challenge_id`, an opaque `secret`, and a numeric `code`; either
-credential atomically consumes the same challenge.
+credential atomically consumes the same challenge. Its request also carries the
+challenged `SubjectReference`. Invitation delivery carries a bounded
+`InvitationDeliveryData` projection with recipient, purpose, inviter, grants,
+expiry, resend count, and only metadata keys explicitly allowlisted by
+`features.invitations.settings.delivery_metadata_keys`.
 
 Auth owns the message intent and secure payload. The consumer owns channel,
-template, provider, delivery retry, and provider callback concerns.
+template, provider, delivery retry, and provider callback concerns. The request
+`messageId` is the stable idempotency and outcome-correlation key.
 
 Successful direct and registration-through-invitation acceptance dispatches an
 after-commit `InvitationAccepted` event exactly once. It contains only the
-invitation ID, type, purpose, and accepted `SubjectReference`; bearer tokens,
-recipient addresses, and invitation metadata are deliberately excluded.
+invitation ID, type, purpose, accepted `SubjectReference`, and durable
+`acceptedAt` timestamp; bearer tokens, recipient addresses, and invitation
+metadata are deliberately excluded.
+
+## Consumer application APIs
+
+Application code should enter Auth through Actions and consume DTOs. The main
+read boundaries are the [RBAC consumer reads](#rbac-consumer-reads-and-analytics)
+and the [invitation consumer reads](#invitation-consumer-reads-and-delivery-outcomes)
+below. Package model reads remain a documented 1.x compatibility surface, not
+the preferred boundary for new applications.
+
+## Invitation consumer reads and delivery outcomes
+
+Use `ListInvitationProjectionsAction` for authorized management lists. It
+accepts `InvitationIndexQueryData`, including bounded `types`, lifecycle,
+recipient, purpose, context, and expiry filters, and returns a paginator of
+`InvitationReadData`. The DTO contains only usable consumer state; token,
+recipient, context, and active-key hashes plus the current delivery message ID
+are never exposed.
+
+```php
+use Nvl\Auth\Actions\Invitations\ListInvitationProjectionsAction;
+use Nvl\Auth\Data\Queries\InvitationIndexQueryData;
+
+$invitations = app(ListInvitationProjectionsAction::class)->execute(
+    $actor,
+    new InvitationIndexQueryData(
+        types: ['candidate', 'registration'],
+        lifecycle: 'active',
+        context: $campaignId,
+    ),
+);
+```
+
+`FindActiveInvitationAction` performs normalized exact recipient, purpose,
+optional type, and hashed-context lookup without exposing the model. Pass a
+management actor whenever one exists. Actorless lookup is a trusted server-only
+boundary and requires an explicitly constructed
+`InvitationIssuanceContext(actorlessAuthorized: true)`; never hydrate that
+context from public request data.
+
+Resend and revoke workflows may pass an invitation ID directly to
+`ResendInvitationAction` and `RevokeInvitationAction`. The Actions resolve and
+lock the authoritative row before authorization and mutation.
+
+After an invitation transport attempt, report only a coarse result through
+`RecordInvitationDeliveryOutcomeAction`: `Delivered`, or `Failed` with a stable
+safe failure code such as `provider_rejected`. Never pass provider exception
+messages. Auth ignores stale callbacks for superseded resend message IDs,
+records that fact in its audit stream, and makes duplicate callbacks
+idempotent. Provider IDs, raw responses, retry scheduling, and detailed delivery
+telemetry remain host-owned.
 
 ## Storage
 
@@ -289,6 +437,8 @@ See [schema](docs/schema.md) for the exact inventory.
 ```bash
 php artisan nvl:auth:features
 php artisan nvl:auth:features --format=json
+php artisan nvl:auth:configure --preset=embedded-application --user-model='App\Models\User'
+php artisan nvl:auth:configuration --format=json
 php artisan nvl:auth:schema
 php artisan nvl:auth:schema --apply
 php artisan nvl:auth:doctor --strict

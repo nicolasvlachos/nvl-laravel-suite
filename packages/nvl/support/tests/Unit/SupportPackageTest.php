@@ -110,7 +110,7 @@ it('keeps its source boundary minimal and transport-neutral', function (): void 
         ->implode("\n");
 
     expect($sourceDirectories)
-        ->toBe(['Contracts', 'Exceptions', 'Providers'])
+        ->toBe(['Config', 'Contracts', 'Exceptions', 'Providers', 'Traits'])
         ->and($source)
         ->not->toMatch('/^use\s+Nvl\\\\(?!Support\\\\)/m')
         ->not->toContain('Illuminate\\Http\\')

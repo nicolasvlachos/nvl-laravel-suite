@@ -204,6 +204,13 @@ final class CommentsReconcileCommand extends Command
                     'Invalid attachment associations',
                     $result->invalidAttachmentAssociations,
                 ],
+                ['Missing metadata index values', $result->missingMetadataIndexValues],
+                ['Stale metadata index values', $result->staleMetadataIndexValues],
+                ['Document/mention row mismatches', $result->documentMentionMismatches],
+                ['Duplicate mention identities', $result->duplicateMentionIdentities],
+                ['Invalid mention snapshots', $result->invalidMentionSnapshots],
+                ['Orphan mention rows', $result->orphanMentionRows],
+                ['Body projection mismatches', $result->bodyProjectionMismatches],
                 ['Healthy', $result->healthy ? 'yes' : 'no'],
             ],
         );

@@ -23,6 +23,7 @@ use Nvl\Translations\Http\Requests\ExportTranslationsRequest;
 use Nvl\Translations\Http\Requests\ImportTranslationsRequest;
 use Nvl\Translations\Http\Requests\TranslationIndexRequest;
 use Nvl\Translations\Models\TranslationEntry;
+use Nvl\Translations\Services\TranslationEntryFilterSchema;
 
 /**
  * Provides canonical JSON endpoints for the Translations management module.
@@ -48,6 +49,7 @@ final class TranslationsApiController extends Controller
         ListTranslationEntriesAction $action,
         ListTranslationFilterOptionsAction $optionsAction,
         QueryFilterSetFactory $filterFactory,
+        ?TranslationEntryFilterSchema $filterSchema = null,
     ): JsonResponse {
         $this->authorization->authorize(TranslationsAbility::ListEntries);
 
@@ -55,7 +57,7 @@ final class TranslationsApiController extends Controller
             perPage: $request->perPage(),
             filters: $filterFactory->fromHttpQuery(
                 $request->filterQuery(),
-                (new TranslationEntry)->filterSchema(),
+                ($filterSchema ?? new TranslationEntryFilterSchema)->make(),
             ),
         );
 

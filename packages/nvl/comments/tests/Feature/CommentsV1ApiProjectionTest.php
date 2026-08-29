@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -17,6 +18,7 @@ use Nvl\Comments\Actions\AttachCommentMediaAction;
 use Nvl\Comments\Actions\CreateCommentAction;
 use Nvl\Comments\Actions\DeleteCommentAction;
 use Nvl\Comments\Actions\DetachCommentMediaAction;
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Actions\ListCommentAttachmentsAction;
 use Nvl\Comments\Actions\ListCommentRevisionsAction;
 use Nvl\Comments\Actions\ModerateCommentAction;
@@ -31,7 +33,9 @@ use Nvl\Comments\Contracts\CommentAuthorPresenter;
 use Nvl\Comments\Contracts\CommentQueryScope;
 use Nvl\Comments\Data\CommentActorData;
 use Nvl\Comments\Data\CommentAuthorData;
+use Nvl\Comments\Data\CommentManagementData;
 use Nvl\Comments\Data\CommentReportManagementData;
+use Nvl\Comments\Data\MemberCommentData;
 use Nvl\Comments\Data\Mutations\AnonymizeCommentData;
 use Nvl\Comments\Data\Mutations\CreateCommentData;
 use Nvl\Comments\Data\Mutations\DeleteCommentData;
@@ -41,6 +45,8 @@ use Nvl\Comments\Data\Mutations\ResolveCommentReportData;
 use Nvl\Comments\Data\Mutations\RestoreCommentData;
 use Nvl\Comments\Data\Mutations\RestoreCommentRevisionData;
 use Nvl\Comments\Data\Mutations\UpdateCommentData;
+use Nvl\Comments\Data\PublicCommentData;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
 use Nvl\Comments\Enums\CommentAbility;
 use Nvl\Comments\Enums\CommentAudience;
 use Nvl\Comments\Enums\CommentReportStatus;
@@ -49,9 +55,11 @@ use Nvl\Comments\Enums\CommentVisibility;
 use Nvl\Comments\Events\CommentChanged;
 use Nvl\Comments\Models\Comment;
 use Nvl\Comments\Services\CommentAttachmentUrlFactory;
+use Nvl\Comments\Services\CommentMetadataRegistry;
 use Nvl\Comments\Services\CommentProjectionFactory;
 use Nvl\Comments\Services\CommentReadService;
 use Nvl\Comments\Services\ConfiguredCommentAuthorization;
+use Nvl\Comments\Tests\Fixtures\TestCommentMetadataSchema;
 use Nvl\Comments\Tests\Fixtures\TestCommentTarget;
 use Nvl\Media\Contracts\MediaAuthorization;
 use Nvl\Media\Data\MediaActorData;
@@ -132,6 +140,224 @@ function commentsV1BindManagementBoundary(): void
     app()->instance(CommentQueryScope::class, $boundary);
 }
 
+it('finds the latest target comment through bounded selectors and audience projections', function (): void {
+    $target = TestCommentTarget::query()->create(['name' => 'Latest comment target']);
+    $actor = new CommentActorData('member', 'latest-comment-viewer');
+    $create = app(CreateCommentAction::class);
+    $older = $create->execute(
+        $target,
+        new CreateCommentData(
+            body: 'Older matching comment',
+            tags: ['workflow', 'decision'],
+        ),
+        $actor,
+    );
+    $newer = $create->execute(
+        $target,
+        new CreateCommentData(
+            body: 'Newer matching comment',
+            tags: ['workflow', 'decision'],
+        ),
+        $actor,
+    );
+    $newestPartialMatch = $create->execute(
+        $target,
+        new CreateCommentData(
+            body: 'Newest partial match',
+            tags: ['workflow'],
+        ),
+        $actor,
+    );
+    $newestPending = $create->execute(
+        $target,
+        new CreateCommentData(
+            body: 'Newest pending match',
+            tags: ['workflow', 'decision'],
+        ),
+        $actor,
+    );
+    $newestDeleted = $create->execute(
+        $target,
+        new CreateCommentData(
+            body: 'Newest deleted match',
+            tags: ['workflow', 'decision'],
+        ),
+        $actor,
+    );
+    $newestPending->forceFill(['status' => CommentStatus::Pending])->save();
+    $older->forceFill(['created_at' => now()->subMinutes(2)])->saveQuietly();
+    $newer->forceFill(['created_at' => now()->subMinute()])->saveQuietly();
+    $newestPartialMatch->forceFill(['created_at' => now()])->saveQuietly();
+    $newestPending->forceFill(['created_at' => now()->addMinute()])->saveQuietly();
+    $newestDeleted->forceFill(['created_at' => now()->addMinutes(2)])->saveQuietly();
+    $newestDeleted->delete();
+    $selector = new CommentSelectorData(
+        tags: ['workflow', 'decision'],
+        status: CommentStatus::Approved,
+    );
+
+    $public = app(FindLatestTargetCommentAction::class)->execute(
+        $target,
+        CommentActorData::anonymous(),
+        $selector,
+        CommentAudience::Public,
+    );
+    $member = app(FindLatestTargetCommentAction::class)->execute(
+        $target,
+        $actor,
+        $selector,
+    );
+    commentsV1BindManagementBoundary();
+    $management = app(FindLatestTargetCommentAction::class)->execute(
+        $target,
+        CommentActorData::system(),
+        $selector,
+        CommentAudience::Management,
+    );
+
+    expect($public)->toBeInstanceOf(PublicCommentData::class)
+        ->and($public?->id)->toBe($newer->id)
+        ->and($member)->toBeInstanceOf(MemberCommentData::class)
+        ->and($member?->id)->toBe($newer->id)
+        ->and($management)->toBeInstanceOf(CommentManagementData::class)
+        ->and($management?->id)->toBe($newer->id)
+        ->and(app(FindLatestTargetCommentAction::class)->execute(
+            $target,
+            CommentActorData::anonymous(),
+            new CommentSelectorData(tags: ['missing']),
+            CommentAudience::Public,
+        ))->toBeNull();
+});
+
+it('returns only audience-registered metadata through HTTP projections', function (): void {
+    config()->set([
+        'comments.metadata.schemas' => [TestCommentMetadataSchema::class],
+        'comments.metadata.digest_key' => 'comments-api-metadata-key',
+    ]);
+    app()->forgetInstance(CommentMetadataRegistry::class);
+    commentsV1RegisterRoutes(public: true, member: true);
+    $target = TestCommentTarget::query()->create(['name' => 'Metadata API projection']);
+    $viewer = commentsV1Member('metadata-api-viewer');
+    $actor = CommentActorData::fromAuthenticatable($viewer);
+    $comment = app(CreateCommentAction::class)->execute(
+        $target,
+        new CreateCommentData('Metadata API comment', metadata: [
+            'legacy_private' => 'legacy-api-secret',
+            'workflow_event' => 'submitted',
+            'workflow_sequence' => 14,
+            'workflow_approved' => true,
+        ]),
+        $actor,
+        CommentAudience::Member,
+    );
+
+    $public = $this->getJson(route('nvl.comments.public.show', [
+        'comment' => $comment->id,
+    ]))->assertOk();
+    $member = $this->actingAs($viewer)->getJson(route('nvl.comments.member.show', [
+        'comment' => $comment->id,
+    ]))->assertOk();
+
+    $public->assertJsonPath('data.metadata.0.namespace', 'workflow')
+        ->assertJsonPath('data.metadata.0.values.sequence', 14)
+        ->assertJsonMissingPath('data.metadata.0.values.event');
+    $member->assertJsonPath('data.metadata.0.namespace', 'workflow')
+        ->assertJsonPath('data.metadata.0.values.event', 'submitted')
+        ->assertJsonPath('data.metadata.0.values.approved', true)
+        ->assertJsonMissingPath('data.metadata.0.values.sequence');
+
+    expect($public->getContent().$member->getContent())
+        ->not->toContain('legacy_private', 'legacy-api-secret');
+});
+
+it('uses the comment identifier as the deterministic latest-selector tie breaker', function (): void {
+    $target = TestCommentTarget::query()->create(['name' => 'Latest tie target']);
+    $actor = new CommentActorData('member', 'latest-tie-viewer');
+    $create = app(CreateCommentAction::class);
+    $first = $create->execute(
+        $target,
+        new CreateCommentData('First tied comment', tags: ['tied']),
+        $actor,
+    );
+    $second = $create->execute(
+        $target,
+        new CreateCommentData('Second tied comment', tags: ['tied']),
+        $actor,
+    );
+    $timestamp = now()->startOfSecond();
+    $first->forceFill(['created_at' => $timestamp])->saveQuietly();
+    $second->forceFill(['created_at' => $timestamp])->saveQuietly();
+    $expectedId = max($first->id, $second->id);
+
+    $result = app(FindLatestTargetCommentAction::class)->execute(
+        $target,
+        CommentActorData::anonymous(),
+        new CommentSelectorData(tags: ['tied']),
+        CommentAudience::Public,
+    );
+
+    expect($result?->id)->toBe($expectedId);
+});
+
+it('validates latest-comment tags and denies management before querying', function (): void {
+    expect(fn () => new CommentSelectorData(tags: ['first' => 'tag']))
+        ->toThrow(InvalidArgumentException::class, 'must be a list')
+        ->and(fn () => new CommentSelectorData(tags: ['duplicate', 'duplicate']))
+        ->toThrow(InvalidArgumentException::class, 'distinct')
+        ->and(fn () => new CommentSelectorData(tags: ['']))
+        ->toThrow(InvalidArgumentException::class, 'non-blank')
+        ->and(fn () => new CommentSelectorData(tags: array_fill(0, 21, 'tag')))
+        ->toThrow(InvalidArgumentException::class, 'at most')
+        ->and(fn () => new CommentSelectorData(metadataEquals: [
+            'workflow.event' => 1.5,
+        ]))->toThrow(InvalidArgumentException::class, 'scalar registered aliases');
+
+    config()->set('comments.content.maximum_tags', 50);
+    $tooManyDistinctTags = array_map(
+        static fn (int $index): string => "tag-{$index}",
+        range(1, 21),
+    );
+    expect(fn () => new CommentSelectorData(tags: $tooManyDistinctTags))
+        ->toThrow(InvalidArgumentException::class, 'at most 20');
+
+    $target = TestCommentTarget::query()->create(['name' => 'Denied latest target']);
+    $boundary = new class implements CommentAuthorization, CommentQueryScope
+    {
+        /** @param  array<string, mixed>  $context */
+        public function allows(
+            CommentAbility $ability,
+            CommentActorData $actor,
+            ?Comment $comment = null,
+            ?Model $target = null,
+            CommentAudience $audience = CommentAudience::Public,
+            array $context = [],
+        ): bool {
+            return false;
+        }
+
+        /** @param  Builder<Comment>  $query */
+        public function scopeComments(
+            Builder $query,
+            CommentActorData $actor,
+            Model $target,
+            CommentAudience $audience,
+            CommentAbility $ability,
+        ): void {}
+    };
+    app()->instance(CommentAuthorization::class, $boundary);
+    app()->instance(CommentQueryScope::class, $boundary);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    expect(fn () => app(FindLatestTargetCommentAction::class)->execute(
+        $target,
+        CommentActorData::system(),
+        new CommentSelectorData(tags: ['workflow']),
+        CommentAudience::Management,
+    ))->toThrow(AuthorizationException::class)
+        ->and(DB::getQueryLog())->toBeEmpty();
+});
+
 it('keeps every route group disabled by default and enables the complete member API independently', function (): void {
     expect(Route::has('nvl.comments.public.index'))->toBeFalse()
         ->and(Route::has('nvl.comments.member.index'))->toBeFalse()
@@ -142,6 +368,9 @@ it('keeps every route group disabled by default and enables the complete member 
     $memberRouteNames = [
         'nvl.comments.member.index',
         'nvl.comments.member.store',
+        'nvl.comments.member.rich.store',
+        'nvl.comments.member.rich.update',
+        'nvl.comments.member.mentions.suggestions',
         'nvl.comments.member.show',
         'nvl.comments.member.update',
         'nvl.comments.member.destroy',
@@ -160,6 +389,7 @@ it('keeps every route group disabled by default and enables the complete member 
         static fn (string $name): bool => ! Route::has($name),
     )))->toBe([])
         ->and(Route::has('nvl.comments.public.index'))->toBeFalse()
+        ->and(Route::has('nvl.comments.public.mentions.suggestions'))->toBeFalse()
         ->and(Route::has('nvl.comments.management.index'))->toBeFalse()
         ->and(Route::getRoutes()->getByName('nvl.comments.member.index')?->uri())
         ->toBe('api/v1/member/discussions/targets/{target}/{targetId}')

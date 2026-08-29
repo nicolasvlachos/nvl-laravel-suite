@@ -28,6 +28,13 @@ severity: 'error' | 'warning',
 passed: boolean,
 message: string,
 };
+export type SeoOwnerRevisionData = {
+ownerAlias: string,
+ownerId: string,
+scope: string,
+profileId: string | null,
+revision: number,
+};
 export type SeoProfileData = {
 id: string,
 scope: string,

@@ -4,6 +4,16 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Changed Content block and placement reads across Actions, the Content engine,
+  and its facade from Eloquent models to `ContentBlockData` and
+  `ContentPlacementData` while retaining mutation identity contracts.
+- Established Content Actions and editor projections as the 2.0 consumer
+  boundary; direct consumer Content-model queries now fail Suite audit.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

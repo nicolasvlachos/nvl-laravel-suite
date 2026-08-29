@@ -6,6 +6,7 @@ namespace Nvl\Pages\Actions;
 
 use Nvl\Pages\Contracts\PageAuthorization;
 use Nvl\Pages\Data\PageActorData;
+use Nvl\Pages\Data\PageData;
 use Nvl\Pages\Enums\PageAbility;
 use Nvl\Pages\Models\Page;
 
@@ -20,13 +21,15 @@ final readonly class GetPageAction
     public function __construct(private PageAuthorization $authorization) {}
 
     /**
-     * Return one page with its management relationships loaded.
+     * Return one complete authorized management page.
      */
-    public function execute(Page|string $page, PageActorData $actor): Page
+    public function execute(Page|string $page, PageActorData $actor): PageData
     {
         $page = $page instanceof Page ? $page : Page::query()->findOrFail($page);
         $this->authorization->authorize(PageAbility::View, $actor, $page);
 
-        return $page->loadMissing('translations', 'parent', 'children');
+        $page->loadMissing('translations');
+
+        return PageData::fromModel($page);
     }
 }

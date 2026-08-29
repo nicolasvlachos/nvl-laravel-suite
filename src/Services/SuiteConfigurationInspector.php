@@ -24,6 +24,8 @@ use Throwable;
  * @phpstan-type EffectiveSchedule array{command: string, condition: string|null, enabled: bool|null, registered: bool, required: bool}
  * @phpstan-type EffectiveModule array{
  *     requested: bool,
+ *     decision: 'enabled'|'disabled'|'implicit',
+ *     explicit: bool,
  *     enabled: bool,
  *     dependency: bool,
  *     provider: class-string,
@@ -38,11 +40,18 @@ use Throwable;
  *     typescript: bool
  * }
  * @phpstan-type ProfileReport array{name: string, description: string, modules: list<string>, matches: bool}
+ * @phpstan-type PackageConfigurationReport array{
+ *     healthy: bool,
+ *     inspected_modules: list<string>,
+ *     findings: list<array<string, mixed>>
+ * }
  * @phpstan-type SuiteConfigurationReport array{
+ *     selection: array{source: 'legacy'|'declarative', profile: string|null, include: list<string>, exclude: list<string>},
  *     profile: ProfileReport|null,
  *     profiles: array<string, ProfileDefinition>,
  *     modules: array<string, EffectiveModule>,
- *     morph_aliases: list<string>
+ *     morph_aliases: list<string>,
+ *     package_configuration: PackageConfigurationReport
  * }
  */
 final readonly class SuiteConfigurationInspector
@@ -52,6 +61,7 @@ final readonly class SuiteConfigurationInspector
         private Repository $configuration,
         private Schedule $schedule,
         private SuiteModuleCatalog $catalog,
+        private ?SuitePackageConfigurationInspector $packageConfiguration = null,
     ) {}
 
     /**
@@ -59,17 +69,21 @@ final readonly class SuiteConfigurationInspector
      */
     public function inspect(?string $profile = null): array
     {
-        $effectiveModules = $this->catalog->effectiveModules();
+        $selection = $this->catalog->selection();
+        $effectiveModules = $selection->effectiveModules();
         $effectiveLookup = array_fill_keys($effectiveModules, true);
         $definitions = $this->catalog->modules();
         $modules = [];
 
         foreach ($definitions as $module => $definition) {
             $enabled = isset($effectiveLookup[$module]);
-            $requested = $this->catalog->requested($module);
+            $requested = $selection->requested($module);
+            $decision = $selection->decision($module);
 
             $modules[$module] = [
                 'requested' => $requested,
+                'decision' => $decision,
+                'explicit' => $decision !== 'implicit',
                 'enabled' => $enabled,
                 'dependency' => $enabled && ! $requested,
                 'provider' => $definition['provider'],
@@ -89,11 +103,25 @@ final readonly class SuiteConfigurationInspector
             ];
         }
 
+        $packageFindings = $this->packageConfiguration?->inspect($effectiveModules) ?? [];
+
         return [
+            'selection' => [
+                'source' => $selection->source,
+                'profile' => $selection->profile,
+                'include' => $selection->include,
+                'exclude' => $selection->exclude,
+            ],
             'profile' => $this->profile($profile, $effectiveModules),
             'profiles' => $this->catalog->profiles(),
             'modules' => $modules,
             'morph_aliases' => $this->morphAliases(),
+            'package_configuration' => [
+                'healthy' => collect($packageFindings)
+                    ->doesntContain(static fn (array $finding): bool => $finding['severity'] === 'error'),
+                'inspected_modules' => $effectiveModules,
+                'findings' => $packageFindings,
+            ],
         ];
     }
 

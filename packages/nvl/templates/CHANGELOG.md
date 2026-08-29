@@ -4,6 +4,14 @@ All notable changes to `nvl/templates` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Established render, list, and mutation Actions plus renderer/asset contracts
+  as the 2.0 consumer boundary; direct consumer Template-model queries now fail
+  Suite audit.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

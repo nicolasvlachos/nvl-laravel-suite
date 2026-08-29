@@ -14,6 +14,7 @@ use Nvl\Auth\Data\Mutations\StoreInvitationData;
 use Nvl\Auth\Enums\AuthFeature;
 use Nvl\Auth\Enums\AuthMessageType;
 use Nvl\Auth\Enums\FeatureOperation;
+use Nvl\Auth\Enums\InvitationDeliveryStatus;
 use Nvl\Auth\Events\AuthDeliveryRequested;
 use Nvl\Auth\Exceptions\AuthException;
 use Nvl\Auth\Models\Invitation;
@@ -21,6 +22,7 @@ use Nvl\Auth\Pipelines\AuthPipeline;
 use Nvl\Auth\Results\IssuedInvitation;
 use Nvl\Auth\Services\AuthConfiguration;
 use Nvl\Auth\Services\FeatureGate;
+use Nvl\Auth\Services\InvitationDeliveryMetadataPolicy;
 use Nvl\Auth\Services\ManagementAuthorizer;
 use Nvl\Auth\Services\OpaqueTokenFactory;
 use Nvl\Auth\Services\SecretHasher;
@@ -45,6 +47,7 @@ final readonly class CreateInvitationAction
         private ManagementAuthorizer $authorization,
         private AuthPipeline $pipeline,
         private AuthAuditRecorder $audits,
+        private ?InvitationDeliveryMetadataPolicy $deliveryMetadata = null,
     ) {}
 
     /**
@@ -108,6 +111,7 @@ final readonly class CreateInvitationAction
                         }
 
                         $token = $this->tokens->make();
+                        $messageId = (string) Str::uuid();
                         $expiresAt = $context->expiresAt ?? CarbonImmutable::now()->addHours(
                             $this->configuration->integerBetween(
                                 'features.invitations.settings.ttl_hours',
@@ -134,12 +138,15 @@ final readonly class CreateInvitationAction
                                 ...$data->metadata,
                                 'return_path' => $context->returnPath,
                             ],
+                            'resend_count' => 0,
+                            'current_delivery_message_id' => $messageId,
+                            'delivery_status' => InvitationDeliveryStatus::Pending,
                             'last_sent_at' => CarbonImmutable::now(),
                             'expires_at' => $expiresAt,
                         ]);
 
                         AuthDeliveryRequested::dispatch(new AuthDeliveryRequest(
-                            messageId: (string) Str::uuid(),
+                            messageId: $messageId,
                             feature: AuthFeature::Invitations,
                             type: AuthMessageType::Invitation,
                             recipient: $recipient,
@@ -156,6 +163,9 @@ final readonly class CreateInvitationAction
                                 'invitation_id' => $invitation->identifier(),
                                 'context' => $data->context,
                             ],
+                            invitation: ($this->deliveryMetadata ?? new InvitationDeliveryMetadataPolicy(
+                                $this->configuration,
+                            ))->deliveryData($invitation),
                         ));
                         $this->audits->record(
                             'invitation.issued',

@@ -1,6 +1,6 @@
 ---
 name: nvl-comments
-description: Install, configure, implement, integrate, test, diagnose, or review nvl/comments in Laravel 12–13. Use for polymorphic targets, audience-scoped public/member/management reads, anonymous creation, idempotency, threads, revisions, restore/anonymization, reactions, reports, moderation queues, private Media attachments, reconciliation, privacy, authorization, target aliases, TypeScript contracts, or package architecture.
+description: Install, configure, implement, integrate, test, diagnose, or review nvl/comments in Laravel 13. Use for polymorphic targets, audience-scoped public/member/management reads, anonymous creation, idempotency, threads, revisions, restore/anonymization, reactions, reports, moderation queues, private Media attachments, reconciliation, privacy, authorization, target aliases, TypeScript contracts, or package architecture.
 ---
 
 # NVL Comments
@@ -15,7 +15,7 @@ Run the required install and only the publish commands for assets the consumer
 will own:
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan vendor:publish --tag=comments-config
 php artisan vendor:publish --tag=comments-migrations
 php artisan vendor:publish --tag=comments-skills
@@ -102,6 +102,48 @@ enabled without consumer-ready actor, scope, policy, and presenter bindings.
 Public GET responses, including public attachment lists, remain shared-cache
 compatible and viewer-independent. Member, management, mutation, revision,
 and signed-asset delivery responses are private/no-store.
+
+## Find one latest target comment
+
+- Use `Nvl\Comments\Actions\FindLatestTargetCommentAction::execute(
+  Illuminate\Database\Eloquent\Model $target,
+  Nvl\Comments\Data\CommentActorData $actor,
+  Nvl\Comments\Data\Queries\CommentSelectorData $selector,
+  Nvl\Comments\Enums\CommentAudience $audience =
+  Nvl\Comments\Enums\CommentAudience::Member)` instead of querying a target's
+  `comments()` relation.
+- Construct `CommentSelectorData` as `new CommentSelectorData(
+  tags: ['candidacy-workflow'], status: CommentStatus::Approved)`. `tags` is a
+  distinct list of at most 20 non-blank UTF-8 strings of at most 64 characters
+  each, further limited by a lower `comments.content.maximum_tags`. Every tag
+  must match; status is nullable. Never accept a raw column or JSON path from
+  consumer input.
+- Consume only the returned `PublicCommentData`, `MemberCommentData`, or
+  `CommentManagementData`; `null` means no audience-visible match.
+- Keep management authorization in `CommentAuthorization`. The Action invokes
+  it before SQL, then applies `CommentQueryScope`, selectors, and deterministic
+  `created_at`/`id` descending order. It excludes soft-deleted comments so a
+  deleted workflow note falls back to the previous active match.
+
+For a privileged workflow read, use these exact imports and call:
+
+```php
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
+use Nvl\Comments\Data\CommentActorData;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Comments\Enums\CommentAudience;
+use Nvl\Comments\Enums\CommentStatus;
+
+$comment = app(FindLatestTargetCommentAction::class)->execute(
+    target: $candidacy,
+    actor: CommentActorData::system(),
+    selector: new CommentSelectorData(
+        tags: ['candidacy-workflow'],
+        status: CommentStatus::Approved,
+    ),
+    audience: CommentAudience::Management,
+);
+```
 
 ## Mutate through Actions
 
@@ -228,7 +270,7 @@ Also run the Comments Pest package/integration suites, constant-query
 regressions, SQLite, MySQL, MariaDB, and PostgreSQL coverage, Pint, PHPStan at
 maximum level, TypeScript/contract checks, package-family validation, Composer
 validation, dependency audit, and the clean source and relocated-artifact
-consumer proofs on Laravel 12–13.
+consumer proofs on Laravel 13.
 
 Use the bundled migrations only on the default connection with canonical table
 names. Custom connections or names require disabled bundled migrations and an

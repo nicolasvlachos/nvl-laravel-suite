@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Media\Providers;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Support\Facades\Gate;
@@ -18,6 +19,7 @@ use Nvl\Media\Console\Commands\AdoptSpatieMediaCommand;
 use Nvl\Media\Console\Commands\MediaDoctorCommand;
 use Nvl\Media\Console\Commands\MigrateDiskCommand;
 use Nvl\Media\Console\Commands\PruneExpiredMultipartUploadsCommand;
+use Nvl\Media\Console\Commands\PruneMediaOwnerSlotOperationsCommand;
 use Nvl\Media\Console\Commands\RegenerateVariationsCommand;
 use Nvl\Media\Console\Commands\StorageHealthCommand;
 use Nvl\Media\Contracts\AttachMediaContract;
@@ -56,6 +58,7 @@ use Nvl\Media\Services\MediaMultipartSessionMapper;
 use Nvl\Media\Services\MediaMutationLock;
 use Nvl\Media\Services\MediaMutationService;
 use Nvl\Media\Services\MediaOwnedSourceLifecycle;
+use Nvl\Media\Services\MediaOwnerSlotIdempotency;
 use Nvl\Media\Services\MediaPathResolver;
 use Nvl\Media\Services\MediaPrivilegedAccess;
 use Nvl\Media\Services\MediaQueryService;
@@ -74,11 +77,16 @@ use Nvl\Media\Services\SvgScanner;
 use Nvl\Media\Services\SystemMediaHostResolver;
 use Nvl\Media\Services\UnsupportedMultipartUploadGateway;
 use Nvl\Media\Support\MediaConfiguration;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /** Registers Media configuration, migrations, contracts, and optional routes. */
 final class MediaServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
+    private const string OWNER_SLOT_COPY_METADATA_KEYS = 'media.owner_slots.copy.metadata_keys';
+
     /**
      * Boot Media resources and its single transaction rollback listener.
      */
@@ -122,6 +130,7 @@ final class MediaServiceProvider extends ServiceProvider
                 MigrateDiskCommand::class,
                 MediaDoctorCommand::class,
                 PruneExpiredMultipartUploadsCommand::class,
+                PruneMediaOwnerSlotOperationsCommand::class,
                 RegenerateVariationsCommand::class,
                 StorageHealthCommand::class,
             ]);
@@ -133,10 +142,34 @@ final class MediaServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/media.php', 'media');
+        $this->mergeConfiguration();
         $this->app->register(RouteServiceProvider::class);
         $this->app->singleton(MediaTransactionRollbackRegistry::class);
         $this->registerScopedServices();
+    }
+
+    /**
+     * Merge package defaults while preserving the consumer metadata allowlist.
+     */
+    private function mergeConfiguration(): void
+    {
+        /** @var Repository $configuration */
+        $configuration = $this->app->make('config');
+        $hasConsumerMetadataKeys = $configuration->has(
+            self::OWNER_SLOT_COPY_METADATA_KEYS,
+        );
+        $consumerMetadataKeys = $configuration->get(
+            self::OWNER_SLOT_COPY_METADATA_KEYS,
+        );
+
+        $this->mergePackageConfiguration(__DIR__.'/../../config/media.php', 'media');
+
+        if ($hasConsumerMetadataKeys) {
+            $configuration->set(
+                self::OWNER_SLOT_COPY_METADATA_KEYS,
+                $consumerMetadataKeys,
+            );
+        }
     }
 
     /**
@@ -157,6 +190,7 @@ final class MediaServiceProvider extends ServiceProvider
         $this->app->scoped(MediaMultipartSessionMapper::class);
         $this->app->scoped(MediaMultipartService::class);
         $this->app->scoped(MediaOwnedSourceLifecycle::class);
+        $this->app->scoped(MediaOwnerSlotIdempotency::class);
         $this->app->scoped(MediaTemporaryFileRegistry::class);
         $this->app->scoped(MediaPathResolver::class);
         $this->app->scoped(MediaUrlResolver::class);

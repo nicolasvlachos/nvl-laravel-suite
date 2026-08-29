@@ -2,6 +2,56 @@
 
 declare(strict_types=1);
 
+use Illuminate\Config\Repository;
+use Nvl\Activity\Support\ActivitySubjectReference;
+use Nvl\Auth\Actions\Invitations\FindActiveInvitationAction;
+use Nvl\Auth\Actions\Invitations\ListInvitationProjectionsAction;
+use Nvl\Auth\Actions\Invitations\RecordInvitationDeliveryOutcomeAction;
+use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
+use Nvl\Comments\Actions\DeleteLatestTargetCommentAction;
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
+use Nvl\Comments\Contracts\CommentMetadataSchema;
+use Nvl\Comments\Data\CommentMetadataProjectionData;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Comments\Definitions\CommentMetadataField;
+use Nvl\Content\Actions\FindContentBlockByKeyAction;
+use Nvl\Content\Actions\FindContentPlacementAction;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
+use Nvl\Content\Actions\ReorderContentPlacementsAction;
+use Nvl\Content\Actions\ReplaceContentPlacementAction;
+use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
+use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
+use Nvl\MailNotifications\ValueObjects\TrackingContext;
+use Nvl\Media\Actions\ClearOwnerMediaSlotAction;
+use Nvl\Media\Actions\CopyOwnerMediaSlotAction;
+use Nvl\Media\Actions\GetOwnerMediaSlotAction;
+use Nvl\Media\Actions\ReplaceOwnerMediaSlotAction;
+use Nvl\Media\Console\Commands\PruneMediaOwnerSlotOperationsCommand;
+use Nvl\Metafields\Actions\Metafields\ListAuthorizedOwnerMetafieldsAction;
+use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
+use Nvl\Pages\Actions\FindPageByKeyAction;
+use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
+use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
+use Nvl\Pages\Actions\ListPageEditorSummariesAction;
+use Nvl\Pages\Actions\ListPageOptionsAction;
+use Nvl\Pages\Actions\ListPublicChildPagesAction;
+use Nvl\Pages\Data\PageEditorBootstrapData;
+use Nvl\Pages\Data\PageEditorSummaryData;
+use Nvl\Pages\Data\PageKeyAvailabilityData;
+use Nvl\Pages\Data\PageOptionData;
+use Nvl\Pages\Enums\PublicChildPageOrder;
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
+use Nvl\Seo\Data\SeoOwnerRevisionData;
+use Nvl\Settings\Data\SettingSubjectReferenceData;
+use Nvl\Settings\Events\SettingChanged;
+use Nvl\Suite\Support\SuiteModuleCatalog;
+use Nvl\Translations\Actions\Entries\GetTranslationCatalogStatisticsAction;
+use Nvl\Translations\Data\TranslationCatalogStatisticsData;
+use Nvl\Translations\Services\TranslationEntryFilterSchema;
+
 /**
  * Determine whether an autoloaded symbol exists regardless of symbol kind.
  */
@@ -50,6 +100,56 @@ function expectConsumerReadinessEvidence(string $root, string $reference): void
     expect($anchors)->toContain($anchor);
 }
 
+it('keeps one canonical four-class consumer boundary across machine and rendered guidance', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/consumer-readiness.php';
+    $readiness = (string) file_get_contents($root.'/docs/consumer-readiness.md');
+    $adoption = (string) file_get_contents($root.'/docs/adoption-matrix.md');
+    $boundary = [
+        'allowed' => 'Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.',
+        'prohibited_v2' => 'Consumer-initiated package model queries and relation aggregates are errors in 2.0.',
+        'forbidden' => 'Consumer writes through package models, builders, raw tables, pivots, or storage paths.',
+        'exceptions' => 'Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.',
+    ];
+
+    expect($catalog['consumer_boundary'] ?? null)->toBe($boundary);
+
+    foreach ([$readiness, $adoption] as $document) {
+        expect($document)->toContain(
+            '**Allowed:** '.$boundary['allowed'],
+            '**Prohibited in 2.0:** '.$boundary['prohibited_v2'],
+            '**Forbidden:** '.$boundary['forbidden'],
+            '**Explicit exceptions:** '.$boundary['exceptions'],
+        );
+    }
+});
+
+it('documents blocking and advisory consumer-audit exit behavior exactly', function (): void {
+    $adoption = (string) file_get_contents(
+        dirname(__DIR__, 2).'/docs/adoption-matrix.md',
+    );
+
+    expect($adoption)->toContain(
+        'only when a finding is blocking under that command policy',
+        '`consumer.implicit_module_decision` can become blocking under `--strict`',
+        '`consumer.package_migration_reference` remains advisory',
+        'exit `2` for',
+        'invalid input or policy',
+    )->not->toContain('`1` for findings');
+});
+
+it('keeps development guardrail metadata synchronized with the shipped runtime catalog', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $runtime = new SuiteModuleCatalog(new Repository([
+        'nvl-suite' => ['modules' => []],
+    ]));
+
+    expect($catalog['runtime_guardrails']['table_definitions'] ?? null)
+        ->toBe($runtime->tableDefinitions())
+        ->and($catalog['runtime_guardrails']['management_actions'] ?? null)
+        ->toBe($runtime->managementActions());
+});
+
 it('catalogs every package and readiness decision exactly once', function (): void {
     $root = dirname(__DIR__, 2);
     $family = require $root.'/tools/package-family.php';
@@ -62,7 +162,7 @@ it('catalogs every package and readiness decision exactly once', function (): vo
     sort($actualPackages);
     sort($expectedStateful);
 
-    expect($catalog['version'] ?? null)->toBe(1)
+    expect($catalog['version'] ?? null)->toBe(2)
         ->and($actualPackages)->toBe($expectedPackages);
 
     $catalogStateful = [];
@@ -80,7 +180,11 @@ it('catalogs every package and readiness decision exactly once', function (): vo
         $directModelAccess = $applicationApi['direct_model_access'] ?? null;
 
         expect($symbols)->toBeArray()->not->toBeEmpty()
-            ->and($directModelAccess)->toBeIn(['forbidden', 'declared_trait_query_api']);
+            ->and($directModelAccess)->toBeIn([
+                'prohibited_v2',
+                'explicit_exception',
+                'not_applicable',
+            ]);
 
         foreach ($symbols as $symbol) {
             expect($symbol)->toBeString()->not->toBeEmpty();
@@ -89,7 +193,7 @@ it('catalogs every package and readiness decision exactly once', function (): vo
 
         expectConsumerReadinessEvidence($root, $applicationApi['documentation']);
 
-        if ($directModelAccess === 'declared_trait_query_api') {
+        if ($directModelAccess === 'explicit_exception') {
             expect($applicationApi['rationale'] ?? null)->toBeString()->not->toBeEmpty();
         } else {
             expect($applicationApi['rationale'] ?? null)->toBeNull();
@@ -190,14 +294,26 @@ it('catalogs every package and readiness decision exactly once', function (): vo
     expect($catalogStateful)->toBe($expectedStateful);
 });
 
-it('limits declared model query APIs and built-in presets to reviewed capabilities', function (): void {
+it('limits explicit model query exceptions and built-in presets to reviewed capabilities', function (): void {
     $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $prohibitedPackages = [];
     $directModelPackages = [];
+    $notApplicablePackages = [];
     $presetPackages = [];
 
     foreach ($catalog['packages'] as $package => $policy) {
-        if ($policy['application_api']['direct_model_access'] === 'declared_trait_query_api') {
+        $modelPolicy = $policy['application_api']['direct_model_access'];
+
+        if ($modelPolicy === 'prohibited_v2') {
+            $prohibitedPackages[] = $package;
+        }
+
+        if ($modelPolicy === 'explicit_exception') {
             $directModelPackages[] = $package;
+        }
+
+        if ($modelPolicy === 'not_applicable') {
+            $notApplicablePackages[] = $package;
         }
 
         if ($policy['presets']['status'] === 'pass') {
@@ -205,11 +321,226 @@ it('limits declared model query APIs and built-in presets to reviewed capabiliti
         }
     }
 
+    sort($prohibitedPackages);
     sort($directModelPackages);
+    sort($notApplicablePackages);
     sort($presetPackages);
 
-    expect($directModelPackages)->toBe(['filterable', 'translatable'])
+    expect($prohibitedPackages)->toBe([
+        'activity',
+        'auth',
+        'comments',
+        'content',
+        'forms',
+        'mail-notifications',
+        'media',
+        'metafields',
+        'pages',
+        'seo',
+        'settings',
+        'taxonomy',
+        'templates',
+        'translations',
+    ])->and($directModelPackages)->toBe(['filterable', 'translatable'])
+        ->and($notApplicablePackages)->toBe(['csv', 'data', 'primitives', 'support'])
         ->and($presetPackages)->toBe(['content', 'media']);
+});
+
+it('publishes bounded Auth role and invitation consumer seams', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $auth = $catalog['packages']['auth'];
+    $generatedTypes = file_get_contents($root.'/resources/js/types/generated/auth.d.ts');
+
+    expect($auth['application_api']['symbols'])
+        ->toContain(ShowRoleAnalyticsAction::class)
+        ->toContain(ListInvitationProjectionsAction::class)
+        ->toContain(FindActiveInvitationAction::class)
+        ->toContain(RecordInvitationDeliveryOutcomeAction::class)
+        ->and($auth['application_api']['documentation'])
+        ->toBe('packages/nvl/auth/README.md#consumer-application-apis')
+        ->and($auth['performance']['evidence'])
+        ->toContain('packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics')
+        ->toContain('packages/nvl/auth/README.md#invitation-consumer-reads-and-delivery-outcomes')
+        ->and($auth['performance']['query_tests'])
+        ->toContain('packages/nvl/auth/tests/Feature/RbacManagementTest.php')
+        ->toContain('packages/nvl/auth/tests/Feature/InvitationLifecycleTest.php')
+        ->and($generatedTypes)->toBeString()
+        ->toContain("export type InvitationIndexQueryData = {\ntypes: string[] | null,");
+});
+
+it('publishes bounded Activity event and subject-reference seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $activity = $catalog['packages']['activity'];
+
+    expect($activity['application_api']['symbols'])
+        ->toContain(ActivitySubjectReference::class)
+        ->and($activity['application_api']['documentation'])
+        ->toBe('packages/nvl/activity/README.md#bounded-subject-references-and-event-filters')
+        ->and($activity['performance']['evidence'])
+        ->toContain('packages/nvl/activity/README.md#bounded-subject-references-and-event-filters')
+        ->and($activity['performance']['query_tests'])
+        ->toContain('packages/nvl/activity/tests/Feature/ActivityBehaviorTest.php');
+});
+
+it('publishes bounded Mail aggregate and event-correlation seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $mail = $catalog['packages']['mail-notifications'];
+
+    expect($mail['application_api']['symbols'])
+        ->toContain(
+            GetMailNotificationStatisticsAction::class,
+            MailNotificationAggregate::class,
+            TrackingContext::class,
+        )
+        ->and($mail['application_api']['documentation'])
+        ->toBe('packages/nvl/mail-notifications/README.md#administrative-delivery-reads')
+        ->and($mail['performance']['query_tests'])
+        ->toContain('packages/nvl/mail-notifications/tests/Feature/MailNotificationAdministrationTest.php');
+});
+
+it('publishes bounded Translation catalog statistics and a model-free filter schema', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $translations = $catalog['packages']['translations'];
+
+    expect($translations['application_api']['symbols'])
+        ->toContain(
+            GetTranslationCatalogStatisticsAction::class,
+            TranslationCatalogStatisticsData::class,
+            TranslationEntryFilterSchema::class,
+        )
+        ->and($translations['application_api']['documentation'])
+        ->toBe('packages/nvl/translations/README.md#catalog-statistics-and-shared-filters')
+        ->and($translations['performance']['evidence'])
+        ->toContain('packages/nvl/translations/README.md#catalog-statistics-and-shared-filters')
+        ->and($translations['performance']['query_tests'])
+        ->toContain('packages/nvl/translations/tests/Feature/TranslationsConsumerContractsTest.php');
+});
+
+it('publishes stable Comments Settings and SEO consumer seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+
+    expect($catalog['packages']['comments']['application_api']['symbols'])
+        ->toContain(
+            FindLatestTargetCommentAction::class,
+            DeleteLatestTargetCommentAction::class,
+            CommentSelectorData::class,
+            CommentMetadataSchema::class,
+            CommentMetadataField::class,
+            CommentMetadataProjectionData::class,
+        )
+        ->and($catalog['packages']['comments']['application_api']['documentation'])
+        ->toBe('packages/nvl/comments/README.md#registered-metadata-and-selectors')
+        ->and($catalog['packages']['settings']['application_api']['symbols'])
+        ->toContain(SettingChanged::class, SettingSubjectReferenceData::class)
+        ->and($catalog['packages']['settings']['application_api']['documentation'])
+        ->toBe('packages/nvl/settings/README.md#setting-change-subject-reference')
+        ->and($catalog['packages']['seo']['application_api']['symbols'])
+        ->toContain(
+            GetOwnerSeoProfileAction::class,
+            GetOwnerSeoRevisionAction::class,
+            ListOwnerSeoProfilesAction::class,
+            SeoOwnerRevisionData::class,
+        )
+        ->and($catalog['packages']['seo']['application_api']['documentation'])
+        ->toBe('packages/nvl/seo/README.md#owner-centric-profile-reads')
+        ->and($catalog['packages']['seo']['performance']['query_tests'])
+        ->toContain('packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php');
+});
+
+it('publishes bounded Content editor projections as consumer seams', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $content = $catalog['packages']['content'];
+
+    expect($content['application_api']['symbols'])
+        ->toContain(
+            FindContentBlockByKeyAction::class,
+            FindContentPlacementAction::class,
+            GetOwnerContentEditorAction::class,
+            ListOwnerContentPlacementSummariesAction::class,
+            ReorderContentPlacementsAction::class,
+            ReplaceContentPlacementAction::class,
+        )
+        ->and($content['application_api']['documentation'])
+        ->toBe('packages/nvl/content/README.md#editor-projections')
+        ->and($content['performance']['evidence'])
+        ->toContain(
+            'packages/nvl/content/README.md#editor-projections',
+            'packages/nvl/content/README.md#placement-editor-workflows',
+        )
+        ->and($content['performance']['query_tests'])
+        ->toContain('packages/nvl/content/tests/Feature/ContentContractRegressionTest.php');
+});
+
+it('publishes bounded Page lookup option and public-child projections', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $pages = $catalog['packages']['pages'];
+
+    expect($pages['application_api']['symbols'])
+        ->toContain(
+            CheckPageKeyAvailabilityAction::class,
+            FindPageByKeyAction::class,
+            ListPageOptionsAction::class,
+            ListPublicChildPagesAction::class,
+            PageKeyAvailabilityData::class,
+            PageOptionData::class,
+            PublicChildPageOrder::class,
+        )
+        ->and($pages['application_api']['documentation'])
+        ->toBe('packages/nvl/pages/README.md#editor-and-publication-projections')
+        ->and($pages['performance']['evidence'])
+        ->toContain('packages/nvl/pages/README.md#bounded-page-reads')
+        ->and($pages['performance']['query_tests'])
+        ->toContain('packages/nvl/pages/tests/Feature/PagesPackageTest.php');
+});
+
+it('publishes the complete Media owner-slot workflow and pruning boundary', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $media = $catalog['packages']['media'];
+
+    expect($media['application_api']['symbols'])
+        ->toContain(
+            GetOwnerMediaSlotAction::class,
+            ReplaceOwnerMediaSlotAction::class,
+            ClearOwnerMediaSlotAction::class,
+            CopyOwnerMediaSlotAction::class,
+        )
+        ->and($media['application_api']['documentation'])
+        ->toBe('packages/nvl/media/README.md#owner-slot-workflows')
+        ->and($media['media_lifecycle']['evidence'])
+        ->toContain('packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php')
+        ->and($media['operations']['prune'])
+        ->toBe([
+            'symbol' => PruneMediaOwnerSlotOperationsCommand::class,
+            'command' => 'nvl:media:owner-slots:prune',
+        ])
+        ->and($media['operations']['evidence'])
+        ->toContain('packages/nvl/media/docs/commands.md#nvlmediaowner-slotsprune');
+});
+
+it('publishes authorized metafield and complete Page composition reads', function (): void {
+    $catalog = require dirname(__DIR__, 2).'/tools/consumer-readiness.php';
+    $metafields = $catalog['packages']['metafields'];
+    $pages = $catalog['packages']['pages'];
+
+    expect($metafields['application_api']['symbols'])
+        ->toContain(ListAuthorizedOwnerMetafieldsAction::class)
+        ->and($metafields['application_api']['documentation'])
+        ->toBe('packages/nvl/metafields/README.md#querying')
+        ->and($metafields['performance']['query_tests'])
+        ->toContain('packages/nvl/metafields/tests/Feature/MetafieldConsumerWorkflowTest.php')
+        ->and($pages['application_api']['symbols'])
+        ->toContain(
+            GetPageEditorBootstrapAction::class,
+            GetPagePublicationProjectionAction::class,
+            ListPageEditorSummariesAction::class,
+            PageEditorBootstrapData::class,
+            PageEditorSummaryData::class,
+        )
+        ->and($pages['performance']['evidence'])
+        ->toContain('packages/nvl/pages/README.md#editor-and-publication-projections')
+        ->and($pages['performance']['query_tests'])
+        ->toContain('packages/nvl/pages/tests/Feature/PagesPackageTest.php');
 });
 
 it('keeps the rendered matrix aligned with every catalog classification', function (): void {
@@ -245,6 +576,35 @@ it('keeps the rendered matrix aligned with every catalog classification', functi
             $status($policy['presets']),
             $status($policy['operations']),
         ]);
+    }
+});
+
+it('renders every package model policy with its canonical classification', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/consumer-readiness.php';
+    $document = (string) file_get_contents($root.'/docs/consumer-readiness.md');
+    preg_match_all(
+        '/^\| `([^`]+)` \| [^|]+ \| ([^|]+) \|$/m',
+        $document,
+        $rows,
+        PREG_SET_ORDER,
+    );
+    $renderedPolicies = [];
+
+    foreach ($rows as $row) {
+        $renderedPolicies[$row[1]] = trim($row[2]);
+    }
+
+    expect(array_keys($renderedPolicies))->toHaveCount(count($catalog['packages']));
+
+    foreach ($catalog['packages'] as $package => $policy) {
+        $prefix = match ($policy['application_api']['direct_model_access']) {
+            'prohibited_v2' => 'Prohibited in 2.0:',
+            'explicit_exception' => 'Explicit exception:',
+            'not_applicable' => 'N/A:',
+        };
+
+        expect($renderedPolicies[$package] ?? null)->toStartWith($prefix);
     }
 });
 

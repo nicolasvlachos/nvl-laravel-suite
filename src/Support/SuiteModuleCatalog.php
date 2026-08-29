@@ -6,12 +6,16 @@ namespace Nvl\Suite\Support;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\ServiceProvider;
+use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Providers\ActivityServiceProvider;
 use Nvl\Auth\Contracts\AuthManagementAccess;
+use Nvl\Auth\Definitions\Tables\AuthTables;
 use Nvl\Auth\Providers\AuthServiceProvider;
 use Nvl\Comments\Contracts\CommentAuthorization;
+use Nvl\Comments\Definitions\Tables\CommentsTables;
 use Nvl\Comments\Providers\CommentsServiceProvider;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Content\Providers\ContentServiceProvider;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Csv\Providers\CsvServiceProvider;
@@ -21,10 +25,12 @@ use Nvl\Forms\Contracts\FormEntryDeletionPolicy;
 use Nvl\Forms\Contracts\FormEntryPrivacyPolicy;
 use Nvl\Forms\Contracts\FormRateLimiter;
 use Nvl\Forms\Contracts\FormSpamDetector;
+use Nvl\Forms\Definitions\Tables\FormsTables;
 use Nvl\Forms\Providers\FormsServiceProvider;
 use Nvl\Forms\Support\FormHandlerRegistry;
 use Nvl\MailNotifications\Contracts\MailNotificationReadAuthorization;
 use Nvl\MailNotifications\Contracts\ScheduledMailReadAuthorization;
+use Nvl\MailNotifications\Definitions\Tables\MailNotificationsTables;
 use Nvl\MailNotifications\Providers\MailNotificationsServiceProvider;
 use Nvl\MailNotifications\Services\MailNotificationNotifiableTypeRegistry;
 use Nvl\MailNotifications\Services\ProviderRegistry;
@@ -32,35 +38,44 @@ use Nvl\MailNotifications\Services\ScheduledMessageFactoryRegistry;
 use Nvl\Media\Contracts\MediaAuthorization;
 use Nvl\Media\Contracts\MediaContentScanner;
 use Nvl\Media\Contracts\MultipartUploadGateway;
+use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\Providers\MediaServiceProvider;
 use Nvl\Metafields\Contracts\MetafieldAuthorization;
 use Nvl\Metafields\Contracts\MetafieldReferenceAuthorization;
+use Nvl\Metafields\Definitions\Tables\MetafieldsTables;
 use Nvl\Metafields\Providers\MetafieldsServiceProvider;
 use Nvl\Metafields\Support\MetafieldOwnerRegistry;
 use Nvl\Pages\Contracts\PageAuthorization;
 use Nvl\Pages\Contracts\PageRequestContextResolver;
 use Nvl\Pages\Contracts\PageUrlGenerator;
+use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Providers\PagesServiceProvider;
 use Nvl\Pages\Services\PageResourceRegistry;
 use Nvl\Primitives\Providers\PrimitivesServiceProvider;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Providers\SeoServiceProvider;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Settings\Contracts\SettingsAuditContextProvider;
 use Nvl\Settings\Contracts\SettingsAuthorization;
+use Nvl\Settings\Definitions\Tables\SettingsTables;
 use Nvl\Settings\Providers\SettingsServiceProvider;
+use Nvl\Suite\Services\SuiteModuleSelection;
 use Nvl\Support\Providers\SupportServiceProvider;
+use Nvl\Taxonomy\Definitions\Tables\TaxonomyTables;
 use Nvl\Taxonomy\Providers\TaxonomyServiceProvider;
 use Nvl\Taxonomy\Services\TaxonomyOwnerRegistry;
 use Nvl\Templates\Contracts\TemplateAuthorization;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Providers\TemplatesServiceProvider;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
 use Nvl\Templates\Services\TemplateRendererRegistry;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Nvl\Translations\Contracts\TranslationsAuthorization;
+use Nvl\Translations\Definitions\Tables\TranslationsTables;
 use Nvl\Translations\Providers\TranslationsServiceProvider;
 use RuntimeException;
 
@@ -70,7 +85,15 @@ use RuntimeException;
  * @phpstan-type MigrationDefinition (array{mode: 'configurable', config: string}|array{mode: 'domain-owned'|'none', config: null})
  * @phpstan-type AliasReader array{service: class-string, method: string}
  * @phpstan-type ScheduleDefinition array{command: string, enabled: string|null, required_when_enabled: bool}
- * @phpstan-type ModuleDefinition array{
+ * @phpstan-type ConfigurationDefinition array{
+ *     key: string,
+ *     default: string,
+ *     published: string,
+ *     open_maps: list<string>,
+ *     deprecated: array<string, string>,
+ *     merge_strategy: 'deep-map-atomic-list'
+ * }
+ * @phpstan-type ModuleCoreDefinition array{
  *     provider: class-string<ServiceProvider>,
  *     dependencies: list<string>,
  *     stateful: bool,
@@ -81,6 +104,19 @@ use RuntimeException;
  *     queues: list<string>,
  *     schedules: list<ScheduleDefinition>,
  *     typescript: bool
+ * }
+ * @phpstan-type ModuleDefinition array{
+ *     provider: class-string<ServiceProvider>,
+ *     dependencies: list<string>,
+ *     stateful: bool,
+ *     migration: MigrationDefinition,
+ *     doctor: string|null,
+ *     contracts: list<class-string>,
+ *     aliases: list<AliasReader>,
+ *     queues: list<string>,
+ *     schedules: list<ScheduleDefinition>,
+ *     typescript: bool,
+ *     configuration: ConfigurationDefinition|null
  * }
  * @phpstan-type ProfileDefinition array{description: string, modules: list<string>}
  */
@@ -132,7 +168,7 @@ final readonly class SuiteModuleCatalog
     /**
      * Canonical provider order and operational adoption metadata.
      *
-     * @var array<string, ModuleDefinition>
+     * @var array<string, ModuleCoreDefinition>
      */
     private const array MODULES = [
         'support' => [
@@ -149,7 +185,7 @@ final readonly class SuiteModuleCatalog
         ],
         'data' => [
             'provider' => DataServiceProvider::class,
-            'dependencies' => [],
+            'dependencies' => ['support'],
             'stateful' => false,
             'migration' => ['mode' => 'none', 'config' => null],
             'doctor' => null,
@@ -173,7 +209,7 @@ final readonly class SuiteModuleCatalog
         ],
         'translatable' => [
             'provider' => TranslatableServiceProvider::class,
-            'dependencies' => ['data'],
+            'dependencies' => ['data', 'support'],
             'stateful' => false,
             'migration' => ['mode' => 'domain-owned', 'config' => null],
             'doctor' => 'nvl:translatable:doctor',
@@ -201,7 +237,7 @@ final readonly class SuiteModuleCatalog
         ],
         'auth' => [
             'provider' => AuthServiceProvider::class,
-            'dependencies' => ['data'],
+            'dependencies' => ['data', 'support'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'nvl-auth.migrations.enabled'],
             'doctor' => 'nvl:auth:doctor',
@@ -227,7 +263,7 @@ final readonly class SuiteModuleCatalog
         ],
         'mail-notifications' => [
             'provider' => MailNotificationsServiceProvider::class,
-            'dependencies' => [],
+            'dependencies' => ['support'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'mail-notifications.migrations.enabled'],
             'doctor' => 'nvl:mail-notifications:doctor',
@@ -260,7 +296,7 @@ final readonly class SuiteModuleCatalog
         ],
         'comments' => [
             'provider' => CommentsServiceProvider::class,
-            'dependencies' => ['data', 'filterable', 'media'],
+            'dependencies' => ['data', 'filterable', 'media', 'support'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'comments.migrations.enabled'],
             'doctor' => 'nvl:comments:doctor',
@@ -300,7 +336,7 @@ final readonly class SuiteModuleCatalog
         ],
         'primitives' => [
             'provider' => PrimitivesServiceProvider::class,
-            'dependencies' => ['data'],
+            'dependencies' => ['data', 'support'],
             'stateful' => false,
             'migration' => ['mode' => 'none', 'config' => null],
             'doctor' => null,
@@ -312,7 +348,7 @@ final readonly class SuiteModuleCatalog
         ],
         'seo' => [
             'provider' => SeoServiceProvider::class,
-            'dependencies' => ['data', 'translatable'],
+            'dependencies' => ['data', 'support', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'seo.migrations.enabled'],
             'doctor' => 'nvl:seo:doctor',
@@ -329,7 +365,7 @@ final readonly class SuiteModuleCatalog
         ],
         'settings' => [
             'provider' => SettingsServiceProvider::class,
-            'dependencies' => ['data'],
+            'dependencies' => ['data', 'support'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'settings.migrations.enabled'],
             'doctor' => 'nvl:settings:doctor',
@@ -341,7 +377,7 @@ final readonly class SuiteModuleCatalog
         ],
         'taxonomy' => [
             'provider' => TaxonomyServiceProvider::class,
-            'dependencies' => ['data', 'translatable'],
+            'dependencies' => ['data', 'support', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'taxonomy.migrations.enabled'],
             'doctor' => 'nvl:taxonomy:doctor',
@@ -355,7 +391,7 @@ final readonly class SuiteModuleCatalog
         ],
         'templates' => [
             'provider' => TemplatesServiceProvider::class,
-            'dependencies' => ['content', 'data', 'filterable', 'media', 'translatable'],
+            'dependencies' => ['content', 'data', 'filterable', 'media', 'support', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'templates.migrations.enabled'],
             'doctor' => 'nvl:templates:doctor',
@@ -398,7 +434,7 @@ final readonly class SuiteModuleCatalog
         ],
         'pages' => [
             'provider' => PagesServiceProvider::class,
-            'dependencies' => ['content', 'data', 'filterable', 'metafields', 'seo', 'translatable'],
+            'dependencies' => ['content', 'data', 'filterable', 'metafields', 'seo', 'support', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'pages.migrations.enabled'],
             'doctor' => 'nvl:pages:doctor',
@@ -412,6 +448,190 @@ final readonly class SuiteModuleCatalog
         ],
     ];
 
+    /**
+     * Package configuration ownership and structural-extension metadata.
+     *
+     * Paths in open_maps and deprecated are relative to the package config key.
+     * Open maps accept consumer-owned literal or computed child keys and therefore
+     * end structural comparison at that branch.
+     *
+     * @var array<string, ConfigurationDefinition>
+     */
+    private const array CONFIGURATION = [
+        'data' => [
+            'key' => 'nvl-data',
+            'default' => 'packages/nvl/data/config/nvl-data.php',
+            'published' => 'nvl-data.php',
+            'open_maps' => ['typescript.scope_mappings', 'typescript.type_replacements'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'translatable' => [
+            'key' => 'translatable',
+            'default' => 'packages/nvl/translatable/config/translatable.php',
+            'published' => 'translatable.php',
+            'open_maps' => ['labels', 'resources'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'activity' => [
+            'key' => 'activity',
+            'default' => 'packages/nvl/activity/config/activity.php',
+            'published' => 'activity.php',
+            'open_maps' => [],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'auth' => [
+            'key' => 'nvl-auth',
+            'default' => 'packages/nvl/auth/config/nvl-auth.php',
+            'published' => 'nvl-auth.php',
+            'open_maps' => [
+                'features.social_identities.settings.providers',
+                'management.abilities',
+                'management.policy_models',
+                'ownership.host_routes',
+            ],
+            'deprecated' => [
+                'features.sessions.settings.maximum_concurrent_sessions' => 'Enforce session concurrency through Nvl\\Auth\\Contracts\\PrincipalSessionContainment.',
+            ],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'mail-notifications' => [
+            'key' => 'mail-notifications',
+            'default' => 'packages/nvl/mail-notifications/config/mail-notifications.php',
+            'published' => 'mail-notifications.php',
+            'open_maps' => [
+                'providers',
+                'notifiable_types',
+                'extensions.provider_adapters',
+                'extensions.message_id_resolvers',
+                'extensions.notifiable_type_providers',
+                'extensions.scheduled_message_factories',
+                'extensions.webhook_managers',
+            ],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'media' => [
+            'key' => 'media',
+            'default' => 'packages/nvl/media/config/media.php',
+            'published' => 'media.php',
+            'open_maps' => [
+                'file_types',
+                'group_types',
+                'image_formats',
+                'image_variation_presets',
+                'associable_mutation_abilities',
+            ],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'comments' => [
+            'key' => 'comments',
+            'default' => 'packages/nvl/comments/config/comments.php',
+            'published' => 'comments.php',
+            'open_maps' => ['targets'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'content' => [
+            'key' => 'content',
+            'default' => 'packages/nvl/content/config/content.php',
+            'published' => 'content.php',
+            'open_maps' => [
+                'definition_migrations',
+                'definitions',
+                'scopes',
+                'owners',
+                'references',
+                'field_types',
+                'presets',
+            ],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'metafields' => [
+            'key' => 'metafields',
+            'default' => 'packages/nvl/metafields/config/metafields.php',
+            'published' => 'metafields.php',
+            'open_maps' => ['owners', 'reference_models'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'primitives' => [
+            'key' => 'primitives',
+            'default' => 'packages/nvl/primitives/config/primitives.php',
+            'published' => 'primitives.php',
+            'open_maps' => ['exchange_rates.rates', 'reference.cities', 'reference.banks'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'seo' => [
+            'key' => 'seo',
+            'default' => 'packages/nvl/seo/config/seo.php',
+            'published' => 'seo.php',
+            'open_maps' => ['owners', 'sitemap.sources', 'structured_data.providers'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'settings' => [
+            'key' => 'settings',
+            'default' => 'packages/nvl/settings/config/settings.php',
+            'published' => 'settings.php',
+            'open_maps' => [],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'taxonomy' => [
+            'key' => 'taxonomy',
+            'default' => 'packages/nvl/taxonomy/config/taxonomy.php',
+            'published' => 'taxonomy.php',
+            'open_maps' => ['owners', 'taxonomies'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'templates' => [
+            'key' => 'templates',
+            'default' => 'packages/nvl/templates/config/templates.php',
+            'published' => 'templates.php',
+            'open_maps' => [
+                'definitions',
+                'owners',
+                'renderers',
+                'assets.media.aliases',
+            ],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'translations' => [
+            'key' => 'translations',
+            'default' => 'packages/nvl/translations/config/translations.php',
+            'published' => 'translations.php',
+            'open_maps' => ['custom_scopes', 'export_targets', 'scan.namespaces'],
+            'deprecated' => [
+                'authorization.class' => 'Bind Nvl\\Translations\\Contracts\\TranslationsAuthorization in the application container.',
+            ],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'forms' => [
+            'key' => 'forms',
+            'default' => 'packages/nvl/forms/config/forms.php',
+            'published' => 'forms.php',
+            'open_maps' => [],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'pages' => [
+            'key' => 'pages',
+            'default' => 'packages/nvl/pages/config/pages.php',
+            'published' => 'pages.php',
+            'open_maps' => ['resources'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+    ];
+
     public function __construct(private Repository $configuration) {}
 
     /**
@@ -421,7 +641,16 @@ final readonly class SuiteModuleCatalog
      */
     public function modules(): array
     {
-        return self::MODULES;
+        $modules = [];
+
+        foreach (self::MODULES as $module => $definition) {
+            $modules[$module] = [
+                ...$definition,
+                'configuration' => self::CONFIGURATION[$module] ?? null,
+            ];
+        }
+
+        return $modules;
     }
 
     /**
@@ -432,6 +661,57 @@ final readonly class SuiteModuleCatalog
     public function profiles(): array
     {
         return self::PROFILES;
+    }
+
+    /**
+     * Return runtime-shipped package table definitions used by consumer audits.
+     *
+     * @return array<string, class-string>
+     */
+    public function tableDefinitions(): array
+    {
+        return [
+            'activity' => ActivityTables::class,
+            'auth' => AuthTables::class,
+            'comments' => CommentsTables::class,
+            'content' => ContentTables::class,
+            'forms' => FormsTables::class,
+            'mail-notifications' => MailNotificationsTables::class,
+            'media' => MediaTables::class,
+            'metafields' => MetafieldsTables::class,
+            'pages' => PagesTables::class,
+            'seo' => SeoTables::class,
+            'settings' => SettingsTables::class,
+            'taxonomy' => TaxonomyTables::class,
+            'templates' => TemplatesTables::class,
+            'translations' => TranslationsTables::class,
+        ];
+    }
+
+    /**
+     * Return package-owned management controller classes or namespace prefixes.
+     *
+     * A trailing namespace separator marks a prefix; every other entry is an
+     * exact invokable or controller class.
+     *
+     * @return array<string, list<class-string|string>>
+     */
+    public function managementActions(): array
+    {
+        return [
+            'activity' => ['Nvl\\Activity\\Http\\Controllers\\Api\\'],
+            'auth' => ['Nvl\\Auth\\Http\\Controllers\\Management\\'],
+            'comments' => ['Nvl\\Comments\\Http\\Controllers\\CommentsManagementController'],
+            'content' => ['Nvl\\Content\\Http\\Controllers\\'],
+            'forms' => ['Nvl\\Forms\\Http\\Controllers\\Api\\FormsApiController'],
+            'media' => ['Nvl\\Media\\Http\\Controllers\\Api\\'],
+            'metafields' => ['Nvl\\Metafields\\Http\\Controllers\\Api\\'],
+            'pages' => ['Nvl\\Pages\\Http\\Controllers\\PagesManagementController'],
+            'seo' => ['Nvl\\Seo\\Http\\Controllers\\SeoManagementController'],
+            'settings' => ['Nvl\\Settings\\Http\\Controllers\\SettingsManagementController'],
+            'templates' => ['Nvl\\Templates\\Http\\Controllers\\TemplatesController'],
+            'translations' => ['Nvl\\Translations\\Http\\Controllers\\Api\\'],
+        ];
     }
 
     /**
@@ -455,18 +735,7 @@ final readonly class SuiteModuleCatalog
      */
     public function effectiveModules(): array
     {
-        $configured = $this->configuredModules();
-        $requested = [];
-
-        foreach (self::MODULES as $module => $_definition) {
-            $enabled = array_key_exists($module, $configured) ? $configured[$module] : true;
-
-            if ($enabled) {
-                $requested[$module] = true;
-            }
-        }
-
-        return $this->resolveModules($requested);
+        return $this->selection()->effectiveModules();
     }
 
     /**
@@ -483,52 +752,35 @@ final readonly class SuiteModuleCatalog
     }
 
     /**
-     * Return whether a module was explicitly or implicitly requested.
+     * Return whether a module is selected as a root before dependency closure.
      */
     public function requested(string $module): bool
     {
-        $configured = $this->configuredModules();
-        $value = array_key_exists($module, $configured) ? $configured[$module] : true;
-
-        return $value;
+        return $this->selection()->requested($module);
     }
 
     /**
-     * @return array<string, bool>
+     * Return the consumer's explicit or omitted-disabled module decision.
+     *
+     * @return 'enabled'|'disabled'|'implicit'
      */
-    private function configuredModules(): array
+    public function moduleDecision(string $module): string
     {
-        $configured = $this->configuration->get('nvl-suite.modules', []);
+        return $this->selection()->decision($module);
+    }
+
+    /**
+     * Resolve the current runtime selection through the shared selection model.
+     */
+    public function selection(): SuiteModuleSelection
+    {
+        $configured = $this->configuration->get('nvl-suite', []);
 
         if (! is_array($configured)) {
-            throw new RuntimeException('nvl-suite.modules must be an array of module boolean flags.');
+            throw new RuntimeException('nvl-suite must contain an array.');
         }
 
-        $normalized = [];
-        $unknownModules = [];
-
-        foreach ($configured as $module => $enabled) {
-            if (! is_string($module) || ! isset(self::MODULES[$module])) {
-                $unknownModules[] = (string) $module;
-
-                continue;
-            }
-
-            if (! is_bool($enabled)) {
-                throw new RuntimeException("Suite module [{$module}] must be configured with a boolean flag.");
-            }
-
-            $normalized[$module] = $enabled;
-        }
-
-        if ($unknownModules !== []) {
-            throw new RuntimeException(sprintf(
-                'Unknown suite module configuration: %s.',
-                implode(', ', $unknownModules),
-            ));
-        }
-
-        return $normalized;
+        return SuiteModuleSelection::fromConfiguration($configured, $this);
     }
 
     /**

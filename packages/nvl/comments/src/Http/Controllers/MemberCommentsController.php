@@ -13,6 +13,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Validation\ValidationException;
 use Nvl\Comments\Actions\AttachCommentMediaAction;
 use Nvl\Comments\Actions\CreateCommentAction;
+use Nvl\Comments\Actions\CreateRichCommentAction;
 use Nvl\Comments\Actions\DeleteCommentAction;
 use Nvl\Comments\Actions\DetachCommentMediaAction;
 use Nvl\Comments\Actions\GetCommentAction;
@@ -23,28 +24,35 @@ use Nvl\Comments\Actions\ReportCommentAction;
 use Nvl\Comments\Actions\RestoreCommentAction;
 use Nvl\Comments\Actions\RestoreCommentRevisionAction;
 use Nvl\Comments\Actions\SetCommentReactionAction;
+use Nvl\Comments\Actions\SuggestCommentMentionResourcesAction;
 use Nvl\Comments\Actions\UpdateCommentAction;
+use Nvl\Comments\Actions\UpdateRichCommentAction;
 use Nvl\Comments\Contracts\CommentActorResolver;
 use Nvl\Comments\Data\CommentAttachmentData;
-use Nvl\Comments\Data\CommentRevisionData;
+use Nvl\Comments\Data\CommentMentionSuggestionData;
 use Nvl\Comments\Data\MemberCommentData;
 use Nvl\Comments\Data\Mutations\AttachCommentMediaData;
 use Nvl\Comments\Data\Mutations\CreateCommentData;
+use Nvl\Comments\Data\Mutations\CreateRichCommentData;
 use Nvl\Comments\Data\Mutations\DeleteCommentData;
 use Nvl\Comments\Data\Mutations\ReportCommentData;
 use Nvl\Comments\Data\Mutations\RestoreCommentData;
 use Nvl\Comments\Data\Mutations\RestoreCommentRevisionData;
 use Nvl\Comments\Data\Mutations\SetCommentReactionData;
 use Nvl\Comments\Data\Mutations\UpdateCommentData;
+use Nvl\Comments\Data\Mutations\UpdateRichCommentData;
+use Nvl\Comments\Enums\CommentAbility;
 use Nvl\Comments\Enums\CommentAudience;
 use Nvl\Comments\Models\Comment;
 use Nvl\Comments\Models\CommentRevision;
+use Nvl\Comments\Services\CommentAccessService;
 use Nvl\Comments\Services\CommentAttachmentDataFactory;
 use Nvl\Comments\Services\CommentAttachmentUrlFactory;
 use Nvl\Comments\Services\CommentProjectionFactory;
 use Nvl\Comments\Services\CommentReadService;
 use Nvl\Comments\Services\CommentTargetLocator;
 use Nvl\Comments\Services\CommentTargetRegistry;
+use Nvl\Comments\Support\CommentsConfiguration;
 use Nvl\Filterable\Http\QueryFilterSetFactory;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaQueryService;
@@ -55,6 +63,7 @@ use Nvl\Media\Services\MediaQueryService;
 final class MemberCommentsController extends Controller
 {
     public function __construct(
+        private readonly CommentAccessService $access,
         private readonly CommentReadService $reads,
         private readonly MediaQueryService $mediaQueries,
     ) {}
@@ -125,6 +134,85 @@ final class MemberCommentsController extends Controller
     }
 
     /**
+     * Create a member rich comment through the registered mention boundary.
+     */
+    public function storeRich(
+        Request $request,
+        string $target,
+        string $targetId,
+        CommentTargetRegistry $targets,
+        CommentActorResolver $actors,
+        CreateRichCommentAction $action,
+        CommentProjectionFactory $projections,
+    ): JsonResponse {
+        $model = $targets->resolve($target, $targetId);
+        $actor = $actors->fromRequest($request);
+        $this->access->authorize(
+            CommentAbility::Create,
+            $actor,
+            target: $model,
+            audience: CommentAudience::Member,
+            asNotFound: true,
+        );
+        $comment = $action->execute(
+            $model,
+            CreateRichCommentData::validateAndCreate($this->creationPayload($request)),
+            $actor,
+            CommentAudience::Member,
+        );
+
+        return $this->respond([
+            'data' => $projections->memberComment($comment, $model, $actor)->toArray(),
+        ], $comment->wasRecentlyCreated ? 201 : 200);
+    }
+
+    /**
+     * Suggest authorized resources for a member rich comment editor.
+     */
+    public function mentionSuggestions(
+        Request $request,
+        string $target,
+        string $targetId,
+        string $resource,
+        CommentTargetRegistry $targets,
+        CommentActorResolver $actors,
+        SuggestCommentMentionResourcesAction $action,
+    ): JsonResponse {
+        $model = $targets->resolve($target, $targetId);
+        $actor = $actors->fromRequest($request);
+        $this->access->authorize(
+            CommentAbility::List,
+            $actor,
+            target: $model,
+            audience: CommentAudience::Member,
+            asNotFound: true,
+        );
+        $query = $request->query('q');
+
+        if (! is_string($query)) {
+            throw ValidationException::withMessages(['q' => 'A suggestion query is required.']);
+        }
+
+        return $this->respond([
+            'data' => $action->execute(
+                $model,
+                $actor,
+                CommentAudience::Member,
+                $resource,
+                $query,
+                $request->has('limit')
+                    ? $request->integer('limit')
+                    : min(20, CommentsConfiguration::positiveInteger(
+                        'comments.mentions.suggestion_limit',
+                        10,
+                    )),
+            )->map(
+                static fn (CommentMentionSuggestionData $suggestion): array => $suggestion->toArray(),
+            )->all(),
+        ]);
+    }
+
+    /**
      * Show one member-scoped comment.
      */
     public function show(
@@ -160,6 +248,48 @@ final class MemberCommentsController extends Controller
         $comment = $action->execute(
             $comment,
             UpdateCommentData::validateAndCreate($request->all()),
+            $actor,
+            CommentAudience::Member,
+        );
+
+        return $this->respond([
+            'data' => $projections
+                ->memberComment($comment, $targets->locate($comment), $actor)
+                ->toArray(),
+        ]);
+    }
+
+    /**
+     * Replace one member-owned rich comment through optimistic concurrency.
+     */
+    public function updateRich(
+        Request $request,
+        string $comment,
+        CommentActorResolver $actors,
+        UpdateRichCommentAction $action,
+        CommentProjectionFactory $projections,
+        CommentTargetLocator $targets,
+    ): JsonResponse {
+        $actor = $actors->fromRequest($request);
+        $authorizedComment = $this->reads->resolveById(
+            $comment,
+            $actor,
+            CommentAudience::Member,
+            CommentAbility::Update,
+            withTrashed: false,
+        );
+        $authorizedTarget = $targets->locate($authorizedComment);
+        $this->access->authorize(
+            CommentAbility::Update,
+            $actor,
+            $authorizedComment,
+            $authorizedTarget,
+            CommentAudience::Member,
+            asNotFound: true,
+        );
+        $comment = $action->execute(
+            $authorizedComment,
+            UpdateRichCommentData::validateAndCreate($request->all()),
             $actor,
             CommentAudience::Member,
         );
@@ -379,6 +509,7 @@ final class MemberCommentsController extends Controller
         string $comment,
         CommentActorResolver $actors,
         ListCommentRevisionsAction $action,
+        CommentProjectionFactory $projections,
     ): JsonResponse {
         $revisions = $action->execute(
             $comment,
@@ -389,9 +520,9 @@ final class MemberCommentsController extends Controller
 
         return $this->respond([
             'data' => array_map(
-                static fn (CommentRevision $revision): array => CommentRevisionData::fromModel(
-                    $revision,
-                )->toArray(),
+                fn (CommentRevision $revision): array => $projections
+                    ->revision($revision, CommentAudience::Member)
+                    ->toArray(),
                 $revisions->items(),
             ),
             'meta' => $this->pagination($revisions),

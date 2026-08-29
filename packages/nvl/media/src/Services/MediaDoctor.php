@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Nvl\Media\Services;
 
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
+use Nvl\Media\Contracts\HasMedia;
 use Nvl\Media\Contracts\MediaAuthorization;
 use Nvl\Media\Contracts\MediaContentScanner;
 use Nvl\Media\Contracts\MultipartUploadGateway;
@@ -17,6 +22,8 @@ use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\Enums\ImageFormat;
 use Nvl\Media\Enums\MediaImageDriver;
 use Nvl\Media\Models\Media;
+use Nvl\Media\Models\MediaOwnerSlotOperation;
+use Nvl\Media\Slots\MediaSlot;
 use Nvl\Media\Support\MediaConfiguration;
 use Nvl\Media\Support\MediaImageConfiguration;
 use Nvl\Media\Support\MediaQueueConfiguration;
@@ -48,6 +55,7 @@ final readonly class MediaDoctor
             ...$this->routeChecks(),
             ...$this->sourceChecks($production),
             ...$this->lockChecks($production),
+            ...$this->ownerSlotChecks(),
             ...$this->bindingChecks($production),
             ...$this->multipartChecks($production),
         ];
@@ -137,60 +145,187 @@ final readonly class MediaDoctor
     /**
      * @return list<MediaDoctorCheckData>
      */
+    private function ownerSlotChecks(): array
+    {
+        $processingTimeout = config(
+            'media.owner_slots.idempotency.processing_timeout_minutes',
+        );
+        $retentionDays = config('media.owner_slots.idempotency.retention_days');
+        $pruneChunk = config('media.owner_slots.idempotency.prune_chunk');
+        $valid = is_int($processingTimeout)
+            && $processingTimeout >= 1
+            && $processingTimeout <= 1_440
+            && is_int($retentionDays)
+            && $retentionDays >= 1
+            && is_int($pruneChunk)
+            && $pruneChunk >= 1
+            && $pruneChunk <= 1_000;
+
+        return [
+            new MediaDoctorCheckData(
+                'owner_slots.idempotency.bounds',
+                'error',
+                $valid,
+                $valid
+                    ? 'Owner-slot processing, retention, and pruning bounds are valid.'
+                    : 'Owner-slot processing timeout must be 1-1440 minutes, retention must be positive, and prune chunk must be 1-1000.',
+            ),
+            $this->ownerSlotRegistrationCheck(),
+        ];
+    }
+
+    /**
+     * Validate the bounded set of owner type and slot pairs observed by the ledger.
+     */
+    private function ownerSlotRegistrationCheck(): MediaDoctorCheckData
+    {
+        try {
+            $registrations = MediaOwnerSlotOperation::query()
+                ->select(['owner_type', 'slot'])
+                ->distinct()
+                ->orderBy('owner_type')
+                ->orderBy('slot')
+                ->limit(101)
+                ->get();
+
+            if ($registrations->count() > 100) {
+                return new MediaDoctorCheckData(
+                    'owner_slots.registrations',
+                    'error',
+                    false,
+                    'Owner-slot diagnostics support at most 100 observed owner type and slot pairs.',
+                );
+            }
+
+            $invalid = [];
+
+            foreach ($registrations as $registration) {
+                $ownerType = $registration->owner_type;
+                $slotName = $registration->slot;
+                $ownerClass = Relation::getMorphedModel($ownerType) ?? $ownerType;
+
+                if (! class_exists($ownerClass)
+                    || ! is_subclass_of($ownerClass, Model::class)
+                    || ! is_subclass_of($ownerClass, HasMedia::class)) {
+                    $invalid[] = "{$ownerType}:{$slotName} (owner model is unavailable)";
+
+                    continue;
+                }
+
+                $owner = new $ownerClass;
+                $slot = $owner->getMediaSlot($slotName);
+
+                if (! $slot instanceof MediaSlot
+                    || ! $slot->isSingleFile
+                    || $slot->slotSizeLimit !== 1) {
+                    $invalid[] = "{$ownerType}:{$slotName} (registered single-file slot is missing)";
+                }
+            }
+
+            return new MediaDoctorCheckData(
+                'owner_slots.registrations',
+                'error',
+                $invalid === [],
+                $invalid === []
+                    ? 'Observed owner-slot registrations resolve to single-file model slots.'
+                    : 'Invalid observed owner-slot registrations: '.implode(', ', $invalid),
+            );
+        } catch (Throwable $exception) {
+            return new MediaDoctorCheckData(
+                'owner_slots.registrations',
+                'error',
+                false,
+                'Owner-slot registration inspection failed: '.mb_substr(
+                    $exception->getMessage(),
+                    0,
+                    500,
+                ),
+            );
+        }
+    }
+
+    /**
+     * @return list<MediaDoctorCheckData>
+     */
     private function schemaChecks(): array
     {
-        $requirements = [
-            MediaTables::Media => [
-                'id',
-                'digest',
-                'disk',
-                'visibility',
-                'status',
-                'uploaded_by',
-                'uploaded_by_type',
-                'upload_session_id',
-                'revision',
-                'variation_definitions',
-            ],
-            MediaTables::Associations => [
-                'media_id',
-                'associable_type',
-                'associable_id',
-                'collection',
-                'is_active',
-            ],
-            MediaTables::ImageVariations => [
-                'media_id',
-                'label',
-                'status',
-                'source_revision',
-                'storage_path',
-            ],
-            MediaTables::I18n => [
-                'media_id',
-                'locale',
-                'title',
-                'alt',
-                'caption',
-                'description',
-            ],
-            MediaTables::MultipartUploads => [
-                'id',
-                'provider_state',
-                'object_key',
-                'object_key_hash',
-                'expected_size',
-                'expected_checksum',
-                'status',
-                'expires_at',
-                'completed_media_id',
-            ],
-        ];
         $checks = [];
 
         try {
+            $ownerSlotOperationsTable = MediaConfiguration::ownerSlotOperationTable();
+            $requirements = [
+                MediaTables::Media => [
+                    'id',
+                    'digest',
+                    'disk',
+                    'visibility',
+                    'status',
+                    'uploaded_by',
+                    'uploaded_by_type',
+                    'upload_session_id',
+                    'revision',
+                    'variation_definitions',
+                ],
+                MediaTables::Associations => [
+                    'media_id',
+                    'associable_type',
+                    'associable_id',
+                    'collection',
+                    'is_active',
+                ],
+                MediaTables::ImageVariations => [
+                    'media_id',
+                    'label',
+                    'status',
+                    'source_revision',
+                    'storage_path',
+                ],
+                MediaTables::I18n => [
+                    'media_id',
+                    'locale',
+                    'title',
+                    'alt',
+                    'caption',
+                    'description',
+                ],
+                MediaTables::MultipartUploads => [
+                    'id',
+                    'provider_state',
+                    'object_key',
+                    'object_key_hash',
+                    'expected_size',
+                    'expected_checksum',
+                    'status',
+                    'expires_at',
+                    'completed_media_id',
+                ],
+                $ownerSlotOperationsTable => [
+                    'id',
+                    'idempotency_key',
+                    'actor_type',
+                    'actor_id',
+                    'owner_type',
+                    'owner_id',
+                    'slot',
+                    'operation',
+                    'request_hash',
+                    'status',
+                    'result_media_id',
+                    'result_payload',
+                    'failure_code',
+                    'completed_at',
+                    'failed_at',
+                    'created_at',
+                    'updated_at',
+                ],
+            ];
+            $connections = [
+                $ownerSlotOperationsTable => MediaConfiguration::ownerSlotOperationConnection(),
+            ];
+
             foreach ($requirements as $table => $columns) {
-                $exists = Schema::hasTable($table);
+                $schema = Schema::connection($connections[$table] ?? null);
+                $exists = $schema->hasTable($table);
                 $checks[] = new MediaDoctorCheckData(
                     "schema.table.{$table}",
                     'error',
@@ -203,7 +338,7 @@ final readonly class MediaDoctor
                 }
 
                 foreach ($columns as $column) {
-                    $present = Schema::hasColumn($table, $column);
+                    $present = $schema->hasColumn($table, $column);
                     $checks[] = new MediaDoctorCheckData(
                         "schema.column.{$table}.{$column}",
                         'error',
@@ -214,11 +349,11 @@ final readonly class MediaDoctor
                     );
                 }
 
-                $indexes = Schema::getIndexes($table);
+                $indexes = $schema->getIndexes($table);
 
                 foreach ($this->requiredIndexes($table) as $index) {
                     $present = collect($indexes)->contains(
-                        static fn (array $definition): bool => ($definition['name'] ?? null) === $index,
+                        static fn (array $definition): bool => $definition['name'] === $index,
                     );
                     $checks[] = new MediaDoctorCheckData(
                         "schema.index.{$table}.{$index}",
@@ -627,15 +762,35 @@ final readonly class MediaDoctor
             ? config("cache.stores.{$storeName}.driver")
             : null;
         $central = in_array($driver, ['redis', 'memcached', 'dynamodb'], true);
+        $atomic = false;
 
-        return [new MediaDoctorCheckData(
-            'locks.mutation.central',
-            $production && $multiNode ? 'error' : 'warning',
-            ! $multiNode || $central,
-            ! $multiNode || $central
-                ? 'Media mutation lock topology matches deployment mode.'
-                : 'Multi-node media deployments require a central atomic lock store.',
-        )];
+        try {
+            $repository = is_string($storeName) && $storeName !== ''
+                ? Cache::store($storeName)
+                : Cache::store();
+            $atomic = $repository->getStore() instanceof LockProvider;
+        } catch (Throwable) {
+            $atomic = false;
+        }
+
+        return [
+            new MediaDoctorCheckData(
+                'locks.mutation.central',
+                $production && $multiNode ? 'error' : 'warning',
+                ! $multiNode || $central,
+                ! $multiNode || $central
+                    ? 'Media mutation lock topology matches deployment mode.'
+                    : 'Multi-node media deployments require a central atomic lock store.',
+            ),
+            new MediaDoctorCheckData(
+                'locks.mutation.atomic',
+                'error',
+                $atomic,
+                $atomic
+                    ? 'The configured Media mutation store supports atomic locks.'
+                    : 'The configured Media mutation store must implement atomic locks.',
+            ),
+        ];
     }
 
     /**
@@ -754,6 +909,14 @@ final readonly class MediaDoctor
      */
     private function requiredIndexes(string $table): array
     {
+        if ($table === MediaConfiguration::ownerSlotOperationTable()) {
+            return [
+                'media_owner_slot_idempotency_unique',
+                'media_owner_slot_owner_slot_idx',
+                'media_owner_slot_created_idx',
+            ];
+        }
+
         return match ($table) {
             MediaTables::Media => [
                 'media_hash_idx',

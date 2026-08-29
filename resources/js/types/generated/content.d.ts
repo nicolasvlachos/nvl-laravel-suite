@@ -119,6 +119,7 @@ definitions: Nvl.Content.Data.ContentDefinitionData[],
 presets: Nvl.Content.Data.ContentFieldPresetData[],
 groups: Array<string>,
 placements: Nvl.Content.Data.ContentPlacementData[],
+placementLimit?: number,
 };
 export type ContentFieldDefinitionData = {
 key: string,
@@ -152,6 +153,7 @@ sortOrder: number,
 isVisible: boolean,
 overrides: Record<string, unknown>,
 revision: number,
+block?: Nvl.Content.Data.ContentBlockData | null,
 };
 export type ContentSchemaData = {
 fields: Nvl.Content.Data.ContentFieldDefinitionData[],
@@ -255,6 +257,16 @@ parentId?: string | null,
 sortOrder?: number,
 isVisible?: boolean,
 overrides?: Record<string, unknown>,
+};
+export type ReorderContentPlacementData = {
+id: string,
+expectedRevision: number,
+region: string,
+parentId: string | null,
+sortOrder: number,
+};
+export type ReorderContentPlacementsData = {
+placements: Nvl.Content.Data.Mutations.ReorderContentPlacementData[],
 };
 export type UpdateContentBlockData = {
 expectedRevision: number,

@@ -1,6 +1,6 @@
 ---
 name: nvl-primitives
-description: Implement, integrate, test, or review nvl/primitives application value objects in Laravel 12–13. Use for exact money and exchange rates, Eloquent value-object casts, email/URL/phone/IBAN validation, ISO country/currency/locale codes, coordinates, percentages, length, weight, postal addresses, date-time instants, reference selectors, and Spatie Data/TypeScript boundaries.
+description: Implement, integrate, test, or review nvl/primitives application value objects in Laravel 13. Use for exact money and exchange rates, Eloquent value-object casts, email/URL/phone/IBAN validation, ISO country/currency/locale codes, coordinates, percentages, length, weight, postal addresses, date-time instants, reference selectors, and Spatie Data/TypeScript boundaries.
 ---
 
 # NVL Primitives

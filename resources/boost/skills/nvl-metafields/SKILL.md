@@ -1,6 +1,6 @@
 ---
 name: nvl-metafields
-description: Implement, integrate, test, or review nvl/metafields in Laravel 12–13. Use for typed custom-field definitions, owner and reference registries, localized definitions or values, validation limits, optimistic concurrency, bulk synchronization, query helpers, deletion policy, or authorization.
+description: Implement, integrate, test, or review nvl/metafields in Laravel 13. Use for typed custom-field definitions, owner and reference registries, localized definitions or values, validation limits, optimistic concurrency, bulk synchronization, query helpers, deletion policy, or authorization.
 ---
 
 # NVL Metafields
@@ -29,7 +29,11 @@ Use definitions as the schema and metafield rows as owner-specific values. Route
 
 ## Read and operate
 
-- Eager-load definition and value translations for lists.
+- Use `ListAuthorizedOwnerMetafieldsAction` for consumer-facing owner reads. It
+  authorizes the owner-view ability before querying and returns the bounded
+  `OwnerMetafieldField` projection with localized definitions and values.
+- Treat `ListOwnerMetafieldsAction` as a storage-focused composition primitive;
+  do not call it directly from new consumer management code.
 - Query only registered scalar comparisons; do not expose arbitrary JSON paths.
 - Keep management routes disabled and authorize every owner and definition.
 - Run `nvl:metafields:doctor --strict --format=json` before adoption.

@@ -14,11 +14,14 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use Nvl\Comments\Data\CommentReconciliationResultData;
+use Nvl\Comments\Data\Mutations\CommentDocumentData;
+use Nvl\Comments\Enums\CommentFormat;
 use Nvl\Comments\Enums\CommentReportStatus;
 use Nvl\Comments\Enums\CommentStatus;
 use Nvl\Comments\Enums\CommentVisibility;
 use Nvl\Comments\Exceptions\InvalidCommentMutationException;
 use Nvl\Comments\Models\Comment;
+use Nvl\Comments\Models\CommentMention;
 use Nvl\Comments\Models\CommentReaction;
 use Nvl\Comments\Models\CommentReport;
 use Nvl\Comments\Relations\TextColumnComparison;
@@ -34,7 +37,16 @@ use Nvl\Media\Models\MediaAssociation;
  */
 final readonly class CommentStateReconciler
 {
-    public function __construct(private CommentMutationLock $mutationLock) {}
+    /**
+     * Create the comment state reconciler.
+     */
+    public function __construct(
+        private CommentMetadataIndexWriter $metadataIndex,
+        private CommentMetadataRegistry $metadataRegistry,
+        private CommentDocumentNormalizer $documents,
+        private CommentMentionWriter $mentions,
+        private CommentMutationLock $mutationLock,
+    ) {}
 
     /**
      * Audit or repair comment state in bounded chunks.
@@ -90,6 +102,13 @@ final readonly class CommentStateReconciler
             missingTargetComments: $verification->missingTargetComments,
             invalidAttachmentAssociations: $verification->invalidAttachmentAssociations,
             healthy: $verification->drifted === 0,
+            missingMetadataIndexValues: $initial->missingMetadataIndexValues,
+            staleMetadataIndexValues: $initial->staleMetadataIndexValues,
+            documentMentionMismatches: $initial->documentMentionMismatches,
+            duplicateMentionIdentities: $initial->duplicateMentionIdentities,
+            invalidMentionSnapshots: $verification->invalidMentionSnapshots,
+            orphanMentionRows: $verification->orphanMentionRows,
+            bodyProjectionMismatches: $initial->bodyProjectionMismatches,
         );
     }
 
@@ -119,6 +138,14 @@ final readonly class CommentStateReconciler
         $identityFingerprintMismatches = 0;
         $missingTargetComments = 0;
         $invalidAttachmentAssociations = $danglingAttachments;
+        $missingMetadataIndexValues = 0;
+        $staleMetadataIndexValues = 0;
+        $documentMentionMismatches = 0;
+        $duplicateMentionIdentities = 0;
+        $invalidMentionSnapshots = 0;
+        $orphanMentionRows = $target === null ? $this->orphanMentionRows() : 0;
+        $bodyProjectionMismatches = 0;
+        $drifted += $orphanMentionRows;
         $maximumDepth = CommentsConfiguration::positiveInteger(
             'comments.threading.maximum_depth',
             6,
@@ -140,6 +167,12 @@ final readonly class CommentStateReconciler
                 &$identityFingerprintMismatches,
                 &$missingTargetComments,
                 &$invalidAttachmentAssociations,
+                &$missingMetadataIndexValues,
+                &$staleMetadataIndexValues,
+                &$documentMentionMismatches,
+                &$duplicateMentionIdentities,
+                &$invalidMentionSnapshots,
+                &$bodyProjectionMismatches,
                 $auditAttachments,
                 $maximumDepth,
                 $repair,
@@ -158,6 +191,33 @@ final readonly class CommentStateReconciler
                     $missingTarget = isset($missingTargetIds[$comment->id]);
                     $fingerprintMismatch = isset($fingerprintMismatchIds[$comment->id]);
                     $invalidAttachmentCount = $invalidAttachments[$comment->id] ?? 0;
+                    [$missingMetadataValues, $staleMetadataValues] =
+                        $this->metadataIndexDrift($comment);
+                    $metadataIndexMismatch = $missingMetadataValues > 0
+                        || $staleMetadataValues > 0;
+                    $richDrift = $this->richDrift($comment);
+                    $richMismatch = $richDrift['row_mismatch']
+                        || $richDrift['duplicate_identity']
+                        || $richDrift['invalid_snapshot']
+                        || $richDrift['body_mismatch'];
+                    $missingMetadataIndexValues += $missingMetadataValues;
+                    $staleMetadataIndexValues += $staleMetadataValues;
+
+                    if ($richDrift['row_mismatch']) {
+                        $documentMentionMismatches++;
+                    }
+
+                    if ($richDrift['duplicate_identity']) {
+                        $duplicateMentionIdentities++;
+                    }
+
+                    if ($richDrift['invalid_snapshot']) {
+                        $invalidMentionSnapshots++;
+                    }
+
+                    if ($richDrift['body_mismatch']) {
+                        $bodyProjectionMismatches++;
+                    }
 
                     if ($missingTarget) {
                         $missingTargetComments++;
@@ -222,17 +282,25 @@ final readonly class CommentStateReconciler
                         && ! $threadUnrepairable
                         && ! $fingerprintMismatch
                         && ! $missingTarget
+                        && ! $metadataIndexMismatch
+                        && ! $richMismatch
                         && $invalidAttachmentCount === 0) {
                         continue;
                     }
 
                     $drifted++;
 
-                    if ($repair
-                        && ! $fingerprintMismatch
-                        && $updates !== []
-                        && $this->repair($comment, $updates)) {
-                        $repaired++;
+                    if ($repair && ! $fingerprintMismatch) {
+                        $repairedState = $updates !== [] && $this->repair($comment, $updates);
+                        $repairedMetadata = $metadataIndexMismatch
+                            && $this->repairMetadataIndex($comment);
+                        $repairedRichState = $richMismatch
+                            && ! $richDrift['invalid_snapshot']
+                            && $this->repairRichState($comment);
+
+                        if ($repairedState || $repairedMetadata || $repairedRichState) {
+                            $repaired++;
+                        }
                     }
                 }
             },
@@ -256,6 +324,13 @@ final readonly class CommentStateReconciler
             missingTargetComments: $missingTargetComments,
             invalidAttachmentAssociations: $invalidAttachmentAssociations,
             healthy: $drifted === 0,
+            missingMetadataIndexValues: $missingMetadataIndexValues,
+            staleMetadataIndexValues: $staleMetadataIndexValues,
+            documentMentionMismatches: $documentMentionMismatches,
+            duplicateMentionIdentities: $duplicateMentionIdentities,
+            invalidMentionSnapshots: $invalidMentionSnapshots,
+            orphanMentionRows: $orphanMentionRows,
+            bodyProjectionMismatches: $bodyProjectionMismatches,
         );
     }
 
@@ -371,6 +446,8 @@ final readonly class CommentStateReconciler
     {
         $query = Comment::query()
             ->withTrashed()
+            ->with('mentions')
+            ->with('metadataValues')
             ->with($this->parentRelations($maximumDepth))
             ->withCount([
                 'replies as actual_reply_count',
@@ -394,6 +471,219 @@ final readonly class CommentStateReconciler
                 'commentable_identity_hash',
                 CommentIdentity::pair($identity['type'], $identity['id']),
             );
+    }
+
+    /**
+     * Compare one current rich snapshot with its normalized row and body projections.
+     *
+     * Historical revisions and live resource resolvers never participate in this audit.
+     *
+     * @return array{
+     *     row_mismatch: bool,
+     *     duplicate_identity: bool,
+     *     invalid_snapshot: bool,
+     *     body_mismatch: bool
+     * }
+     */
+    private function richDrift(Comment $comment): array
+    {
+        $document = $comment->document;
+
+        if ($comment->format !== CommentFormat::RichText) {
+            return [
+                'row_mismatch' => $comment->mentions->isNotEmpty(),
+                'duplicate_identity' => $this->hasDuplicateMentionIdentity($comment),
+                'invalid_snapshot' => $document !== null,
+                'body_mismatch' => false,
+            ];
+        }
+
+        if (! is_array($document)) {
+            return [
+                'row_mismatch' => $comment->mentions->isNotEmpty(),
+                'duplicate_identity' => $this->hasDuplicateMentionIdentity($comment),
+                'invalid_snapshot' => true,
+                'body_mismatch' => false,
+            ];
+        }
+
+        try {
+            $normalized = $this->documents->normalizeStored($document);
+        } catch (InvalidCommentMutationException) {
+            return [
+                'row_mismatch' => false,
+                'duplicate_identity' => $this->hasDuplicateMentionIdentity($comment),
+                'invalid_snapshot' => true,
+                'body_mismatch' => false,
+            ];
+        }
+
+        return [
+            'row_mismatch' => $this->storedMentionRows($comment)
+                !== $this->expectedMentionRows($normalized),
+            'duplicate_identity' => $this->hasDuplicateMentionIdentity($comment),
+            'invalid_snapshot' => false,
+            'body_mismatch' => $comment->body !== $this->documents->body($normalized),
+        ];
+    }
+
+    /**
+     * Return the canonical current mention row facts for comparison.
+     *
+     * @return list<array{
+     *     token_id: string,
+     *     resource_alias: string,
+     *     resource_id: string,
+     *     resource_identity_hash: string,
+     *     label_snapshot: string,
+     *     position: int
+     * }>
+     */
+    private function storedMentionRows(Comment $comment): array
+    {
+        return array_values($comment->mentions
+            ->sortBy([
+                ['position', 'asc'],
+                ['token_id', 'asc'],
+            ])
+            ->values()
+            ->map(static fn (CommentMention $mention): array => [
+                'token_id' => $mention->token_id,
+                'resource_alias' => $mention->resource_alias,
+                'resource_id' => $mention->resource_id,
+                'resource_identity_hash' => $mention->resource_identity_hash,
+                'label_snapshot' => $mention->label_snapshot,
+                'position' => $mention->position,
+            ])
+            ->all());
+    }
+
+    /**
+     * Build canonical current mention row facts from a revalidated stored document.
+     *
+     * @return list<array{
+     *     token_id: string,
+     *     resource_alias: string,
+     *     resource_id: string,
+     *     resource_identity_hash: string,
+     *     label_snapshot: string,
+     *     position: int
+     * }>
+     */
+    private function expectedMentionRows(CommentDocumentData $document): array
+    {
+        $rows = [];
+
+        foreach ($this->documents->references($document) as $reference) {
+            $rows[] = [
+                'token_id' => $reference->tokenId,
+                'resource_alias' => $reference->resourceAlias,
+                'resource_id' => $reference->resourceId,
+                'resource_identity_hash' => hash(
+                    'sha256',
+                    "comment-mention-resource\0{$reference->resourceAlias}\0{$reference->resourceId}",
+                ),
+                'label_snapshot' => $reference->labelSnapshot,
+                'position' => $reference->position,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Detect token/hash identity collisions without treating repeated resources as invalid.
+     */
+    private function hasDuplicateMentionIdentity(Comment $comment): bool
+    {
+        $tokens = [];
+        $hashes = [];
+
+        foreach ($comment->mentions as $mention) {
+            if (isset($tokens[$mention->token_id])) {
+                return true;
+            }
+
+            $tokens[$mention->token_id] = true;
+            $identity = $mention->resource_alias."\0".$mention->resource_id;
+            $knownIdentity = $hashes[$mention->resource_identity_hash] ?? null;
+
+            if (is_string($knownIdentity) && ! hash_equals($knownIdentity, $identity)) {
+                return true;
+            }
+
+            $hashes[$mention->resource_identity_hash] = $identity;
+        }
+
+        return false;
+    }
+
+    /**
+     * Revalidate and rebuild current rich projections under the comment mutation lock.
+     */
+    private function repairRichState(Comment $comment): bool
+    {
+        $expectedDocument = $comment->document;
+
+        return $this->mutationLock->execute(
+            $comment->id,
+            function () use ($comment, $expectedDocument): bool {
+                return DB::connection($comment->getConnectionName())->transaction(
+                    function () use ($comment, $expectedDocument): bool {
+                        $current = Comment::query()
+                            ->withTrashed()
+                            ->with('mentions')
+                            ->whereKey($comment->id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if (! $current instanceof Comment
+                            || $current->document !== $expectedDocument) {
+                            return false;
+                        }
+
+                        if ($current->format !== CommentFormat::RichText) {
+                            if ($current->document !== null) {
+                                return false;
+                            }
+
+                            $this->mentions->synchronize($current, null);
+
+                            return true;
+                        }
+
+                        if (! is_array($current->document)) {
+                            return false;
+                        }
+
+                        try {
+                            $normalized = $this->documents->normalizeStored($current->document);
+                        } catch (InvalidCommentMutationException) {
+                            return false;
+                        }
+
+                        $body = $this->documents->body($normalized);
+
+                        if ($current->body !== $body
+                            && ! $current->forceFill(['body' => $body])->save()) {
+                            return false;
+                        }
+
+                        $this->mentions->synchronize($current, $normalized);
+
+                        return true;
+                    },
+                );
+            },
+        ) === true;
+    }
+
+    /**
+     * Count current mention rows whose owning comment no longer exists.
+     */
+    private function orphanMentionRows(): int
+    {
+        return CommentMention::query()->whereDoesntHave('comment')->count();
     }
 
     /**
@@ -1006,5 +1296,105 @@ final readonly class CommentStateReconciler
         );
 
         return $repaired === true;
+    }
+
+    /**
+     * Compare expected hash-only metadata rows with persisted index state.
+     *
+     * @return array{int, int}
+     */
+    private function metadataIndexDrift(Comment $comment): array
+    {
+        try {
+            $expectedRows = $this->metadataRegistry->indexRows(
+                $comment->anonymized_at === null && ! $comment->trashed()
+                    ? $comment->metadata
+                    : null,
+            );
+        } catch (InvalidCommentMutationException) {
+            return [0, max(1, $comment->metadataValues->count())];
+        }
+
+        $expected = [];
+
+        foreach ($expectedRows as $row) {
+            $expected[$row['schema_namespace'].'.'.$row['field_name']] = $row;
+        }
+
+        $actual = [];
+
+        foreach ($comment->metadataValues as $row) {
+            $actual[$row->schema_namespace.'.'.$row->field_name] = [
+                'value_type' => $row->value_type,
+                'value_hash' => $row->value_hash,
+            ];
+        }
+
+        $missing = 0;
+        $stale = 0;
+
+        foreach ($expected as $alias => $row) {
+            $stored = $actual[$alias] ?? null;
+
+            if ($stored === null) {
+                $missing++;
+
+                continue;
+            }
+
+            if ($stored['value_type'] !== $row['value_type']
+                || ! hash_equals($stored['value_hash'], $row['value_hash'])) {
+                $stale++;
+            }
+        }
+
+        foreach (array_keys($actual) as $alias) {
+            if (! isset($expected[$alias])) {
+                $stale++;
+            }
+        }
+
+        return [$missing, $stale];
+    }
+
+    /**
+     * Rebuild one comment's metadata index under the package mutation lock.
+     */
+    private function repairMetadataIndex(Comment $comment): bool
+    {
+        try {
+            $this->metadataRegistry->indexRows(
+                $comment->anonymized_at === null && ! $comment->trashed()
+                    ? $comment->metadata
+                    : null,
+            );
+
+            return $this->mutationLock->execute(
+                $comment->id,
+                fn (): bool => DB::connection((new Comment)->getConnectionName())
+                    ->transaction(function () use ($comment): bool {
+                        $locked = Comment::query()
+                            ->withTrashed()
+                            ->whereKey($comment->id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if (! $locked instanceof Comment) {
+                            return false;
+                        }
+
+                        $this->metadataIndex->synchronize(
+                            $locked,
+                            $locked->anonymized_at === null && ! $locked->trashed()
+                                ? $locked->metadata
+                                : null,
+                        );
+
+                        return true;
+                    }),
+            ) === true;
+        } catch (InvalidCommentMutationException) {
+            return false;
+        }
     }
 }

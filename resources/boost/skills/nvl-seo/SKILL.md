@@ -1,6 +1,6 @@
 ---
 name: nvl-seo
-description: Implement, integrate, test, or review nvl/seo in Laravel 12–13. Use for polymorphic SEO profiles, localized metadata through nvl/translatable, canonical and hreflang URLs, Open Graph and Twitter cards, media-backed social images, safe JSON-LD, robots directives, sitemap sources/routes, path uniqueness, Blade head rendering, or SEO package architecture.
+description: Implement, integrate, test, or review nvl/seo in Laravel 13. Use for polymorphic SEO profiles, localized metadata through nvl/translatable, canonical and hreflang URLs, Open Graph and Twitter cards, media-backed social images, safe JSON-LD, robots directives, sitemap sources/routes, path uniqueness, Blade head rendering, or SEO package architecture.
 ---
 
 # NVL SEO
@@ -104,6 +104,41 @@ Enable package routes only when the application does not already own `/sitemap.x
 - Prefer exact-locale redirects, then locale-neutral fallbacks. Prune retained
   soft-deleted redirects with `nvl:seo:redirects:prune`.
 
+## Read profiles from owners
+
+- Use `Nvl\Seo\Actions\GetOwnerSeoProfileAction::execute(
+  Illuminate\Database\Eloquent\Model $owner, ?string $scope = null)` for an
+  authorized `Nvl\Seo\Data\SeoProfileData` with translations, or `null` when
+  absent.
+- Use `Nvl\Seo\Actions\GetOwnerSeoRevisionAction::execute(Model $owner,
+  ?string $scope = null)` when a mutation needs only
+  `Nvl\Seo\Data\SeoOwnerRevisionData`. Its camel-case fields are
+  `string $ownerAlias`, `string $ownerId`, `string $scope`,
+  `?string $profileId`, and `int $revision`. Revision `0` and a null profile ID
+  mean that the scoped profile does not exist.
+- Use `Nvl\Seo\Actions\ListOwnerSeoProfilesAction::execute(iterable $owners,
+  ?string $scope = null)` for bounded collection composition. It accepts at
+  most 100 persisted owners, authorizes all of them before profile SQL, and
+  returns positional profile-or-null results with translations in fixed queries.
+- Register the owner's stable alias in `seo.owners` and bind
+  `SeoAuthorization` or configure its Gate ability. These Actions normalize the
+  scope, resolve the alias/morph identity, and authorize `SeoAbility::View`
+  before querying profiles.
+- Do not navigate `seoProfiles`, manually choose a scoped raw model, or call
+  `SeoProfileData::fromModel()` with an application-hardcoded alias.
+
+Use these exact imports and calls:
+
+```php
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
+
+$profile = app(GetOwnerSeoProfileAction::class)->execute($page, $page->site);
+$revision = app(GetOwnerSeoRevisionAction::class)->execute($page, $page->site);
+$profiles = app(ListOwnerSeoProfilesAction::class)->execute($pages, $page->site);
+```
+
 ## Verify
 
 Test management Actions, exact locale and fallback reads, patch/replace writes,
@@ -113,4 +148,4 @@ output, provider priority and resource matching, graph identity/merge rules,
 JSON-LD limits, sitemap indexes, cache invalidation, authorization, query
 counts, and cascade deletion. Run `nvl:seo:doctor --strict --format=json`, the
 package Pest suite, Pint, PHPStan at maximum strictness, dependency audit, and
-Laravel 12/13 gates.
+Laravel 13 gates.

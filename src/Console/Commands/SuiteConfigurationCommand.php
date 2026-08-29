@@ -75,12 +75,34 @@ final class SuiteConfigurationCommand extends Command
             ));
         }
 
+        $packageFindings = $report['package_configuration']['findings'];
+
+        if ($packageFindings === []) {
+            $this->components->info('Package configuration overlays have no structural findings.');
+        } else {
+            $this->table(
+                ['Code', 'Severity', 'Module', 'Path', 'Message', 'Remediation'],
+                array_map(
+                    static fn (array $finding): array => [
+                        $finding['code'],
+                        $finding['severity'],
+                        $finding['module'],
+                        $finding['path'],
+                        $finding['message'],
+                        $finding['remediation'],
+                    ],
+                    $packageFindings,
+                ),
+            );
+        }
+
         $this->table(
             ['Module', 'Selection', 'Provider', 'Migrations', 'Doctor', 'TypeScript'],
             array_map(
                 static fn (string $module, array $definition): array => [
                     $module,
                     match (true) {
+                        ! $definition['explicit'] => 'implicit (enabled)',
                         ! $definition['enabled'] => 'disabled',
                         $definition['dependency'] => 'dependency',
                         default => 'enabled',

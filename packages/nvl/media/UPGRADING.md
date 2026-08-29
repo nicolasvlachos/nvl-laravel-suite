@@ -28,19 +28,19 @@ S3 omits per-object ACLs by default for Bucket Owner Enforced compatibility. Set
 
 Preserve identifiers and verify row counts, checksums, associations, physical objects, signatures, and rollback before removing old code.
 
-## Upgrading to the production-hardened 1.x release
+## Upgrading to the production-hardened 2.x release
 
 The clean v1 schema includes immutable variation paths, persisted upload-specific definitions/listing indexes, and server-owned multipart sessions directly in its create migrations.
 
 1. Require `ext-curl`, deploy the new code, and run `php artisan migrate` before enabling ingestion.
-2. Merge the new `authorization`, `sources.remote`, `integrity`, `mutation_lock`, `multipart`, `query`, `reconciliation`, and `deployment` configuration groups.
+2. Merge the new `authorization`, `owner_slots`, `sources.remote`, `integrity`, `mutation_lock`, `multipart`, `query`, `reconciliation`, and `deployment` configuration groups.
 3. Change custom `media.file_types` entries to `extension => string|list<string>` where a canonical extension has legitimate MIME aliases. Existing string entries remain valid.
 4. Configure every production disk with `throw=true`, use Redis-backed mutation/deduplication locks and durable queues, and keep queue `retry_after` or SQS visibility timeout above every Media job timeout.
 5. Bind a real `MediaContentScanner` whenever untrusted uploads are accepted. `nvl:media:doctor --production` fails closed on the no-op scanner.
 6. Keep multipart disabled unless direct uploads are required. When enabled, configure a recoverable gateway, Redis-backed locks, scanner attestation, expired-session pruning, and the production integration gate.
 7. Run `php artisan nvl:media:doctor --production --strict --format=json`, followed by read-only `php artisan nvl:media:reconcile --production --orphans`.
 8. Remote URL ingestion is now opt-in. Set `MEDIA_REMOTE_SOURCES_ENABLED=true` only where it is used, then canary it separately after the ordinary upload path.
-9. If the application uses Spatie Permission, configure explicit `global_roles` or seed the `media.manage`/granular `media.*-any` permissions. Role names default to an empty list and therefore do not grant new access during upgrade.
+9. If the application uses Spatie Permission, configure explicit `global_roles` or seed the `media.manage`/granular `media.*-any` permissions. Include `media.manage-staging` only for actors allowed to adopt another actor's staged media. Role names default to an empty list and therefore do not grant new access during upgrade.
 10. Application services may adopt `Nvl\Media\Facades\Media` or inject `MediaLibraryContract`. No global class alias is registered, and existing model-trait/action APIs remain valid.
 
 Storage identities are now cryptographically random and use only the validated canonical extension. Upload and replacement actions detect MIME and SHA-256 from bytes, enforce dangerous multi-extension rejection, scan before storage, and verify stored size/checksum. Existing display filenames remain presentation metadata and no longer influence executable object keys.
@@ -48,6 +48,42 @@ Storage identities are now cryptographically random and use only the validated c
 The optional Spatie-compatible authorization bridge is additive and has no Composer dependency on `spatie/laravel-permission`. Configured global roles bypass uploader ownership consistently in policies, listing scope, and private delivery. They do not bypass shared-association integrity or quarantine. Disable `media.authorization.spatie_permission.enabled` when the application authorizer must be the sole source of cross-owner access.
 
 The public action contracts are now honored consistently by model-trait, facade, lifecycle-service, and package-controller calls. Applications that intentionally replaced `UploadMediaContract`, `AttachMediaContract`, `DetachMediaContract`, `DeleteMediaContract`, or `ReusePublicMediaContract` no longer need to replace concrete package controllers or trait internals as well.
+
+The owner-slot idempotency foundation adds the
+`px_media_owner_slot_operations` table. Run migrations before deploying
+owner-slot workflows. Custom deployments may isolate only this ledger with
+`media.owner_slots.idempotency.connection` and
+`media.owner_slots.idempotency.table`; the table must not collide with another
+Media table. The ledger contains canonical request hashes and stable failure
+codes, never request payloads or exception messages. Processing attempts use a
+renewable 30-minute lease by default; recovery rotates the operation UUID and
+invalidates stale claims. A separate ledger connection is not transactionally
+atomic with owner/Media mutations, so custom workflows must reconcile or safely
+retry a crash between mutation and ledger completion.
+
+Replace application concerns that manually query `mediaAssociations`, copy all
+custom properties, detach old files, or delete storage objects with
+`GetOwnerMediaSlotAction`, `ReplaceOwnerMediaSlotAction`,
+`ClearOwnerMediaSlotAction`, and `CopyOwnerMediaSlotAction`. Keep only the
+model's registered `MediaSlot` policy and domain convenience accessors. Existing
+staged files must satisfy the registered MIME, size, visibility, ownership, and
+sharing rules; slots with a custom file acceptor receive new uploads/copies, not
+already-persisted replacement rows. Configure
+`media.owner_slots.copy.metadata_keys` as an explicit list of safe scalar
+presentation/provenance fields instead of copying arbitrary metadata.
+
+After migration, run the owner-slot workflow tests, then schedule:
+
+```bash
+php artisan nvl:media:owner-slots:prune --days=7 --chunk=500
+```
+
+Production rejects a `--days` value shorter than configured retention unless
+`--force` is explicit. `nvl:media:doctor --production --strict` also checks the
+ledger, retention bounds, atomic mutation lock store, and observed owner-slot
+model registrations. Idempotent workflows may participate in a host outer
+transaction; events, file effects, and split-ledger completion follow the real
+root outcome.
 
 Replacement now re-applies the policies of every persisted association slot. Copy/move uses copy–verify–database-swap–delete, deletion keeps a soft-deleted diagnostic tombstone, and external cleanup/events/variation dispatch follow the real root transaction outcome. Applications that assumed immediate file deletion inside an outer transaction must wait for commit.
 
@@ -57,4 +93,4 @@ Replacement now re-applies the policies of every persisted association slot. Cop
 
 The clean 1.0 API has no pre-release compatibility controller. Multipart signing/completion/abort requests use only the server-issued upload ID, scan finalization requires `MediaScanResultData`, dynamic asset transformations are unsupported, and tag writes go through `MutateMediaTagsAction` or `BulkTagMediaAction`.
 
-Review the dedicated [PHP API](docs/php-api.md), [HTTP API](docs/http-api.md), [configuration reference](docs/configuration.md), and [extension/event reference](docs/extending.md) during adoption. These references distinguish trusted PHP mutation calls from authorized HTTP entry points and document every supported 1.x public surface. Documentation coverage tests fail when a public facade, trait, fluent-adder, slot, conversion, model-helper, management-route, contract, event, or top-level configuration surface is added without corresponding reference documentation.
+Review the dedicated [PHP API](docs/php-api.md), [HTTP API](docs/http-api.md), [configuration reference](docs/configuration.md), and [extension/event reference](docs/extending.md) during adoption. These references distinguish trusted PHP mutation calls from authorized HTTP entry points and document every supported 2.x public surface. Documentation coverage tests fail when a public facade, trait, fluent-adder, slot, conversion, model-helper, management-route, contract, event, or top-level configuration surface is added without corresponding reference documentation.

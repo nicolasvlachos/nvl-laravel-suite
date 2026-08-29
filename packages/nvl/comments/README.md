@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/comments` |
 | PHP namespace | `Nvl\Comments` |
 | Service provider | `Nvl\Comments\Providers\CommentsServiceProvider` |
@@ -40,9 +40,11 @@ UI.
   Never accept a tenant or member scope from request input.
 - Public author data is presented through an audience-safe contract. Stored
   polymorphic actor identities are not public profile data.
-- Notifications, mentions, subscriptions, search, realtime delivery, spam
+- Notification delivery, subscriptions, search, realtime delivery, spam
   scoring, retention schedules, and UI components belong in consumers and can
-  subscribe to the package's typed events.
+  subscribe to the package's typed events. Comments owns bounded rich-document
+  persistence and normalized current mention references; applications own the
+  registered resource resolvers and their authorization policy.
 
 `nvl/comments` declares `nvl/data`, `nvl/filterable`, and `nvl/media`; attachment
 support is a first-class integration.
@@ -50,7 +52,7 @@ support is a first-class integration.
 ## Install
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 ```
 
@@ -89,6 +91,11 @@ populate them with `CommentIdentity` or persist through the package models.
 - `comment_revisions` stores immutable pre-mutation content snapshots.
 - `comment_reactions` stores one configured reaction type per comment/actor.
 - `comment_reports` stores one reviewable report per comment/reporter.
+- `comment_metadata_values` stores only keyed hashes for registered queryable
+  scalar metadata; the JSON document remains the revisioned source of truth.
+- `comment_mentions` stores current ordered mention references by registered
+  alias and opaque application ID. It intentionally has no foreign key to an
+  application resource; revisions retain immutable server-label snapshots.
 
 `report_count` is a lifetime distinct-reporter count.
 `open_report_count` is the current actionable count. Composite indexes support
@@ -213,6 +220,91 @@ increments the direct-parent count once, and dispatches after commit.
 
 Anonymous creation remains available when explicitly enabled and authorized.
 The public HTTP group accepts public visibility only.
+
+### Rich documents and mentions
+
+Rich mutations use `CreateRichCommentAction` and `UpdateRichCommentAction`.
+They do not change the released plain/Markdown Action or DTO signatures. The
+only accepted version-one nodes are paragraph blocks containing text,
+hard-break, or mention nodes. Clients submit mention token UUIDs, registered
+resource aliases, and opaque IDs only; labels are resolved and stored by the
+server. HTML, URLs, client labels, arbitrary fields, and nested children are
+rejected.
+
+Rich support is disabled by default through `comments.mentions.enabled` until
+the application registers resources. Declarative Eloquent resources are a
+convenience for non-sensitive allowlisted fields; custom resolvers retain
+ownership of sensitive domain authorization:
+
+```php
+'mentions' => [
+    'enabled' => false,
+    'maximum_per_comment' => 25,
+    'maximum_resource_types_per_comment' => 10,
+    'suggestion_limit' => 10,
+    'maximum_suggestion_limit' => 20,
+    'maximum_query_length' => 160,
+    'maximum_batch_size' => 100,
+    'resources' => [
+        'organization' => [
+            'model' => Organization::class,
+            'searchable_fields' => ['name', 'registration_number'],
+            'exposed_fields' => ['name', 'registration_number'],
+            'label_field' => 'name',
+            'authorization' => OrganizationMentionAuthorization::class,
+            'url_resolver' => OrganizationMentionUrlResolver::class,
+            'public' => false,
+        ],
+        'candidacy' => [
+            'resolver' => CandidacyMentionResourceResolver::class,
+        ],
+    ],
+],
+```
+
+Aliases, searchable/exposed columns, labels, URLs, and authorization are always
+server-owned. Declarative queries select only the model key, label, and exposed
+fields; escape SQL wildcards; apply the configured authorization scope; order
+deterministically; and use bounded parameterized queries. Searchable and exposed
+lists each accept at most 25 unique ASCII column names of at most 64 bytes.
+Laravel's default `guarded = ['*']` sentinel remains compatible with this
+explicit mention allowlist, while explicitly guarded and hidden columns remain
+forbidden. Custom resolvers
+implement `CommentMentionResourceResolver`. A custom public resolver must also
+implement `ViewerIndependentCommentMentionResource`; otherwise public shared
+projections use only immutable label snapshots and never call it.
+
+Call `SuggestCommentMentionResourcesAction` for an authorized editor and
+`ResolveCommentMentionsAction` for one authorized current comment. Suggestions
+return opaque IDs, labels, allowlisted scalar fields, and package-produced URLs.
+Every result is capped at 25 fields, 64 bytes per field key, 2,048 bytes per
+string field value, and a 2,048-byte relative or HTTP(S) URL. Field strings and
+URLs must be valid UTF-8; executable, protocol-relative, control-character, and
+non-finite values are rejected at the shared package boundary.
+Viewer projections use `resolved`, `missing`, or `restricted`; unavailable
+resources expose no live ID, fields, or URL. Projection batches de-duplicate IDs
+per alias and preserve token order without N+1 queries. The package bounds
+encoded bytes, blocks, nodes, resource aliases, mentions, queries, suggestions,
+and resolution batches. `body` is always a deterministic plain-text projection
+for compatibility and search. Raw stored documents and resource identity hashes
+are hidden from model serialization; viewer-safe documents never serialize raw
+opaque resource IDs.
+
+Declarative Eloquent resolution never performs an unscoped existence lookup:
+an absent resource and a resource outside the authorization scope both project
+as the same snapshot-only `missing` state through one scoped query.
+
+`CommentMentionsChanged` is an after-commit, delivery-agnostic fact containing
+only comment/target/revision identity and bounded added/removed alias, opaque ID,
+and token facts. Applications own notification recipients, copy, channels, and
+delivery.
+
+Applications using custom table names must disable vendor migrations and add
+nullable JSON `document` columns to both comment and revision tables plus a
+compatible configured mentions table. Restoring a revision rebuilds current
+mention rows from its historical server-label snapshot. Soft deletion retains
+them, physical deletion cascades them, and anonymization removes all current
+references and rich document state.
 
 ### Idempotent creation
 
@@ -363,6 +455,9 @@ the package Actions.
 
 Member routes additionally provide:
 
+- `POST /targets/{alias}/{id}/rich`
+- `GET /targets/{alias}/{id}/mentions/{resource}/suggestions?q=...&limit=...`
+- `PUT|PATCH /comments/{comment}/rich`
 - `POST /comments/{comment}/restore`
 - `GET /comments/{comment}/revisions`
 - `POST /comments/{comment}/revisions/{revision}/restore`
@@ -390,6 +485,10 @@ cached list cannot outlive its asset capabilities.
 Management discovery is always scoped to a canonical target:
 
 - `GET /targets/{alias}/{id}` returns actionable comments.
+- `POST /targets/{alias}/{id}/rich` creates a rich comment.
+- `GET /targets/{alias}/{id}/mentions/{resource}/suggestions` returns private,
+  authorization-scoped suggestions.
+- `PUT|PATCH /{comment}/rich` updates a rich comment.
 - `GET /targets/{alias}/{id}/reports` returns actionable reports.
 - `PUT /{comment}/moderation`
 - `POST /{comment}/restore`
@@ -555,6 +654,100 @@ sort, threads are pin-first then newest-first with UUID as the deterministic
 tie-breaker. An explicit allowlisted caller sort replaces that default pin
 priority and still receives the UUID tie-breaker.
 
+## Registered metadata and selectors
+
+Existing JSON metadata remains internal and backward compatible by default.
+Applications opt individual scalar fields into validation, equality selectors,
+and audience-safe projections by implementing `CommentMetadataSchema` and adding
+the class to `comments.metadata.schemas`. A schema owns one stable snake/dot
+namespace and a list of `CommentMetadataField` definitions. Fields have a public
+snake-case alias, a unique top-level JSON storage key, one of `string`,
+`integer`, `boolean`, or `uuid`, explicit nullability/mutability/queryability,
+and an explicit `CommentAudience` visibility list. Management sees only fields
+that declare `CommentAudience::Management`.
+
+Compatibility mode (`comments.metadata.strict=false`) validates every registered
+field while retaining unknown legacy keys internally. Strict mode rejects an
+unknown key on mutation and should be enabled only after Doctor reports
+`metadata.strict_compatible=true`. Metadata has independent encoded-byte and
+registered-field limits; it no longer shares the comment body byte limit.
+
+Queryable values are copied to `comment_metadata_values` as a domain-separated
+keyed hash of their type and normalized scalar. The index contains no plaintext
+value. Set `COMMENTS_METADATA_DIGEST_KEY`; otherwise Comments falls back to its
+idempotency digest key and then `app.key`. Rotating that key invalidates lookup
+hashes, so run `nvl:comments:reconcile --repair` to rebuild the index before
+depending on metadata selectors.
+
+Use `<namespace>.<field>` aliases in the selector; raw JSON paths, columns,
+operators, unregistered fields, and non-queryable fields are rejected:
+
+```php
+$selector = new CommentSelectorData(
+    tags: ['candidacy-workflow'],
+    metadataEquals: [
+        'workflow.event' => 'submitted',
+        'workflow.sequence' => 4,
+    ],
+    status: CommentStatus::Approved,
+);
+```
+
+At most 10 metadata equalities and 20 tags are accepted. String, integer,
+boolean, and explicit null equality use the package-owned hash index on every
+supported database; callers never query JSON directly. Safe response metadata
+is a list of `CommentMetadataProjectionData` records containing a namespace and
+an allowlisted scalar `values` record. When no schema value is visible, the
+optional property is omitted to preserve existing serialized shapes.
+
+The local package configuration runs this selector contract on SQLite. The
+release workflow runs the same `CommentMetadataContractsTest.php` suite on
+PostgreSQL 17, MySQL 8.4, and MariaDB 12.3; those drivers are matrix-only unless
+the corresponding `DB_CONNECTION` service is configured locally.
+
+Metadata is categorical workflow context, not a secret store or rich reference
+system. Do not place credentials, private tokens, personal secrets, model
+payloads, or mentions in metadata. Mentions require server-side resolution and
+authorization and belong to the package's rich-mention contract.
+
+## Latest target comment read
+
+Use `FindLatestTargetCommentAction` when an application needs one newest
+comment for a workflow or summary instead of a paginated thread or a direct
+`Comment` query:
+
+```php
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
+use Nvl\Comments\Data\CommentActorData;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Comments\Enums\CommentAudience;
+use Nvl\Comments\Enums\CommentStatus;
+
+$comment = app(FindLatestTargetCommentAction::class)->execute(
+    target: $candidacy,
+    actor: CommentActorData::system(),
+    selector: new CommentSelectorData(
+        tags: ['candidacy-workflow'],
+        metadataEquals: ['workflow.event' => 'submitted'],
+        status: CommentStatus::Approved,
+    ),
+    audience: CommentAudience::Management,
+);
+
+$body = $comment?->body;
+```
+
+Every selected tag must be present. Tags use the same list, distinctness,
+UTF-8, and 64-character limits as comment writes, with a hard query cap of 20
+or the lower configured write limit; status is an optional `CommentStatus`.
+The Action applies authorization and `CommentQueryScope` before these
+selectors, excludes soft-deleted comments, orders by `created_at` then `id`
+descending, and returns the DTO for the requested audience or `null`.
+Management denial occurs before SQL. Use `DeleteLatestTargetCommentAction` for
+the same bounded selector when a workflow needs to delete its newest match
+without receiving a `Comment` model. Match resolution, authorization, row lock,
+and the current-revision delete lifecycle execute in one package transaction.
+
 ## Operations
 
 Audit package readiness:
@@ -572,13 +765,21 @@ php artisan nvl:media:doctor --production --strict --format=json
 Doctor verifies schema columns, production-critical types/lengths/nullability/
 defaults, indexes, foreign keys, resolvers, contracts, route completeness,
 middleware, actor resolution, author presentation, query scoping,
-authorization readiness, mutation-lock configuration/topology, and the
+authorization readiness, registered metadata schemas/digest/strict compatibility,
+registered mention resource definitions/hard caps/schema, mutation-lock
+configuration/topology, and the
 Comments/Media connection boundary. It also rejects malformed security switches
 and limits, non-canonical bundled-migration storage configuration, missing
 fingerprint columns/indexes, and incomplete disabled-attachment history.
 Enabled public routes require throttling; enabled member and management routes
 require authentication and throttling. Management additionally requires
 non-default authorization and query scoping.
+
+Reconciliation validates the current rich document against normalized mention
+rows and its plain-text body projection, reports invalid snapshots, identity
+collisions, and orphan rows, and can rebuild current rows/body after stored
+snapshot revalidation. It never resolves live resources into historical
+revisions.
 
 Consumer contract checks are structural: Doctor proves that configured classes
 resolve and that management bindings are not the package defaults, but it cannot
@@ -604,8 +805,8 @@ php artisan nvl:comments:reconcile \
 ```
 
 `--repair` additionally requires `--force` in production. Reconciliation audits
-and safely repairs reply, reaction, total-report, open-report, root, and depth
-drift. It diagnoses cycles, missing targets, invalid attachment associations,
+and safely repairs reply, reaction, total-report, open-report, root, depth, and
+metadata-index drift. It diagnoses cycles, missing targets, invalid attachment associations,
 identity/classification fingerprint drift, and unsafe hierarchy damage without
 deleting data. Fingerprint mismatches are never auto-repaired, and they block
 counter repair for the affected comment so an ambiguous imported identity
@@ -657,9 +858,9 @@ composer audit --locked --no-interaction
 ```
 
 The release matrix additionally runs package and integration Pest suites on
-SQLite, MySQL 8.4, MariaDB 12.1, and PostgreSQL 17; concurrency coverage;
+SQLite, MySQL 8.4, MariaDB 12.3, and PostgreSQL 17; concurrency coverage;
 strict Doctor; TypeScript and public-contract checks; clean source and
-relocated-artifact consumers on Laravel 12–13; and every supported PHP version.
+relocated-artifact consumers on Laravel 13; and every supported PHP version.
 
 From the suite root:
 

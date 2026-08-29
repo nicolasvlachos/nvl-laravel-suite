@@ -12,6 +12,10 @@ The executable contracts are:
   Releases.
 - `tools/check-release-changelogs.php` for the requested suite version and every
   package changed since the preceding stable source.
+- `tools/consumer-api-deprecations.php` for the exact final-1.x-to-2.0 behavior
+  and return-shape inventory.
+- `tools/rehearse-final-1x-upgrade.sh` for the sealed prepared-final-1.x upgrade
+  proof.
 - `tests/Contract/PackageQualityWorkflowTest.php` for the workflow invariants.
 
 If this guide and a workflow disagree, stop and update them together. Do not
@@ -51,7 +55,7 @@ successful release workflow may create the stable tag.
   green.
 - **Publish, release, or tag:** confirm that the requested version matches the
   changelogs and does not already exist, ensure the release-preparation commit
-  is on `main`, wait for its five quality jobs, and dispatch `Package release`
+  is on `main`, wait for its six quality jobs, and dispatch `Package release`
   with that exact version. Never substitute a nearby version or create a local
   tag as a shortcut.
 - **Report state precisely:** after preparation, report the commit and that the
@@ -75,7 +79,7 @@ git pull --ff-only origin main
 git status --short --branch
 ```
 
-Choose a semantic version without a `v` prefix, for example `1.1.0`. Follow
+Choose a semantic version without a `v` prefix, for example `2.0.0`. Follow
 semantic versioning across the complete suite:
 
 - Patch: compatible fixes, such as `1.0.1`.
@@ -95,6 +99,7 @@ before pushing:
 composer install --no-interaction --prefer-dist
 composer validate --strict
 composer contracts:check
+composer packages:validate
 composer quality
 composer audit --locked --no-interaction
 ```
@@ -116,10 +121,32 @@ Review intentional public-contract changes before running
 `composer contracts:update`. A baseline update is part of the reviewed release
 change, never an automatic way to silence a failure.
 
+For the 2.0 boundary, `v1.0.7` is the published final 1.x tag. It did not publish the 2.0 deprecation warnings or all additive proof APIs needed for a
+complete in-place rehearsal. Commit
+`d8feceecc02f436772dca74b260704a535bceca6` is the immutable prepared-final-1.x
+source checkpoint immediately before the breaking changes. Run:
+
+```bash
+tools/rehearse-final-1x-upgrade.sh
+```
+
+This builds both checkpoints as sealed Composer archives, installs the prepared
+checkpoint into a Laravel 13 Auth proof consumer, renders all module decisions,
+caches configuration and routes, migrates, generates and compiles TypeScript,
+runs strict Doctor/audit and fixture smoke, upgrades the same application to
+the candidate, and repeats those checks. This prepared evidence is not a published 1.x release and must never be described as proof that final-1.x
+warnings reached external consumers.
+
+Suite 2.0 publication is gated by package-owned evidence: the green `main`
+quality run and the release workflow's archive, prepared-final-1.x, and sealed
+Auth/Content proof-consumer jobs. KPO adoption follows publication because it
+must resolve an available stable 2.0 package; KPO's pre-adoption state is not a
+release prerequisite or publication gate.
+
 Optionally rehearse the Composer archive with the chosen version:
 
 ```bash
-COMPOSER_ROOT_VERSION=1.1.0 composer archive \
+COMPOSER_ROOT_VERSION=2.0.0 composer archive \
     --format=zip \
     --dir=/tmp/nvl-suite-archive
 ```
@@ -142,7 +169,7 @@ git add CHANGELOG.md README.md CONTRIBUTING.md docs packages/nvl
 
 git diff --cached --check
 git diff --cached
-git commit -m "release: prepare v1.1.0"
+git commit -m "release: prepare v2.0.0"
 git push origin main
 ```
 
@@ -151,14 +178,15 @@ Adjust the `git add` paths to the files actually changed. Do not blindly use
 private keys, `.temp`, local agent configuration, `vendor`, and `node_modules`
 are not staged.
 
-Pushing `main` starts **Package quality**. It must finish with these five green
+Pushing `main` starts **Package quality**. It must finish with these six green
 jobs:
 
 1. Formatting, analysis, manifests and contracts.
 2. PHP 8.4 / Laravel 13 / SQLite.
-3. PHP 8.4 / Laravel 12 / lowest.
+3. PHP 8.4 / Laravel 13 / lowest.
 4. PostgreSQL stateful packages.
-5. Changed-package coverage.
+5. MySQL 8.4 and MariaDB 12.3 stateful packages.
+6. Changed-package coverage.
 
 Use the GitHub Actions page, or GitHub CLI:
 
@@ -176,12 +204,12 @@ Never run `git tag vX.Y.Z` or `git push origin vX.Y.Z` yourself. The release
 workflow is the only supported tag publisher.
 
 From GitHub, open **Actions -> Package release -> Run workflow**, select `main`,
-and enter the version without the `v` prefix, such as `1.1.0`.
+and enter the version without the `v` prefix, such as `2.0.0`.
 
 The equivalent GitHub CLI commands are:
 
 ```bash
-gh workflow run package-release.yml --ref main -f version=1.1.0
+gh workflow run package-release.yml --ref main -f version=2.0.0
 gh run list --workflow package-release.yml --branch main --limit 5
 gh run watch RUN_ID --exit-status
 ```
@@ -189,7 +217,8 @@ gh run watch RUN_ID --exit-status
 The workflow performs the complete publication transaction:
 
 1. Validates the default branch and semantic version.
-2. Reruns all five routine quality gates.
+2. Reruns all six routine quality gates and a separate PHP 8.5 / Laravel 13
+   test job.
 3. Requires a dated version heading in the suite and every changed module,
    rejects future-target wording, and requires release-ready `Unreleased`
    sections to be blank.
@@ -198,8 +227,13 @@ The workflow performs the complete publication transaction:
 6. Installs that exact ZIP into a clean Laravel 13 application.
 7. Verifies discovery, configuration and route caches, migrations, publish
    tags, strict doctor commands, and the Composer security audit.
-8. Creates and pushes the annotated clean `vX.Y.Z` tag.
-9. Creates the GitHub Release and attaches the verified ZIP.
+8. Upgrades the prepared final-1.x Auth proof consumer to that same sealed ZIP
+   and verifies explicit configuration, caches, migrations, generated types,
+   strict Doctor/audit, queue-backed smoke behavior, and TypeScript compilation.
+9. Runs both Auth and Content proof consumers against that same sealed ZIP before
+   publication can proceed.
+10. Creates and pushes the annotated clean `vX.Y.Z` tag.
+11. Creates the GitHub Release and attaches the verified ZIP.
 
 No tag is created when validation, quality, or archive verification fails.
 
@@ -209,17 +243,17 @@ After the release workflow is green, synchronize the tag locally:
 
 ```bash
 git fetch --tags --prune
-git tag -n1 --list 'v1.1.0'
-git ls-remote origin 'refs/tags/v1.1.0' 'refs/tags/v1.1.0^{}'
+git tag -n1 --list 'v2.0.0'
+git ls-remote origin 'refs/tags/v2.0.0' 'refs/tags/v2.0.0^{}'
 ```
 
 Verify all of the following before announcing the release:
 
 - The GitHub Actions release run is green.
-- `https://github.com/nicolasvlachos/nvl-laravel-suite/releases/tag/v1.1.0`
+- `https://github.com/nicolasvlachos/nvl-laravel-suite/releases/tag/v2.0.0`
   exists, is not a draft or prerelease, and contains one
-  `nvl-laravel-suite-1.1.0.zip` asset.
-- [Packagist](https://packagist.org/packages/nvl/laravel-suite) lists `v1.1.0`
+  `nvl-laravel-suite-2.0.0.zip` asset.
+- [Packagist](https://packagist.org/packages/nvl/laravel-suite) lists `v2.0.0`
   as a stable version.
 
 Packagist is configured to update automatically from GitHub. A new changelog
@@ -235,7 +269,7 @@ composer create-project --no-interaction --no-dev \
     --prefer-dist laravel/laravel:^13.0 /tmp/nvl-suite-consumer
 cd /tmp/nvl-suite-consumer
 composer require --no-interaction --update-no-dev \
-    --with-all-dependencies nvl/laravel-suite:^1.1
+    --with-all-dependencies nvl/laravel-suite:^2.0
 php artisan package:discover
 php artisan config:cache
 php artisan route:cache

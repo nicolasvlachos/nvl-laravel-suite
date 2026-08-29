@@ -13,6 +13,7 @@ use Nvl\Comments\Actions\AttachCommentMediaAction;
 use Nvl\Comments\Actions\CreateCommentAction;
 use Nvl\Comments\Actions\DeleteCommentAction;
 use Nvl\Comments\Actions\DetachCommentMediaAction;
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Actions\ModerateCommentAction;
 use Nvl\Comments\Actions\ReportCommentAction;
 use Nvl\Comments\Actions\ResolveCommentReportAction;
@@ -30,6 +31,7 @@ use Nvl\Comments\Data\Mutations\ResolveCommentReportData;
 use Nvl\Comments\Data\Mutations\RestoreCommentData;
 use Nvl\Comments\Data\Mutations\RestoreCommentRevisionData;
 use Nvl\Comments\Data\Mutations\UpdateCommentData;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
 use Nvl\Comments\Enums\CommentAudience;
 use Nvl\Comments\Enums\CommentChangeOperation;
 use Nvl\Comments\Enums\CommentFormat;
@@ -44,11 +46,14 @@ use Nvl\Comments\Exceptions\InvalidCommentLifecycleException;
 use Nvl\Comments\Exceptions\InvalidCommentMutationException;
 use Nvl\Comments\Exceptions\StaleCommentException;
 use Nvl\Comments\Models\Comment;
+use Nvl\Comments\Models\CommentMetadataValue;
 use Nvl\Comments\Models\CommentReaction;
 use Nvl\Comments\Models\CommentReport;
 use Nvl\Comments\Models\CommentRevision;
+use Nvl\Comments\Services\CommentMetadataRegistry;
 use Nvl\Comments\Services\CommentMutationLock;
 use Nvl\Comments\Services\CommentProjectionFactory;
+use Nvl\Comments\Tests\Fixtures\TestCommentMetadataSchema;
 use Nvl\Comments\Tests\Fixtures\TestCommentTarget;
 use Nvl\Media\Enums\MediaLifecycleStatus;
 use Nvl\Media\Enums\MediaType;
@@ -137,6 +142,39 @@ it('delivers every user event after the root commit and discards rollback events
         ->and($reactions)->toHaveCount(1)
         ->and($reported)->toHaveCount(1)
         ->and(Comment::query()->whereKey($rolledBack->id)->exists())->toBeFalse();
+});
+
+it('keeps legacy revisions document-free through plain updates and restores', function (): void {
+    $target = TestCommentTarget::query()->create(['name' => 'Legacy revision document']);
+    $actor = new CommentActorData('member', 'legacy-revision-author');
+    $comment = app(CreateCommentAction::class)->execute(
+        $target,
+        new CreateCommentData('Before plain edit', format: CommentFormat::Markdown),
+        $actor,
+    );
+    $updated = app(UpdateCommentAction::class)->execute(
+        $comment,
+        new UpdateCommentData('After plain edit', expectedRevision: 1),
+        $actor,
+    );
+    $revision = CommentRevision::query()
+        ->where('comment_id', $comment->id)
+        ->where('revision', 1)
+        ->sole();
+
+    expect($revision->document)->toBeNull()
+        ->and($revision->toArray())->not->toHaveKey('document');
+
+    $restored = app(RestoreCommentRevisionAction::class)->execute(
+        $updated,
+        $revision,
+        new RestoreCommentRevisionData(expectedRevision: 2),
+        $actor,
+    );
+
+    expect($restored->body)->toBe('Before plain edit')
+        ->and($restored->format)->toBe(CommentFormat::Markdown)
+        ->and($restored->document)->toBeNull();
 });
 
 it('rolls anonymization back when a model observer vetoes the required soft delete', function (): void {
@@ -1115,6 +1153,48 @@ it('deletes and restores a reply with exact parent counter and revision semantic
             === CommentChangeOperation::Restored
             && $event->revision === 3,
     );
+});
+
+it('rebuilds queryable metadata when an ordinary soft deletion is restored', function (): void {
+    config()->set([
+        'comments.metadata.schemas' => [TestCommentMetadataSchema::class],
+        'comments.metadata.digest_key' => 'restore-metadata-test-key',
+    ]);
+    app()->forgetInstance(CommentMetadataRegistry::class);
+    $target = TestCommentTarget::query()->create(['name' => 'Restore metadata']);
+    $actor = new CommentActorData('member', 'restore-metadata-author');
+    $comment = app(CreateCommentAction::class)->execute(
+        $target,
+        new CreateCommentData('Restorable metadata', metadata: [
+            'workflow_event' => 'restorable',
+        ]),
+        $actor,
+        CommentAudience::Member,
+    );
+    app(DeleteCommentAction::class)->execute(
+        $comment,
+        new DeleteCommentData(expectedRevision: 1),
+        $actor,
+        CommentAudience::Member,
+    );
+
+    expect(CommentMetadataValue::query()->where('comment_id', $comment->id)->exists())
+        ->toBeFalse();
+
+    $restored = app(RestoreCommentAction::class)->execute(
+        $comment->refresh(),
+        new RestoreCommentData(expectedRevision: 2),
+        $actor,
+        CommentAudience::Member,
+    );
+
+    expect(CommentMetadataValue::query()->where('comment_id', $comment->id)->count())->toBe(1)
+        ->and(app(FindLatestTargetCommentAction::class)->execute(
+            $target,
+            $actor,
+            new CommentSelectorData(metadataEquals: ['workflow.event' => 'restorable']),
+            CommentAudience::Member,
+        )?->id)->toBe($restored->id);
 });
 
 it('rejects restoring a reply while its parent is deleted', function (): void {

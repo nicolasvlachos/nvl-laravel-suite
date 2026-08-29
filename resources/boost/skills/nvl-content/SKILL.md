@@ -1,6 +1,6 @@
 ---
 name: nvl-content
-description: Implement, integrate, test, or review nvl/content in Laravel 12–13. Use for source-controlled block definitions, typed or custom fields, localized content, Media and reference values, placements, regions, trees, rendering, immutable composition snapshots, Blade starting views, APIs, or package architecture.
+description: Implement, integrate, test, or review nvl/content in Laravel 13. Use for source-controlled block definitions, typed or custom fields, localized content, Media and reference values, placements, regions, trees, rendering, immutable composition snapshots, Blade starting views, APIs, or package architecture.
 ---
 
 # NVL Content
@@ -53,10 +53,11 @@ composition snapshots.
 
 ## Mutate and compose
 
-- Constructor-inject `Nvl\Content\Content` as the canonical application
-  boundary. Its facade is a static proxy to the same surface, not a second
-  execution path. Keep Actions and services behind that boundary when Content
-  is consumed by another package or application layer.
+- Constructor-inject `Nvl\Content\Content` as the canonical boundary for its
+  documented model-first operations. Its facade is a static proxy to the same
+  service surface, not a second execution path. Keep undocumented Actions and
+  services behind that boundary; inject the documented focused DTO-first editor
+  Actions below when no equivalent `Content` method exists.
 - The application surface exposes source synchronization, block browse/read,
   the complete block lifecycle, definitions, presets, groups, placements,
   live rendering, and snapshots.
@@ -75,8 +76,77 @@ composition snapshots.
   semantic contracts through `Content::presets()`, declared groups through
   `Content::groups()`, and group placement facts through
   `Content::placements()`.
-- Prefer `Content::editor()` when a consumer needs the complete typed
-  definitions/presets/groups/placements bootstrap in one call.
+- Prefer `Content::editor()` or
+  `Nvl\Content\Actions\GetOwnerContentEditorAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group, Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentEditorData` when a
+  consumer needs the complete typed definitions/presets/groups/placements
+  bootstrap. Use `ContentEditorData::placementLimit` as the editor ceiling and
+  `ContentPlacementData::block` for definition, lifecycle, values,
+  translations, metadata, and block revision; do not navigate Eloquent block
+  relations.
+- For bounded indexes, inject
+  `Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction` and call
+  `execute(iterable $owners, string $group, Nvl\Content\Data\ContentActorData
+  $actor): array<string, list<Nvl\Content\Data\ContentPlacementData>>`.
+  Pass zero to 100 persisted owner entries. Empty input performs no query;
+  duplicate canonical identities are collapsed; every unique owner is
+  authorized before SQL; one and 25 owners of one type use the same five-query
+  projection. Read results by the serialization-safe `<owner-type>:<owner-id>`
+  key, such as `page:01H...` or `account:42`.
+- Treat `Nvl\Content\Enums\ContentAbility::ListPlacements` with
+  `context.includes_blocks=true` as disclosure of
+  the placed editable block DTO. Keep this owner-scoped decision explicit in
+  the consumer authorization adapter.
+
+```php
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
+use Nvl\Content\Data\ContentActorData;
+
+$actor = ContentActorData::fromAuthenticatable($user);
+$editor = app(GetOwnerContentEditorAction::class)
+    ->execute($page, 'content', $actor);
+$placementsByOwner = app(ListOwnerContentPlacementSummariesAction::class)
+    ->execute($pages, 'content', $actor);
+$pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
+```
+
+- For exact editor lookups, inject
+  `Nvl\Content\Actions\FindContentBlockByKeyAction::execute(string $key,
+  Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentBlockData`
+  or
+  `Nvl\Content\Actions\FindContentPlacementAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group, string $idOrKey,
+  Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentPlacementData`.
+  Block keys must be byte-exact and unambiguous across active scopes. Placement
+  IDs/keys stay byte-exact and owner/group scoped, reject collisions, and never
+  compare a non-UUID key with the UUID primary-key column.
+- Replace a placed block through
+  `Nvl\Content\Actions\ReplaceContentPlacementAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group, string $placement, string $block, int
+  $expectedRevision, Nvl\Content\Data\ContentActorData $actor):
+  Nvl\Content\Data\ContentPlacementData`. It locks the complete composition,
+  revalidates existing overrides against the replacement definition, and
+  changes only block identity and revision.
+- Reorder with a complete
+  `Nvl\Content\Data\Mutations\ReorderContentPlacementsData` set and inject
+  `Nvl\Content\Actions\ReorderContentPlacementsAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
+  $owner, string $group,
+  Nvl\Content\Data\Mutations\ReorderContentPlacementsData $data,
+  Nvl\Content\Data\ContentActorData $actor): Nvl\Content\Data\ContentEditorData`.
+  Include one
+  `Nvl\Content\Data\Mutations\ReorderContentPlacementData` for every placement,
+  even unchanged rows. Duplicate, partial, stale, cyclic, cross-region, or
+  over-limit proposals fail atomically; changed rows update and emit events in
+  ID order, and the Action returns a fresh editor DTO.
+- Handle `Nvl\Content\Enums\ContentAbility::Place` contexts
+  `replaces_placement=true` and `reorders_placements=true` in the consumer
+  authorization adapter. These workflows are focused injected Actions, not
+  `Content` facade methods, so the original service constructor stays callable.
+
+- Treat model-returning `Content::placements()` as a documented 1.x identity
+  compatibility surface. Build new reads from editor or placement-summary DTOs
+  so consumers do not serialize lazy package relations.
 - Remove leaf placements through `Content::deletePlacement()`; never delete
   placed blocks or silently orphan a child tree.
 - Use Patch as the safe update default. Request Replace only when omitted base,
@@ -141,7 +211,7 @@ composition snapshots.
   middleware must fail closed.
 - Run `nvl:content:doctor --strict --format=json`, definition dry runs, Pest,
   Pint, PHPStan at maximum strictness, `nvl:data:types:check`, database
-  matrices, and clean `nvl/laravel-suite` consumer tests on Laravel 12/13.
+  matrices, and clean `nvl/laravel-suite` consumer tests on Laravel 13.
 - Treat pending block versions or missing migration paths as deployment
   failures. Require the doctor to verify semantic columns, indexes, and
   foreign keys. Migration plans/events must never contain content values.

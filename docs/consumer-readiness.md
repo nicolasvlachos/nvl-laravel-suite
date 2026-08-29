@@ -12,6 +12,19 @@ documented evidence. `N/A` means the concern is outside the package's ownership
 and the catalog records why. There are no `QUESTION` classifications: an
 uncertain claim is a finding until it becomes a tested decision or a gap.
 
+## Consumer boundary doctrine
+
+- **Allowed:** Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.
+- **Prohibited in 2.0:** Consumer-initiated package model queries and relation aggregates are errors in 2.0.
+- **Forbidden:** Consumer writes through package models, builders, raw tables, pivots, or storage paths.
+- **Explicit exceptions:** Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.
+
+The package rows below identify the preferred application entry point and place
+model access into this shared policy. Model type hints, identity use, models
+returned by mutation Actions, and route-bound models passed immediately to an
+Action remain allowed. A package-documented facade is an adapter to its allowed
+Action or explicit service, not a separate policy class.
+
 ## Readiness matrix
 
 | Package | Application API | Read performance | Media lifecycle | Locale fallback | Ownership boundary | Presets | Adoption and diagnostics |
@@ -42,34 +55,35 @@ uncertain claim is a finding until it becomes a tested decision or a gap.
 Consumers use the smallest package-owned Action, service, facade, contract, or
 trait that represents their use case. A global suite facade would erase package
 ownership and is intentionally absent. Direct package-model queries are not a
-canonical application boundary and remain compatibility-only in the 1.x line.
+canonical application boundary and fail the Suite consumer audit in 2.0.
 
 | Package | Canonical entry point | Direct-model policy |
 |---|---|---|
-| `activity` | `ActivityLog`, `ActivityReadService`, and model activity traits | Package models are internal persistence; use the read/recording services. |
-| `auth` | Feature Actions and `AuthManagementAccess` | Use Actions and configured principal contracts. |
-| `comments` | Comment Actions plus `HasComments`/`AcceptsComments` | The host trait declares the relationship; workflows stay in Comments Actions. |
-| `content` | `Content` and Content Actions | Use scope/list/detail/mutation contracts, never Content models directly. |
-| `csv` | `CSVImport`, `CSVExport`, and `CSVAnalyzerService` | No package model exists. |
-| `data` | `DataTransform` and generated-type services | No package model exists. |
-| `filterable` | `FilterSet`, allowlisted schemas, and `Filterable` | Declared exception: the trait/builder on a consumer model is the public API. |
-| `forms` | Form and FormEntry Actions/contracts | Controllers and consumers do not write Forms models. |
-| `mail-notifications` | Administrative read Actions and `TrackingLifecycle` | Delivery models are not an application query API. |
-| `media` | `MediaLibrary`, Media Actions, `MediaQueryService`, and owner traits | Traits expose associations; lifecycle mutations stay in Media. |
-| `metafields` | Definition/value Actions and `HasMetafields` | Traits expose owner reads; writes stay in Metafields Actions. |
-| `pages` | Page Actions and resource-handler contracts | Page composition stays behind package Actions/services. |
-| `primitives` | Value objects, casts, rules, and reference catalogs | No package model exists. |
-| `seo` | SEO Actions, owner traits, resolver, renderer, and sitemap contracts | Traits expose owner relations; SEO persists profiles. |
-| `settings` | `SettingRepository`, typed Actions, and `Setting` facade | Settings models are persistence internals. |
-| `support` | `BusinessException` and `ResponseCode` | No package model exists. |
-| `taxonomy` | Taxonomy Actions, tree/resolver services, and owner traits | Traits expose relationships; mutation and tree invariants stay in Taxonomy. |
-| `templates` | Render/list/mutation Actions and renderer/asset contracts | Template models are persistence internals. |
-| `translatable` | Typed definitions, traits, query scopes, resolver, and writer | Declared exception: domain models opt into the public trait/query API. |
-| `translations` | Scan/import/export/update Actions and services | Catalog models are not a consumer application API. |
+| `activity` | `ActivityLog`, `ActivityReadService`, and model activity traits | Prohibited in 2.0: consumer package-model queries fail the audit; use read/recording services and documented model activity traits. |
+| `auth` | Feature Actions and `AuthManagementAccess` | Prohibited in 2.0: consumer identity-model queries fail the audit; model type hints and models passed directly to Auth Actions remain allowed. |
+| `comments` | Comment Actions, bounded latest selectors, and `HasComments`/`AcceptsComments` | Prohibited in 2.0: direct Comment queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `content` | `Content` and Content Actions | Prohibited in 2.0: consumer package-model queries fail the audit; use Content read contracts and mutation Actions. |
+| `csv` | `CSVImport`, `CSVExport`, and `CSVAnalyzerService` | N/A: CSV exposes no package model. |
+| `data` | `DataTransform` and generated-type services | N/A: Data exposes no package model. |
+| `filterable` | `FilterSet`, allowlisted schemas, and `Filterable` | Explicit exception: the allowlisted builder on a consumer-owned model is the public API. |
+| `forms` | Form and FormEntry Actions/contracts | Prohibited in 2.0: consumer package-model queries fail the audit; use Forms Actions and contracts. |
+| `mail-notifications` | Administrative read Actions and `TrackingLifecycle` | Prohibited in 2.0: consumer delivery-model queries fail the audit; use package administrative read Actions. |
+| `media` | `MediaLibrary`, Media Actions, `MediaQueryService`, and owner traits | Prohibited in 2.0: direct Media queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `metafields` | Authorized definition/value Actions and `HasMetafields` | Prohibited in 2.0: direct package queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `pages` | Page Actions, complete editor/publication projections, and resource-handler contracts | Prohibited in 2.0: consumer Page queries fail the audit; use Page Actions, including `PageData` list results. |
+| `primitives` | Value objects, casts, rules, and reference catalogs | N/A: Primitives exposes no package model. |
+| `seo` | SEO Actions including owner profile/revision reads, owner traits, resolver, renderer, and sitemap contracts | Prohibited in 2.0: direct profile queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `settings` | `SettingRepository`, typed Actions, value-free event subjects, and `Setting` facade | Prohibited in 2.0: consumer Setting-model queries fail the audit; use the repository, facade, or Actions. |
+| `support` | `BusinessException` and `ResponseCode` | N/A: Support exposes no package model. |
+| `taxonomy` | Taxonomy Actions, tree/resolver services, and owner traits | Prohibited in 2.0: direct Term queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
+| `templates` | Render/list/mutation Actions and renderer/asset contracts | Prohibited in 2.0: consumer Template-model queries fail the audit; use render/list/mutation Actions. |
+| `translatable` | Typed definitions, traits, query scopes, resolver, and writer | Explicit exception: opted-in domain models may use the documented Translatable scopes and helpers. |
+| `translations` | Scan/import/export/update Actions and services | Prohibited in 2.0: consumer catalog-model queries fail the audit; use package Actions and services. |
 
-Documented 1.x model APIs are not removed by this policy. They remain supported
-until a separately documented breaking release, but new consumer examples use
-the canonical surfaces above.
+The published final 1.x tag did not ship deprecation warnings for these model
+queries. The exact 1.x-to-2.0 return and behavior changes are therefore recorded
+durably in `tools/consumer-api-deprecations.php` and `UPGRADING.md`; the release
+evidence must not claim those warnings were externally published.
 
 ## Performance and cache policy
 
@@ -84,16 +98,16 @@ the catalog points to the authoritative package or integration test.
 |---|---|---|---|
 | Activity | Timeline services batch subject/causer relations and enforce timeline limits. | Activity timeline tests | Uncached: actor-scoped append-sensitive audit data. |
 | Auth | Principal lists eager-load roles/permissions and all list Actions clamp pages. | Principal management tests | Uncached: revocations and authorization changes must be immediate. |
-| Comments | Public/member/management DTO projections own selected eager loads and page limits. | Constant 1-to-25 projection test | Uncached: audience and moderation are actor-sensitive. |
-| Content | Editor/scope reads load definitions, values, placements, and translations within explicit row/scope limits. | Constant editor-bootstrap test | Uncached: locale, scope, publication, and actor dimensions make invalidation ambiguous. |
+| Comments | Public/member/management DTO projections own selected eager loads, page limits, and one-row latest selectors. | Constant 1-to-25 projection and latest-selector tests | Uncached: audience and moderation are actor-sensitive. |
+| Content | Editor/scope reads load definitions, placed block values, placements, and translations within explicit row/scope limits; bulk placement summaries authorize and batch up to 100 owner entries; replacement and complete-set reorder mutations use the owner/group lock and bounded retrying transactions. | Constant five-query 1-to-25 editor-bootstrap and bulk-summary tests; replacement/reorder lock, retry, rollback, revision, and tree tests | Uncached: locale, scope, publication, and actor dimensions make invalidation ambiguous. |
 | CSV | Eloquent exports use bounded chunks; imports stream bounded batches. | CSV export tests | Uncached: source streams are caller-owned and freshness is explicit. |
 | Filterable | Only allowlisted criteria, sorts, relation depth, and complexity reach caller queries. | Filterable feature tests | Uncached: the caller owns result identity and invalidation. |
 | Forms | Render/search/list Actions own field/translation eager loads and page/export bounds. | Forms Action tests | Uncached: admission and privacy policy are request-sensitive. |
 | Mail Notifications | Administrative reads are authorized, paginated, selected, and fresh. | Presentation/read tests | Uncached: delivery state changes asynchronously. |
 | Media | `MediaQueryService` selects translations/variations explicitly; owner relations are eager-loaded for collections. | Cross-package 1-to-25 owner test | File existence only: disk/path key, configured short TTL, mutation invalidation, idempotent miss policy. |
-| Metafields | Owner reads load assignments, definitions, translations, and values as one bounded projection. | Consumer workflow tests | Uncached: typed values are mutation-sensitive. |
-| Pages | Resolve/navigation Actions own hierarchy, translations, content, SEO, and result limits. | Pages package tests | Uncached: locale, publication, hierarchy, and dynamic resources are request-sensitive. |
-| SEO | Owner projections eager-load localized profiles; sitemap sources chunk and cap output. | Cross-package owner test and sitemap tests | Sitemap only: origin/scope/version key, configured TTL, after-commit invalidation, atomic build lock. |
+| Metafields | Authorized owner reads check `ViewOwner` before SQL, then load assignments, definitions, translations, and values as one bounded projection. | Consumer workflow authorization and query-count tests | Uncached: typed values and authorization are mutation-sensitive. |
+| Pages | Exact key/availability, localized options, public children, editor summaries, complete editor bootstrap, publication, resolve, and navigation Actions own package composition and hard 100-row limits. | Constant 1-to-25 option/public-child/editor-summary and Pages package tests | Uncached: locale, publication, hierarchy, authorization, Content, SEO, Metafields, and dynamic resources are request-sensitive. |
+| SEO | Owner profile projections authorize before SQL and eager-load translations; bounded bulk reads batch up to 100 owners; revision reads select only identity/revision fields; sitemap sources chunk and cap output. | Constant one-to-25 bulk-owner, owner consumer-contract, cross-package, and sitemap tests | Sitemap only: origin/scope/version key, configured TTL, after-commit invalidation, atomic build lock. |
 | Settings | Repository fetches the bounded setting catalog once and `getMany` uses one storage query. | Settings query-count tests | Cached primitive records: configured key/store, forever TTL, after-commit invalidation, bounded-miss stampede policy. |
 | Taxonomy | Tree and owner reads eager-load translations and attachments; maintenance commands chunk. | Constant localized-tree test | Uncached results; cache is used only for mutation/maintenance locks. |
 | Templates | Stored definition/list/render Actions load versions, assignments, translations, and assets deliberately and paginate. | Templates package tests | Uncached metadata; generated artifacts have explicit render lifecycle. |
@@ -108,7 +122,9 @@ The fixture-independence checks run on SQLite in the normal package gate with
 one and 25 result records. Their exact ceilings are: Activity 10; Auth 4;
 Comments 8 public, 9 member, and 2 management; Content 2; Forms 4; Mail
 Notifications 2; the cross-package Content/Comments/Media/Metafields/SEO/
-Taxonomy owner projection 7; Metafields 7; Pages 2; Settings 1; Taxonomy 2;
+Taxonomy owner projection 7; Metafields 7; Pages 2 for options/navigation, 3
+for public children, and at most 10 for populated editor summaries; SEO 2 for
+bulk owner profiles; Settings 1; Taxonomy 2;
 Templates 3; Translatable 2; and Translations 2. The PostgreSQL package and
 integration gate reruns the portable behavior against PostgreSQL; it does not
 replace the explicit SQLite ceilings.
@@ -122,6 +138,16 @@ diagnostic tombstone, and schedules original/variation file effects through the
 Media transaction lifecycle. Shared-use checks prevent one owner from deleting
 another owner's asset. Owner soft deletion preserves media; owner force deletion
 uses the registered owner semantics and deletes only assets no longer shared.
+
+Owner-slot mutations use a package-owned UUID operation ledger. Canonical
+request hashes bind an idempotency key to actor, persisted owner, slot,
+operation, and nested scalar payload without storing that payload. Completed
+requests replay their nullable Media result, failed exact requests may be
+retried, live contention fails closed, expired processing attempts recover with
+a new operation UUID, and bounded pruning removes only expired terminal rows.
+Long work renews its lease. A separately configured ledger connection is a
+recoverable saga boundary and requires retry-safe mutation reconciliation.
+Consumers do not write the ledger.
 
 `nvl:media:reconcile --orphans` inventories unreferenced originals and
 variations. Cleanup is dry-run-first, age-bounded, explicitly destructive, and

@@ -1,18 +1,48 @@
 <?php
 
 declare(strict_types=1);
+
 use Nvl\Activity\Console\Commands\ActivityDoctorCommand;
+use Nvl\Activity\Definitions\Tables\ActivityTables;
 use Nvl\Activity\Facades\ActivityLog;
 use Nvl\Activity\Services\ActivityReadService;
+use Nvl\Activity\Support\ActivitySubjectReference;
+use Nvl\Auth\Actions\Invitations\FindActiveInvitationAction;
+use Nvl\Auth\Actions\Invitations\ListInvitationProjectionsAction;
+use Nvl\Auth\Actions\Invitations\RecordInvitationDeliveryOutcomeAction;
+use Nvl\Auth\Actions\Rbac\ShowRoleAnalyticsAction;
 use Nvl\Auth\Actions\Users\ListUsersAction;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
 use Nvl\Auth\Contracts\AuthManagementAccess;
+use Nvl\Auth\Definitions\Tables\AuthTables;
+use Nvl\Comments\Actions\DeleteLatestTargetCommentAction;
+use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Actions\ListCommentsAction;
+use Nvl\Comments\Actions\ResolveCommentMentionsAction;
+use Nvl\Comments\Actions\SuggestCommentMentionResourcesAction;
 use Nvl\Comments\Console\CommentsDoctorCommand;
+use Nvl\Comments\Contracts\CommentMentionResourceAuthorization;
+use Nvl\Comments\Contracts\CommentMentionResourceResolver;
+use Nvl\Comments\Contracts\CommentMentionUrlResolver;
+use Nvl\Comments\Contracts\CommentMetadataSchema;
 use Nvl\Comments\Contracts\HasComments;
+use Nvl\Comments\Contracts\ViewerIndependentCommentMentionResource;
+use Nvl\Comments\Data\CommentMentionData;
+use Nvl\Comments\Data\CommentMentionSuggestionData;
+use Nvl\Comments\Data\CommentMetadataProjectionData;
+use Nvl\Comments\Data\Queries\CommentSelectorData;
+use Nvl\Comments\Definitions\CommentMetadataField;
+use Nvl\Comments\Definitions\Tables\CommentsTables;
+use Nvl\Content\Actions\FindContentBlockByKeyAction;
+use Nvl\Content\Actions\FindContentPlacementAction;
+use Nvl\Content\Actions\GetOwnerContentEditorAction;
+use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
+use Nvl\Content\Actions\ReorderContentPlacementsAction;
+use Nvl\Content\Actions\ReplaceContentPlacementAction;
 use Nvl\Content\Actions\ResolveContentScopesAction;
 use Nvl\Content\Console\ContentDoctorCommand;
 use Nvl\Content\Content;
+use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Csv\Services\CSVExport;
 use Nvl\Csv\Services\CSVImport;
 use Nvl\Data\Services\GeneratedTypesGenerator;
@@ -22,42 +52,82 @@ use Nvl\Filterable\Traits\Filterable;
 use Nvl\Forms\Actions\Form\ListFormsAction;
 use Nvl\Forms\Console\Commands\FormsDoctorCommand;
 use Nvl\Forms\Contracts\CreateFormContract;
+use Nvl\Forms\Definitions\Tables\FormsTables;
+use Nvl\MailNotifications\Actions\GetMailNotificationStatisticsAction;
 use Nvl\MailNotifications\Actions\ListMailNotificationsAction;
 use Nvl\MailNotifications\Console\Commands\MailNotificationsDoctorCommand;
 use Nvl\MailNotifications\Contracts\TrackingLifecycle;
+use Nvl\MailNotifications\Definitions\Tables\MailNotificationsTables;
+use Nvl\MailNotifications\ValueObjects\MailNotificationAggregate;
+use Nvl\MailNotifications\ValueObjects\TrackingContext;
+use Nvl\Media\Actions\ClearOwnerMediaSlotAction;
+use Nvl\Media\Actions\CopyOwnerMediaSlotAction;
+use Nvl\Media\Actions\GetOwnerMediaSlotAction;
+use Nvl\Media\Actions\ReplaceOwnerMediaSlotAction;
 use Nvl\Media\Console\Commands\MediaDoctorCommand;
+use Nvl\Media\Console\Commands\PruneMediaOwnerSlotOperationsCommand;
+use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\MediaLibrary;
 use Nvl\Media\Services\MediaFileExistence;
 use Nvl\Media\Services\MediaQueryService;
+use Nvl\Metafields\Actions\Metafields\ListAuthorizedOwnerMetafieldsAction;
 use Nvl\Metafields\Actions\Metafields\ListOwnerMetafieldsAction;
 use Nvl\Metafields\Actions\Metafields\SetMetafieldAction;
 use Nvl\Metafields\Console\Commands\MetafieldDoctorCommand;
+use Nvl\Metafields\Definitions\Tables\MetafieldsTables;
+use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
+use Nvl\Pages\Actions\FindPageByKeyAction;
 use Nvl\Pages\Actions\GetNavigationAction;
+use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
+use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
+use Nvl\Pages\Actions\ListPageEditorSummariesAction;
+use Nvl\Pages\Actions\ListPageOptionsAction;
+use Nvl\Pages\Actions\ListPublicChildPagesAction;
 use Nvl\Pages\Actions\ResolvePageAction;
 use Nvl\Pages\Console\PagesDoctorCommand;
+use Nvl\Pages\Data\PageEditorBootstrapData;
+use Nvl\Pages\Data\PageEditorSummaryData;
+use Nvl\Pages\Data\PageKeyAvailabilityData;
+use Nvl\Pages\Data\PageOptionData;
+use Nvl\Pages\Definitions\Tables\PagesTables;
+use Nvl\Pages\Enums\PublicChildPageOrder;
 use Nvl\Primitives\ValueObjects\LocaleCode;
 use Nvl\Primitives\ValueObjects\Money;
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
 use Nvl\Seo\Actions\GetSeoProfileAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
 use Nvl\Seo\Console\SeoDoctorCommand;
+use Nvl\Seo\Data\SeoOwnerRevisionData;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Services\SeoHeadRenderer;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Settings\Actions\SetSettingAction;
 use Nvl\Settings\Commands\DoctorCommand;
 use Nvl\Settings\Contracts\SettingRepository;
+use Nvl\Settings\Data\SettingSubjectReferenceData;
+use Nvl\Settings\Definitions\Tables\SettingsTables;
+use Nvl\Settings\Events\SettingChanged;
 use Nvl\Settings\Services\SettingCache;
 use Nvl\Support\Contracts\ResponseCode;
 use Nvl\Support\Exceptions\BusinessException;
 use Nvl\Taxonomy\Actions\ResolveTermsAction;
 use Nvl\Taxonomy\Commands\TaxonomyDoctorCommand;
+use Nvl\Taxonomy\Definitions\Tables\TaxonomyTables;
 use Nvl\Taxonomy\Services\TaxonomyTree;
 use Nvl\Templates\Actions\ListTemplatesAction;
 use Nvl\Templates\Actions\RenderTemplateAction;
 use Nvl\Templates\Console\TemplatesDoctorCommand;
+use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Translatable\Console\Commands\TranslatableDoctorCommand;
 use Nvl\Translatable\Services\TranslationWriter;
 use Nvl\Translatable\Translatable;
+use Nvl\Translations\Actions\Entries\GetTranslationCatalogStatisticsAction;
 use Nvl\Translations\Actions\Sync\ImportTranslationsAction;
 use Nvl\Translations\Console\Commands\TranslationsDoctorCommand;
+use Nvl\Translations\Data\TranslationCatalogStatisticsData;
+use Nvl\Translations\Definitions\Tables\TranslationsTables;
+use Nvl\Translations\Services\TranslationEntryFilterSchema;
 use Nvl\Translations\Services\TranslationScanService;
 
 /**
@@ -92,17 +162,65 @@ $notApplicable = static fn (string $rationale): array => [
  *
  * @return array{
  *     version: int,
+ *     consumer_boundary: array{
+ *         allowed: string,
+ *         prohibited_v2: string,
+ *         forbidden: string,
+ *         exceptions: string
+ *     },
+ *     runtime_guardrails: array{
+ *         table_definitions: array<string, class-string>,
+ *         management_actions: array<string, list<class-string|string>>
+ *     },
  *     packages: array<string, array<string, mixed>>
  * }
  */
 return [
-    'version' => 1,
+    'version' => 2,
+    'consumer_boundary' => [
+        'allowed' => 'Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.',
+        'prohibited_v2' => 'Consumer-initiated package model queries and relation aggregates are errors in 2.0.',
+        'forbidden' => 'Consumer writes through package models, builders, raw tables, pivots, or storage paths.',
+        'exceptions' => 'Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.',
+    ],
+    'runtime_guardrails' => [
+        'table_definitions' => [
+            'activity' => ActivityTables::class,
+            'auth' => AuthTables::class,
+            'comments' => CommentsTables::class,
+            'content' => ContentTables::class,
+            'forms' => FormsTables::class,
+            'mail-notifications' => MailNotificationsTables::class,
+            'media' => MediaTables::class,
+            'metafields' => MetafieldsTables::class,
+            'pages' => PagesTables::class,
+            'seo' => SeoTables::class,
+            'settings' => SettingsTables::class,
+            'taxonomy' => TaxonomyTables::class,
+            'templates' => TemplatesTables::class,
+            'translations' => TranslationsTables::class,
+        ],
+        'management_actions' => [
+            'activity' => ['Nvl\\Activity\\Http\\Controllers\\Api\\'],
+            'auth' => ['Nvl\\Auth\\Http\\Controllers\\Management\\'],
+            'comments' => ['Nvl\\Comments\\Http\\Controllers\\CommentsManagementController'],
+            'content' => ['Nvl\\Content\\Http\\Controllers\\'],
+            'forms' => ['Nvl\\Forms\\Http\\Controllers\\Api\\FormsApiController'],
+            'media' => ['Nvl\\Media\\Http\\Controllers\\Api\\'],
+            'metafields' => ['Nvl\\Metafields\\Http\\Controllers\\Api\\'],
+            'pages' => ['Nvl\\Pages\\Http\\Controllers\\PagesManagementController'],
+            'seo' => ['Nvl\\Seo\\Http\\Controllers\\SeoManagementController'],
+            'settings' => ['Nvl\\Settings\\Http\\Controllers\\SettingsManagementController'],
+            'templates' => ['Nvl\\Templates\\Http\\Controllers\\TemplatesController'],
+            'translations' => ['Nvl\\Translations\\Http\\Controllers\\Api\\'],
+        ],
+    ],
     'packages' => [
         'support' => [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [BusinessException::class, ResponseCode::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/support/README.md#purpose',
             ],
@@ -126,7 +244,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [DataTransform::class, GeneratedTypesGenerator::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/data/README.md#dto-and-persistence-transforms',
             ],
@@ -149,15 +267,29 @@ return [
         'auth' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListUsersAction::class, AuthManagementAccess::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    ListUsersAction::class,
+                    ShowRoleAnalyticsAction::class,
+                    ListInvitationProjectionsAction::class,
+                    FindActiveInvitationAction::class,
+                    RecordInvitationDeliveryOutcomeAction::class,
+                    AuthManagementAccess::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/auth/README.md#ownership',
+                'documentation' => 'packages/nvl/auth/README.md#consumer-application-apis',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/auth/README.md#enabling-the-api']),
-                'query_tests' => ['packages/nvl/auth/tests/Feature/PrincipalManagementTest.php'],
-                'cache' => ['mode' => 'none', 'rationale' => 'Authorization-sensitive principal and RBAC reads are bounded and uncached so revocations are immediately visible.'],
+                ...$pass([
+                    'packages/nvl/auth/README.md#rbac-consumer-reads-and-analytics',
+                    'packages/nvl/auth/README.md#invitation-consumer-reads-and-delivery-outcomes',
+                ]),
+                'query_tests' => [
+                    'packages/nvl/auth/tests/Feature/PrincipalManagementTest.php',
+                    'packages/nvl/auth/tests/Feature/RbacManagementTest.php',
+                    'packages/nvl/auth/tests/Feature/InvitationLifecycleTest.php',
+                ],
+                'cache' => ['mode' => 'none', 'rationale' => 'Authorization-sensitive principal, RBAC, and invitation reads are bounded and uncached so lifecycle changes and revocations are immediately visible.'],
             ],
             'media_lifecycle' => $notApplicable('Auth does not own media associations.'),
             'locale_fallback' => $notApplicable('Auth owns identity state; UI strings remain Laravel translations.'),
@@ -174,7 +306,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [CSVImport::class, CSVExport::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/csv/README.md#purpose',
             ],
@@ -198,7 +330,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [Filterable::class, FilterSet::class],
-                'direct_model_access' => 'declared_trait_query_api',
+                'direct_model_access' => 'explicit_exception',
                 'rationale' => 'Filterable intentionally makes an allowlisted model trait and typed FilterSet the public query-composition contract; it owns no package model tables.',
                 'documentation' => 'packages/nvl/filterable/README.md#model-trait',
             ],
@@ -222,7 +354,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [Translatable::class, TranslationWriter::class],
-                'direct_model_access' => 'declared_trait_query_api',
+                'direct_model_access' => 'explicit_exception',
                 'rationale' => 'Translatable intentionally exposes typed traits, definitions, scopes, and model helpers on consumer or domain-owned models; domain mutation workflows remain package-owned Actions.',
                 'documentation' => 'packages/nvl/translatable/README.md#common-model-api',
             ],
@@ -246,7 +378,7 @@ return [
             'stateful' => false,
             'application_api' => [
                 'symbols' => [Money::class, LocaleCode::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'not_applicable',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/primitives/README.md#purpose-and-boundaries',
             ],
@@ -269,10 +401,15 @@ return [
         'settings' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [SettingRepository::class, SetSettingAction::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    SettingRepository::class,
+                    SetSettingAction::class,
+                    SettingChanged::class,
+                    SettingSubjectReferenceData::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/settings/README.md#typed-actions',
+                'documentation' => 'packages/nvl/settings/README.md#setting-change-subject-reference',
             ],
             'performance' => [
                 ...$pass(['packages/nvl/settings/README.md#database-caching-and-adoption']),
@@ -301,14 +438,20 @@ return [
         'activity' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ActivityLog::class, ActivityReadService::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [ActivityLog::class, ActivityReadService::class, ActivitySubjectReference::class],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/activity/README.md#record-structured-activity',
+                'documentation' => 'packages/nvl/activity/README.md#bounded-subject-references-and-event-filters',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/activity/README.md#timeline-limits']),
-                'query_tests' => ['packages/nvl/activity/tests/Feature/ActivityTimelineReadTest.php'],
+                ...$pass([
+                    'packages/nvl/activity/README.md#timeline-limits',
+                    'packages/nvl/activity/README.md#bounded-subject-references-and-event-filters',
+                ]),
+                'query_tests' => [
+                    'packages/nvl/activity/tests/Feature/ActivityTimelineReadTest.php',
+                    'packages/nvl/activity/tests/Feature/ActivityBehaviorTest.php',
+                ],
                 'cache' => ['mode' => 'none', 'rationale' => 'Audit timelines are actor-scoped, append-sensitive, and bounded; caching risks stale security evidence.'],
             ],
             'media_lifecycle' => $notApplicable('Activity records references and snapshots but does not own media lifecycle.'),
@@ -326,7 +469,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ResolveTermsAction::class, TaxonomyTree::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/taxonomy/README.md#register-vocabularies-and-owners',
             ],
@@ -349,14 +492,26 @@ return [
         'media' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [MediaLibrary::class, MediaQueryService::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    MediaLibrary::class,
+                    MediaQueryService::class,
+                    GetOwnerMediaSlotAction::class,
+                    ReplaceOwnerMediaSlotAction::class,
+                    ClearOwnerMediaSlotAction::class,
+                    CopyOwnerMediaSlotAction::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/media/README.md#facade-and-injectable-service-api',
+                'documentation' => 'packages/nvl/media/README.md#owner-slot-workflows',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/media/README.md#retrieval-and-lifecycle']),
-                'query_tests' => ['tests/Feature/Integration/CrossPackageIntegrationTest.php'],
+                ...$pass([
+                    'packages/nvl/media/README.md#retrieval-and-lifecycle',
+                    'packages/nvl/media/README.md#owner-slot-workflows',
+                ]),
+                'query_tests' => [
+                    'tests/Feature/Integration/CrossPackageIntegrationTest.php',
+                ],
                 'cache' => [
                     'mode' => 'cached',
                     'owner' => MediaFileExistence::class,
@@ -367,22 +522,29 @@ return [
                     'stampede' => 'Idempotent existence probes may repeat on a miss; the short TTL avoids a blocking global lock around storage.',
                 ],
             ],
-            'media_lifecycle' => $pass(['packages/nvl/media/README.md#retrieval-and-lifecycle', 'packages/nvl/media/README.md#operations', 'packages/nvl/media/tests/Feature/ActionsTest.php']),
+            'media_lifecycle' => $pass(['packages/nvl/media/README.md#owner-slot-workflows', 'packages/nvl/media/README.md#retrieval-and-lifecycle', 'packages/nvl/media/README.md#operations', 'packages/nvl/media/tests/Feature/ActionsTest.php', 'packages/nvl/media/tests/Feature/MediaOwnerSlotWorkflowTest.php']),
             'locale_fallback' => $pass(['packages/nvl/media/README.md#localized-metadata']),
             'boundaries' => $pass(['packages/nvl/media/README.md#purpose-and-boundaries', 'docs/consumer-readiness.md#ownership-boundaries']),
             'presets' => $pass(['packages/nvl/media/README.md#variations-and-optimization', 'packages/nvl/media/tests/Unit/MediaConfiguredVariationServiceTest.php']),
             'operations' => [
-                ...$pass(['packages/nvl/media/README.md#database-schema-and-adoption', 'packages/nvl/media/UPGRADING.md#upgrading-to-the-production-hardened-1x-release']),
+                ...$pass(['packages/nvl/media/README.md#database-schema-and-adoption', 'packages/nvl/media/README.md#owner-slot-workflows', 'packages/nvl/media/docs/commands.md#nvlmediaowner-slotsprune', 'packages/nvl/media/UPGRADING.md#upgrading-to-the-production-hardened-2x-release']),
                 'doctor' => ['symbol' => MediaDoctorCommand::class, 'command' => 'nvl:media:doctor'],
+                'prune' => ['symbol' => PruneMediaOwnerSlotOperationsCommand::class, 'command' => 'nvl:media:owner-slots:prune'],
                 'adoption' => 'command',
-                'documentation' => 'packages/nvl/media/README.md#database-schema-and-adoption',
+                'documentation' => 'packages/nvl/media/README.md#owner-slot-workflows',
             ],
         ],
         'mail-notifications' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListMailNotificationsAction::class, TrackingLifecycle::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    ListMailNotificationsAction::class,
+                    GetMailNotificationStatisticsAction::class,
+                    MailNotificationAggregate::class,
+                    TrackingContext::class,
+                    TrackingLifecycle::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/mail-notifications/README.md#administrative-delivery-reads',
             ],
@@ -405,13 +567,26 @@ return [
         'content' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [Content::class, ResolveContentScopesAction::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    Content::class,
+                    FindContentBlockByKeyAction::class,
+                    FindContentPlacementAction::class,
+                    GetOwnerContentEditorAction::class,
+                    ListOwnerContentPlacementSummariesAction::class,
+                    ReorderContentPlacementsAction::class,
+                    ReplaceContentPlacementAction::class,
+                    ResolveContentScopesAction::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/content/README.md#public-application-surface-and-dtos',
+                'documentation' => 'packages/nvl/content/README.md#editor-projections',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/content/README.md#operational-guidance']),
+                ...$pass([
+                    'packages/nvl/content/README.md#editor-projections',
+                    'packages/nvl/content/README.md#placement-editor-workflows',
+                    'packages/nvl/content/README.md#operational-guidance',
+                ]),
                 'query_tests' => ['packages/nvl/content/tests/Feature/ContentContractRegressionTest.php'],
                 'cache' => ['mode' => 'none', 'rationale' => 'Content reads are locale-, scope-, publication-, and actor-sensitive; bounded eager loading avoids invalidation ambiguity.'],
             ],
@@ -429,22 +604,42 @@ return [
         'comments' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListCommentsAction::class, HasComments::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    ListCommentsAction::class,
+                    FindLatestTargetCommentAction::class,
+                    DeleteLatestTargetCommentAction::class,
+                    CommentSelectorData::class,
+                    CommentMetadataSchema::class,
+                    CommentMetadataField::class,
+                    CommentMetadataProjectionData::class,
+                    CommentMentionResourceResolver::class,
+                    CommentMentionResourceAuthorization::class,
+                    CommentMentionUrlResolver::class,
+                    ViewerIndependentCommentMentionResource::class,
+                    CommentMentionSuggestionData::class,
+                    CommentMentionData::class,
+                    SuggestCommentMentionResourcesAction::class,
+                    ResolveCommentMentionsAction::class,
+                    HasComments::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/comments/README.md#boundaries',
+                'documentation' => 'packages/nvl/comments/README.md#registered-metadata-and-selectors',
             ],
             'performance' => [
                 ...$pass(['packages/nvl/comments/README.md#filtering-and-pagination']),
-                'query_tests' => ['packages/nvl/comments/tests/Feature/CommentsV1ApiProjectionTest.php'],
-                'cache' => ['mode' => 'none', 'rationale' => 'Visibility, moderation, reactions, and attachment projections are actor-sensitive and intentionally fresh.'],
+                'query_tests' => [
+                    'packages/nvl/comments/tests/Feature/CommentsV1ApiProjectionTest.php',
+                    'packages/nvl/comments/tests/Feature/CommentMentionSecurityTest.php',
+                ],
+                'cache' => ['mode' => 'none', 'rationale' => 'Visibility, moderation, reactions, attachments, and private resource mention projections are actor-sensitive and intentionally fresh; public mentions resolve live data only through explicitly viewer-independent resolvers.'],
             ],
             'media_lifecycle' => $pass(['packages/nvl/comments/README.md#attachments']),
             'locale_fallback' => $notApplicable('Comments are authored records and do not use package-managed localized variants.'),
             'boundaries' => $notApplicable('Comments delegates attachments to Media and owns no Content, Metafields, or translation rows.'),
             'presets' => $notApplicable('Audience and moderation policy are consumer configuration, not semantic content presets.'),
             'operations' => [
-                ...$pass(['packages/nvl/comments/README.md#persistence', 'packages/nvl/comments/README.md#adoption-and-privacy']),
+                ...$pass(['packages/nvl/comments/README.md#persistence', 'packages/nvl/comments/README.md#adoption-and-privacy', 'packages/nvl/comments/README.md#rich-documents-and-mentions']),
                 'doctor' => ['symbol' => CommentsDoctorCommand::class, 'command' => 'nvl:comments:doctor'],
                 'adoption' => 'application_owned',
                 'documentation' => 'packages/nvl/comments/UPGRADING.md#schema-changes',
@@ -454,7 +649,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [RenderTemplateAction::class, ListTemplatesAction::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/templates/README.md#purpose-and-boundaries',
             ],
@@ -477,8 +672,12 @@ return [
         'metafields' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ListOwnerMetafieldsAction::class, SetMetafieldAction::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    ListAuthorizedOwnerMetafieldsAction::class,
+                    ListOwnerMetafieldsAction::class,
+                    SetMetafieldAction::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/metafields/README.md#querying',
             ],
@@ -501,13 +700,32 @@ return [
         'pages' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ResolvePageAction::class, GetNavigationAction::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    CheckPageKeyAvailabilityAction::class,
+                    FindPageByKeyAction::class,
+                    GetPageEditorBootstrapAction::class,
+                    GetNavigationAction::class,
+                    GetPagePublicationProjectionAction::class,
+                    ListPageEditorSummariesAction::class,
+                    ListPageOptionsAction::class,
+                    ListPublicChildPagesAction::class,
+                    PageEditorBootstrapData::class,
+                    PageEditorSummaryData::class,
+                    PageKeyAvailabilityData::class,
+                    PageOptionData::class,
+                    PublicChildPageOrder::class,
+                    ResolvePageAction::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/pages/README.md#purpose-and-boundaries',
+                'documentation' => 'packages/nvl/pages/README.md#editor-and-publication-projections',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/pages/README.md#navigation-preview-and-apis']),
+                ...$pass([
+                    'packages/nvl/pages/README.md#bounded-page-reads',
+                    'packages/nvl/pages/README.md#editor-and-publication-projections',
+                    'packages/nvl/pages/README.md#navigation-preview-and-apis',
+                ]),
                 'query_tests' => ['packages/nvl/pages/tests/Feature/PagesPackageTest.php'],
                 'cache' => ['mode' => 'none', 'rationale' => 'Page resolution and navigation depend on locale, publication, hierarchy, and dynamic resource admission; reads remain bounded and fresh.'],
             ],
@@ -525,13 +743,19 @@ return [
         'translations' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [ImportTranslationsAction::class, TranslationScanService::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    GetTranslationCatalogStatisticsAction::class,
+                    ImportTranslationsAction::class,
+                    TranslationCatalogStatisticsData::class,
+                    TranslationEntryFilterSchema::class,
+                    TranslationScanService::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/translations/README.md#purpose-and-boundary',
+                'documentation' => 'packages/nvl/translations/README.md#catalog-statistics-and-shared-filters',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/translations/README.md#operational-workflow']),
+                ...$pass(['packages/nvl/translations/README.md#catalog-statistics-and-shared-filters']),
                 'query_tests' => ['packages/nvl/translations/tests/Feature/TranslationsConsumerContractsTest.php'],
                 'cache' => ['mode' => 'none', 'rationale' => 'Catalog scans and imports are explicit bounded operations; editable database rows and generated files must not be hidden by a runtime result cache.'],
             ],
@@ -549,14 +773,27 @@ return [
         'seo' => [
             'stateful' => true,
             'application_api' => [
-                'symbols' => [GetSeoProfileAction::class, SeoHeadRenderer::class],
-                'direct_model_access' => 'forbidden',
+                'symbols' => [
+                    GetSeoProfileAction::class,
+                    GetOwnerSeoProfileAction::class,
+                    GetOwnerSeoRevisionAction::class,
+                    ListOwnerSeoProfilesAction::class,
+                    SeoOwnerRevisionData::class,
+                    SeoHeadRenderer::class,
+                ],
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
-                'documentation' => 'packages/nvl/seo/README.md#resolve-and-render-metadata',
+                'documentation' => 'packages/nvl/seo/README.md#owner-centric-profile-reads',
             ],
             'performance' => [
-                ...$pass(['packages/nvl/seo/README.md#sitemaps']),
-                'query_tests' => ['tests/Feature/Integration/CrossPackageIntegrationTest.php'],
+                ...$pass([
+                    'packages/nvl/seo/README.md#owner-centric-profile-reads',
+                    'packages/nvl/seo/README.md#sitemaps',
+                ]),
+                'query_tests' => [
+                    'packages/nvl/seo/tests/Feature/SeoConsumerContractsTest.php',
+                    'tests/Feature/Integration/CrossPackageIntegrationTest.php',
+                ],
                 'cache' => [
                     'mode' => 'cached',
                     'owner' => SitemapCache::class,
@@ -582,7 +819,7 @@ return [
             'stateful' => true,
             'application_api' => [
                 'symbols' => [ListFormsAction::class, CreateFormContract::class],
-                'direct_model_access' => 'forbidden',
+                'direct_model_access' => 'prohibited_v2',
                 'rationale' => null,
                 'documentation' => 'packages/nvl/forms/README.md#mutate-safely',
             ],

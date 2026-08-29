@@ -60,6 +60,22 @@ final readonly class ContentPlacementTree
     }
 
     /**
+     * Validate a complete in-memory owner-group placement proposal.
+     *
+     * @param  Collection<int, ContentPlacement>  $placements
+     */
+    public function assertValidProposal(
+        Collection $placements,
+        string $ownerType,
+        string $ownerId,
+        string $group,
+    ): void {
+        $this->identities->owner($ownerType, $ownerId);
+        $this->identities->group($group);
+        $this->assertValid($placements, $ownerType, $ownerId, $group);
+    }
+
+    /**
      * Remove a placement and its descendants when any ancestor is hidden or
      * fails the requested public publication policy.
      *

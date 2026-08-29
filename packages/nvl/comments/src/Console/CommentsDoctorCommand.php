@@ -19,6 +19,9 @@ use Nvl\Comments\Definitions\Tables\CommentsTables;
 use Nvl\Comments\Enums\CommentFormat;
 use Nvl\Comments\Enums\CommentStatus;
 use Nvl\Comments\Models\Comment;
+use Nvl\Comments\Models\CommentRevision;
+use Nvl\Comments\Services\CommentMentionResourceRegistry;
+use Nvl\Comments\Services\CommentMetadataRegistry;
 use Nvl\Comments\Services\CommentMutationLockStore;
 use Nvl\Comments\Services\CommentTargetRegistry;
 use Nvl\Comments\Services\ConfiguredCommentAuthorization;
@@ -120,6 +123,28 @@ final class CommentsDoctorCommand extends Command
             'reviewed_by',
             'resolution',
             'reviewed_at',
+            'created_at',
+            'updated_at',
+        ],
+        CommentsTables::MetadataValues => [
+            'id',
+            'comment_id',
+            'schema_namespace',
+            'field_name',
+            'value_type',
+            'value_hash',
+            'created_at',
+            'updated_at',
+        ],
+        CommentsTables::Mentions => [
+            'id',
+            'comment_id',
+            'token_id',
+            'resource_alias',
+            'resource_id',
+            'resource_identity_hash',
+            'label_snapshot',
+            'position',
             'created_at',
             'updated_at',
         ],
@@ -489,6 +514,88 @@ final class CommentsDoctorCommand extends Command
                 'default' => null,
             ],
         ],
+        CommentsTables::MetadataValues => [
+            'id' => ['kind' => 'uuid', 'nullable' => false, 'default' => null],
+            'comment_id' => ['kind' => 'uuid', 'nullable' => false, 'default' => null],
+            'schema_namespace' => [
+                'kind' => 'string',
+                'length' => 100,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'field_name' => [
+                'kind' => 'string',
+                'length' => 64,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'value_type' => [
+                'kind' => 'string',
+                'length' => 16,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'value_hash' => [
+                'kind' => 'fixed_string',
+                'length' => 64,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'created_at' => [
+                'kind' => 'timestamp',
+                'nullable' => true,
+                'default' => null,
+            ],
+            'updated_at' => [
+                'kind' => 'timestamp',
+                'nullable' => true,
+                'default' => null,
+            ],
+        ],
+        CommentsTables::Mentions => [
+            'id' => ['kind' => 'uuid', 'nullable' => false, 'default' => null],
+            'comment_id' => ['kind' => 'uuid', 'nullable' => false, 'default' => null],
+            'token_id' => ['kind' => 'uuid', 'nullable' => false, 'default' => null],
+            'resource_alias' => [
+                'kind' => 'string',
+                'length' => 100,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'resource_id' => [
+                'kind' => 'string',
+                'length' => 255,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'resource_identity_hash' => [
+                'kind' => 'fixed_string',
+                'length' => 64,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'label_snapshot' => [
+                'kind' => 'string',
+                'length' => 255,
+                'nullable' => false,
+                'default' => null,
+            ],
+            'position' => [
+                'kind' => 'unsigned_small_integer',
+                'nullable' => false,
+                'default' => null,
+            ],
+            'created_at' => [
+                'kind' => 'timestamp',
+                'nullable' => true,
+                'default' => null,
+            ],
+            'updated_at' => [
+                'kind' => 'timestamp',
+                'nullable' => true,
+                'default' => null,
+            ],
+        ],
     ];
 
     /**
@@ -602,6 +709,35 @@ final class CommentsDoctorCommand extends Command
                 'columns' => ['comment_id', 'status_hash', 'created_at', 'id'],
             ],
         ],
+        CommentsTables::MetadataValues => [
+            'primary' => [
+                'columns' => ['id'],
+                'primary' => true,
+            ],
+            'owner_unique' => [
+                'columns' => ['comment_id', 'schema_namespace', 'field_name'],
+                'unique' => true,
+            ],
+            'lookup' => [
+                'columns' => ['schema_namespace', 'field_name', 'value_hash'],
+            ],
+        ],
+        CommentsTables::Mentions => [
+            'primary' => [
+                'columns' => ['id'],
+                'primary' => true,
+            ],
+            'token_unique' => [
+                'columns' => ['comment_id', 'token_id'],
+                'unique' => true,
+            ],
+            'resource' => [
+                'columns' => ['resource_alias', 'resource_identity_hash'],
+            ],
+            'position' => [
+                'columns' => ['comment_id', 'position'],
+            ],
+        ],
     ];
 
     /** @var array<string, array<string, list<string>>> */
@@ -616,6 +752,12 @@ final class CommentsDoctorCommand extends Command
             'comment' => ['comment_id'],
         ],
         CommentsTables::Reports => [
+            'comment' => ['comment_id'],
+        ],
+        CommentsTables::MetadataValues => [
+            'comment' => ['comment_id'],
+        ],
+        CommentsTables::Mentions => [
             'comment' => ['comment_id'],
         ],
     ];
@@ -638,8 +780,11 @@ final class CommentsDoctorCommand extends Command
     private const array MEMBER_ROUTE_NAMES = [
         'index',
         'store',
+        'rich.store',
+        'mentions.suggestions',
         'show',
         'update',
+        'rich.update',
         'destroy',
         'restore',
         'reaction',
@@ -654,6 +799,9 @@ final class CommentsDoctorCommand extends Command
     /** @var list<string> */
     private const array MANAGEMENT_ROUTE_NAMES = [
         'index',
+        'rich.store',
+        'mentions.suggestions',
+        'rich.update',
         'target_reports.index',
         'moderate',
         'restore',
@@ -684,6 +832,8 @@ final class CommentsDoctorCommand extends Command
     public function handle(
         CommentTargetRegistry $targets,
         CommentMutationLockStore $mutationLockStore,
+        CommentMetadataRegistry $metadata,
+        CommentMentionResourceRegistry $mentionResources,
         Container $container,
     ): int {
         try {
@@ -712,6 +862,9 @@ final class CommentsDoctorCommand extends Command
         $configurationValuesReady = $this->configurationValuesReady();
         $checks['configuration.values'] = $configurationValuesReady;
         $requiredChecks[] = $configurationValuesReady;
+        $richTextBoundsReady = $this->richTextBoundsReady();
+        $checks['rich_text.bounds_ready'] = $richTextBoundsReady;
+        $requiredChecks[] = $richTextBoundsReady;
         $migrationDuplicates = config('comments.migrations.enabled') === true
             ? $this->publishedMigrationDuplicates(dirname(__DIR__, 2).'/database/migrations')
             : [];
@@ -799,6 +952,30 @@ final class CommentsDoctorCommand extends Command
                 $requiredChecks[] = $foreignKeyReady;
             }
         }
+
+        $metadataDigestReady = $metadata->hasStableDigestKey();
+        [$metadataStrictCompatible, $metadataStrictIncompatibleRecords] =
+            $this->strictMetadataCompatibility(
+                $metadata,
+                ($checks['column.comments.metadata'] ?? false) === true,
+                ($checks['column.comment_revisions.metadata'] ?? false) === true,
+            );
+        $checks['metadata.schemas_ready'] = true;
+        $checks['metadata.digest_key_ready'] = $metadataDigestReady;
+        $checks['metadata.strict_compatible'] = $metadataStrictCompatible;
+        $checks['metadata.strict_incompatible_records'] = $metadataStrictIncompatibleRecords;
+        $requiredChecks[] = $metadataDigestReady;
+        $requiredChecks[] = $metadataStrictCompatible;
+
+        [$mentionBoundsReady, $mentionResourcesReady, $mentionDiagnostics] =
+            $this->mentionReadiness($mentionResources);
+        $checks['mentions.bounds_ready'] = $mentionBoundsReady;
+        $checks['mentions.resources_ready'] = $mentionResourcesReady;
+        $checks['mentions.aliases'] = $mentionDiagnostics['aliases'];
+        $checks['mentions.registered'] = $mentionDiagnostics['registered'];
+        $checks['mentions.aliases_truncated'] = $mentionDiagnostics['truncated'];
+        $requiredChecks[] = $mentionBoundsReady;
+        $requiredChecks[] = $mentionResourcesReady;
 
         $checks['targets'] = $targets->aliases();
         $targetResolversReady = $this->targetResolversReady($targets, $container);
@@ -1098,11 +1275,16 @@ final class CommentsDoctorCommand extends Command
      */
     private function configurationValuesReady(): bool
     {
+        if (! $this->richTextBoundsReady()) {
+            return false;
+        }
+
         $booleanKeys = [
             'comments.migrations.enabled',
             'comments.routes.public.enabled',
             'comments.routes.member.enabled',
             'comments.routes.management.enabled',
+            'comments.mentions.enabled',
             'comments.routes.attachments.enabled',
             'comments.moderation.allow_author_delete',
             'comments.moderation.allow_author_restore',
@@ -1122,6 +1304,8 @@ final class CommentsDoctorCommand extends Command
             'comments.threading.maximum_replies_per_page',
             'comments.content.maximum_bytes',
             'comments.content.maximum_tags',
+            'comments.metadata.maximum_bytes',
+            'comments.metadata.maximum_registered_fields',
             'comments.attachments.maximum_per_comment',
             'comments.attachments.maximum_file_bytes',
             'comments.attachments.signed_url_lifetime',
@@ -1141,9 +1325,20 @@ final class CommentsDoctorCommand extends Command
 
         $publicMaxAge = config('comments.cache.public_max_age');
         $connection = config('comments.connection');
+        $metadataStrict = config('comments.metadata.strict');
+        $metadataSchemas = config('comments.metadata.schemas');
+        $metadataMaximumBytes = config('comments.metadata.maximum_bytes');
+        $metadataMaximumFields = config('comments.metadata.maximum_registered_fields');
 
         if (! is_int($publicMaxAge)
             || $publicMaxAge < 0
+            || ! is_bool($metadataStrict)
+            || ! is_array($metadataSchemas)
+            || ! array_is_list($metadataSchemas)
+            || ! is_int($metadataMaximumBytes)
+            || $metadataMaximumBytes > 65_536
+            || ! is_int($metadataMaximumFields)
+            || $metadataMaximumFields > 100
             || ($connection !== null
                 && (! is_string($connection) || trim($connection) === ''))) {
             return false;
@@ -1194,6 +1389,117 @@ final class CommentsDoctorCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * Validate every rich-document limit against its runtime hard cap.
+     */
+    private function richTextBoundsReady(): bool
+    {
+        foreach ([
+            'comments.rich_text.maximum_bytes' => 131_072,
+            'comments.rich_text.maximum_blocks' => 250,
+            'comments.rich_text.maximum_nodes' => 1_000,
+        ] as $key => $hardMaximum) {
+            $value = config($key);
+
+            if (! is_int($value) || $value < 1 || $value > $hardMaximum) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate hard mention caps and every server-owned resource definition.
+     *
+     * @return array{bool, bool, array{aliases: list<string>, ready: bool, registered: int, truncated: bool}}
+     */
+    private function mentionReadiness(CommentMentionResourceRegistry $resources): array
+    {
+        $maximumMentions = config('comments.mentions.maximum_per_comment');
+        $maximumAliases = config('comments.mentions.maximum_resource_types_per_comment');
+        $suggestionLimit = config('comments.mentions.suggestion_limit');
+        $maximumSuggestionLimit = config('comments.mentions.maximum_suggestion_limit');
+        $maximumQueryLength = config('comments.mentions.maximum_query_length');
+        $maximumBatchSize = config('comments.mentions.maximum_batch_size');
+        $boundsReady = is_int($maximumMentions)
+            && $maximumMentions >= 1
+            && $maximumMentions <= 100
+            && is_int($maximumAliases)
+            && $maximumAliases >= 1
+            && $maximumAliases <= 20
+            && is_int($suggestionLimit)
+            && $suggestionLimit >= 1
+            && is_int($maximumSuggestionLimit)
+            && $maximumSuggestionLimit >= 1
+            && $maximumSuggestionLimit <= 20
+            && $suggestionLimit <= $maximumSuggestionLimit
+            && is_int($maximumQueryLength)
+            && $maximumQueryLength >= 1
+            && $maximumQueryLength <= 160
+            && is_int($maximumBatchSize)
+            && $maximumBatchSize >= 1
+            && $maximumBatchSize <= 100;
+
+        $diagnostics = $resources->diagnostics();
+
+        return [$boundsReady, $diagnostics['ready'], $diagnostics];
+    }
+
+    /**
+     * Determine whether strict mode can accept every existing metadata key.
+     *
+     * @return array{bool, int}
+     */
+    private function strictMetadataCompatibility(
+        CommentMetadataRegistry $metadata,
+        bool $commentsTableReady,
+        bool $revisionsTableReady,
+    ): array {
+        if (! $commentsTableReady || ! $revisionsTableReady) {
+            return [false, 0];
+        }
+
+        $incompatibleRecords = 0;
+
+        Comment::query()
+            ->withTrashed()
+            ->select(['id', 'metadata'])
+            ->chunkById(500, function ($comments) use (
+                $metadata,
+                &$incompatibleRecords,
+            ): void {
+                foreach ($comments as $comment) {
+                    foreach (array_keys($comment->metadata ?? []) as $storageKey) {
+                        if (! $metadata->ownsStorageKey($storageKey)) {
+                            $incompatibleRecords++;
+
+                            break;
+                        }
+                    }
+                }
+            });
+
+        CommentRevision::query()
+            ->select(['id', 'metadata'])
+            ->chunkById(500, function ($revisions) use (
+                $metadata,
+                &$incompatibleRecords,
+            ): void {
+                foreach ($revisions as $revision) {
+                    foreach (array_keys($revision->metadata ?? []) as $storageKey) {
+                        if (! $metadata->ownsStorageKey($storageKey)) {
+                            $incompatibleRecords++;
+
+                            break;
+                        }
+                    }
+                }
+            });
+
+        return [$incompatibleRecords === 0, $incompatibleRecords];
     }
 
     /**

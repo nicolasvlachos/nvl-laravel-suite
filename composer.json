@@ -46,7 +46,7 @@
         "guzzlehttp/guzzle": "^7.8.2 || ^8.0",
         "guzzlehttp/psr7": "^2.7",
         "jschaedl/iban-validation": "^2.7",
-        "laravel/framework": "^12.0 || ^13.0",
+        "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.3",
         "laravel/serializable-closure": "^2.0.10",
         "league/flysystem": "^3.25",
@@ -87,10 +87,10 @@
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
         "laravel/socialite": "^5.29",
-        "laravel/tinker": "^2.10.1 || ^3.0",
+        "laravel/tinker": "^3.0",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
-        "orchestra/testbench": "^10.0 || ^11.0",
+        "orchestra/testbench": "^11.0",
         "pestphp/pest": "^4.7",
         "pestphp/pest-plugin-laravel": "^4.1",
         "shipmonk/composer-dependency-analyser": "^1.8",
@@ -189,7 +189,11 @@
             "Nvl\\Templates\\Tests\\": "packages/nvl/templates/tests/",
             "Nvl\\Translatable\\Tests\\": "packages/nvl/translatable/tests/",
             "Nvl\\Translations\\Tests\\": "packages/nvl/translations/tests/"
-        }
+        },
+        "exclude-from-classmap": [
+            "tests/Fixtures/consumer-audit/",
+            "tests/Fixtures/consumer-audit-reviewer-probe/"
+        ]
     },
     "scripts": {
         "setup": [
@@ -200,8 +204,13 @@
             "npm install --ignore-scripts",
             "npm run build"
         ],
-        "analyse": "phpstan analyse --memory-limit=2G",
+        "analyse": [
+            "phpstan analyse --memory-limit=2G",
+            "phpstan analyse --memory-limit=2G tools/fixtures/auth-production-consumer/app",
+            "phpstan analyse --memory-limit=2G tools/fixtures/content-production-consumer/app"
+        ],
         "autoload:check": "@composer dump-autoload --optimize --strict-psr --strict-ambiguous --no-scripts --no-interaction",
+        "package:quality": "@php tools/run-package-quality.php",
         "packages:analyse": "@php tools/analyse-packages.php",
         "dependencies:check": "@php package-dependency-audit.php",
         "contracts:check": "@php tools/check-package-contracts.php",
@@ -216,8 +225,8 @@
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
         ],
-        "format": "pint --parallel --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/suite-release-consumer",
-        "format:test": "pint --parallel --test --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/suite-release-consumer",
+        "format": "pint --parallel --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/auth-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/content-production-consumer tools/fixtures/suite-release-consumer",
+        "format:test": "pint --parallel --test --format agent app bootstrap/app.php bootstrap/providers.php config database routes src tests packages/nvl tools/check-release-changelogs.php tools/fixtures/activity-production-consumer tools/fixtures/auth-production-consumer tools/fixtures/comments-production-consumer tools/fixtures/content-production-consumer tools/fixtures/suite-release-consumer",
         "quality": [
             "@format:test",
             "@autoload:check",
@@ -258,7 +267,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.x-dev"
+            "dev-main": "2.x-dev"
         },
         "laravel": {
             "providers": [
@@ -277,11 +286,14 @@
             "/.temp",
             "/.DS_Store",
             "/.editorconfig",
+            "/.git",
             "/.gitattributes",
             "/.gitignore",
             "/.mcp.json",
             "/.npmrc",
             "/.phpunit.cache",
+            "/.superpowers",
+            "/.worktrees",
             "/AGENTS.md",
             "/CLAUDE.md",
             "/app",

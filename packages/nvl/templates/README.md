@@ -6,13 +6,13 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/templates` |
 | PHP namespace | `Nvl\Templates` |
 | Service provider | `Nvl\Templates\Providers\TemplatesServiceProvider` |
 | Configuration | `config/templates.php` |
 
-`nvl/templates` is a composable Laravel 12–13 package for rendering
+`nvl/templates` is a composable Laravel 13 package for rendering
 source-controlled Blade templates as HTML, PDF, or application-defined output.
 It supports PHP 8.4 and newer.
 
@@ -74,7 +74,7 @@ templates
 ## Installation
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 php artisan nvl:content:definitions:sync
 php artisan nvl:templates:sync

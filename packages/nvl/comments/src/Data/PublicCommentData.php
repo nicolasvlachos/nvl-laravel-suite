@@ -28,7 +28,9 @@ final class PublicCommentData extends Data
 
     /**
      * @param  list<string>|Optional  $tags
+     * @param  list<CommentMetadataProjectionData>|Optional  $metadata
      * @param  list<CommentReactionSummaryData>|Optional  $reactions
+     * @param  list<CommentMentionData>|Optional  $mentions
      */
     public function __construct(
         public readonly string $id,
@@ -40,6 +42,8 @@ final class PublicCommentData extends Data
         public readonly string|Optional|null $locale,
         #[LiteralTypeScriptType('Array<string>')]
         public readonly array|Optional $tags,
+        #[DataCollectionOf(CommentMetadataProjectionData::class)]
+        public readonly array|Optional $metadata,
         public readonly int $revision,
         public readonly bool|Optional $deleted,
         public readonly int $replyCount,
@@ -52,12 +56,17 @@ final class PublicCommentData extends Data
         public readonly array|Optional $reactions,
         public readonly string $createdAt,
         public readonly string $updatedAt,
+        public readonly CommentViewerDocumentData|Optional $document = new Optional,
+        #[DataCollectionOf(CommentMentionData::class)]
+        public readonly array|Optional $mentions = new Optional,
     ) {}
 
     /**
      * Build a public projection from one pre-authorized comment.
      *
      * @param  list<CommentReactionSummaryData>  $reactions
+     * @param  list<CommentMetadataProjectionData>|Optional  $metadata
+     * @param  list<CommentMentionData>|Optional  $mentions
      */
     public static function fromModel(
         Comment $comment,
@@ -65,6 +74,9 @@ final class PublicCommentData extends Data
         int $replyCount,
         array $reactions,
         int $attachmentCount = 0,
+        array|Optional $metadata = new Optional,
+        CommentViewerDocumentData|Optional $document = new Optional,
+        array|Optional $mentions = new Optional,
     ): self {
         $tombstone = self::isTombstone($comment);
         $omitted = Optional::create();
@@ -80,6 +92,7 @@ final class PublicCommentData extends Data
             tags: $tombstone
                 ? $omitted
                 : (is_array($comment->tags) ? $comment->tags : []),
+            metadata: $tombstone ? $omitted : $metadata,
             revision: $comment->revision,
             deleted: $tombstone ? $omitted : false,
             replyCount: $replyCount,
@@ -91,6 +104,8 @@ final class PublicCommentData extends Data
             reactions: $tombstone ? $omitted : $reactions,
             createdAt: $comment->created_at->format(DATE_ATOM),
             updatedAt: $comment->updated_at->format(DATE_ATOM),
+            document: $tombstone ? $omitted : $document,
+            mentions: $tombstone ? $omitted : $mentions,
         );
     }
 

@@ -4,6 +4,108 @@
 declare namespace Nvl {
 namespace Auth {
 namespace Data {
+namespace Display {
+export type AuthSubjectReferenceData = {
+type: string,
+id: string,
+};
+export type InvitationDeliveryData = {
+id: string,
+type: string,
+purpose: string,
+recipient: string,
+inviter: Nvl.Auth.Data.Display.AuthSubjectReferenceData | null,
+roles: string[],
+permissions: string[],
+metadata: Record<string, boolean | number | string | null>,
+expiresAt: string,
+resendCount: number,
+};
+export type InvitationReadData = {
+id: string,
+recipient: string,
+type: string,
+purpose: string,
+inviter: Nvl.Auth.Data.Display.AuthSubjectReferenceData | null,
+acceptedBy: Nvl.Auth.Data.Display.AuthSubjectReferenceData | null,
+roles: string[],
+permissions: string[],
+metadata: Record<string, boolean | number | string | null>,
+lifecycle: string,
+resendCount: number,
+lastSentAt: string | null,
+expiresAt: string,
+acceptedAt: string | null,
+revokedAt: string | null,
+deliveryStatus: Nvl.Auth.Enums.InvitationDeliveryStatus | null,
+deliveryAttemptedAt: string | null,
+deliveredAt: string | null,
+deliveryFailedAt: string | null,
+deliveryFailureCode: string | null,
+};
+export type PermissionGroupData = {
+value: string,
+label: string,
+permissionsCount: number,
+};
+export type PermissionListItemData = {
+label: string,
+group: string,
+id: string,
+name: string,
+description: string | null,
+guard: string,
+roleIds: Array<string>,
+rolesCount: number,
+usersCount: number,
+createdAt: string,
+};
+export type PermissionOptionData = {
+label: string,
+group: string,
+id: string,
+name: string,
+description: string | null,
+};
+export type RoleAnalyticsData = {
+permissionGroups: Record<string, number>,
+roleId: string,
+users: number,
+activeUsers: number,
+inactiveUsers: number,
+permissions: number,
+children: number,
+descendants: number,
+parentName: string | null,
+};
+export type RoleListItemData = {
+label: string,
+id: string,
+name: string,
+description: string | null,
+guard: string,
+isSystem: boolean,
+priority: number,
+parentId: string | null,
+parentName: string | null,
+permissionIds: Array<string>,
+permissionsCount: number,
+usersCount: number,
+createdAt: string,
+};
+export type RoleNameAvailabilityData = {
+name: string,
+available: boolean,
+conflictingRoleId: string | null,
+};
+export type RoleOptionData = {
+label: string,
+id: string,
+name: string,
+description: string | null,
+isSystem: boolean,
+};
+}
 namespace Mutations {
 export type AcceptInvitationData = {
 token: string,
@@ -208,6 +310,7 @@ code: string,
 }
 namespace Queries {
 export type InvitationIndexQueryData = {
+types: string[] | null,
 recipient: string | null,
 type: string | null,
 purpose: string | null,
@@ -221,10 +324,19 @@ export type PermissionIndexQueryData = {
 search: string | null,
 group: string | null,
 perPage: number | null,
+guard?: string | null,
+sort?: string | null,
+direction?: string | null,
+includeAssignments?: boolean,
 };
 export type RoleIndexQueryData = {
 search: string | null,
 perPage: number | null,
+isSystem?: boolean | null,
+guard?: string | null,
+sort?: string | null,
+direction?: string | null,
+includeAssignments?: boolean,
 };
 export type UserIndexQueryData = {
 search: string | null,
@@ -241,9 +353,11 @@ limit: number | null,
 }
 namespace Enums {
 export type AuthFeature = 'authentication' | 'principal_management' | 'password' | 'email_verification' | 'magic_links' | 'security_codes' | 'invitations' | 'totp' | 'passkeys' | 'recovery_codes' | 'social_identities' | 'clients' | 'sessions' | 'api_tokens' | 'rbac' | 'audit';
+export type AuthIntegrationPreset = 'embedded-application';
 export type AuthMessageType = 'invitation' | 'magic_link' | 'security_code' | 'password_reset' | 'email_verification';
 export type AuthenticationPurpose = 'credential_login' | 'passwordless_login' | 'social_login' | 'password_reset';
 export type FeatureOperation = 'read' | 'enroll' | 'issue' | 'use' | 'update' | 'revoke' | 'cleanup';
+export type InvitationDeliveryStatus = 'pending' | 'delivered' | 'failed';
 export type PrincipalAttribute = 'id' | 'name' | 'email' | 'email_verified_at' | 'password' | 'active' | 'locale' | 'timezone' | 'profile' | 'preferences' | 'last_login_at' | 'last_login_ip' | 'locked_until' | 'remember_token' | 'created_at' | 'updated_at' | 'deleted_at';
 export type UserBulkOperation = 'enable' | 'disable' | 'delete' | 'restore';
 }

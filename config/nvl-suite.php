@@ -5,34 +5,36 @@ declare(strict_types=1);
 return [
     /*
     |--------------------------------------------------------------------------
-    | Suite Modules
+    | Suite Profile
     |--------------------------------------------------------------------------
     |
-    | Disable modules that the host application is not ready to adopt. The
-    | suite always registers enabled modules after their required NVL module
-    | dependencies, even when a dependency is disabled explicitly below.
+    | New installations select a profile plus optional capability roots. The
+    | suite closes transitive dependencies and rejects excluded requirements.
+    | A published legacy modules map remains authoritative when non-null;
+    | omitted legacy flags are disabled while dependencies still close.
     |
     */
-    'modules' => [
-        'support' => true,
-        'data' => true,
-        'filterable' => true,
-        'translatable' => true,
-        'activity' => true,
-        'auth' => true,
-        'csv' => true,
-        'mail-notifications' => true,
-        'media' => true,
-        'comments' => true,
-        'content' => true,
-        'metafields' => true,
-        'primitives' => true,
-        'seo' => true,
-        'settings' => true,
-        'taxonomy' => true,
-        'templates' => true,
-        'translations' => true,
-        'forms' => true,
-        'pages' => true,
+    'profile' => 'full-suite',
+    'include' => [],
+    'exclude' => [],
+    'modules' => null,
+
+    'adoption' => [
+        'require_explicit_module_decisions' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Consumer Audit
+    |--------------------------------------------------------------------------
+    |
+    | Paths extend Composer source discovery. Suppressions are exact, reviewed
+    | exceptions; broad patterns are intentionally unsupported.
+    |
+    */
+    'consumer_audit' => [
+        'paths' => ['app', 'config', 'database/migrations', 'routes'],
+        'authentication_middleware' => ['auth'],
+        'suppressions' => [],
     ],
 ];

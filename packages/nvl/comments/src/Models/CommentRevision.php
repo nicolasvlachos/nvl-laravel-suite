@@ -23,6 +23,7 @@ use Nvl\Comments\Support\CommentsConfiguration;
  * @property string|null $locale
  * @property list<string>|null $tags
  * @property array<string, mixed>|null $metadata
+ * @property array<string, mixed>|null $document
  * @property string|null $edited_by_type
  * @property string|null $edited_by
  * @property Carbon $created_at
@@ -43,8 +44,14 @@ final class CommentRevision extends Model
         'locale',
         'tags',
         'metadata',
+        'document',
         'edited_by_type',
         'edited_by',
+    ];
+
+    /** @var list<string> */
+    protected $hidden = [
+        'document',
     ];
 
     public function getTable(): string
@@ -67,6 +74,7 @@ final class CommentRevision extends Model
             'format' => CommentFormat::class,
             'tags' => 'array',
             'metadata' => 'array',
+            'document' => 'array',
             'created_at' => 'immutable_datetime',
         ];
     }

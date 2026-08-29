@@ -4,6 +4,13 @@ All notable changes to `nvl/support` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Kept `BusinessException` and `ResponseCode` as the package's model-free Suite
+  2.0 consumer boundary.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

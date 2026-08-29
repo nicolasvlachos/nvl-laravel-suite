@@ -10,6 +10,7 @@ use Nvl\Comments\Data\Mutations\UpdateCommentData;
 use Nvl\Comments\Enums\CommentAbility;
 use Nvl\Comments\Enums\CommentAudience;
 use Nvl\Comments\Enums\CommentChangeOperation;
+use Nvl\Comments\Enums\CommentFormat;
 use Nvl\Comments\Enums\CommentStatus;
 use Nvl\Comments\Events\CommentChanged;
 use Nvl\Comments\Exceptions\InvalidCommentMutationException;
@@ -17,6 +18,7 @@ use Nvl\Comments\Exceptions\StaleCommentException;
 use Nvl\Comments\Models\Comment;
 use Nvl\Comments\Services\CommentAccessService;
 use Nvl\Comments\Services\CommentContentGuard;
+use Nvl\Comments\Services\CommentMetadataIndexWriter;
 use Nvl\Comments\Services\CommentMutationLock;
 use Nvl\Comments\Services\CommentReadService;
 use Nvl\Comments\Services\CommentTargetLocator;
@@ -32,6 +34,7 @@ final readonly class UpdateCommentAction
         private CommentAccessService $access,
         private CommentContentGuard $guard,
         private CommentMutationLock $mutationLock,
+        private CommentMetadataIndexWriter $metadataIndex,
         private CommentReadService $reads,
         private CommentTargetLocator $targets,
     ) {}
@@ -46,7 +49,6 @@ final readonly class UpdateCommentAction
         CommentAudience $audience = CommentAudience::Public,
     ): Comment {
         $commentId = $comment instanceof Comment ? $comment->id : $comment;
-        $this->guard->update($data);
 
         return $this->mutationLock->execute(
             $commentId,
@@ -70,9 +72,18 @@ final readonly class UpdateCommentAction
                         asNotFound: $audience !== CommentAudience::Management,
                     );
 
+                    if ($comment->format === CommentFormat::RichText
+                        || $data->format === CommentFormat::RichText) {
+                        throw new InvalidCommentMutationException(
+                            'Rich comments must be updated through UpdateRichCommentAction.',
+                        );
+                    }
+
                     if ($comment->revision !== $data->expectedRevision) {
                         throw StaleCommentException::forComment($comment->id);
                     }
+
+                    $normalizedMetadata = $this->guard->update($data, $comment->metadata);
 
                     $format = $data->format instanceof Optional
                         ? $comment->format
@@ -85,7 +96,7 @@ final readonly class UpdateCommentAction
                         : $data->tags;
                     $metadata = $data->metadata instanceof Optional
                         ? $comment->metadata
-                        : $data->metadata;
+                        : $normalizedMetadata;
 
                     if ($comment->body === $data->body
                         && $comment->format === $format
@@ -132,6 +143,8 @@ final readonly class UpdateCommentAction
                             'The comment update could not be saved.',
                         );
                     }
+
+                    $this->metadataIndex->synchronize($comment, $metadata);
 
                     CommentChanged::dispatch(
                         $comment->id,

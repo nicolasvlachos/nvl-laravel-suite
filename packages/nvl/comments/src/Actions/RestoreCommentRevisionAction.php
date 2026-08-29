@@ -10,14 +10,20 @@ use Nvl\Comments\Data\Mutations\RestoreCommentRevisionData;
 use Nvl\Comments\Enums\CommentAbility;
 use Nvl\Comments\Enums\CommentAudience;
 use Nvl\Comments\Enums\CommentChangeOperation;
+use Nvl\Comments\Enums\CommentFormat;
 use Nvl\Comments\Enums\CommentStatus;
 use Nvl\Comments\Events\CommentChanged;
+use Nvl\Comments\Events\CommentMentionsChanged;
 use Nvl\Comments\Exceptions\InvalidCommentLifecycleException;
 use Nvl\Comments\Exceptions\StaleCommentException;
 use Nvl\Comments\Models\Comment;
 use Nvl\Comments\Models\CommentRevision;
 use Nvl\Comments\Services\CommentAccessService;
+use Nvl\Comments\Services\CommentDocumentNormalizer;
 use Nvl\Comments\Services\CommentLifecycleGuard;
+use Nvl\Comments\Services\CommentMentionWriter;
+use Nvl\Comments\Services\CommentMetadataGuard;
+use Nvl\Comments\Services\CommentMetadataIndexWriter;
 use Nvl\Comments\Services\CommentMutationLock;
 use Nvl\Comments\Services\CommentReadService;
 use Nvl\Comments\Services\CommentTargetLocator;
@@ -34,7 +40,11 @@ final readonly class RestoreCommentRevisionAction
     public function __construct(
         private CommentAccessService $access,
         private CommentLifecycleGuard $guard,
+        private CommentDocumentNormalizer $documents,
+        private CommentMentionWriter $mentions,
         private CommentMutationLock $mutationLock,
+        private CommentMetadataGuard $metadataGuard,
+        private CommentMetadataIndexWriter $metadataIndex,
         private CommentReadService $reads,
         private CommentTargetLocator $targets,
     ) {}
@@ -110,6 +120,18 @@ final readonly class RestoreCommentRevisionAction
                             );
                         }
 
+                        $currentMetadata = $this->metadataGuard->normalize(
+                            $comment->metadata ?? [],
+                        );
+                        $currentDocument = $comment->format === CommentFormat::RichText
+                            && is_array($comment->document)
+                                ? $this->documents->normalizeStored($comment->document)
+                                : null;
+                        $restoredMetadata = $this->metadataGuard->normalize(
+                            $revision->metadata ?? [],
+                            $currentMetadata,
+                        );
+
                         $currentRevision = CommentRevision::query()->create([
                             'comment_id' => $comment->id,
                             'revision' => $comment->revision,
@@ -117,7 +139,8 @@ final readonly class RestoreCommentRevisionAction
                             'format' => $comment->format,
                             'locale' => $comment->locale,
                             'tags' => $comment->tags,
-                            'metadata' => $comment->metadata,
+                            'metadata' => $currentMetadata,
+                            'document' => $comment->document,
                             'edited_by_type' => $actor->type,
                             'edited_by' => $actor->id,
                         ]);
@@ -135,12 +158,31 @@ final readonly class RestoreCommentRevisionAction
                         $status = is_string($configuredStatus)
                             ? CommentStatus::tryFrom($configuredStatus)
                             : null;
+                        $restoredDocument = null;
+                        $restoredBody = $revision->body;
+
+                        if ($revision->format === CommentFormat::RichText) {
+                            if (! is_array($revision->document)) {
+                                throw new InvalidCommentLifecycleException(
+                                    'The historical rich comment document is unavailable.',
+                                );
+                            }
+
+                            $restoredDocument = $this->documents->normalizeStored(
+                                $revision->document,
+                            );
+                            $restoredBody = $this->documents->body($restoredDocument);
+                        }
+
                         $saved = $comment->forceFill([
-                            'body' => $revision->body,
+                            'body' => $restoredBody,
                             'format' => $revision->format,
                             'locale' => $revision->locale,
                             'tags' => $revision->tags,
-                            'metadata' => $revision->metadata,
+                            'metadata' => $restoredMetadata,
+                            'document' => $restoredDocument === null
+                                ? null
+                                : $this->documents->toArray($restoredDocument),
                             'status' => $status ?? $comment->status,
                             'revision' => $comment->revision + 1,
                             'edited_at' => now(),
@@ -149,6 +191,25 @@ final readonly class RestoreCommentRevisionAction
                         if (! $saved) {
                             throw new InvalidCommentLifecycleException(
                                 'The historical comment revision could not be restored.',
+                            );
+                        }
+
+                        $this->metadataIndex->synchronize($comment, $restoredMetadata);
+                        $this->mentions->synchronize($comment, $restoredDocument);
+                        $mentionChanges = $this->mentions->changes(
+                            $currentDocument,
+                            $restoredDocument,
+                        );
+
+                        if ($mentionChanges['added'] !== []
+                            || $mentionChanges['removed'] !== []) {
+                            CommentMentionsChanged::dispatch(
+                                $comment->id,
+                                $comment->commentable_type,
+                                $comment->commentable_id,
+                                $comment->revision,
+                                $mentionChanges['added'],
+                                $mentionChanges['removed'],
                             );
                         }
 

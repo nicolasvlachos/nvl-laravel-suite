@@ -94,6 +94,31 @@ return [
         'maximum_tags' => 20,
     ],
 
+    'metadata' => [
+        'strict' => false,
+        'maximum_bytes' => 16_384,
+        'maximum_registered_fields' => 50,
+        'digest_key' => env('COMMENTS_METADATA_DIGEST_KEY'),
+        'schemas' => [],
+    ],
+
+    'rich_text' => [
+        'maximum_bytes' => 32_768,
+        'maximum_blocks' => 100,
+        'maximum_nodes' => 500,
+    ],
+
+    'mentions' => [
+        'enabled' => false,
+        'maximum_per_comment' => 25,
+        'maximum_resource_types_per_comment' => 10,
+        'suggestion_limit' => 10,
+        'maximum_suggestion_limit' => 20,
+        'maximum_query_length' => 160,
+        'maximum_batch_size' => 100,
+        'resources' => [],
+    ],
+
     'reactions' => [
         'allowed' => ['like', 'love', 'insightful', 'helpful'],
     ],

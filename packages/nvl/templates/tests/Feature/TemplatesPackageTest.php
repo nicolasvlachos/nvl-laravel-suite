@@ -83,10 +83,12 @@ use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\ConfiguredTemplatePayloadValidator;
 use Nvl\Templates\Services\MediaTemplateAssetRegistry;
 use Nvl\Templates\Services\MediaTemplateAssetResolver;
+use Nvl\Templates\Services\NullTemplateAssetResolver;
 use Nvl\Templates\Services\PdfHtmlGuard;
 use Nvl\Templates\Services\PdfTemporaryDirectoryResolver;
 use Nvl\Templates\Services\SafeFilesystemPathResolver;
 use Nvl\Templates\Services\StoredTemplateRenderResolver;
+use Nvl\Templates\Services\TemplateAdoptionManifest;
 use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Services\TemplateResponseFactory;
 use Nvl\Templates\Support\PdfConfig\Data\HeaderFooterData;
@@ -859,6 +861,68 @@ it('uses canonical render requests and processes queued output idempotently', fu
         ->and($terminal->settings)->toBeNull();
 });
 
+it('applies durable render job policies and records processing failures', function (): void {
+    Queue::fake();
+    config()->set('templates.rendering.output.persist', false);
+    $actor = TemplateActorData::system();
+    $template = app(CreateTemplateAction::class)->execute(
+        new CreateTemplateData(
+            key: 'welcome',
+            translations: ['en' => ['title' => 'Welcome']],
+        ),
+        $actor,
+    );
+    [$version] = createComposedTemplateVersion(
+        $template,
+        $actor,
+        [],
+        ['en' => ['text' => 'Welcome']],
+    );
+    app(PublishTemplateVersionAction::class)->execute($version, $version->revision, $actor);
+    $render = app(QueueTemplateRenderAction::class)->execute(
+        $template,
+        new RenderTemplateData(
+            locale: 'en',
+            payload: ['name' => 'Ada'],
+            idempotencyKey: 'job-success',
+        ),
+        $actor,
+    );
+    config()->set('templates.rendering.backoff', 'invalid');
+    $job = new RenderTemplateJob($render->id, $render->dispatch_generation);
+
+    expect($job->uniqueId())->toBe($render->id)
+        ->and($job->backoff())->toBe([10, 30, 90]);
+
+    config()->set('templates.rendering.backoff', [0, 'later']);
+    expect($job->backoff())->toBe([10, 30, 90]);
+
+    config()->set([
+        'templates.rendering.backoff' => [7, 20],
+        'templates.rendering.lease_seconds' => 30,
+    ]);
+    expect($job->middleware())->toHaveCount(1);
+
+    $job->handle(app(ProcessTemplateRenderAction::class));
+
+    $failed = app(QueueTemplateRenderAction::class)->execute(
+        $template,
+        new RenderTemplateData(
+            locale: 'en',
+            payload: ['name' => 'Grace'],
+            idempotencyKey: 'job-failure',
+        ),
+        $actor,
+    );
+    $failed->version()->update(['status' => TemplateVersionStatus::Draft]);
+
+    expect($render->refresh()->status)->toBe(TemplateRenderStatus::Completed)
+        ->and(fn () => app(ProcessTemplateRenderAction::class)->execute($failed))
+        ->toThrow(TemplateResolutionException::class)
+        ->and($failed->refresh()->status)->toBe(TemplateRenderStatus::Failed)
+        ->and($failed->failure)->toContain('immutable published version');
+});
+
 it('uses Content media fields instead of a template asset table', function (): void {
     $actor = TemplateActorData::system();
     $template = app(CreateTemplateAction::class)->execute(
@@ -949,6 +1013,92 @@ it('resolves revision-aware class-template aliases through NVL Media', function 
         ->and($resolver->resolve('unknown'))->toBeNull()
         ->and(fn () => $resolver->resolve('stale-logo'))
         ->toThrow(TemplateResolutionException::class);
+});
+
+it('fails closed across template Media alias registration and resolution', function (): void {
+    $registry = app(MediaTemplateAssetRegistry::class);
+    $registered = new MediaTemplateAssetData(
+        key: 'registered-logo',
+        mediaId: 'registered-media',
+    );
+    $registry->register($registered);
+
+    expect(fn () => $registry->register($registered))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $registry->register(new MediaTemplateAssetData(
+            key: 'blank-media',
+            mediaId: ' ',
+        )))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $registry->register(new MediaTemplateAssetData(
+            key: 'invalid-scope',
+            mediaId: 'media',
+            scope: 'bad scope',
+        )))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $registry->register(new MediaTemplateAssetData(
+            key: 'invalid-variation',
+            mediaId: 'media',
+            variation: 'Bad!',
+        )))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $registry->register(new MediaTemplateAssetData(
+            key: 'invalid-delivery',
+            mediaId: 'media',
+            delivery: 'stream',
+        )))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $registry->register(new MediaTemplateAssetData(
+            key: 'invalid-revision',
+            mediaId: 'media',
+            expectedRevision: 0,
+        )))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $registry->registerAdoptionAliases(['legacy' => 42]))
+        ->toThrow(InvalidArgumentException::class)
+        ->and($registry->all())->toHaveKey('registered-logo');
+
+    $resolver = app(MediaTemplateAssetResolver::class);
+    $registry->register(new MediaTemplateAssetData(
+        key: 'missing-media',
+        mediaId: (string) str()->uuid(),
+    ));
+
+    expect(fn () => $resolver->resolve('missing-media'))
+        ->toThrow(TemplateResolutionException::class);
+
+    $media = Media::factory()->create([
+        'mime_type' => 'image/png',
+        'extension' => 'png',
+        'type' => MediaType::IMAGE,
+        'is_public' => true,
+        'visibility' => MediaVisibility::Public,
+        'status' => MediaLifecycleStatus::Available,
+        'revision' => 2,
+    ]);
+    Storage::disk('public')->put(app(MediaPathResolver::class)->mediaPath($media), 'logo');
+    config()->set([
+        'filesystems.disks.public.url' => null,
+        'templates.pdf.remote_assets.enabled' => true,
+        'templates.pdf.remote_assets.allow_http' => true,
+        'templates.pdf.remote_assets.allowed_hosts' => ['localhost'],
+    ]);
+    url()->forceRootUrl('http://localhost');
+    $registry->register(new MediaTemplateAssetData(
+        key: 'missing-variation',
+        mediaId: $media->id,
+        variation: 'thumbnail',
+    ));
+    $registry->register(new MediaTemplateAssetData(
+        key: 'public-url',
+        mediaId: $media->id,
+        delivery: 'url',
+    ));
+
+    expect(fn () => $resolver->resolve('missing-variation'))
+        ->toThrow(TemplateResolutionException::class)
+        ->and(fn () => $resolver->resolve('public-url'))
+        ->toThrow(TemplateResolutionException::class);
+
+    $nullResolver = new NullTemplateAssetResolver;
+
+    expect($nullResolver->resolve('anything'))->toBeNull()
+        ->and($nullResolver->scope('anything'))->toBe([]);
 });
 
 it('plans prepares applies and reconciles an idempotent staged adoption manifest', function (): void {
@@ -1043,6 +1193,134 @@ it('plans prepares applies and reconciles an idempotent staged adoption manifest
         ->expectsOutputToContain('"unchanged": 1');
 
     File::delete($manifestPath);
+});
+
+it('rejects malformed adoption manifests before mutating consumer data', function (): void {
+    $manifests = app(TemplateAdoptionManifest::class);
+    $valid = [
+        'version' => 1,
+        'staging_tables' => [],
+        'legacy_asset_count' => 0,
+        'templates' => [],
+        'content' => [],
+        'assets' => [],
+    ];
+    $invalidTopLevelManifests = [
+        [...$valid, 'unknown' => true],
+        [...$valid, 'version' => 2],
+        [...$valid, 'staging_connection' => ' '],
+        [...$valid, 'staging_tables' => ['table' => 'legacy_templates']],
+        [...$valid, 'staging_tables' => ['unsafe-table']],
+        [...$valid, 'templates' => ['template' => []]],
+        [...$valid, 'templates' => [[]]],
+        [...$valid, 'legacy_asset_count' => -1],
+        [...$valid, 'legacy_asset_count' => 1],
+    ];
+
+    foreach ($invalidTopLevelManifests as $manifest) {
+        expect(fn () => $manifests->normalize($manifest))
+            ->toThrow(InvalidArgumentException::class);
+    }
+
+    config()->set('templates.adoption.maximum_records', 0);
+    expect(fn () => $manifests->normalize($valid))
+        ->toThrow(InvalidArgumentException::class);
+
+    config()->set('templates.adoption.maximum_records', 1);
+    expect(fn () => $manifests->normalize([
+        ...$valid,
+        'templates' => [
+            ['legacy_key' => 'first'],
+            ['legacy_key' => 'second'],
+        ],
+    ]))->toThrow(InvalidArgumentException::class);
+    config()->set('templates.adoption.maximum_records', 10_000);
+
+    $template = [
+        'legacy_key' => 'legacy-welcome',
+        'key' => 'welcome',
+        'status' => 'active',
+        'metadata' => [],
+        'translations' => ['en' => ['title' => 'Welcome']],
+    ];
+    $invalidTemplates = [
+        [...$template, 'unexpected' => true],
+        [...$template, 'legacy_key' => ' '],
+        [...$template, 'status' => 'unsupported'],
+        [...$template, 'status' => 1],
+        [...$template, 'metadata' => ['not-an-object']],
+        [...$template, 'metadata' => [1 => 'not-a-string-key']],
+        [...$template, 'translations' => ['en' => ['title' => '']]],
+        [...$template, 'translations' => ['en' => [
+            'title' => 'Welcome',
+            'description' => 42,
+        ]]],
+    ];
+
+    foreach ($invalidTemplates as $item) {
+        expect(fn () => $manifests->normalize([
+            ...$valid,
+            'templates' => [$item],
+        ]))->toThrow(InvalidArgumentException::class);
+    }
+
+    expect(fn () => $manifests->normalize([
+        ...$valid,
+        'templates' => [$template, $template],
+    ]))->toThrow(InvalidArgumentException::class);
+
+    $content = [
+        'legacy_key' => 'legacy-copy',
+        'legacy_scope' => 'legacy-global',
+        'legacy_scope_key' => 'legacy',
+        'definition' => 'template-copy',
+        'key' => 'welcome-copy',
+        'scope' => 'global',
+        'scope_key' => '*',
+        'visibility' => 'public',
+        'publish' => true,
+    ];
+
+    expect(fn () => $manifests->normalize([
+        ...$valid,
+        'content' => [[...$content, 'visibility' => 'unsupported']],
+    ]))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $manifests->normalize([
+            ...$valid,
+            'content' => [[...$content, 'publish' => 'yes']],
+        ]))->toThrow(InvalidArgumentException::class);
+
+    $media = Media::factory()->create([
+        'status' => MediaLifecycleStatus::Available,
+        'revision' => 2,
+    ]);
+    $asset = [
+        'legacy_alias' => 'legacy-logo',
+        'key' => 'logo',
+        'media_id' => $media->id,
+        'expected_revision' => 2,
+    ];
+
+    expect(fn () => $manifests->normalize([
+        ...$valid,
+        'legacy_asset_count' => 1,
+        'assets' => [[...$asset, 'expected_revision' => 0]],
+    ]))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $manifests->normalize([
+            ...$valid,
+            'legacy_asset_count' => 1,
+            'assets' => [[...$asset, 'media_id' => (string) str()->uuid()]],
+        ]))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $manifests->normalize([
+            ...$valid,
+            'legacy_asset_count' => 1,
+            'assets' => [[...$asset, 'expected_revision' => 1]],
+        ]))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $manifests->normalize([
+            ...$valid,
+            'legacy_asset_count' => 1,
+            'assets' => [[...$asset, 'variation' => 'thumbnail']],
+        ]))->toThrow(InvalidArgumentException::class);
 });
 
 it('renders a bounded source-controlled PDF and validates its payload schema', function (): void {

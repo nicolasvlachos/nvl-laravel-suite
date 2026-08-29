@@ -4,6 +4,13 @@ All notable changes to `nvl/primitives` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Kept value objects, casts, validation rules, and reference catalogs as the
+  package's model-free Suite 2.0 consumer boundary.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

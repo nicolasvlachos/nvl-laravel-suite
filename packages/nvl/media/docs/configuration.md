@@ -8,7 +8,7 @@ php artisan vendor:publish --tag=media-config
 
 Keep environment reads in `config/media.php`, then use `php artisan config:cache` for production. Run `php artisan nvl:media:doctor --production --strict` against the cached configuration.
 
-The values below are the shipped 1.x defaults. Application-published configuration is recursively merged with package defaults so newly added nested safety settings continue to exist after an upgrade; review `UPGRADING.md` whenever publishing or merging a new version.
+The values below are the shipped 2.x defaults. Application-published configuration is recursively merged with package defaults so newly added nested safety settings continue to exist after an upgrade; review `UPGRADING.md` whenever publishing or merging a new version.
 
 ## Routes
 
@@ -41,6 +41,7 @@ See [HTTP API](http-api.md).
 | `ability_permissions.mutate` | `media.update-any` | Cross-owner update/replace/move/variation work |
 | `ability_permissions.delete` | `media.delete-any` | Cross-owner delete |
 | `ability_permissions.reuse` | `media.reuse-any` | Cross-owner public reuse |
+| `ability_permissions.manage_staging` | `media.manage-staging` | Adopt another actor's staged media through owner-slot workflows |
 
 Environment:
 
@@ -58,6 +59,40 @@ Role names are empty by default so an installation cannot silently elevate an ex
 | `media.migrations.enabled` | `true` | Load package migrations automatically |
 
 Set this to `false` only for controlled adoption of an existing schema. Published migrations are still available through the `media-migrations` publish tag.
+
+## Owner-slot operation identity
+
+The owner-slot mutation ledger is package workflow infrastructure. Consumers do
+not query or write this table directly.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `media.owner_slots.copy.metadata_keys` | safe presentation/provenance key list | Scalar Media metadata keys inherited by canonical copies; consumer lists replace the default list |
+| `media.owner_slots.idempotency.connection` | application default | Optional database connection dedicated to the operation ledger |
+| `media.owner_slots.idempotency.table` | `px_media_owner_slot_operations` | Validated operation-ledger table name |
+| `media.owner_slots.idempotency.processing_timeout_minutes` | `30` | Processing lease before an exact request may recover; range 1-1,440 |
+| `media.owner_slots.idempotency.retention_days` | `7` | Age after which completed and failed claims may be pruned |
+| `media.owner_slots.idempotency.prune_chunk` | `500` | Maximum terminal rows deleted per bounded pruning query; hard maximum 1,000 |
+
+The ledger stores actor/owner/slot identity, a SHA-256 request digest, lifecycle
+state, stable failure code, and nullable result Media UUID. It never stores the
+request payload or exception messages. The same UUID and canonical request may
+replay a completed result; using that UUID for another actor, owner, slot,
+operation, or payload fails closed. A failed exact request may be claimed again.
+Processing claims use a renewable lease. Recovery rotates the operation UUID so
+the stale claim can no longer complete. Long-running orchestrators renew before
+the configured timeout.
+
+A separate ledger connection is a durable saga boundary, not a cross-database
+transaction. The owner mutation must be safe to reconcile or retry after a
+crash between the durable mutation and ledger completion. Prefer the Media
+database connection when operational isolation is unnecessary. Doctor validates
+the configured table, columns, indexes, lifecycle bounds, atomic mutation store,
+and the bounded owner type/slot pairs observed in retained operations.
+
+Copy metadata is deny-by-default outside the configured list. Values must be
+scalar or null. Do not include secrets, credentials, provider responses,
+redaction/workflow state, storage paths/hashes, or association metadata.
 
 ## Storage
 
@@ -327,7 +362,7 @@ Keep private URLs short-lived and use package URL builders. The `v` parameter se
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `media.hash_filenames` | `true` | Compatibility setting; storage identities remain cryptographically random in hardened 1.x |
+| `media.hash_filenames` | `true` | Compatibility setting; storage identities remain cryptographically random in hardened 2.x |
 | `media.transliterate` | `false` | Transliterate non-ASCII display filenames during sanitization |
 | `media.allow_duplicates` | `false` | Global default for caller-requested duplicate records |
 | `media.deduplication.allow_anonymous_private` | `false` | Permit anonymous private digest reuse |

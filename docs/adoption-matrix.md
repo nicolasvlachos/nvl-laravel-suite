@@ -10,6 +10,39 @@ the owning domain supplies its translation table. Optional scheduler entries
 are operational recommendations; feature-gated entries marked required are
 enforced when their feature is enabled.
 
+## Consumer boundary doctrine
+
+- **Allowed:** Actions, explicit services, contracts, DTOs, enums, owner traits, and documented identity/result models.
+- **Prohibited in 2.0:** Consumer-initiated package model queries and relation aggregates are errors in 2.0.
+- **Forbidden:** Consumer writes through package models, builders, raw tables, pivots, or storage paths.
+- **Explicit exceptions:** Filterable consumer builders, Translatable opted-in scopes, adoption migrations, and documented legacy bridges.
+
+Adoption selects module ownership and operations; it never grants permission to
+bypass these package boundaries. Package-documented facades remain adapters to
+allowed Actions or explicit services.
+
+Generate the complete module map and validate it before each upgrade:
+
+```bash
+php artisan nvl:suite:configure --profile=content-platform
+php artisan nvl:suite:configure --profile=content-platform --write
+php artisan nvl:suite:upgrade:check --strict
+php artisan nvl:suite:consumer-audit --strict
+```
+
+The first command is a non-mutating preview. The second is the only command here
+that writes, and it atomically replaces the selected in-application PHP config.
+The two checks are read-only. They exit `0` when no finding is blocking, exit
+`1` only when a finding is blocking under that command policy, and exit `2` for
+invalid input or policy. Consumer-audit errors are always blocking;
+`consumer.implicit_module_decision` can become blocking under `--strict` when
+explicit decisions are required. The advisory warning
+`consumer.package_migration_reference` remains advisory and visible without
+changing the exit code. Before leaving 1.x, render and review the complete
+module map, then set `adoption.require_explicit_module_decisions=true`. In 2.0,
+an omitted key in a published legacy module map is requested-disabled unless an
+explicit root enables it through dependency closure.
+
 | Module | Tables and migration ownership | Queues | Scheduler entries | Replaceable/security contracts | Registered aliases | TypeScript | Doctor |
 |---|---|---|---|---|---|---|---|
 | `support` | None | None | None | None | None | No | N/A |

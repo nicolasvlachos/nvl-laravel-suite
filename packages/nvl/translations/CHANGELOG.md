@@ -4,6 +4,14 @@ All notable changes to `nvl/translations` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Established scan, import, export, update, statistics, and shared-filter
+  Actions/services as the 2.0 consumer boundary; direct consumer translation
+  catalog-model queries now fail Suite audit.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

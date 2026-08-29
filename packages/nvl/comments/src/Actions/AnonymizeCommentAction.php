@@ -16,12 +16,15 @@ use Nvl\Comments\Enums\CommentChangeOperation;
 use Nvl\Comments\Enums\CommentFormat;
 use Nvl\Comments\Enums\CommentReportStatus;
 use Nvl\Comments\Events\CommentChanged;
+use Nvl\Comments\Events\CommentMentionsChanged;
 use Nvl\Comments\Exceptions\CommentMutationBusyException;
 use Nvl\Comments\Exceptions\InvalidCommentLifecycleException;
 use Nvl\Comments\Exceptions\StaleCommentException;
 use Nvl\Comments\Models\Comment;
 use Nvl\Comments\Services\CommentAccessService;
 use Nvl\Comments\Services\CommentLifecycleGuard;
+use Nvl\Comments\Services\CommentMentionWriter;
+use Nvl\Comments\Services\CommentMetadataIndexWriter;
 use Nvl\Comments\Services\CommentMutationLock;
 use Nvl\Comments\Services\CommentReadService;
 use Nvl\Comments\Services\CommentTargetLocator;
@@ -46,6 +49,8 @@ final readonly class AnonymizeCommentAction
         private CommentLifecycleGuard $guard,
         private MediaMutationLock $mediaLock,
         private CommentMutationLock $mutationLock,
+        private CommentMetadataIndexWriter $metadataIndex,
+        private CommentMentionWriter $mentions,
         private CommentReadService $reads,
         private CommentTargetLocator $targets,
     ) {}
@@ -220,7 +225,10 @@ final readonly class AnonymizeCommentAction
                                 ->delete();
                         }
 
+                        $mentionRemovals = $this->mentions->removals($comment);
                         $comment->revisions()->delete();
+                        $this->metadataIndex->delete($comment);
+                        $this->mentions->delete($comment);
                         $comment->reports()->update([
                             'details' => null,
                             'resolution' => null,
@@ -244,6 +252,7 @@ final readonly class AnonymizeCommentAction
                             'locale' => null,
                             'tags' => null,
                             'metadata' => null,
+                            'document' => null,
                             'revision' => $comment->revision + 1,
                             'reaction_count' => $reactionCount,
                             'report_count' => $reportCount,
@@ -289,6 +298,17 @@ final readonly class AnonymizeCommentAction
                         }
 
                         $comment->refresh();
+
+                        if ($mentionRemovals !== []) {
+                            CommentMentionsChanged::dispatch(
+                                $comment->id,
+                                $comment->commentable_type,
+                                $comment->commentable_id,
+                                $comment->revision,
+                                [],
+                                $mentionRemovals,
+                            );
+                        }
                         CommentChanged::dispatch(
                             $comment->id,
                             $comment->commentable_type,

@@ -11,17 +11,30 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Nvl\Comments\Actions\CreateCommentAction;
+use Nvl\Comments\Actions\UpdateCommentAction;
 use Nvl\Comments\Contracts\CommentAuthorization;
 use Nvl\Comments\Contracts\CommentQueryScope;
 use Nvl\Comments\Data\CommentActorData;
+use Nvl\Comments\Data\Mutations\CreateCommentData;
+use Nvl\Comments\Data\Mutations\UpdateCommentData;
 use Nvl\Comments\Definitions\Tables\CommentsTables;
 use Nvl\Comments\Enums\CommentAbility;
 use Nvl\Comments\Enums\CommentAudience;
 use Nvl\Comments\Exceptions\CommentMutationLockConfigurationException;
 use Nvl\Comments\Models\Comment;
+use Nvl\Comments\Models\CommentRevision;
 use Nvl\Comments\Providers\CommentsServiceProvider;
+use Nvl\Comments\Services\CommentMentionResourceRegistry;
+use Nvl\Comments\Services\CommentMetadataRegistry;
 use Nvl\Comments\Services\CommentMutationLock;
 use Nvl\Comments\Services\CommentMutationLockStore;
+use Nvl\Comments\Tests\Fixtures\TestCommentMentionAuthorization;
+use Nvl\Comments\Tests\Fixtures\TestCommentMentionResource;
+use Nvl\Comments\Tests\Fixtures\TestCommentMentionResourceResolver;
+use Nvl\Comments\Tests\Fixtures\TestCommentMentionUrlResolver;
+use Nvl\Comments\Tests\Fixtures\TestCommentMetadataSchema;
+use Nvl\Comments\Tests\Fixtures\TestCommentTarget;
 use Nvl\Comments\Tests\Fixtures\TestCommentTargetResolver;
 use Nvl\Media\Models\MediaAssociation;
 
@@ -42,12 +55,18 @@ function runCommentsDoctor(): array
 it('reports complete schema and dependency readiness by default', function (): void {
     [$exitCode, $report] = runCommentsDoctor();
 
+    expect($report)->toHaveKeys([
+        'rich_text.bounds_ready',
+        'metadata.strict_incompatible_records',
+    ]);
+
     expect($exitCode)->toBe(0)
         ->and($report['table.comments'])->toBeTrue()
         ->and($report['column.comments.body'])->toBeTrue()
         ->and($report['column.comment_reactions.actor_id'])->toBeTrue()
         ->and($report['column.comment_revisions.revision'])->toBeTrue()
         ->and($report['column.comment_reports.status'])->toBeTrue()
+        ->and($report['column.comment_metadata_values.value_hash'])->toBeTrue()
         ->and($report['column_definition.comments.commentable_identity_hash'])->toBeTrue()
         ->and($report['column_definition.comments.root_id'])->toBeTrue()
         ->and($report['column_definition.comments.reply_count'])->toBeTrue()
@@ -59,8 +78,25 @@ it('reports complete schema and dependency readiness by default', function (): v
         ->and($report['index.comment_revisions.number_unique'])->toBeTrue()
         ->and($report['index.comment_reports.reporter_unique'])->toBeTrue()
         ->and($report['index.comments.idempotency_unique'])->toBeTrue()
+        ->and($report['index.comment_metadata_values.owner_unique'])->toBeTrue()
+        ->and($report['index.comment_metadata_values.lookup'])->toBeTrue()
         ->and($report['foreign_key.comments.parent'])->toBeTrue()
         ->and($report['foreign_key.comment_reports.comment'])->toBeTrue()
+        ->and($report['foreign_key.comment_metadata_values.comment'])->toBeTrue()
+        ->and($report['table.comment_mentions'])->toBeTrue()
+        ->and($report['column.comment_mentions.resource_identity_hash'])->toBeTrue()
+        ->and($report['index.comment_mentions.token_unique'])->toBeTrue()
+        ->and($report['foreign_key.comment_mentions.comment'])->toBeTrue()
+        ->and($report['mentions.bounds_ready'])->toBeTrue()
+        ->and($report['mentions.resources_ready'])->toBeTrue()
+        ->and($report['mentions.aliases'])->toBe([])
+        ->and($report['mentions.registered'])->toBe(0)
+        ->and($report['mentions.aliases_truncated'])->toBeFalse()
+        ->and($report['rich_text.bounds_ready'])->toBeTrue()
+        ->and($report['metadata.schemas_ready'])->toBeTrue()
+        ->and($report['metadata.digest_key_ready'])->toBeTrue()
+        ->and($report['metadata.strict_compatible'])->toBeTrue()
+        ->and($report['metadata.strict_incompatible_records'])->toBe(0)
         ->and($report['targets'])->toBe(['article'])
         ->and($report['targets.ready'])->toBeTrue()
         ->and($report['attachments.connection_ready'])->toBeTrue()
@@ -73,6 +109,175 @@ it('reports complete schema and dependency readiness by default', function (): v
         ->and(array_key_exists('routes.management_ready', $report))->toBeFalse()
         ->and(array_key_exists('policy.management_ready', $report))->toBeFalse();
 });
+
+it('validates registered mention resources and every hard bound', function (): void {
+    config()->set('comments.mentions.resources', [
+        'organization' => [
+            'model' => TestCommentMentionResource::class,
+            'searchable_fields' => ['name', 'registration_number'],
+            'exposed_fields' => ['name', 'registration_number'],
+            'label_field' => 'name',
+            'authorization' => TestCommentMentionAuthorization::class,
+            'url_resolver' => TestCommentMentionUrlResolver::class,
+            'public' => false,
+        ],
+    ]);
+
+    [$readyExitCode, $readyReport] = runCommentsDoctor();
+
+    config()->set([
+        'comments.mentions.maximum_per_comment' => 101,
+        'comments.mentions.maximum_resource_types_per_comment' => 21,
+        'comments.mentions.suggestion_limit' => 21,
+        'comments.mentions.maximum_suggestion_limit' => 21,
+        'comments.mentions.maximum_query_length' => 161,
+        'comments.mentions.maximum_batch_size' => 101,
+        'comments.mentions.resources' => [
+            'organization' => [
+                'model' => TestCommentMentionResource::class,
+                'resolver' => TestCommentMentionUrlResolver::class,
+            ],
+        ],
+    ]);
+
+    [$invalidExitCode, $invalidReport] = runCommentsDoctor();
+
+    expect($readyExitCode)->toBe(0)
+        ->and($readyReport['mentions.bounds_ready'])->toBeTrue()
+        ->and($readyReport['mentions.resources_ready'])->toBeTrue()
+        ->and($readyReport['mentions.aliases'])->toBe(['organization'])
+        ->and($invalidExitCode)->toBe(1)
+        ->and($invalidReport['mentions.bounds_ready'])->toBeFalse()
+        ->and($invalidReport['mentions.resources_ready'])->toBeTrue()
+        ->and($invalidReport['mentions.aliases'])->toBe(['organization'])
+        ->and($invalidReport['healthy'])->toBeFalse();
+});
+
+it('reports resources registered programmatically on the live mention registry', function (): void {
+    app(CommentMentionResourceRegistry::class)->register(
+        'runtime-resource',
+        TestCommentMentionResourceResolver::class,
+    );
+
+    [$exitCode, $report] = runCommentsDoctor();
+
+    expect($exitCode)->toBe(0)
+        ->and($report['mentions.resources_ready'])->toBeTrue()
+        ->and($report['mentions.aliases'])->toBe(['runtime-resource'])
+        ->and($report['mentions.registered'])->toBe(1)
+        ->and($report['mentions.aliases_truncated'])->toBeFalse();
+});
+
+it('reports legacy metadata as strict incompatible before strict mode is enabled', function (): void {
+    config()->set([
+        'comments.metadata.strict' => false,
+        'comments.metadata.schemas' => [TestCommentMetadataSchema::class],
+        'comments.metadata.digest_key' => 'doctor-metadata-test-key',
+    ]);
+    app()->forgetInstance(CommentMetadataRegistry::class);
+    $target = TestCommentTarget::query()->create(['name' => 'Doctor strict compatibility']);
+    app(CreateCommentAction::class)->execute(
+        $target,
+        new CreateCommentData('Legacy metadata', metadata: [
+            'unknown_legacy_key' => 'private-legacy-value',
+        ]),
+        new CommentActorData('member', 'doctor-metadata-author'),
+    );
+
+    [$exitCode, $report] = runCommentsDoctor();
+
+    expect($report)->toHaveKey('metadata.strict_incompatible_records');
+
+    expect($exitCode)->toBe(1)
+        ->and($report['metadata.strict_compatible'])->toBeFalse()
+        ->and($report['metadata.strict_incompatible_records'])->toBe(1)
+        ->and(json_encode($report, JSON_THROW_ON_ERROR))
+        ->not->toContain('unknown_legacy_key', 'private-legacy-value');
+});
+
+it('reports revision-only legacy metadata without exposing historical keys or values', function (): void {
+    config()->set([
+        'comments.metadata.strict' => false,
+        'comments.metadata.schemas' => [TestCommentMetadataSchema::class],
+        'comments.metadata.digest_key' => 'doctor-revision-metadata-test-key',
+    ]);
+    app()->forgetInstance(CommentMetadataRegistry::class);
+    $target = TestCommentTarget::query()->create(['name' => 'Doctor revision compatibility']);
+    $actor = new CommentActorData('member', 'doctor-revision-author');
+    $comment = app(CreateCommentAction::class)->execute(
+        $target,
+        new CreateCommentData('Original', metadata: ['workflow_event' => 'created']),
+        $actor,
+    );
+    app(UpdateCommentAction::class)->execute(
+        $comment,
+        new UpdateCommentData(
+            body: 'Updated',
+            expectedRevision: 1,
+            metadata: ['workflow_event' => 'created'],
+        ),
+        $actor,
+    );
+    CommentRevision::query()->where('comment_id', $comment->id)->sole()->forceFill([
+        'metadata' => [
+            'revision_only_secret_key' => 'revision-only-secret-value',
+        ],
+    ])->saveQuietly();
+
+    [$exitCode, $report] = runCommentsDoctor();
+    $serialized = json_encode($report, JSON_THROW_ON_ERROR);
+
+    expect($report)->toHaveKey('metadata.strict_incompatible_records');
+
+    expect($exitCode)->toBe(1)
+        ->and($report['metadata.strict_compatible'])->toBeFalse()
+        ->and($report['metadata.strict_incompatible_records'])->toBe(1)
+        ->and($serialized)->not->toContain(
+            'revision_only_secret_key',
+            'revision-only-secret-value',
+        );
+});
+
+it('accepts valid configured rich-document lows', function (): void {
+    config()->set([
+        'comments.rich_text.maximum_bytes' => 1,
+        'comments.rich_text.maximum_blocks' => 1,
+        'comments.rich_text.maximum_nodes' => 1,
+    ]);
+
+    [$exitCode, $report] = runCommentsDoctor();
+
+    expect($report)->toHaveKey('rich_text.bounds_ready');
+
+    expect($exitCode)->toBe(0)
+        ->and($report['configuration.values'])->toBeTrue()
+        ->and($report['rich_text.bounds_ready'])->toBeTrue()
+        ->and($report['healthy'])->toBeTrue();
+});
+
+it('rejects invalid rich-document configuration bounds', function (
+    string $key,
+    mixed $value,
+): void {
+    config()->set($key, $value);
+
+    [$exitCode, $report] = runCommentsDoctor();
+
+    expect($exitCode)->toBe(1)
+        ->and($report['configuration.values'])->toBeFalse()
+        ->and($report['rich_text.bounds_ready'])->toBeFalse()
+        ->and($report['healthy'])->toBeFalse();
+})->with([
+    'bytes invalid type' => ['comments.rich_text.maximum_bytes', '32768'],
+    'bytes zero' => ['comments.rich_text.maximum_bytes', 0],
+    'bytes above hard cap' => ['comments.rich_text.maximum_bytes', 131_073],
+    'blocks invalid type' => ['comments.rich_text.maximum_blocks', '100'],
+    'blocks zero' => ['comments.rich_text.maximum_blocks', 0],
+    'blocks above hard cap' => ['comments.rich_text.maximum_blocks', 251],
+    'nodes invalid type' => ['comments.rich_text.maximum_nodes', '500'],
+    'nodes zero' => ['comments.rich_text.maximum_nodes', 0],
+    'nodes above hard cap' => ['comments.rich_text.maximum_nodes', 1_001],
+]);
 
 it('registers timestamp-aware migration publishing and warns about duplicate ownership', function (): void {
     $migrationPath = realpath(dirname(__DIR__, 2).'/database/migrations');

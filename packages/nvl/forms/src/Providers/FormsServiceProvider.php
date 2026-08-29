@@ -34,6 +34,7 @@ use Nvl\Forms\Services\FormSpamDetectionService;
 use Nvl\Forms\Support\FormErrorMapperRegistry;
 use Nvl\Forms\Support\FormHandlerRegistry;
 use Nvl\Forms\Support\FormRenderDataRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -41,6 +42,8 @@ use Nvl\Translatable\Services\TranslationResourceRegistry;
  */
 final class FormsServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     protected string $name = 'Forms';
 
     protected string $nameLower = 'forms';
@@ -91,7 +94,7 @@ final class FormsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/forms.php', 'forms');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/forms.php', 'forms');
 
         $this->app->singletonIf(FormHandlerRegistry::class, fn (): FormHandlerRegistry => new FormHandlerRegistry);
         $this->app->singletonIf(EntryCallbackRegistry::class, fn (Container $app): EntryCallbackRegistry => new EntryCallbackRegistry($app));

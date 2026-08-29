@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Nvl\Media\Definitions\Tables\MediaTables;
 use Nvl\Media\Enums\ImageCompression;
 use Nvl\Media\Enums\ImageFit;
 use Nvl\Media\Enums\ImageFormat;
@@ -51,12 +52,44 @@ return [
                 'mutate' => 'media.update-any',
                 'delete' => 'media.delete-any',
                 'reuse' => 'media.reuse-any',
+                'manage_staging' => 'media.manage-staging',
             ],
         ],
     ],
 
     'migrations' => [
         'enabled' => true,
+    ],
+
+    'owner_slots' => [
+        'copy' => [
+            // Only explicitly approved, user-facing metadata is inherited by a
+            // copied Media record. Consumers may replace this list when their
+            // domain defines additional safe scalar metadata keys.
+            'metadata_keys' => [
+                'alt',
+                'alt_text',
+                'attribution',
+                'author',
+                'caption',
+                'copyright',
+                'credit',
+                'description',
+                'license',
+                'license_url',
+                'photographer',
+                'source',
+                'source_url',
+                'title',
+            ],
+        ],
+        'idempotency' => [
+            'connection' => null,
+            'table' => MediaTables::OwnerSlotOperations,
+            'processing_timeout_minutes' => 30,
+            'retention_days' => 7,
+            'prune_chunk' => 500,
+        ],
     ],
 
     /*

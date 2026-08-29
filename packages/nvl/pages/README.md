@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/pages` |
 | PHP namespace | `Nvl\Pages` |
 | Service provider | `Nvl\Pages\Providers\PagesServiceProvider` |
@@ -24,14 +24,14 @@ Pages owns URL structure, hierarchy, lifecycle, navigation state, resource-handl
 - application-defined custom fields, which belong to `nvl/metafields`;
 - binary assets, which are referenced by Content through `nvl/media`.
 
-The package is intended for Laravel applications that need a stable front-end content entry point without adopting an admin UI or a monolithic CMS. It supports PHP 8.4+ and Laravel 12–13.
+The package is intended for Laravel applications that need a stable front-end content entry point without adopting an admin UI or a monolithic CMS. It supports PHP 8.4+ and Laravel 13.
 
 ## Requirements and installation
 
 Install the package in a clean Laravel application:
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan vendor:publish --tag=pages-config
 php artisan vendor:publish --tag=pages-skills
 php artisan migrate
@@ -129,6 +129,150 @@ The handler implements `PageResourceHandler` or extends `AbstractPageResourceHan
 If a resource page has path `pages/catalog` and its handler pattern is `{id}`, resolution accepts `pages/catalog/42`. Static paths are tested first. Dynamic candidates are prefiltered by structural path-prefix hashes, then evaluated by longest base path. Handler rule keys must exactly match route placeholders. Invalid parameters and missing resources return not-found responses rather than exposing validation or query details.
 
 The package never serializes the resolved Eloquent model. The handler must explicitly construct its public DTO payload.
+
+## Bounded page reads
+
+Consumers should use the focused DTO-first reads for page selectors, key
+validation, and one-level public listings instead of querying `Page` or its
+translations directly:
+
+```php
+use Nvl\Pages\Actions\CheckPageKeyAvailabilityAction;
+use Nvl\Pages\Actions\FindPageByKeyAction;
+use Nvl\Pages\Actions\ListPageOptionsAction;
+use Nvl\Pages\Actions\ListPublicChildPagesAction;
+use Nvl\Pages\Data\PageActorData;
+use Nvl\Pages\Data\PageRequestContextData;
+use Nvl\Pages\Enums\PageKind;
+use Nvl\Pages\Enums\PublicChildPageOrder;
+
+$actor = PageActorData::fromAuthenticatable($user);
+$page = app(FindPageByKeyAction::class)->execute('main', 'about', $actor);
+$availability = app(CheckPageKeyAvailabilityAction::class)->execute(
+    'main',
+    'about',
+    $actor,
+    exceptId: $page->id,
+);
+$options = app(ListPageOptionsAction::class)->execute(
+    'main',
+    'bg',
+    $actor,
+    search: 'about',
+);
+$children = app(ListPublicChildPagesAction::class)->execute(
+    $page->id,
+    new PageRequestContextData('main', 'bg'),
+    limit: 24,
+    kind: PageKind::Static,
+    order: PublicChildPageOrder::Newest,
+);
+```
+
+`FindPageByKeyAction` trims and validates the site and globally unique key,
+keeps the lookup site-scoped, authorizes `View`, and returns `PageData` with its
+translation map. `CheckPageKeyAvailabilityAction` authorizes `List` before SQL
+and mirrors the actual global unique index, including soft-deleted rows. A
+same-site conflict exposes its ID so an update can use `exceptId`; a conflict in
+another authorized site reports unavailable without disclosing that page's ID.
+An `exceptId` only excludes the same-site row, so a foreign UUID cannot bypass
+the write constraint.
+
+`ListPageOptionsAction` returns `PageOptionData(id, key, label, path, kind,
+status, revision)` ordered by path and ID. Labels resolve the requested locale
+through Translatable fallback, then fall back to the stable key. Empty search
+returns the default bounded list, one-character typeahead input returns an
+empty collection without storage queries, and longer input searches key, path,
+title, and navigation label case-insensitively. The requested limit is clamped
+to `pages.limits.maximum_page_options` and an absolute 100-row ceiling. Search
+input must be valid UTF-8 without NUL bytes so behavior remains portable across
+supported databases.
+
+`ListPublicChildPagesAction` validates the trusted site/locale context, requires
+the parent itself to be publicly visible in that site, authorizes
+`ViewNavigation` before child SQL, and returns only currently public children as
+localized `PublicPageData`. Package-built public projections include the
+optional additive `publishedAt` field, using the explicit publication time or
+the persisted creation time when publication is immediate. The PHP constructor
+and generated TypeScript property remain optional for 1.x source compatibility.
+The default uses canonical sibling order. Consumers can allowlist one
+`PageKind` and select `PublicChildPageOrder::Newest` to filter and order by the
+effective publication timestamp before the requested limit—for example, a
+static news-card feed. Results are clamped to
+`pages.limits.maximum_public_children` plus the same absolute 100-row ceiling.
+Option reads use two fixed queries and populated public-child reads use three,
+whether one or 25 records are returned. These projections are uncached because
+authorization, locale fallback, publication windows, and hierarchy are
+request-sensitive.
+
+## Editor and publication projections
+
+Pages composes its neighboring package reads so applications do not have to
+assemble Page, Content, SEO, and Metafields state in controllers. Inject the
+smallest projection for the workflow:
+
+```php
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Nvl\Pages\Actions\GetPageEditorBootstrapAction;
+use Nvl\Pages\Actions\GetPagePublicationProjectionAction;
+use Nvl\Pages\Actions\ListPageEditorSummariesAction;
+use Nvl\Pages\Data\PageActorData;
+
+final readonly class PageWorkspace
+{
+    public function __construct(
+        private ListPageEditorSummariesAction $summaries,
+        private GetPageEditorBootstrapAction $editor,
+        private GetPagePublicationProjectionAction $publication,
+    ) {}
+
+    public function index(string $site, string $locale, PageActorData $actor): LengthAwarePaginator
+    {
+        return $this->summaries->execute($site, $locale, $actor, perPage: 25);
+    }
+
+    public function edit(string $pageId, string $locale, PageActorData $actor): array
+    {
+        return $this->editor->execute($pageId, $locale, $actor)->toArray();
+    }
+
+    public function show(string $pageId, string $locale, PageActorData $actor): array
+    {
+        return $this->publication->execute($pageId, $locale, $actor)->toArray();
+    }
+}
+```
+
+`ListPageEditorSummariesAction` authorizes the site-level `List` ability before
+SQL, clamps the page size to 100, and returns a paginator of
+`PageEditorSummaryData`. Each item contains the management `PageData`, a
+localized label with stable key fallback, Content placement summaries, and the
+site-scoped SEO profile. SEO authorizes every owner before its batched profile
+query; a denial returns no summaries and performs no SEO profile query. A
+populated one- or 25-page result uses the same fixed query count and at most ten
+queries. Definition and preset catalogs intentionally do not repeat on every
+row, and both configured and requested page sizes remain under the absolute
+100-owner ceiling.
+
+`GetPageEditorBootstrapAction` authorizes and resolves one Page, then returns
+`PageEditorBootstrapData`: Page state, the complete Content editor projection,
+the site-scoped SEO profile, authorized Metafields, Page kinds and statuses,
+registered resource aliases, and the configured maximum depth. Content, SEO,
+and Metafields retain their own authorization boundaries; a denial propagates
+and no partial bootstrap is returned. Empty optional state is represented by
+empty collections or `null`, not by consumer-side fallback queries.
+
+`GetPagePublicationProjectionAction` is the ID-based public seam for a static
+Page already known to the application. It requires current public visibility,
+authorizes `View`, renders public-only Content, resolves SEO, and returns the
+same redacted `ResolvedPageData` shape as path delivery. Use
+`ResolvePageAction` when resolving a public path or dynamic resource Page, and
+`PreviewPageAction` for authorized management preview; the ID-based publication
+Action rejects resource Pages because their handler parameters are path-owned.
+
+These projections are uncached. Authorization, locale fallback, Page lifecycle,
+publication windows, Content visibility, SEO, and custom values can all change
+within a request-sensitive workflow.
 
 ## Content blocks
 

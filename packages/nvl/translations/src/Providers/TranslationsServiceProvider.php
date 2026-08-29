@@ -6,6 +6,7 @@ namespace Nvl\Translations\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Translations\Actions\Entries\UpdateTranslationEntryAction;
 use Nvl\Translations\Actions\Sync\ImportTranslationsAction;
 use Nvl\Translations\Actions\Sync\ScanTranslationsAction;
@@ -27,6 +28,8 @@ use Nvl\Translations\Services\ConfiguredTranslationsAuthorization;
  */
 final class TranslationsServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Boot the application events.
      */
@@ -60,7 +63,7 @@ final class TranslationsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/translations.php', 'translations');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/translations.php', 'translations');
 
         $this->app->bind(
             UpdateTranslationEntryContract::class,

@@ -16,6 +16,8 @@ use Nvl\Auth\Adapters\Laravel\LaravelPrincipalSessionContainment;
 use Nvl\Auth\Adapters\Laravel\LaravelRequestAuditContextProvider;
 use Nvl\Auth\Adapters\Passkeys\WebauthnPasskeyCeremony;
 use Nvl\Auth\Console\Commands\AdoptPrincipalsCommand;
+use Nvl\Auth\Console\Commands\AuthConfigurationCommand;
+use Nvl\Auth\Console\Commands\AuthConfigureCommand;
 use Nvl\Auth\Console\Commands\AuthDoctorCommand;
 use Nvl\Auth\Console\Commands\InstallAuthSchemaCommand;
 use Nvl\Auth\Console\Commands\ListAuthFeaturesCommand;
@@ -51,6 +53,7 @@ use Nvl\Auth\Models\Role;
 use Nvl\Auth\Models\User;
 use Nvl\Auth\Services\AuthAuditRecorder;
 use Nvl\Auth\Services\AuthConfiguration;
+use Nvl\Auth\Services\AuthManagementAbilityCatalog;
 use Nvl\Auth\Services\AuthModelRegistry;
 use Nvl\Auth\Services\AuthSchemaManager;
 use Nvl\Auth\Services\ConfiguredApiTokenAbilityProvider;
@@ -72,22 +75,26 @@ use Nvl\Auth\Services\UnavailableSocialIdentityProvider;
 use Nvl\Auth\Services\UnavailableSocialSubjectResolver;
 use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 
 /**
  * Registers the passive package layer and lazy feature integrations.
  */
 final class AuthServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Merge canonical configuration and bind package contracts.
      */
     public function register(): void
     {
-        $this->mergeConfigurationRecursively();
+        $this->mergePackageConfiguration(dirname(__DIR__, 2).'/config/nvl-auth.php', 'nvl-auth');
         $this->app->register(DataServiceProvider::class);
         $this->configureOwnedIdentityStorage();
         $this->app->singleton(AuthConfiguration::class);
         $this->app->singleton(AuthModelRegistry::class);
+        $this->app->singleton(AuthManagementAbilityCatalog::class);
         $this->app->singleton(AuthSchemaManager::class);
         $this->app->singleton(FeatureManifest::class);
         $this->app->singleton(FeatureGate::class);
@@ -98,7 +105,11 @@ final class AuthServiceProvider extends ServiceProvider
             'features.audit.services.recorder',
             AuthAuditRecorder::class,
         );
-        $this->app->singleton(AuthManagementAccess::class, LaravelGateAuthManagementAccess::class);
+        $this->bindConfiguredContract(
+            AuthManagementAccess::class,
+            'services.management_access',
+            LaravelGateAuthManagementAccess::class,
+        );
         $this->bindConfiguredContract(
             PasswordUpdater::class,
             'features.password.services.updater',
@@ -218,29 +229,14 @@ final class AuthServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 AdoptPrincipalsCommand::class,
+                AuthConfigurationCommand::class,
+                AuthConfigureCommand::class,
                 AuthDoctorCommand::class,
                 InstallAuthSchemaCommand::class,
                 ListAuthFeaturesCommand::class,
                 PruneAuthStateCommand::class,
             ]);
         }
-    }
-
-    /**
-     * Recursively merge defaults so partial feature overrides remain complete.
-     */
-    private function mergeConfigurationRecursively(): void
-    {
-        $path = dirname(__DIR__, 2).'/config/nvl-auth.php';
-        $defaults = require $path;
-        $configuration = $this->app->make(ConfigRepository::class);
-        $configured = $configuration->get('nvl-auth', []);
-
-        if (! is_array($defaults) || ! is_array($configured)) {
-            throw AuthException::invalidConfiguration('Auth configuration must be an array.');
-        }
-
-        $configuration->set('nvl-auth', array_replace_recursive($defaults, $configured));
     }
 
     /**

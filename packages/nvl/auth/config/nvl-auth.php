@@ -11,6 +11,7 @@ use Nvl\Auth\Models\User;
 use Nvl\Auth\Services\ConfiguredPrincipalAttributeMapper;
 use Nvl\Auth\Services\DenySystemMutationAccess;
 use Nvl\Auth\Services\EloquentRbacPrincipalAccess;
+use Nvl\Auth\Services\LaravelGateAuthManagementAccess;
 use Nvl\Auth\Services\PackagePermissionCatalog;
 use Nvl\Auth\Services\PackageRoleTemplates;
 
@@ -37,7 +38,34 @@ return [
     'password_broker' => env('NVL_AUTH_PASSWORD_BROKER'),
     'identifier' => env('NVL_AUTH_IDENTIFIER', 'email'),
     'services' => [
+        'management_access' => LaravelGateAuthManagementAccess::class,
         'system_mutation_access' => DenySystemMutationAccess::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Host management authorization
+    |--------------------------------------------------------------------------
+    |
+    | The configured-policy adapter only delegates aliases listed here. Missing
+    | aliases or policy models deny access, so consumers opt into every decision.
+    |
+    */
+    'management' => [
+        'abilities' => [],
+        'policy_models' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Integration ownership
+    |--------------------------------------------------------------------------
+    */
+    'ownership' => [
+        'http' => 'package',
+        'delivery' => 'host',
+        'host_routes' => [],
+        'service_only' => [],
     ],
 
     /*
@@ -126,7 +154,11 @@ return [
                 'subject_resolver' => null,
                 'registration_mapper' => null,
             ],
-            'settings' => ['ttl_hours' => 72, 'resend_cooldown_seconds' => 60],
+            'settings' => [
+                'ttl_hours' => 72,
+                'resend_cooldown_seconds' => 60,
+                'delivery_metadata_keys' => [],
+            ],
         ],
         'totp' => [
             'enabled' => env('NVL_AUTH_TOTP_ENABLED', false),
@@ -204,6 +236,10 @@ return [
                 'guard' => env('NVL_AUTH_RBAC_GUARD', 'web'),
                 'super_admin_role' => env('NVL_AUTH_SUPER_ADMIN_ROLE', 'super-admin'),
                 'use_package_storage' => true,
+                'role_option_limit' => 50,
+                'permission_option_limit' => 100,
+                'permission_group_limit' => 100,
+                'identifier_resolution_limit' => 100,
             ],
         ],
         'audit' => [

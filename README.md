@@ -44,23 +44,30 @@ Real consumer defects and adoption gaps are maintained in the
 [implementation issue tracker](docs/implementation-issues.md). Its groups are
 the required implementation and commit boundaries for follow-up work.
 
-The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.4+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
+The suite is auto-discoverable and supports Laravel 13 on PHP 8.4+. Module source and configuration must not reference a host `App\`/`Modules\` class or named host middleware. Internal dependency boundaries remain explicit and are validated in CI, but Composer installs and versions only `nvl/laravel-suite`.
 
 ## Staged module adoption
 
-The auto-discovered suite provider can register a safe subset of modules. Publish
-the module-selection configuration, disable modules that are not ready for the
-host schema, and clear the configuration cache:
+The auto-discovered suite provider can register a safe subset of modules. New
+installs default to the full suite. Preview a dependency-complete minimal
+overlay, explicitly write it after review, and clear the configuration cache:
 
 ```bash
-php artisan vendor:publish --tag=suite-config
+php artisan nvl:suite:configure --profile=content-platform --minimal
+php artisan nvl:suite:configure --profile=content-platform --minimal --write
 php artisan config:clear
 ```
 
-Configure `config/nvl-suite.php` before running migrations. Enabling a module
+The command is dry-run-first and writes only with `--write`; replacing a file
+also requires `--force` and returns a unified diff. `--add` and `--remove`
+compose capability roots around a profile. Use `--full` when an explicit map of
+all twenty booleans is preferable. Publishing the unmodified full-suite default
+remains available with `php artisan vendor:publish --tag=suite-config`.
+
+Configure `config/nvl-suite.php` before running migrations. Including a module
 automatically registers its transitive NVL dependencies in canonical order; it
-does not enable unrelated modules. For example, enabling only `auth` registers
-`data` followed by `auth`.
+does not enable unrelated modules. For example, including only `auth` registers
+`support`, `data`, then `auth`.
 
 Use the documented [installation profiles](docs/installation-profiles.md) for
 auth-only, content-platform, communications, or full-suite adoption. The
@@ -74,6 +81,8 @@ secrets, then run every enabled package Doctor through the root readiness gate:
 ```bash
 php artisan nvl:suite:configuration --profile=auth-only
 php artisan nvl:suite:configuration --format=json
+php artisan nvl:suite:upgrade:check --strict
+php artisan nvl:suite:consumer-audit --strict
 php artisan nvl:suite:doctor --strict
 php artisan nvl:suite:doctor --production --strict --format=json
 ```
@@ -143,7 +152,7 @@ enum case remains writable, including later additions such as `expired`.
 Install a stable suite release from [Packagist](https://packagist.org/packages/nvl/laravel-suite):
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 ```
 
 Composer installs the clean distribution archive for the selected tag by
@@ -402,19 +411,21 @@ composer validate --strict
 composer audit --locked --no-interaction
 git add <reviewed-paths>
 git diff --cached
-git commit -m "release: prepare v1.1.0"
+git commit -m "release: prepare v2.0.0"
 git push origin main
 
-gh workflow run package-release.yml --ref main -f version=1.1.0
+gh workflow run package-release.yml --ref main -f version=2.0.0
 ```
 
-Wait for the five `Package quality` jobs to pass before dispatching `Package
-release`. Supply `1.1.0`, not `v1.1.0`. Never create or push a version tag
-manually: the workflow builds and installs the clean archive, creates the
-annotated `v1.1.0` tag, publishes the GitHub Release, and lets Packagist discover
-the stable version.
+Wait for the six `Package quality` jobs to pass before dispatching `Package
+release`. Supply `2.0.0`, not `v2.0.0`. The release workflow reruns those gates
+and requires its PHP 8.5, archive, prepared-final-1.x, and Auth/Content proof
+consumer jobs before publication. Never create or push a version tag manually:
+the workflow builds and installs the clean archive, creates the annotated
+`v2.0.0` tag, publishes the GitHub Release, and lets Packagist discover the
+stable version.
 
-Do not publish `dev-main` as a stable dependency. Consumers should use the `^1.0` line.
+Do not publish `dev-main` as a stable dependency. Consumers should use the `^2.0` line.
 Choose one migration owner per application. Automatic vendor loading is the
 default. Host-owned migrations must be published before the first migration,
 with every relevant `<package>.migrations.enabled` setting changed to `false`;

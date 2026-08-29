@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/data` |
 | PHP namespace | `Nvl\Data` |
 | Service provider | `Nvl\Data\Providers\DataServiceProvider` |
@@ -14,14 +14,14 @@
 
 ## Purpose
 
-`nvl/data` is the package family's sole DTO and PHP-to-TypeScript boundary for Laravel 12–13 on PHP 8.4+. It standardizes Spatie Data persistence transforms, pagination, deterministic source registration, declaration generation, integrity manifests, stale checks, and protected artifact delivery.
+`nvl/data` is the package family's sole DTO and PHP-to-TypeScript boundary for Laravel 13 on PHP 8.4+. It standardizes Spatie Data persistence transforms, pagination, deterministic source registration, declaration generation, integrity manifests, stale checks, and protected artifact delivery.
 
 It has no internal NVL dependency. It does not own Eloquent models, database transactions, domain validation policy, content localization, or frontend build tooling.
 
 ## Requirements and installation
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 ```
 
 Laravel auto-discovers `DataServiceProvider`. Optional publish tags are:
@@ -250,7 +250,7 @@ Source collisions must be resolved at registration; output collisions must be re
 
 ## Verification
 
-Package tests cover transforms, pagination, Laravel 12/13 provider boot, config caching, multiple providers, invalid paths, symlinks, deterministic output, stale checks, manifest integrity, archive bounds, ETags, and route protection. Combined CI generation compiles all installed package declarations.
+Package tests cover transforms, pagination, Laravel 13 provider boot, config caching, multiple providers, invalid paths, symlinks, deterministic output, stale checks, manifest integrity, archive bounds, ETags, and route protection. Combined CI generation compiles all installed package declarations.
 
 See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CHANGELOG.md](CHANGELOG.md).
 

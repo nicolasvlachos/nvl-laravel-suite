@@ -8,16 +8,19 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Nvl\Auth\Contracts\AuthAuditRecorder;
 use Nvl\Auth\Enums\AuthFeature;
 use Nvl\Auth\Enums\AuthMessageType;
 use Nvl\Auth\Enums\FeatureOperation;
+use Nvl\Auth\Enums\InvitationDeliveryStatus;
 use Nvl\Auth\Events\AuthDeliveryRequested;
 use Nvl\Auth\Exceptions\AuthException;
 use Nvl\Auth\Models\Invitation;
 use Nvl\Auth\Results\IssuedInvitation;
 use Nvl\Auth\Services\AuthConfiguration;
 use Nvl\Auth\Services\FeatureGate;
+use Nvl\Auth\Services\InvitationDeliveryMetadataPolicy;
 use Nvl\Auth\Services\ManagementAuthorizer;
 use Nvl\Auth\Services\OpaqueTokenFactory;
 use Nvl\Auth\Services\SecretHasher;
@@ -39,13 +42,14 @@ final readonly class ResendInvitationAction
         private SecretHasher $hasher,
         private ManagementAuthorizer $authorization,
         private AuthAuditRecorder $audits,
+        private ?InvitationDeliveryMetadataPolicy $deliveryMetadata = null,
     ) {}
 
     /**
      * Resend one invitation with a newly rotated token.
      */
     public function execute(
-        Invitation $invitation,
+        Invitation|string $invitation,
         ?Authenticatable $actor = null,
         ?string $locale = null,
         ?InvitationIssuanceContext $context = null,
@@ -53,16 +57,23 @@ final readonly class ResendInvitationAction
         $this->features->assertAllowed(AuthFeature::Invitations, FeatureOperation::Issue);
         $context ??= new InvitationIssuanceContext;
 
-        if ($actor instanceof Authenticatable) {
-            $this->authorization->authorize($actor, 'nvl-auth.invitations.resend', $invitation);
-        } elseif (! $context->actorlessAuthorized) {
+        if (! $actor instanceof Authenticatable && ! $context->actorlessAuthorized) {
             throw new AuthException('forbidden', 'Actorless invitation resend was not explicitly authorized.', 403);
         }
-        $connection = $invitation->getConnectionName();
+        $identifier = $invitation instanceof Invitation
+            ? $invitation->identifier()
+            : $this->identifier($invitation);
+        $connection = $invitation instanceof Invitation
+            ? $invitation->getConnectionName()
+            : (new Invitation)->getConnectionName();
 
-        return DB::connection($connection)->transaction(function () use ($actor, $context, $invitation, $locale): IssuedInvitation {
+        return DB::connection($connection)->transaction(function () use ($actor, $context, $identifier, $locale): IssuedInvitation {
             /** @var Invitation $locked */
-            $locked = Invitation::query()->lockForUpdate()->findOrFail($invitation->identifier());
+            $locked = Invitation::query()->lockForUpdate()->findOrFail($identifier);
+
+            if ($actor instanceof Authenticatable) {
+                $this->authorization->authorize($actor, 'nvl-auth.invitations.resend', $locked);
+            }
 
             if (! $locked->isUsable()) {
                 throw new AuthException('invitation_unavailable', 'The invitation is no longer active.', 410);
@@ -80,14 +91,21 @@ final readonly class ResendInvitationAction
             }
 
             $token = $this->tokens->make();
+            $messageId = (string) Str::uuid();
             $locked->forceFill([
                 'token_hash' => $this->hasher->hash('invitation-token', $token),
                 'resend_count' => $locked->resend_count + 1,
+                'current_delivery_message_id' => $messageId,
+                'delivery_status' => InvitationDeliveryStatus::Pending,
+                'delivery_attempted_at' => null,
+                'delivered_at' => null,
+                'delivery_failed_at' => null,
+                'delivery_failure_code' => null,
                 'last_sent_at' => CarbonImmutable::now(),
                 'expires_at' => $context->expiresAt ?? $locked->expires_at,
             ])->save();
             AuthDeliveryRequested::dispatch(new AuthDeliveryRequest(
-                messageId: (string) Str::uuid(),
+                messageId: $messageId,
                 feature: AuthFeature::Invitations,
                 type: AuthMessageType::Invitation,
                 recipient: $locked->recipient,
@@ -103,6 +121,9 @@ final readonly class ResendInvitationAction
                 expiresAt: $locked->expires_at,
                 locale: $locale,
                 metadata: ['invitation_id' => $locked->identifier(), 'resend' => true],
+                invitation: ($this->deliveryMetadata ?? new InvitationDeliveryMetadataPolicy(
+                    $this->configuration,
+                ))->deliveryData($locked),
             ));
             $this->audits->record(
                 'invitation.resent',
@@ -112,5 +133,20 @@ final readonly class ResendInvitationAction
 
             return new IssuedInvitation($locked, $token);
         }, 3);
+    }
+
+    /**
+     * Validate an invitation identifier supplied without a model instance.
+     */
+    private function identifier(string $identifier): string
+    {
+        if (trim($identifier) === ''
+            || $identifier !== trim($identifier)
+            || mb_strlen($identifier) > 191
+            || preg_match('/[\x00-\x1F\x7F]/', $identifier) === 1) {
+            throw new InvalidArgumentException('Invitation identifiers are invalid.');
+        }
+
+        return $identifier;
     }
 }

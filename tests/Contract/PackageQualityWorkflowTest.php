@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Config\Repository;
+use Nvl\Suite\Quality\PackageQualityRunner;
+use Nvl\Suite\Support\SuiteModuleCatalog;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
@@ -59,6 +63,39 @@ it('keeps Composer update hooks independent of optional development tools', func
         ->not->toContain('@php artisan boost:update --ansi');
 });
 
+it('declares Laravel 13 and Testbench 11 as the suite support floor', function (): void {
+    $root = dirname(__DIR__, 2);
+    $suiteManifest = json_decode(
+        file_get_contents($root.'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $catalog = require $root.'/tools/package-family.php';
+
+    expect($suiteManifest['require']['laravel/framework'] ?? null)->toBe('^13.0')
+        ->and($suiteManifest['require-dev']['laravel/tinker'] ?? null)->toBe('^3.0')
+        ->and($suiteManifest['require-dev']['orchestra/testbench'] ?? null)->toBe('^11.0')
+        ->and($suiteManifest['extra']['branch-alias']['dev-main'] ?? null)->toBe('2.x-dev');
+
+    foreach ($catalog['packages'] as $package) {
+        $manifest = json_decode(
+            file_get_contents($root.'/packages/nvl/'.$package.'/composer.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        expect($manifest['require']['laravel/framework'] ?? null)->toBe('^13.0')
+            ->and($manifest['require-dev']['orchestra/testbench'] ?? null)->toBe('^11.0')
+            ->and($manifest['extra']['branch-alias']['dev-main'] ?? null)->toBe('2.x-dev');
+
+        foreach ($manifest['require'] as $dependency => $constraint) {
+            if (str_starts_with($dependency, 'nvl/')) {
+                expect($constraint)->toBe('^2.0');
+            }
+        }
+    }
+});
+
 it('enforces Activitylog v5 and its PHP 8.4 runtime floor', function (): void {
     $root = dirname(__DIR__, 2);
     $suiteManifest = json_decode(
@@ -72,7 +109,7 @@ it('enforces Activitylog v5 and its PHP 8.4 runtime floor', function (): void {
         flags: JSON_THROW_ON_ERROR,
     );
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
-    $lowestSteps = $workflow['jobs']['laravel12-lowest']['steps'] ?? [];
+    $lowestSteps = $workflow['jobs']['laravel13-lowest']['steps'] ?? [];
     $setupPhp = collect($lowestSteps)->firstWhere('uses', SUITE_SETUP_PHP_ACTION);
 
     expect($suiteManifest['require']['php'] ?? null)->toBe('^8.4')
@@ -112,7 +149,7 @@ it('runs six routine gates without scheduled fan-out', function (): void {
     expect(array_keys($jobs))->toBe([
         'quality',
         'current-tests',
-        'laravel12-lowest',
+        'laravel13-lowest',
         'postgresql',
         'mysql-family',
         'changed-coverage',
@@ -169,7 +206,7 @@ it('documents one discoverable push and automated release path', function (): vo
         '.github/workflows/package-quality.yml',
         '.github/workflows/package-release.yml',
         'git push origin main',
-        'gh workflow run package-release.yml --ref main -f version=1.1.0',
+        'gh workflow run package-release.yml --ref main -f version=2.0.0',
         'Never run `git tag vX.Y.Z`',
         'A commit is not a release, a push is not a version',
         'Leave a blank `Unreleased` section for future work.',
@@ -368,26 +405,40 @@ it('keeps routine quality focused on formatting analysis manifests and contracts
         );
 });
 
-it('tests the current stack Laravel 12 lowest and every supported database family', function (): void {
+it('exposes the root package quality runner through Composer', function (): void {
+    $manifest = json_decode(
+        file_get_contents(dirname(__DIR__, 2).'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+
+    expect($manifest['scripts']['package:quality'] ?? null)
+        ->toBe('@php tools/run-package-quality.php');
+});
+
+it('tests the current stack Laravel 13 lowest and every supported database family', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-quality.yml');
 
     expect($workflow)->toBeArray();
 
     $jobs = $workflow['jobs'] ?? [];
     $currentCommands = workflowCommands($jobs['current-tests'] ?? []);
-    $lowestCommands = workflowCommands($jobs['laravel12-lowest'] ?? []);
+    $lowestCommands = workflowCommands($jobs['laravel13-lowest'] ?? []);
     $postgresCommands = workflowCommands($jobs['postgresql'] ?? []);
     $mysqlCommands = workflowCommands($jobs['mysql-family'] ?? []);
 
     expect($currentCommands)->toContain(
+        'composer require --dev --no-update',
         '"laravel/framework:^13.0"',
+        '"laravel/tinker:^3.0"',
         '"orchestra/testbench:^11.0"',
         'composer test',
     )
         ->and($lowestCommands)->toContain(
-            '"laravel/framework:^12.0"',
-            '"laravel/tinker:^2.10.1"',
-            '"orchestra/testbench:^10.0"',
+            'composer require --dev --no-update',
+            '"laravel/framework:^13.0"',
+            '"laravel/tinker:^3.0"',
+            '"orchestra/testbench:^11.0"',
             '--prefer-lowest',
             'composer test:integration',
             'composer test:packages',
@@ -452,27 +503,52 @@ it('collects coverage only for packages with changed PHP source', function (): v
         ->and($coverage)->not->toHaveKey('strategy');
 });
 
-it('publishes one clean suite tag only after all six routine gates pass', function (): void {
+it('publishes one clean suite tag only after runtime archive and previous-minor gates pass', function (): void {
     $workflow = Yaml::parseFile(dirname(__DIR__, 2).'/.github/workflows/package-release.yml');
 
     expect($workflow)->toBeArray();
 
     $jobs = $workflow['jobs'] ?? [];
+    $php85 = $jobs['php85'] ?? [];
     $archive = $jobs['archive'] ?? [];
+    $previousMinor = $jobs['previous-minor'] ?? [];
+    $proofConsumers = $jobs['proof-consumers'] ?? [];
     $publish = $jobs['publish-release'] ?? [];
     $validateCommands = workflowCommands($jobs['validate'] ?? []);
+    $php85Commands = workflowCommands($php85);
     $archiveCommands = workflowCommands($archive);
+    $previousMinorCommands = workflowCommands($previousMinor);
+    $proofConsumerCommands = workflowCommands($proofConsumers);
     $publishCommands = workflowCommands($publish);
+    $php85Setup = collect($php85['steps'] ?? [])->firstWhere('uses', SUITE_SETUP_PHP_ACTION);
+    $previousMinorCheckout = collect($previousMinor['steps'] ?? [])->firstWhere('uses', SUITE_CHECKOUT_ACTION);
+    $previousMinorDownload = collect($previousMinor['steps'] ?? [])->firstWhere('uses', SUITE_DOWNLOAD_ARTIFACT_ACTION);
+    $proofConsumerDownload = collect($proofConsumers['steps'] ?? [])->firstWhere('uses', SUITE_DOWNLOAD_ARTIFACT_ACTION);
     $publishCheckout = collect($publish['steps'] ?? [])->firstWhere('uses', SUITE_CHECKOUT_ACTION);
 
-    expect(array_keys($jobs))->toBe(['validate', 'checks', 'archive', 'publish-release'])
+    expect(array_keys($jobs))->toBe([
+        'validate',
+        'checks',
+        'php85',
+        'archive',
+        'previous-minor',
+        'proof-consumers',
+        'publish-release',
+    ])
         ->and($validateCommands)->toContain(
             'refs/heads/$DEFAULT_BRANCH',
             'semver_pattern=',
         )
         ->and($jobs['checks']['uses'] ?? null)->toBe('./.github/workflows/package-quality.yml')
         ->and($jobs['checks']['needs'] ?? null)->toBe('validate')
-        ->and($archive['needs'] ?? null)->toBe('checks')
+        ->and($php85['needs'] ?? null)->toBe('validate')
+        ->and($php85Setup)->toBeArray()
+        ->and($php85Setup['with']['php-version'] ?? null)->toBe('8.5')
+        ->and($php85Commands)->toContain(
+            'bash tools/retry-composer.sh install --no-interaction --prefer-dist',
+            'composer test',
+        )
+        ->and($archive['needs'] ?? null)->toBe(['checks', 'php85'])
         ->and($archiveCommands)->toContain(
             'COMPOSER_ROOT_VERSION="$PACKAGE_VERSION" composer archive',
             'test "$archive_count" -eq 1',
@@ -506,7 +582,30 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
             'build-public-composer-repository.php',
             'actions/deploy-pages',
         )
-        ->and($publish['needs'] ?? null)->toBe('archive')
+        ->and($previousMinor['needs'] ?? null)->toBe('archive')
+        ->and($previousMinorCheckout)->toBeArray()
+        ->and($previousMinorCheckout['with']['fetch-depth'] ?? null)->toBe(0)
+        ->and($previousMinorDownload)->toBeArray()
+        ->and($previousMinorCommands)->toContain(
+            'tools/rehearse-final-1x-upgrade.sh',
+            'NVL_CANDIDATE_ARCHIVE="$candidate_archive"',
+            'NVL_CANDIDATE_VERSION="$PACKAGE_VERSION"',
+        )
+        ->and($proofConsumers['needs'] ?? null)->toBe('archive')
+        ->and($proofConsumers['strategy']['matrix']['consumer'] ?? null)->toBe([
+            'auth',
+            'content',
+        ])
+        ->and($proofConsumerDownload)->toBeArray()
+        ->and($proofConsumerCommands)->toContain(
+            'NVL_CANDIDATE_ARCHIVE="$candidate_archive"',
+            'NVL_CANDIDATE_VERSION="$PACKAGE_VERSION"',
+            'tools/run-${{ matrix.consumer }}-production-consumer.sh',
+        )
+        ->and($publish['needs'] ?? null)->toBe([
+            'previous-minor',
+            'proof-consumers',
+        ])
         ->and($publishCommands)->toContain(
             'git read-tree --empty',
             'git --work-tree="$release_tree" add --all --force -- .',
@@ -528,6 +627,78 @@ it('publishes one clean suite tag only after all six routine gates pass', functi
             'actions/deploy-pages',
             'actions/upload-pages-artifact',
         );
+});
+
+it('lets both proof-consumer runners reuse the candidate archive without rebuilding it', function (): void {
+    $root = dirname(__DIR__, 2);
+
+    foreach (['auth', 'content'] as $consumer) {
+        $script = (string) file_get_contents(
+            $root.'/tools/run-'.$consumer.'-production-consumer.sh',
+        );
+
+        expect($script)->toContain(
+            'artifact_version="${NVL_CANDIDATE_VERSION:-1.99.0}"',
+            'candidate_archive="${NVL_CANDIDATE_ARCHIVE:-}"',
+            'if [[ -n "$candidate_archive" ]]',
+            'cp "$candidate_archive" "$consumer_workspace/archives/"',
+        )->not->toContain(
+            '--ignore-platform-reqs',
+            'sleep ',
+        );
+    }
+});
+
+it('rehearses the prepared final 1.x archive through the complete 2.0 consumer boundary', function (): void {
+    $root = dirname(__DIR__, 2);
+    $scriptPath = $root.'/tools/rehearse-final-1x-upgrade.sh';
+    $catalog = require $root.'/tools/consumer-api-deprecations.php';
+    $script = is_file($scriptPath) ? file_get_contents($scriptPath) : null;
+
+    expect($scriptPath)->toBeFile()
+        ->and(is_executable($scriptPath))->toBeTrue()
+        ->and($script)->toBeString()->toContain(
+            'prepared_source_commit="'.$catalog['final_1x']['prepared_source'].'"',
+            'previous_version="dev-final-1x-prepared"',
+            'git -C "$repository_root" archive "$prepared_source_commit"',
+            'COMPOSER_ROOT_VERSION="$previous_version" composer archive',
+            'COMPOSER_ROOT_VERSION="$candidate_version" composer archive',
+            'nvl:suite:configure --profile=auth-only',
+            '--add=activity --add=mail-notifications --add=settings',
+            '--full --write --force --format=json',
+            'auth_consumer_artisan config:cache',
+            'auth_consumer_artisan route:cache',
+            'auth_consumer_artisan migrate --force',
+            'auth_consumer_artisan nvl:data:types:generate',
+            'auth_consumer_artisan nvl:data:types:check',
+            'auth_consumer_artisan nvl:suite:doctor --strict --production --format=json',
+            'auth_consumer_artisan nvl:suite:consumer-audit --strict --format=json',
+            'auth_consumer_artisan auth-consumer:smoke --format=json',
+            '"nvl/laravel-suite:$candidate_version"',
+            'auth_consumer_artisan auth-consumer:smoke --verify-queued-mail --format=json',
+            './node_modules/.bin/tsc --noEmit -p auth-consumer-types/tsconfig.json',
+        )->not->toContain(
+            'sleep ',
+            '--ignore-platform-reqs',
+            '"symlink":true',
+            'sk_live_',
+        );
+});
+
+it('documents prepared final 1.x evidence without claiming published warnings', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/consumer-api-deprecations.php';
+    $guide = (string) file_get_contents($root.'/docs/releasing.md');
+
+    expect($guide)->toContain(
+        'tools/rehearse-final-1x-upgrade.sh',
+        $catalog['final_1x']['tag'],
+        $catalog['final_1x']['prepared_source'],
+        'did not publish the 2.0 deprecation warnings',
+        'prepared evidence is not a published 1.x release',
+        'PHP 8.5 / Laravel 13',
+        'MySQL 8.4 and MariaDB 12.3',
+    )->not->toContain('wait for its five quality jobs');
 });
 
 it('adopts published Suite skills before running release doctors', function (): void {
@@ -613,6 +784,278 @@ it('keeps every package workflow shell block syntactically valid', function (): 
     }
 });
 
+it('rejects package names outside the canonical family before starting a process', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+    $errors = '';
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            error: $errors,
+        );
+
+        expect($runner->run(['missing']))->toBe(2)
+            ->and($commands)->toBe([])
+            ->and($errors)->toContain('Unknown package [missing]');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('reports invalid package quality configuration without an uncaught exception', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+    $errors = '';
+    unset($catalog['quality']['packages']['alpha']['analysis_paths']);
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            error: $errors,
+        );
+
+        expect($runner->run(['alpha']))->toBe(2)
+            ->and($commands)->toBe([])
+            ->and($errors)->toContain('Package [nvl/alpha] has no quality analysis paths.');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('runs one package through root binaries with isolated analysis and test caches', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['alpha']))->toBe(0)
+            ->and($commands)->toHaveCount(3)
+            ->and($commands[0])->toMatchArray([
+                'workingDirectory' => $root,
+                'command' => [
+                    $root.'/vendor/bin/pint',
+                    '--test',
+                    '--format',
+                    'agent',
+                    $root.'/packages/nvl/alpha',
+                ],
+            ])
+            ->and($commands[1]['workingDirectory'])->toBe($root)
+            ->and($commands[1]['command'])->toBe([
+                $root.'/vendor/bin/phpstan',
+                'analyse',
+                '--configuration='.$root.'/storage/framework/cache/package-quality/alpha/phpstan.neon',
+                '--no-progress',
+                '--error-format=table',
+                '--memory-limit=3G',
+                $root.'/packages/nvl/alpha/src',
+            ])
+            ->and($commands[2])->toMatchArray([
+                'workingDirectory' => $root,
+                'command' => [
+                    $root.'/vendor/bin/pest',
+                    '--test-directory=packages/nvl/alpha/tests',
+                    '--configuration='.$root.'/packages/nvl/alpha/phpunit.xml.dist',
+                    '--bootstrap='.$root.'/vendor/autoload.php',
+                    '--cache-directory='.$root.'/storage/framework/cache/package-quality/alpha/phpunit',
+                    '--compact',
+                    $root.'/packages/nvl/alpha/tests',
+                ],
+            ]);
+
+        $phpStanConfiguration = file_get_contents(
+            $root.'/storage/framework/cache/package-quality/alpha/phpstan.neon',
+        );
+
+        expect($phpStanConfiguration)->toBeString()->toContain(
+            $root.'/vendor/larastan/larastan/extension.neon',
+            $root.'/vendor/nesbot/carbon/extension.neon',
+            'tmpDir: '.$root.'/storage/framework/cache/package-quality/alpha/phpstan',
+        );
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('runs multiple packages sequentially in the requested order', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha', 'beta']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['beta', 'alpha']))->toBe(0)
+            ->and($commands)->toHaveCount(6)
+            ->and(implode(' ', $commands[0]['command']))->toContain('/beta')
+            ->and(implode(' ', $commands[1]['command']))->toContain('/beta')
+            ->and(implode(' ', $commands[2]['command']))->toContain('/beta')
+            ->and(implode(' ', $commands[3]['command']))->toContain('/alpha')
+            ->and(implode(' ', $commands[4]['command']))->toContain('/alpha')
+            ->and(implode(' ', $commands[5]['command']))->toContain('/alpha');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('stops on the first failed quality step and returns its exit code', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha', 'beta']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            exitCodes: [0, 9],
+        );
+
+        expect($runner->run(['alpha', 'beta']))->toBe(9)
+            ->and($commands)->toHaveCount(2)
+            ->and(implode(' ', $commands[1]['command']))->toContain('/alpha')
+            ->not->toContain('/beta');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('continues the release matrix after failures only when requested', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha', 'beta']);
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            exitCodes: [0, 9, 0, 0, 0, 0],
+        );
+
+        expect($runner->run(['alpha', 'beta', '--continue-on-error']))->toBe(9)
+            ->and($commands)->toHaveCount(6)
+            ->and(implode(' ', $commands[5]['command']))->toContain('/beta');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('emits value-free JSON without leaking absolute paths or process output', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $commands = [];
+    $output = '';
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            output: $output,
+            processOutput: 'sensitive=/absolute/consumer/config',
+        );
+
+        expect($runner->run(['alpha', '--format=json']))->toBe(0);
+
+        $decoded = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+
+        expect($decoded)->toMatchArray([
+            'schema' => 'nvl-package-quality-v1',
+            'status' => 'passed',
+        ])->and($decoded['packages'][0]['package'] ?? null)->toBe('alpha')
+            ->and($decoded['packages'][0]['steps'] ?? [])->toHaveCount(3)
+            ->and($output)->not->toContain($root, 'sensitive=', '/absolute/consumer/config');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('skips Pest when a package has no test directory', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['support'], ['support']);
+    $commands = [];
+    $output = '';
+
+    try {
+        $runner = packageQualityRunner(
+            root: $root,
+            catalog: $catalog,
+            commands: $commands,
+            output: $output,
+        );
+
+        expect($runner->run(['support']))->toBe(0)
+            ->and($commands)->toHaveCount(2)
+            ->and($output)->toContain('tests: skipped');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('preserves paths containing spaces as individual process arguments', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha'], [], 'nvl suite quality');
+    $commands = [];
+
+    try {
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['alpha']))->toBe(0)
+            ->and($commands[0]['command'][0])->toBe($root.'/vendor/bin/pint')
+            ->and($commands[0]['command'][4])->toBe($root.'/packages/nvl/alpha')
+            ->and($commands[2]['command'][6])->toBe($root.'/packages/nvl/alpha/tests');
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('leaves unreleased migrations in mutable PHPStan analysis', function (): void {
+    [$root, $catalog] = createPackageQualityFixture(['alpha']);
+    $migration = $root.'/packages/nvl/alpha/database/migrations/2099_01_01_000000_create_alpha_table.php';
+    $commands = [];
+
+    try {
+        (new Filesystem)->dumpFile(
+            $migration,
+            "<?php\n\ndeclare(strict_types=1);\n",
+        );
+        $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
+
+        expect($runner->run(['alpha']))->toBe(0)
+            ->and($commands[1]['command'])->toContain($migration);
+    } finally {
+        removePackageQualityFixture($root);
+    }
+});
+
+it('uses one deep-map and atomic-list merger in every config-bearing provider', function (): void {
+    $catalog = new SuiteModuleCatalog(new Repository);
+    $configBearingModules = collect($catalog->modules())
+        ->filter(static fn (array $definition): bool => $definition['configuration'] !== null);
+
+    expect($configBearingModules)->toHaveCount(17);
+
+    foreach ($configBearingModules as $module => $definition) {
+        $providerPath = (new ReflectionClass($definition['provider']))->getFileName();
+
+        expect($providerPath)->toBeString()->toBeFile();
+
+        $source = (string) file_get_contents($providerPath);
+
+        expect($source)
+            ->toContain('use Nvl\Support\Traits\MergesPackageConfiguration;')
+            ->toContain('use MergesPackageConfiguration;')
+            ->toContain('mergePackageConfiguration(')
+            ->not->toContain(
+                'replaceConfigRecursivelyFrom(',
+                'mergeConfigFrom(',
+                'mergeConfigurationValues(',
+                'mergeConfigurationRecursively(',
+            );
+    }
+});
+
 /**
  * Return every shell command declared by a workflow job.
  *
@@ -624,4 +1067,118 @@ function workflowCommands(array $job): string
         ->pluck('run')
         ->filter(static fn (mixed $command): bool => is_string($command))
         ->implode("\n");
+}
+
+/**
+ * Create a filesystem fixture and canonical catalog for package-quality tests.
+ *
+ * @param  list<string>  $packages
+ * @param  list<string>  $packagesWithoutTests
+ * @return array{0: string, 1: array<string, mixed>}
+ */
+function createPackageQualityFixture(
+    array $packages,
+    array $packagesWithoutTests = [],
+    string $prefix = 'nvl-package-quality',
+): array {
+    $filesystem = new Filesystem;
+    $root = sys_get_temp_dir().'/'.$prefix.'-'.bin2hex(random_bytes(8));
+    $filesystem->mkdir($root.'/tools');
+    $qualityPackages = [];
+    $contractPackages = [];
+
+    foreach ($packages as $package) {
+        $packageDirectory = $root.'/packages/nvl/'.$package;
+        $filesystem->mkdir($packageDirectory.'/src');
+        $qualityPackages[$package] = [
+            'analysis_paths' => ['src'],
+            'migration_tests' => [],
+        ];
+        $contractPackages[$package] = ['migrations' => []];
+
+        if (! in_array($package, $packagesWithoutTests, true)) {
+            $filesystem->mkdir($packageDirectory.'/tests');
+            $filesystem->dumpFile($packageDirectory.'/phpunit.xml.dist', '<phpunit/>'.PHP_EOL);
+        }
+    }
+
+    $filesystem->dumpFile(
+        $root.'/tools/package-contracts.json',
+        json_encode(
+            ['packages' => $contractPackages],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        ).PHP_EOL,
+    );
+
+    return [
+        $root,
+        [
+            'packages' => $packages,
+            'database_tested' => [],
+            'quality' => [
+                'released_migrations_contract' => 'tools/package-contracts.json',
+                'packages' => $qualityPackages,
+            ],
+        ],
+    ];
+}
+
+/**
+ * Build a package-quality runner with a deterministic fake process executor.
+ *
+ * @param  array<string, mixed>  $catalog
+ * @param  list<array{command: list<string>, workingDirectory: string}>  $commands
+ * @param  list<int>  $exitCodes
+ */
+function packageQualityRunner(
+    string $root,
+    array $catalog,
+    array &$commands,
+    array $exitCodes = [],
+    string &$output = '',
+    string &$error = '',
+    string $processOutput = '',
+): object {
+    $library = dirname(__DIR__, 2).'/tools/package-quality-runner.php';
+
+    expect($library)->toBeFile();
+
+    require_once $library;
+
+    $execute = static function (
+        array $command,
+        string $workingDirectory,
+        Closure $stream,
+    ) use (&$commands, &$exitCodes, $processOutput): int {
+        $commands[] = [
+            'command' => $command,
+            'workingDirectory' => $workingDirectory,
+        ];
+
+        if ($processOutput !== '') {
+            $stream(Process::OUT, $processOutput);
+        }
+
+        return array_shift($exitCodes) ?? 0;
+    };
+
+    return new PackageQualityRunner(
+        root: $root,
+        catalog: $catalog,
+        execute: $execute,
+        writeOutput: static function (string $message) use (&$output): void {
+            $output .= $message;
+        },
+        writeError: static function (string $message) use (&$error): void {
+            $error .= $message;
+        },
+    );
+}
+
+/**
+ * Remove a package-quality filesystem fixture.
+ */
+function removePackageQualityFixture(string $root): void
+{
+    (new Filesystem)->remove($root);
 }

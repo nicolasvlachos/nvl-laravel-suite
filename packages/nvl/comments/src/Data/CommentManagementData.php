@@ -9,6 +9,7 @@ use Nvl\Comments\Enums\CommentStatus;
 use Nvl\Comments\Enums\CommentVisibility;
 use Nvl\Comments\Models\Comment;
 use Nvl\Data\Traits\DataTransform;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
 use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
@@ -24,6 +25,8 @@ final class CommentManagementData extends Data
 
     /**
      * @param  list<string>|Optional  $tags
+     * @param  list<CommentMetadataProjectionData>|Optional  $metadata
+     * @param  list<CommentMentionData>|Optional  $mentions
      */
     public function __construct(
         public readonly string $id,
@@ -35,6 +38,8 @@ final class CommentManagementData extends Data
         public readonly string|Optional|null $locale,
         #[LiteralTypeScriptType('Array<string>')]
         public readonly array|Optional $tags,
+        #[DataCollectionOf(CommentMetadataProjectionData::class)]
+        public readonly array|Optional $metadata,
         public readonly string|Optional|null $actorType,
         public readonly string|Optional|null $actorId,
         public readonly CommentStatus $status,
@@ -63,15 +68,24 @@ final class CommentManagementData extends Data
         public readonly ?string $anonymizationReason,
         public readonly string $createdAt,
         public readonly string $updatedAt,
+        public readonly CommentViewerDocumentData|Optional $document = new Optional,
+        #[DataCollectionOf(CommentMentionData::class)]
+        public readonly array|Optional $mentions = new Optional,
     ) {}
 
     /**
      * Build a privileged comment projection with lifetime and actionable report counts.
+     *
+     * @param  list<CommentMetadataProjectionData>|Optional  $metadata
+     * @param  list<CommentMentionData>|Optional  $mentions
      */
     public static function fromModel(
         Comment $comment,
         int $replyCount,
         bool $includeActorIdentity = false,
+        array|Optional $metadata = new Optional,
+        CommentViewerDocumentData|Optional $document = new Optional,
+        array|Optional $mentions = new Optional,
     ): self {
         $tombstone = $comment->trashed() || $comment->anonymized_at !== null;
         $omitted = Optional::create();
@@ -87,6 +101,7 @@ final class CommentManagementData extends Data
             tags: $tombstone
                 ? $omitted
                 : (is_array($comment->tags) ? $comment->tags : []),
+            metadata: $tombstone ? $omitted : $metadata,
             actorType: ! $tombstone && $includeActorIdentity
                 ? $comment->actor_type
                 : $omitted,
@@ -129,6 +144,8 @@ final class CommentManagementData extends Data
             anonymizationReason: $comment->anonymization_reason,
             createdAt: $comment->created_at->format(DATE_ATOM),
             updatedAt: $comment->updated_at->format(DATE_ATOM),
+            document: $tombstone ? $omitted : $document,
+            mentions: $tombstone ? $omitted : $mentions,
         );
     }
 }

@@ -55,8 +55,9 @@ return [
     ],
 
     /*
-    | Stable aliases used only by the optional management/import boundaries.
-    | Runtime model traits and Actions do not require registry membership.
+    | Stable aliases used by management/import boundaries and owner-centric
+    | profile read Actions. Model relations, metadata rendering, and profile
+    | mutation Actions do not require registry membership.
     */
     'owners' => [],
 

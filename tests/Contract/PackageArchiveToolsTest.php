@@ -6,12 +6,69 @@ use Illuminate\Config\Repository;
 use Nvl\Auth\Providers\AuthServiceProvider;
 use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Suite\Support\SuiteModuleCatalog;
+use Nvl\Support\Providers\SupportServiceProvider;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
 require_once dirname(__DIR__, 2).'/tools/check-release-changelogs.php';
+
+it('advertises the main development branch on the Suite 2 line', function (): void {
+    $manifest = json_decode(
+        (string) file_get_contents(dirname(__DIR__, 2).'/composer.json'),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+
+    expect($manifest['extra']['branch-alias']['dev-main'] ?? null)->toBe('2.x-dev');
+});
+
+it('archives the complete package-owned 2.0 release notes with blank Unreleased sections', function (): void {
+    $root = dirname(__DIR__, 2);
+    $changedPackages = [
+        'activity',
+        'auth',
+        'comments',
+        'content',
+        'data',
+        'forms',
+        'mail-notifications',
+        'media',
+        'metafields',
+        'pages',
+        'primitives',
+        'seo',
+        'settings',
+        'support',
+        'taxonomy',
+        'templates',
+        'translatable',
+        'translations',
+    ];
+
+    expect(releaseChangelogErrors($root, '2.0.0', $changedPackages))->toBe([])
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/comments/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('forward-only rich-document columns')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/pages/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('PageData')->not->toContain('PageListItemData')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/auth/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('RoleListItemData', 'PermissionListItemData')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/content/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('ContentBlockData', 'ContentPlacementData')
+        ->and(releaseChangelogSection(
+            (string) file_get_contents($root.'/packages/nvl/seo/CHANGELOG.md'),
+            '2.0.0',
+        ))->toContain('SeoProfileData');
+});
 
 it('keeps v1.0.5 release history under dated suite and every package heading', function (): void {
     $root = dirname(__DIR__, 2);
@@ -199,14 +256,13 @@ it('ships a complete staged-adoption module configuration', function (): void {
     $root = dirname(__DIR__, 2);
     $catalog = require $root.'/tools/package-family.php';
     $configuration = require $root.'/config/nvl-suite.php';
-    $configuredModules = array_keys($configuration['modules'] ?? []);
     $catalogModules = $catalog['packages'];
+    $suiteCatalog = new SuiteModuleCatalog(new Repository([
+        'nvl-suite' => $configuration,
+    ]));
+    $configuredModules = $suiteCatalog->effectiveModules();
     sort($configuredModules);
     sort($catalogModules);
-
-    $suiteCatalog = new SuiteModuleCatalog(new Repository([
-        'nvl-suite' => ['modules' => $configuration['modules']],
-    ]));
     $providerDependencies = array_map(
         static fn (array $definition): array => $definition['dependencies'],
         $suiteCatalog->modules(),
@@ -228,13 +284,20 @@ it('ships a complete staged-adoption module configuration', function (): void {
     sort($catalog['stateful']);
 
     expect($configuredModules)->toBe($catalogModules)
-        ->and(array_filter(
-            $configuration['modules'],
-            static fn (mixed $enabled): bool => $enabled !== true,
-        ))->toBe([])
+        ->and($suiteCatalog->selection()->source)->toBe('declarative')
+        ->and($suiteCatalog->selection()->profile)->toBe('full-suite')
+        ->and($suiteCatalog->selection()->modules())->not->toContain(false)
         ->and($providerDependencies)->toBe($catalogDependencies)
         ->and($typescriptModules)->toBe($catalog['typescript_sources'])
         ->and($statefulModules)->toBe($catalog['stateful']);
+
+    expect($configuration['consumer_audit'] ?? null)->toBe([
+        'paths' => ['app', 'config', 'database/migrations', 'routes'],
+        'authentication_middleware' => ['auth'],
+        'suppressions' => [],
+    ])->and($configuration['adoption'] ?? null)->toBe([
+        'require_explicit_module_decisions' => false,
+    ]);
 
     expect($catalog['typescript_sources'])
         ->toContain('data', 'mail-notifications')
@@ -251,6 +314,7 @@ it('selects only an enabled module and its transitive dependencies', function ()
     ]));
 
     expect($suiteCatalog->effectiveProviders())->toBe([
+        SupportServiceProvider::class,
         DataServiceProvider::class,
         AuthServiceProvider::class,
     ]);
@@ -291,14 +355,29 @@ it('ships every module and the central provider in the archive', function (): vo
         $catalog = require dirname(__DIR__, 2).'/tools/package-family.php';
 
         expect($entries)->toContain(
+            'UPGRADING.md',
             'src/SuiteServiceProvider.php',
+            'src/Console/Commands/SuiteConfigureCommand.php',
             'src/Console/Commands/SuiteConfigurationCommand.php',
+            'src/Console/Commands/SuiteConsumerAuditCommand.php',
             'src/Console/Commands/SuiteDoctorCommand.php',
             'src/Console/Commands/SuiteSkillsDoctorCommand.php',
             'src/Console/Commands/SuiteSkillsPublishCommand.php',
+            'src/Console/Commands/SuiteUpgradeCheckCommand.php',
             'src/Services/SuiteConfigurationInspector.php',
+            'src/Services/SuiteConfigurationRenderer.php',
+            'src/Services/SuiteConsumerAuditor.php',
+            'src/Services/SuiteModuleSelection.php',
+            'src/Services/SuitePackageConfigurationInspector.php',
             'src/Services/SuiteSkillManager.php',
+            'src/Services/SuiteUpgradeInspector.php',
+            'src/Services/ConsumerAudit/ComposerSourceRootLocator.php',
+            'src/Services/ConsumerAudit/PhpConsumerBoundaryScanner.php',
+            'src/Services/ConsumerAudit/PhpImportMap.php',
+            'src/Services/ConsumerAudit/SuiteRuntimeConsumerScanner.php',
+            'src/Support/ConsumerAuditFinding.php',
             'src/Support/SuiteModuleCatalog.php',
+            'config/nvl-suite.php',
             'docs/adoption-matrix.md',
             'docs/installation-profiles.md',
         );
@@ -579,7 +658,12 @@ function suiteArchiveBuild(): array
 
     $root = dirname(__DIR__, 2);
     $workspace = sys_get_temp_dir().'/nvl-suite-archive-'.bin2hex(random_bytes(8));
-    (new Filesystem)->mkdir($workspace);
+    $filesystem = new Filesystem;
+    $sourceWorktreesDirectory = $root.'/.worktrees';
+    $sourceWorktreesDirectoryExisted = is_dir($sourceWorktreesDirectory);
+    $sourceWorktreeFixture = $sourceWorktreesDirectory.'/archive-fixture-'.bin2hex(random_bytes(8));
+    $filesystem->mkdir($workspace);
+    $filesystem->dumpFile($sourceWorktreeFixture.'/sentinel.txt', 'development-only');
 
     $process = new Process(
         ['composer', 'archive', '--format=zip', '--dir='.$workspace, '--no-interaction'],
@@ -587,7 +671,16 @@ function suiteArchiveBuild(): array
         ['COMPOSER_ROOT_VERSION' => '1.2.3'],
     );
     $process->setTimeout(90);
-    $process->run();
+
+    try {
+        $process->run();
+    } finally {
+        $filesystem->remove($sourceWorktreeFixture);
+
+        if (! $sourceWorktreesDirectoryExisted && is_dir($sourceWorktreesDirectory)) {
+            rmdir($sourceWorktreesDirectory);
+        }
+    }
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 

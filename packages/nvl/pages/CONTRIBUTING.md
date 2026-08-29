@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions should preserve the package’s headless boundary and Laravel 12–13 compatibility.
+Contributions should preserve the package’s headless boundary and Laravel 13 compatibility.
 
 Before submitting a change:
 

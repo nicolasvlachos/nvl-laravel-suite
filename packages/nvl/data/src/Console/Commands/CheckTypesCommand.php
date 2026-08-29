@@ -87,7 +87,7 @@ final class CheckTypesCommand extends Command
             }
 
             try {
-                if ($catalog->manifest() !== $catalog->freshManifest()) {
+                if (! $this->manifestsMatch($catalog->manifest(), $catalog->freshManifest())) {
                     return $this->stale();
                 }
             } catch (RuntimeException) {
@@ -113,5 +113,49 @@ final class CheckTypesCommand extends Command
         );
 
         return self::FAILURE;
+    }
+
+    /**
+     * Compare manifest contracts while ignoring checkout-dependent file timestamps.
+     *
+     * @param  array<string, mixed>  $persisted
+     * @param  array<string, mixed>  $fresh
+     */
+    private function manifestsMatch(array $persisted, array $fresh): bool
+    {
+        return $this->stableManifest($persisted) === $this->stableManifest($fresh);
+    }
+
+    /**
+     * Remove publication timestamps and their derived revision from one manifest.
+     *
+     * @param  array<string, mixed>  $manifest
+     * @return array<string, mixed>
+     */
+    private function stableManifest(array $manifest): array
+    {
+        unset($manifest['generatedAt'], $manifest['revision']);
+
+        $entrypoint = $manifest['entrypoint'] ?? null;
+
+        if (is_array($entrypoint)) {
+            unset($entrypoint['lastModified']);
+            $manifest['entrypoint'] = $entrypoint;
+        }
+
+        $files = $manifest['files'] ?? null;
+
+        if (is_array($files)) {
+            foreach ($files as $index => $file) {
+                if (is_array($file)) {
+                    unset($file['lastModified']);
+                    $files[$index] = $file;
+                }
+            }
+
+            $manifest['files'] = $files;
+        }
+
+        return $manifest;
     }
 }

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Facade;
 use Nvl\Content\Content as ContentEngine;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Data\ContentCompositionSnapshotData;
 use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Data\ContentDefinitionMigrationPlanData;
@@ -18,6 +19,7 @@ use Nvl\Content\Data\ContentDefinitionMigrationResultData;
 use Nvl\Content\Data\ContentDefinitionSyncPlanData;
 use Nvl\Content\Data\ContentEditorData;
 use Nvl\Content\Data\ContentFieldPresetData;
+use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Data\ContentScopeData;
 use Nvl\Content\Data\ContentScopeResolutionData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
@@ -34,8 +36,8 @@ use Nvl\Filterable\Data\FilterSet;
  *
  * @method static Collection<int, ContentDefinitionData> definitions(ContentActorData $actor)
  * @method static Collection<int, ContentFieldPresetData> presets(ContentActorData $actor)
- * @method static LengthAwarePaginator<int, ContentBlock> blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)
- * @method static ContentBlock block(ContentBlock|string $block, ContentActorData $actor)
+ * @method static LengthAwarePaginator<int, ContentBlockData> blocks(FilterSet $filters, ContentActorData $actor, int $perPage = 25)
+ * @method static ContentBlockData block(ContentBlock|string $block, ContentActorData $actor)
  * @method static ContentScopeResolutionData resolveScopes(list<ContentScopeData> $scopes, string $locale, ContentActorData $actor, ?int $limit = null, bool $publicOnly = true)
  * @method static ContentDefinitionSyncPlanData syncDefinitions(ContentActorData $actor, bool $dryRun = false)
  * @method static ContentDefinitionMigrationPlanData planDefinitionMigrations(ContentActorData $actor, ?string $definition = null, ?int $limit = null)
@@ -47,7 +49,7 @@ use Nvl\Filterable\Data\FilterSet;
  * @method static void deleteBlock(ContentBlock|string $block, int $expectedRevision, ContentActorData $actor)
  * @method static ContentBlock restoreBlock(ContentBlock|string $block, int $expectedRevision, ContentActorData $actor)
  * @method static Collection<int, string> groups(Model&ContentOwner $owner, ContentActorData $actor)
- * @method static Collection<int, ContentPlacement> placements(Model&ContentOwner $owner, string $group, ContentActorData $actor)
+ * @method static Collection<int, ContentPlacementData> placements(Model&ContentOwner $owner, string $group, ContentActorData $actor)
  * @method static ContentEditorData editor(Model&ContentOwner $owner, string $group, ContentActorData $actor)
  * @method static ContentPlacement place(ContentBlock|string $block, Model&ContentOwner $owner, string $group, PlaceContentBlockData $data, ContentActorData $actor)
  * @method static ContentPlacement updatePlacement(ContentPlacement|string $placement, UpdateContentPlacementData $data, ContentActorData $actor)

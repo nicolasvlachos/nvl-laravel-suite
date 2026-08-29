@@ -52,6 +52,10 @@ $releasedCorrectiveMigrations = [
     ],
     'auth' => [
         '2026_08_12_000000_add_auth_delivery_context_columns.php',
+        '2026_08_28_000000_add_invitation_delivery_outcomes.php',
+    ],
+    'comments' => [
+        '2026_08_28_000001_add_comment_documents.php',
     ],
 ];
 $requiredFiles = [
@@ -78,6 +82,10 @@ $scanRoots = [
     'CHANGELOG.md',
 ];
 $serviceLocatorAllowlist = [
+    'auth' => [
+        'src/Services/EloquentRbacPrincipalAccess.php',
+        'src/Services/RbacEntityLocator.php',
+    ],
     'media' => ['src/Traits/InteractsWithMedia.php'],
     'seo' => ['src/Providers/SeoServiceProvider.php'],
     'settings' => ['src/Testing/InteractsWithSettings.php'],
@@ -265,7 +273,10 @@ foreach ($packages as $package) {
 }
 
 $registeredProviders = (new SuiteModuleCatalog(new Repository([
-    'nvl-suite' => ['modules' => []],
+    'nvl-suite' => [
+        'profile' => 'full-suite',
+        'modules' => null,
+    ],
 ])))->effectiveProviders();
 
 $sortedExpectedProviders = $expectedProviders;
@@ -337,7 +348,7 @@ foreach ($expectedPackages as $package) {
     }
 
     if (! is_string($namespace) || ! is_string($provider)
-        || ! str_contains($packageReadme, '| Installed through | `composer require nvl/laravel-suite:^1.0` |')
+        || ! str_contains($packageReadme, '| Installed through | `composer require nvl/laravel-suite:^2.0` |')
         || ! str_contains($packageReadme, "| Module identifier | `nvl/{$package}` |")
         || ! str_contains($packageReadme, '| PHP namespace | `'.rtrim($namespace, '\\').'` |')
         || ! str_contains($packageReadme, "| Service provider | `{$provider}` |")
@@ -495,8 +506,20 @@ foreach ($packages as $package) {
         $fail($package, "PHP constraint must be {$requiredPhpConstraint}");
     }
 
-    if (($requirements['laravel/framework'] ?? null) !== '^12.0 || ^13.0') {
-        $fail($package, 'Laravel constraint must be ^12.0 || ^13.0');
+    if (($requirements['laravel/framework'] ?? null) !== '^13.0') {
+        $fail($package, 'Laravel constraint must be ^13.0');
+    }
+
+    $developmentRequirements = is_array($manifest['require-dev'] ?? null)
+        ? $manifest['require-dev']
+        : [];
+
+    if (($developmentRequirements['orchestra/testbench'] ?? null) !== '^11.0') {
+        $fail($package, 'Testbench constraint must be ^11.0');
+    }
+
+    if (($manifest['extra']['branch-alias']['dev-main'] ?? null) !== '2.x-dev') {
+        $fail($package, 'Composer branch alias must be 2.x-dev');
     }
 
     $actualInternal = [];
@@ -504,8 +527,8 @@ foreach ($packages as $package) {
         if (is_string($dependency) && str_starts_with($dependency, 'nvl/')) {
             $actualInternal[] = substr($dependency, 4);
 
-            if ($constraint !== '^1.0') {
-                $fail($package, "internal dependency [{$dependency}] must use ^1.0");
+            if ($constraint !== '^2.0') {
+                $fail($package, "internal dependency [{$dependency}] must use ^2.0");
             }
         }
     }

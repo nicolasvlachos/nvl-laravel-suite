@@ -54,11 +54,31 @@ it('exposes complete consumer validation rules and invitation registration data'
         ->and(ApplyRoleTemplateData::rules())->toHaveKeys(['template', 'roleName'])
         ->and(InvitationIndexQueryData::rules())->toHaveKeys([
             'recipient',
+            'types',
             'lifecycle',
             'expiresAfter',
             'expiresBefore',
             'perPage',
         ]);
+});
+
+it('normalizes bounded multi-type invitation filters', function (): void {
+    $filters = new InvitationIndexQueryData(types: [
+        'candidate',
+        'registration',
+        'candidate',
+    ]);
+
+    expect($filters->types)->toBe(['candidate', 'registration'])
+        ->and(fn () => new InvitationIndexQueryData(types: array_map(
+            static fn (int $index): string => "type-{$index}",
+            range(1, 21),
+        )))->toThrow(InvalidArgumentException::class, 'at most 20')
+        ->and(fn () => new InvitationIndexQueryData(types: array_fill(
+            0,
+            21,
+            'candidate',
+        )))->toThrow(InvalidArgumentException::class, 'at most 20');
 });
 
 it('rejects malformed role, invitation, and assignment consumer mutations', function (): void {
@@ -69,6 +89,9 @@ it('rejects malformed role, invitation, and assignment consumer mutations', func
         [static fn (): StoreInvitationData => new StoreInvitationData('user@example.test', type: ''), 'type or purpose'],
         [static fn (): StoreInvitationData => new StoreInvitationData('user@example.test', context: ''), 'Invitation contexts'],
         [static fn (): StoreInvitationData => new StoreInvitationData('user@example.test', roles: ['']), 'role and permission names'],
+        [static fn (): StoreInvitationData => new StoreInvitationData('user@example.test', roles: ['named' => 'member']), 'roles must be a distinct list'],
+        [static fn (): StoreInvitationData => new StoreInvitationData('user@example.test', roles: array_fill(0, 101, 'member')), 'roles must be a distinct list'],
+        [static fn (): StoreInvitationData => new StoreInvitationData('user@example.test', permissions: array_fill(0, 251, 'articles.read')), 'permissions must be a distinct list'],
         [static fn (): StoreInvitationData => new StoreInvitationData('user@example.test', metadata: ['number' => NAN]), 'Invitation metadata'],
         [static fn (): SyncUserPermissionsData => new SyncUserPermissionsData(['read', 'read']), 'distinct list'],
         [static fn (): SyncUserPermissionsData => new SyncUserPermissionsData(['']), 'permission names'],
@@ -85,6 +108,8 @@ it('rejects malformed role, invitation, and assignment consumer mutations', func
 
     expect(new ApplyRoleTemplateData('member', 'consumer-member'))->toBeInstanceOf(ApplyRoleTemplateData::class)
         ->and(StoreInvitationData::rules())->toHaveKeys(['recipient', 'roles', 'permissions', 'metadata'])
+        ->and(StoreInvitationData::rules()['roles'])->toContain('max:100')
+        ->and(StoreInvitationData::rules()['permissions'])->toContain('max:250')
         ->and(SyncUserPermissionsData::rules()['permissions.*'])->toContain('exists:consumer_permissions,name')
         ->and(SyncUserRolesData::rules()['roles.*'])->toContain('exists:consumer_roles,name');
 });

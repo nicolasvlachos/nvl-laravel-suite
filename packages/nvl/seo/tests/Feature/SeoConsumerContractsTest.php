@@ -9,9 +9,16 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Nvl\Seo\Actions\ArchiveSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Actions\GetSeoProfileAction;
 use Nvl\Seo\Actions\ImportSeoProfilesAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
+use Nvl\Seo\Actions\ListSeoProfilesAction;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Actions\SyncSeoRedirectAction;
+use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImportSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
 use Nvl\Seo\Data\Import\SeoImportPageData;
@@ -19,6 +26,9 @@ use Nvl\Seo\Data\Import\SeoImportRecordData;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
 use Nvl\Seo\Data\SeoImage;
+use Nvl\Seo\Data\SeoOwnerRevisionData;
+use Nvl\Seo\Data\SeoProfileData;
+use Nvl\Seo\Data\SeoProfileQuery;
 use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Data\StructuredDataNodeData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
@@ -41,6 +51,7 @@ use Nvl\Seo\Support\SeoAuthorizationContext;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Support\StructuredDataLimits;
+use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Spatie\LaravelData\DataCollection;
 
@@ -48,6 +59,369 @@ function seoConsumerOwner(string $name = 'Consumer owner'): TestSeoOwner
 {
     return TestSeoOwner::query()->create(['name' => $name]);
 }
+
+function allowSeoConsumerReads(): void
+{
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
+}
+
+it('returns management profile details and pages as stable DTOs without mapping queries', function (): void {
+    allowSeoConsumerReads();
+    $olderOwner = seoConsumerOwner('Older management profile');
+    $newerOwner = seoConsumerOwner('Newer management profile');
+    $older = app(SyncSeoProfileAction::class)->execute(
+        $olderOwner,
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Older profile']],
+        ]),
+    );
+    $newer = app(SyncSeoProfileAction::class)->execute(
+        $newerOwner,
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Newer profile']],
+        ]),
+    );
+    SeoProfile::query()->whereKey($older->id)->update(['updated_at' => now()->subMinute()]);
+    SeoProfile::query()->whereKey($newer->id)->update(['updated_at' => now()]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $profiles = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+            page: 1,
+            perPage: 1,
+        ));
+        $queryCount = count(DB::getQueryLog());
+        $item = $profiles->items()[0] ?? null;
+        $serialized = $item?->toArray();
+
+        expect(DB::getQueryLog())->toHaveCount($queryCount)
+            ->and($queryCount)->toBeLessThanOrEqual(3)
+            ->and($profiles->total())->toBe(2)
+            ->and($profiles->currentPage())->toBe(1)
+            ->and($profiles->perPage())->toBe(1)
+            ->and($profiles->getOptions()['path'] ?? null)->toBe($profiles->path())
+            ->and($profiles->appends(['status' => 'active'])->url(2))->toContain(
+                'page=2',
+                'status=active',
+            )
+            ->and($item)->toBeInstanceOf(SeoProfileData::class)
+            ->and($item?->id)->toBe($newer->id)
+            ->and($item?->ownerAlias)->toBe('article')
+            ->and($item?->translations['en']->title ?? null)->toBe('Newer profile')
+            ->and(array_keys($serialized ?? []))->toContain(
+                'id',
+                'ownerAlias',
+                'ownerId',
+                'translations',
+            );
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $profile = app(GetSeoProfileAction::class)->execute($newer->id);
+    $archived = app(ArchiveSeoProfileAction::class)->execute(
+        $newer,
+        true,
+        $newer->revision,
+    );
+
+    expect($profile)->toBeInstanceOf(SeoProfileData::class)
+        ->and($profile->id)->toBe($newer->id)
+        ->and($profile->translations['en']->title ?? null)->toBe('Newer profile')
+        ->and($older)->toBeInstanceOf(SeoProfile::class)
+        ->and($archived)->toBeInstanceOf(SeoProfile::class);
+});
+
+it('denies direct management profile reads through the configured authorization boundary', function (): void {
+    $owner = seoConsumerOwner('Denied direct management profile');
+    $profile = app(SyncSeoProfileAction::class)->execute(
+        $owner,
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Denied profile']],
+        ]),
+    );
+    $authorization = new class implements SeoAuthorization
+    {
+        public ?SeoAuthorizationContext $context = null;
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->context = $context;
+
+            throw new AuthorizationException('Denied direct management profile read.');
+        }
+    };
+    app()->instance(SeoAuthorization::class, $authorization);
+
+    expect(fn () => app(GetSeoProfileAction::class)->execute($profile->id))
+        ->toThrow(AuthorizationException::class, 'Denied direct management profile read.');
+
+    expect($authorization->context?->ability)->toBe(SeoAbility::View)
+        ->and($authorization->context?->profile?->is($profile))->toBeTrue()
+        ->and($authorization->context?->owner?->is($owner))->toBeTrue()
+        ->and($authorization->context?->ownerAlias)->toBe('article')
+        ->and($authorization->context?->scope)->toBe('default');
+});
+
+it('denies direct management profile lists through the configured authorization boundary', function (): void {
+    $authorization = new class implements SeoAuthorization
+    {
+        public ?SeoAuthorizationContext $context = null;
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->context = $context;
+
+            throw new AuthorizationException('Denied direct management profile list.');
+        }
+    };
+    app()->instance(SeoAuthorization::class, $authorization);
+
+    expect(fn () => app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        scope: ' CATALOG ',
+        ownerAlias: 'article',
+    )))
+        ->toThrow(AuthorizationException::class, 'Denied direct management profile list.');
+
+    expect($authorization->context?->ability)->toBe(SeoAbility::List)
+        ->and($authorization->context?->ownerAlias)->toBe('article')
+        ->and($authorization->context?->scope)->toBe('catalog');
+});
+
+it('bounds directly constructed management profile queries inside the Action', function (): void {
+    allowSeoConsumerReads();
+
+    $upper = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        page: 0,
+        perPage: 999,
+    ));
+    $lower = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        page: -10,
+        perPage: -10,
+    ));
+
+    expect($upper->currentPage())->toBe(1)
+        ->and($upper->perPage())->toBe(200)
+        ->and($lower->currentPage())->toBe(1)
+        ->and($lower->perPage())->toBe(1);
+});
+
+it('returns authorized owner-centric profile and revision projections', function (): void {
+    $owner = seoConsumerOwner('Owner-centric reads');
+    $profile = app(SyncSeoProfileAction::class)->execute(
+        $owner,
+        SeoProfilePayload::from([
+            'translations' => [
+                'en' => ['path' => '/owner-centric', 'title' => 'Owner-centric'],
+            ],
+        ]),
+        'catalog',
+    );
+    $authorization = new class implements SeoAuthorization
+    {
+        /** @var list<SeoAuthorizationContext> */
+        public array $contexts = [];
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->contexts[] = $context;
+        }
+    };
+    app()->instance(SeoAuthorization::class, $authorization);
+
+    $profileData = app(GetOwnerSeoProfileAction::class)->execute($owner, ' CATALOG ');
+    $revisionData = app(GetOwnerSeoRevisionAction::class)->execute($owner, 'catalog');
+    $missingProfile = app(GetOwnerSeoProfileAction::class)->execute($owner, 'missing');
+    $missingOwner = seoConsumerOwner('Owner without SEO');
+    $missing = app(GetOwnerSeoRevisionAction::class)->execute($missingOwner, 'catalog');
+
+    expect($profileData)->toBeInstanceOf(SeoProfileData::class)
+        ->and($profileData?->id)->toBe($profile->id)
+        ->and($profileData?->ownerAlias)->toBe('article')
+        ->and($profileData?->translations)->toHaveKey('en')
+        ->and($revisionData)->toBeInstanceOf(SeoOwnerRevisionData::class)
+        ->and($revisionData->toArray())->toBe([
+            'ownerAlias' => 'article',
+            'ownerId' => (string) $owner->getKey(),
+            'scope' => 'catalog',
+            'profileId' => $profile->id,
+            'revision' => $profile->revision,
+        ])
+        ->and($missingProfile)->toBeNull()
+        ->and($missing->ownerAlias)->toBe('article')
+        ->and($missing->ownerId)->toBe((string) $missingOwner->getKey())
+        ->and($missing->scope)->toBe('catalog')
+        ->and($missing->profileId)->toBeNull()
+        ->and($missing->revision)->toBe(0)
+        ->and($authorization->contexts)->toHaveCount(4)
+        ->and(array_map(
+            static fn (SeoAuthorizationContext $context): string => $context->scope ?? '',
+            $authorization->contexts,
+        ))->toBe(['catalog', 'catalog', 'missing', 'catalog']);
+
+    foreach ($authorization->contexts as $context) {
+        expect($context->ability)->toBe(SeoAbility::View)
+            ->and($context->ownerAlias)->toBe('article');
+    }
+});
+
+it('denies owner-centric SEO reads before querying profiles', function (): void {
+    $owner = seoConsumerOwner('Denied owner-centric read');
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            throw new AuthorizationException('Denied owner-centric SEO read.');
+        }
+    });
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    expect(fn () => app(GetOwnerSeoRevisionAction::class)->execute($owner))
+        ->toThrow(AuthorizationException::class, 'Denied owner-centric SEO read.');
+    $profileQueries = array_filter(
+        DB::getQueryLog(),
+        static fn (array $query): bool => str_contains($query['query'], SeoTables::Profiles),
+    );
+
+    expect($profileQueries)->toBeEmpty();
+});
+
+it('returns authorized owner SEO profiles positionally with fixed query counts', function (): void {
+    $owners = [seoConsumerOwner('Bulk owner 01')];
+    app(SyncSeoProfileAction::class)->execute(
+        $owners[0],
+        SeoProfilePayload::from([
+            'translations' => ['en' => ['title' => 'Bulk profile 01']],
+        ]),
+        'catalog',
+    );
+    $authorization = new class implements SeoAuthorization
+    {
+        /** @var list<SeoAuthorizationContext> */
+        public array $contexts = [];
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->contexts[] = $context;
+        }
+    };
+    app()->instance(SeoAuthorization::class, $authorization);
+    $measure = static function (array $owners): array {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $profiles = app(ListOwnerSeoProfilesAction::class)->execute(
+                $owners,
+                ' CATALOG ',
+            );
+            $queryCount = count(DB::getQueryLog());
+
+            foreach ($profiles as $profile) {
+                $profile?->toArray();
+            }
+
+            expect(DB::getQueryLog())->toHaveCount($queryCount);
+
+            return [$profiles, $queryCount];
+        } finally {
+            DB::disableQueryLog();
+        }
+    };
+    [$single, $singleQueries] = $measure($owners);
+
+    foreach (range(2, 25) as $index) {
+        $owner = seoConsumerOwner("Bulk owner {$index}");
+        $owners[] = $owner;
+        app(SyncSeoProfileAction::class)->execute(
+            $owner,
+            SeoProfilePayload::from([
+                'translations' => ['en' => ['title' => "Bulk profile {$index}"]],
+            ]),
+            'catalog',
+        );
+    }
+
+    [$populated, $populatedQueries] = $measure($owners);
+
+    expect($single)->toHaveCount(1)
+        ->and($single[0])->toBeInstanceOf(SeoProfileData::class)
+        ->and($single[0]?->ownerId)->toBe((string) $owners[0]->getKey())
+        ->and($singleQueries)->toBeLessThanOrEqual(2)
+        ->and($populated)->toHaveCount(25)
+        ->and($populated[24]?->ownerId)->toBe((string) $owners[24]->getKey())
+        ->and($populatedQueries)->toBe($singleQueries)
+        ->and($authorization->contexts)->toHaveCount(26);
+});
+
+it('denies bulk owner SEO reads before profile queries and bounds owner input', function (): void {
+    $owners = [seoConsumerOwner('Denied bulk owner')];
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            throw new AuthorizationException('Denied bulk owner SEO read.');
+        }
+    });
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => app(ListOwnerSeoProfilesAction::class)->execute($owners))
+            ->toThrow(AuthorizationException::class, 'Denied bulk owner SEO read.')
+            ->and(collect(DB::getQueryLog())->contains(
+                static fn (array $query): bool => str_contains(
+                    $query['query'],
+                    SeoTables::Profiles,
+                ),
+            ))->toBeFalse();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $repeated = array_fill(0, 101, $owners[0]);
+
+    expect(fn () => app(ListOwnerSeoProfilesAction::class)->execute($repeated))
+        ->toThrow(InvalidArgumentException::class, 'at most 100 owner entries');
+});
+
+it('preserves mixed owner types and absent profiles in positional results', function (): void {
+    $uuidOwner = seoConsumerOwner('Mixed UUID owner');
+    $integerOwner = TestIntegerSeoOwner::query()->create(['name' => 'Mixed integer owner']);
+    $missingOwner = seoConsumerOwner('Mixed missing owner');
+    app(SyncSeoProfileAction::class)->execute(
+        $uuidOwner,
+        SeoProfilePayload::from([]),
+        'catalog',
+    );
+    app(SyncSeoProfileAction::class)->execute(
+        $integerOwner,
+        SeoProfilePayload::from([]),
+        'catalog',
+    );
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
+
+    $profiles = app(ListOwnerSeoProfilesAction::class)->execute(
+        [$uuidOwner, $integerOwner, $missingOwner],
+        'catalog',
+    );
+
+    expect($profiles)->toHaveCount(3)
+        ->and($profiles[0]?->ownerAlias)->toBe('article')
+        ->and($profiles[0]?->ownerId)->toBe((string) $uuidOwner->getKey())
+        ->and($profiles[1]?->ownerAlias)->toBe('integer-article')
+        ->and($profiles[1]?->ownerId)->toBe((string) $integerOwner->getKey())
+        ->and($profiles[2])->toBeNull();
+});
 
 it('exercises the complete opt-in management API lifecycle', function (): void {
     config()->set([

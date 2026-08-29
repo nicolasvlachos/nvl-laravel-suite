@@ -30,6 +30,19 @@ of reaching into another module's implementation.
 - Treat the public-contract baseline as a semantic-versioning gate, not a file
   to regenerate automatically.
 
+Run focused module quality from the monorepo root. The root runner owns binary
+resolution, immutable-migration analysis boundaries, and package-specific tool
+caches:
+
+```bash
+php tools/run-package-quality.php auth comments
+composer package:quality -- auth comments
+```
+
+Do not use a package-local Composer `quality` script from this repository.
+Those scripts remain useful only in standalone package archives with their own
+installed dependencies.
+
 Run the complete release gate before opening a pull request:
 
 ```bash

@@ -10,11 +10,22 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Nvl\Suite\Console\Commands\SuiteConfigurationCommand;
+use Nvl\Suite\Console\Commands\SuiteConfigureCommand;
+use Nvl\Suite\Console\Commands\SuiteConsumerAuditCommand;
 use Nvl\Suite\Console\Commands\SuiteDoctorCommand;
 use Nvl\Suite\Console\Commands\SuiteSkillsDoctorCommand;
 use Nvl\Suite\Console\Commands\SuiteSkillsPublishCommand;
+use Nvl\Suite\Console\Commands\SuiteUpgradeCheckCommand;
+use Nvl\Suite\Services\ConsumerAudit\ComposerSourceRootLocator;
+use Nvl\Suite\Services\ConsumerAudit\PhpConsumerBoundaryScanner;
+use Nvl\Suite\Services\ConsumerAudit\SuiteRuntimeConsumerScanner;
 use Nvl\Suite\Services\SuiteConfigurationInspector;
+use Nvl\Suite\Services\SuiteConfigurationRenderer;
+use Nvl\Suite\Services\SuiteConsumerAuditor;
+use Nvl\Suite\Services\SuiteModuleSelection;
+use Nvl\Suite\Services\SuitePackageConfigurationInspector;
 use Nvl\Suite\Services\SuiteSkillManager;
+use Nvl\Suite\Services\SuiteUpgradeInspector;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 
 /**
@@ -34,7 +45,28 @@ final class SuiteServiceProvider extends ServiceProvider
                 $app->make(Repository::class),
             ),
         );
+        $this->app->bind(
+            SuiteModuleSelection::class,
+            static fn (Application $app): SuiteModuleSelection => $app
+                ->make(SuiteModuleCatalog::class)
+                ->selection(),
+        );
         $this->app->singleton(SuiteConfigurationInspector::class);
+        $this->app->singleton(SuiteConfigurationRenderer::class);
+        $this->app->singleton(
+            SuitePackageConfigurationInspector::class,
+            static fn (Application $app): SuitePackageConfigurationInspector => new SuitePackageConfigurationInspector(
+                filesystem: $app->make(Filesystem::class),
+                catalog: $app->make(SuiteModuleCatalog::class),
+                suiteRoot: dirname(__DIR__),
+                configurationPath: $app->configPath(),
+            ),
+        );
+        $this->app->singleton(SuiteUpgradeInspector::class);
+        $this->app->singleton(ComposerSourceRootLocator::class);
+        $this->app->singleton(PhpConsumerBoundaryScanner::class);
+        $this->app->singleton(SuiteRuntimeConsumerScanner::class);
+        $this->app->singleton(SuiteConsumerAuditor::class);
         $this->app->singleton(
             SuiteSkillManager::class,
             static fn (Application $app): SuiteSkillManager => new SuiteSkillManager(
@@ -46,8 +78,10 @@ final class SuiteServiceProvider extends ServiceProvider
             ),
         );
 
-        foreach ($this->app->make(SuiteModuleCatalog::class)->effectiveProviders() as $provider) {
-            $this->app->register($provider);
+        $catalog = $this->app->make(SuiteModuleCatalog::class);
+
+        foreach ($this->app->make(SuiteModuleSelection::class)->effectiveModules() as $module) {
+            $this->app->register($catalog->modules()[$module]['provider']);
         }
     }
 
@@ -73,9 +107,12 @@ final class SuiteServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SuiteConfigurationCommand::class,
+                SuiteConfigureCommand::class,
+                SuiteConsumerAuditCommand::class,
                 SuiteDoctorCommand::class,
                 SuiteSkillsDoctorCommand::class,
                 SuiteSkillsPublishCommand::class,
+                SuiteUpgradeCheckCommand::class,
             ]);
         }
     }

@@ -63,7 +63,7 @@ final class PagesManagementController extends Controller
 
         return response()->json([
             'data' => array_map(
-                static fn (Page $page): array => PageData::fromModel($page)->toArray(),
+                static fn (PageData $page): array => $page->toArray(),
                 $pages->items(),
             ),
             'meta' => [
@@ -101,9 +101,9 @@ final class PagesManagementController extends Controller
         PageActorFactory $actors,
     ): JsonResponse {
         return response()->json([
-            'data' => PageData::fromModel(
-                $action->execute($page, $actors->fromRequest($request)),
-            )->toArray(),
+            'data' => $action
+                ->execute($page, $actors->fromRequest($request))
+                ->toArray(),
         ]);
     }
 

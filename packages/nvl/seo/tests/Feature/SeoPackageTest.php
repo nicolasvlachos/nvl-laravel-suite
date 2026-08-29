@@ -17,6 +17,7 @@ use Nvl\Seo\Actions\PreviewSeoProfileAction;
 use Nvl\Seo\Actions\SeoProfileStatusAction;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Actions\SyncSeoRedirectAction;
+use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
@@ -435,6 +436,10 @@ it('rejects stale profile writes and excludes archived profiles from runtime res
 });
 
 it('provides typed management actions while management routes stay disabled', function (): void {
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
     $owner = seoOwner();
     $profile = app(SyncSeoProfileAction::class)->execute($owner, seoPayload());
     $target = seoOwner('Duplicate target');

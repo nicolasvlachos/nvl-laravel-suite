@@ -6,13 +6,13 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/seo` |
 | PHP namespace | `Nvl\Seo` |
 | Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
 | Configuration | `config/seo.php` |
 
-A standalone localized SEO system for Laravel 12 and 13: polymorphic profiles,
+A standalone localized SEO system for Laravel 13: polymorphic profiles,
 deterministic translations, canonical and hreflang URLs, social cards, safe
 JSON-LD, media integration, robots policies, and bounded cached XML sitemaps.
 
@@ -35,13 +35,13 @@ It does not own an admin UI, application roles/policies, content routing, analyt
 ## Requirements and installation
 
 - PHP 8.4+
-- Laravel 12–13
+- Laravel 13
 - `nvl/translatable` 1.x
 - `nvl/data` 1.x
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 php artisan vendor:publish --tag=seo-config
 php artisan vendor:publish --tag=seo-skills
@@ -448,6 +448,40 @@ The resolver uses the same normalization/fingerprint as writes and loads transla
 
 `UniqueSeoPath` provides an early validation error; the database constraint remains the race-safe authority.
 
+## Owner-centric profile reads
+
+Use owner Actions when application code already has the registered Eloquent
+owner. This avoids navigating `seoProfiles`, selecting a raw `SeoProfile`, or
+calling `SeoProfileData::fromModel()` with a duplicated alias:
+
+```php
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
+
+$profile = app(GetOwnerSeoProfileAction::class)->execute($page, $page->site);
+$revision = app(GetOwnerSeoRevisionAction::class)->execute($page, $page->site);
+$profiles = app(ListOwnerSeoProfilesAction::class)->execute($pages, $page->site);
+```
+
+`GetOwnerSeoProfileAction` returns an authorized `SeoProfileData` with its
+translations eager-loaded, or `null` when the normalized scope has no profile.
+`GetOwnerSeoRevisionAction` performs the lightweight concurrency read and
+returns `SeoOwnerRevisionData`: registered owner alias, string owner ID,
+normalized scope, nullable profile ID, and revision. An absent profile has
+revision `0`, which is the create token accepted by profile mutations.
+
+`ListOwnerSeoProfilesAction` accepts at most 100 registered, persisted owners
+and returns one `SeoProfileData` or `null` for each owner in the same positional
+order. It authorizes every owner before profile SQL, then batches profiles and
+translations in at most two queries whether one or 25 owners are supplied. Use
+it when a bounded editor index already has its owner models; do not eager-load
+`seoProfiles` and construct privileged DTOs outside SEO.
+
+All three Actions resolve aliases through `SeoOwnerRegistry` and authorize
+`SeoAbility::View` before querying the profile table. Bind `SeoAuthorization`
+or configure `seo.authorization.ability`; the default remains fail-closed.
+
 ## Optional management API
 
 The package is headless and management routes are disabled by default. Register
@@ -695,7 +729,7 @@ composer install
 composer quality
 ```
 
-The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. The monorepo adds dependency analysis, Composer audit, integration tests, and Laravel 12/13 gates.
+The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. The monorepo adds dependency analysis, Composer audit, integration tests, and Laravel 13 gates.
 
 See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CHANGELOG.md](CHANGELOG.md).
 

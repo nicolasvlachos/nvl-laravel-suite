@@ -6,13 +6,13 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/translations` |
 | PHP namespace | `Nvl\Translations` |
 | Service provider | `Nvl\Translations\Providers\TranslationsServiceProvider` |
 | Configuration | `config/translations.php` |
 
-The suite's Laravel 12–13 file-catalog module for reading, scanning, editing, synchronizing, and resaving PHP-array and JSON translation files.
+The suite's Laravel 13 file-catalog module for reading, scanning, editing, synchronizing, and resaving PHP-array and JSON translation files.
 
 Use `nvl/translatable` for locale-specific Eloquent content. This package only manages Laravel language files.
 
@@ -30,11 +30,11 @@ The database is an editing and synchronization workspace. It is not installed as
 ## Requirements and installation
 
 - PHP 8.4+
-- Laravel 12 or 13
+- Laravel 13
 - `nvl/data`, `nvl/filterable`, and `nvl/support`
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 php artisan vendor:publish --tag=translations-config
 php artisan vendor:publish --tag=translations-skills
@@ -78,7 +78,7 @@ lang/
 
 ## Configure source locations
 
-The application source defaults to Laravel's `lang_path()`, which is the root `lang` directory in Laravel 12–13:
+The application source defaults to Laravel's `lang_path()`, which is the root `lang` directory in Laravel 13:
 
 ```php
 'paths' => [
@@ -178,6 +178,46 @@ $entry = app(UpdateTranslationEntryAction::class)->execute(
 `ListTranslationEntriesAction` provides paginated, filterable administrative reads. `ListTranslationFilterOptionsAction` returns available scope, locale, and PHP-group filters.
 
 Edits use both a database row lock and the same workspace lock as synchronization, and require the current optimistic revision. The source hash is intentionally not replaced by a database edit. A later import can therefore distinguish an unsaved database edit from an unchanged source file.
+
+## Catalog statistics and shared filters
+
+Use the public schema service when an application owns its management controller.
+This avoids constructing `TranslationEntry` only to discover the package's filter
+allowlist and keeps list and statistics inputs identical:
+
+```php
+use Nvl\Filterable\Http\QueryFilterSetFactory;
+use Nvl\Translations\Actions\Entries\GetTranslationCatalogStatisticsAction;
+use Nvl\Translations\Services\TranslationEntryFilterSchema;
+
+$schema = app(TranslationEntryFilterSchema::class)->make();
+$filters = app(QueryFilterSetFactory::class)->fromQuery(
+    request()->query(),
+    $schema,
+);
+
+$statistics = app(GetTranslationCatalogStatisticsAction::class)->execute($filters);
+```
+
+`GetTranslationCatalogStatisticsAction::execute(?FilterSet $filters = null)`
+authorizes `TranslationsAbility::ListEntries` before its first query and returns
+`TranslationCatalogStatisticsData`. The projection contains `total`, `missing`,
+`conflicts`, `changed`, `locales`, and `scopes`:
+
+- `missing` counts rows whose durable `is_missing` marker is true.
+- `conflicts` counts rows whose synchronization status is `conflict`.
+- `changed` counts rows with a source hash whose durable status is `edited` or
+  `conflict`. A preserved database edit remains `edited`; “preserved” is an
+  import result counter, not a stored synchronization status.
+- `locales` and `scopes` are `array<string, int>` maps sorted by count descending
+  and key ascending, capped at 100 entries each. Scope keys use command-compatible
+  tokens such as `app`, `module:Website`, and `custom:shared`. JSON serialization
+  always emits both maps as objects, including valid numeric-only locale keys.
+
+The statistics read executes one scalar aggregate and one grouped query per
+dimension: three queries regardless of catalog size. Caller-provided sort clauses
+do not affect aggregates; every allowlisted filter is applied with the same
+semantics as `ListTranslationEntriesAction`.
 
 ## Configure output directories
 

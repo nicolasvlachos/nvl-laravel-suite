@@ -52,6 +52,7 @@ body?: string,
 format?: Nvl.Comments.Enums.CommentFormat,
 locale?: string | null,
 tags?: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 actorType?: string | null,
 actorId?: string | null,
 status: Nvl.Comments.Enums.CommentStatus,
@@ -80,6 +81,47 @@ anonymizedAt: string | null,
 anonymizationReason: string | null,
 createdAt: string,
 updatedAt: string,
+document?: Nvl.Comments.Data.CommentViewerDocumentData,
+mentions?: Nvl.Comments.Data.CommentMentionData[],
+};
+export type CommentMentionChangeData = {
+resourceAlias: string,
+resourceId: string,
+tokenId: string,
+};
+export type CommentMentionData = {
+tokenId: string,
+resourceAlias: string,
+state: Nvl.Comments.Enums.CommentMentionState,
+labelSnapshot: string,
+resourceId: string | null,
+currentLabel: string | null,
+fields: Record<string, string | number | boolean | null>,
+url: string | null,
+};
+export type CommentMentionReferenceData = {
+tokenId: string,
+resourceAlias: string,
+resourceId: string,
+labelSnapshot: string,
+position: number,
+};
+export type CommentMentionResourceData = {
+id: string,
+label: string | null,
+fields: Record<string, string | number | boolean | null>,
+url: string | null,
+state: Nvl.Comments.Enums.CommentMentionState,
+};
+export type CommentMentionSuggestionData = {
+id: string,
+label: string,
+fields: Record<string, string | number | boolean | null>,
+url: string | null,
+};
+export type CommentMetadataProjectionData = {
+namespace: string,
+values: Record<string, string | number | boolean | null>,
 };
 export type CommentReactionSummaryData = {
 type: string,
@@ -102,6 +144,13 @@ identityFingerprintMismatches: number,
 missingTargetComments: number,
 invalidAttachmentAssociations: number,
 healthy: boolean,
+missingMetadataIndexValues: number,
+staleMetadataIndexValues: number,
+documentMentionMismatches: number,
+duplicateMentionIdentities: number,
+invalidMentionSnapshots: number,
+orphanMentionRows: number,
+bodyProjectionMismatches: number,
 };
 export type CommentReportManagementData = {
 id: string,
@@ -126,12 +175,22 @@ body: string,
 format: Nvl.Comments.Enums.CommentFormat,
 locale: string | null,
 tags: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 createdAt: string,
 };
 export type CommentTargetReportQueueData = {
 report: Nvl.Comments.Data.CommentReportManagementData,
 comment: Nvl.Comments.Data.CommentManagementData,
 };
+export type CommentViewerDocumentBlockData = {
+type: 'paragraph',
+children: Array<Nvl.Comments.Data.CommentViewerDocumentNodeData>,
+};
+export type CommentViewerDocumentData = {
+version: 1,
+blocks: Array<Nvl.Comments.Data.CommentViewerDocumentBlockData>,
+};
+export type CommentViewerDocumentNodeData = { type: 'text'; text: string } | { type: 'hard_break' } | { type: 'mention'; tokenId: string; resource: string; state: Nvl.Comments.Enums.CommentMentionState; label: string };
 export type MemberCommentData = {
 id: string,
 rootId: string | null,
@@ -141,6 +200,7 @@ body?: string,
 format?: Nvl.Comments.Enums.CommentFormat,
 locale?: string | null,
 tags?: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 revision: number,
 deleted?: boolean,
 replyCount: number,
@@ -156,6 +216,8 @@ isAuthor?: boolean,
 abilities?: Nvl.Comments.Data.CommentAbilitiesData,
 createdAt: string,
 updatedAt: string,
+document?: Nvl.Comments.Data.CommentViewerDocumentData,
+mentions?: Nvl.Comments.Data.CommentMentionData[],
 };
 export type MemberCommentReactionSummaryData = {
 type: string,
@@ -171,6 +233,7 @@ body?: string,
 format?: Nvl.Comments.Enums.CommentFormat,
 locale?: string | null,
 tags?: Array<string>,
+metadata?: Nvl.Comments.Data.CommentMetadataProjectionData[],
 revision: number,
 deleted?: boolean,
 replyCount: number,
@@ -182,6 +245,8 @@ author?: Nvl.Comments.Data.CommentAuthorData | null,
 reactions?: Nvl.Comments.Data.CommentReactionSummaryData[],
 createdAt: string,
 updatedAt: string,
+document?: Nvl.Comments.Data.CommentViewerDocumentData,
+mentions?: Nvl.Comments.Data.CommentMentionData[],
 };
 namespace Mutations {
 export type AnonymizeCommentData = {
@@ -191,9 +256,27 @@ reason: string,
 export type AttachCommentMediaData = {
 mediaId: string,
 };
+export type CommentDocumentBlockData = {
+type: 'paragraph',
+children: Array<Nvl.Comments.Data.Mutations.CommentDocumentNodeData>,
+};
+export type CommentDocumentData = {
+version: 1,
+blocks: Array<Nvl.Comments.Data.Mutations.CommentDocumentBlockData>,
+};
+export type CommentDocumentNodeData = { type: 'text'; text: string } | { type: 'hard_break' } | { type: 'mention'; tokenId: string; resource: string; id: string | number };
 export type CreateCommentData = {
 body: string,
 format?: Nvl.Comments.Enums.CommentFormat,
+visibility?: Nvl.Comments.Enums.CommentVisibility,
+locale?: string | null,
+parentId?: string | null,
+tags?: Array<string>,
+metadata?: Record<string, unknown>,
+idempotencyKey?: string | null,
+};
+export type CreateRichCommentData = {
+document: Nvl.Comments.Data.Mutations.CommentDocumentData,
 visibility?: Nvl.Comments.Enums.CommentVisibility,
 locale?: string | null,
 parentId?: string | null,
@@ -237,13 +320,29 @@ locale?: string | null,
 tags?: Array<string>,
 metadata?: Record<string, unknown>,
 };
+export type UpdateRichCommentData = {
+document: Nvl.Comments.Data.Mutations.CommentDocumentData,
+expectedRevision: number,
+locale?: string | null,
+tags?: Array<string>,
+metadata?: Record<string, unknown>,
+};
+}
+namespace Queries {
+export type CommentSelectorData = {
+tags: Array<string>,
+metadataEquals: Record<string, string | number | boolean | null>,
+status: Nvl.Comments.Enums.CommentStatus | null,
+};
 }
 }
 namespace Enums {
 export type CommentAbility = 'list' | 'view' | 'view_identity' | 'create' | 'reply' | 'update' | 'delete' | 'restore' | 'anonymize' | 'react' | 'report' | 'attach' | 'detach' | 'view_history' | 'restore_revision' | 'moderate';
 export type CommentAudience = 'public' | 'member' | 'management';
 export type CommentChangeOperation = 'created' | 'updated' | 'deleted' | 'restored' | 'anonymized' | 'moderated' | 'report_reviewed' | 'revision_restored';
-export type CommentFormat = 'plain' | 'markdown';
+export type CommentFormat = 'plain' | 'markdown' | 'rich_text';
+export type CommentMentionState = 'resolved' | 'missing' | 'restricted';
+export type CommentMetadataValueType = 'string' | 'integer' | 'boolean' | 'uuid';
 export type CommentReportStatus = 'open' | 'resolved' | 'dismissed';
 export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'hidden' | 'spam';
 export type CommentVisibility = 'public' | 'private' | 'internal';

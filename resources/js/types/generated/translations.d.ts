@@ -4,6 +4,14 @@
 declare namespace Nvl {
 namespace Translations {
 namespace Data {
+export type TranslationCatalogStatisticsData = {
+total: number,
+missing: number,
+conflicts: number,
+changed: number,
+locales: Record<string, number>,
+scopes: Record<string, number>,
+};
 export type TranslationEntryPayload = {
 id: string,
 scopeType: Nvl.Translations.Enums.TranslationScopeType,

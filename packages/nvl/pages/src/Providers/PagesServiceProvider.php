@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Pages\Providers;
 
+use Illuminate\Database\Events\MigrationStarted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
@@ -23,7 +24,9 @@ use Nvl\Pages\Services\ConfiguredPageRequestContextResolver;
 use Nvl\Pages\Services\ConfiguredPageUrlGenerator;
 use Nvl\Pages\Services\PageResourceRegistry;
 use Nvl\Pages\Support\PagesConfiguration;
+use Nvl\Pages\Support\PagesMigrationRollbackGuard;
 use Nvl\Seo\Services\SitemapRegistry;
+use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -31,12 +34,14 @@ use Nvl\Translatable\Services\TranslationResourceRegistry;
  */
 final class PagesServiceProvider extends ServiceProvider
 {
+    use MergesPackageConfiguration;
+
     /**
      * Register validated Pages contracts and singleton registries.
      */
     public function register(): void
     {
-        $this->replaceConfigRecursivelyFrom(__DIR__.'/../../config/pages.php', 'pages');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/pages.php', 'pages');
         $this->registerOwnerConfigurations();
         $authorization = config(
             'pages.authorization.class',
@@ -76,6 +81,7 @@ final class PagesServiceProvider extends ServiceProvider
         $this->app->bindIf(PageRequestContextResolver::class, $contextResolver);
         $this->app->bindIf(PageUrlGenerator::class, $urlGenerator);
         $this->app->singleton(PageResourceRegistry::class);
+        $this->app->singleton(PagesMigrationRollbackGuard::class);
     }
 
     /**
@@ -88,6 +94,7 @@ final class PagesServiceProvider extends ServiceProvider
         SitemapRegistry $sitemaps,
         PageResourceRegistry $resources,
     ): void {
+        $migrationRollbackGuard = $this->app->make(PagesMigrationRollbackGuard::class);
         $typeScriptSources->register(__DIR__.'/..', 'nvl/pages');
         $this->registerResources($resources);
         $contentAlias = Page::CONTENT_OWNER_TYPE;
@@ -112,6 +119,7 @@ final class PagesServiceProvider extends ServiceProvider
         );
         $sitemaps->register($this->app->make(PageSitemapSource::class), 'nvl/pages');
         Event::listen(PageChanged::class, InvalidatePageSitemap::class);
+        Event::listen(MigrationStarted::class, $migrationRollbackGuard->before(...));
 
         if ((bool) config('pages.migrations.enabled', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');

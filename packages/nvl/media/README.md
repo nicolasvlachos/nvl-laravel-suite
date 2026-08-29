@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^1.0` |
+| Installed through | `composer require nvl/laravel-suite:^2.0` |
 | Module identifier | `nvl/media` |
 | PHP namespace | `Nvl\Media` |
 | Service provider | `Nvl\Media\Providers\MediaServiceProvider` |
@@ -32,7 +32,7 @@ Media owns the complete lifecycle of binary assets: ingestion, validation, conte
 ## Requirements and installation
 
 - PHP 8.4+
-- Laravel 12 or 13
+- Laravel 13
 - `ext-curl` for DNS-pinned remote ingestion
 - `nvl/translatable` for localized media copy
 - an image driver supported by `spatie/image`
@@ -40,7 +40,7 @@ Media owns the complete lifecycle of binary assets: ingestion, validation, conte
 - `league/flysystem-aws-s3-v3` is included for S3-compatible disks
 
 ```bash
-composer require nvl/laravel-suite:^1.0
+composer require nvl/laravel-suite:^2.0
 php artisan migrate
 php artisan vendor:publish --tag=media-config
 php artisan vendor:publish --tag=media-skills
@@ -63,7 +63,7 @@ English and Bulgarian media copy ships with the package. Publish conventional La
 
 ### Production support boundary
 
-The supported 1.x production path is PHP 8.4+, Laravel 12/13, PostgreSQL, an S3-compatible private bucket, Redis-backed cache/locks/queues, and a real `MediaContentScanner`. Multipart remains opt-in; when enabled, production additionally requires a recoverable gateway, central multipart locks, scanner attestation, and the PostgreSQL/Redis/S3 integration gate. Run `php artisan nvl:media:doctor --production --strict` against the deployed configuration before accepting traffic.
+The supported 2.x production path is PHP 8.4+, Laravel 13, PostgreSQL, an S3-compatible private bucket, Redis-backed cache/locks/queues, and a real `MediaContentScanner`. Multipart remains opt-in; when enabled, production additionally requires a recoverable gateway, central multipart locks, scanner attestation, and the PostgreSQL/Redis/S3 integration gate. Run `php artisan nvl:media:doctor --production --strict` against the deployed configuration before accepting traffic.
 
 SQLite, local disks, array locks, and synchronous queues remain supported for development and the fast test suite. They do not prove the multi-node production guarantees.
 
@@ -267,6 +267,90 @@ $association = app(AttachMediaAction::class)->execute(
 
 Contracts are bound for the complete library facade plus upload, attach, detach, delete, and public reuse. Actions own mutation transactions; filesystem operations live behind media gateways/operators.
 
+## Owner-slot workflows
+
+Application document concerns should declare policy and delegate lifecycle work
+to the four actor-aware owner-slot Actions. A KPO-style private PDF slot becomes:
+
+```php
+use Nvl\Media\Contracts\HasMedia;
+use Nvl\Media\Traits\InteractsWithMedia;
+
+final class Report extends Model implements HasMedia
+{
+    use InteractsWithMedia;
+
+    public function registerMediaSlots(): void
+    {
+        $this->addMediaSlot('document')
+            ->oneToOne()
+            ->acceptsMimeTypes(['application/pdf'])
+            ->maxFileSize(4 * 1024 * 1024);
+    }
+}
+```
+
+The host creates `MediaActorData` from its authenticated principal and injects
+the Actions rather than querying associations or copying custom properties:
+
+```php
+use Nvl\Media\Actions\ClearOwnerMediaSlotAction;
+use Nvl\Media\Actions\CopyOwnerMediaSlotAction;
+use Nvl\Media\Actions\GetOwnerMediaSlotAction;
+use Nvl\Media\Actions\ReplaceOwnerMediaSlotAction;
+use Nvl\Media\Data\MediaActorData;
+
+$actor = new MediaActorData($user->getMorphClass(), (string) $user->getKey());
+
+$current = $getOwnerMediaSlot->execute($actor, $report, 'document');
+$document = $replaceOwnerMediaSlot->execute(
+    $actor,
+    $report,
+    'document',
+    $stagedMediaId,
+    $requestId,
+);
+$copy = $copyOwnerMediaSlot->execute(
+    $actor,
+    $otherReport,
+    'document',
+    $document->id,
+    $copyRequestId,
+);
+$clearOwnerMediaSlot->execute($actor, $report, 'document', $clearRequestId);
+```
+
+`GetOwnerMediaSlotAction` requires `View`; mutations require `Associate`.
+Replacing with an existing private asset accepts an unassociated upload owned by
+the actor, actor-owned staging associations, an authorized reusable public
+asset, or an explicitly authorized `ManageStaging` adoption. A custom
+`fileAcceptor` cannot be re-run for an already-persisted replacement because the
+original `UploadedFile` is unavailable; upload directly into that slot instead.
+Copy materializes and verifies the source, then passes a real `UploadedFile`
+through canonical destination ingestion, so its custom acceptor is enforced.
+
+Shared previous assets are detached and retained while referenced elsewhere.
+Orphaned exclusive assets are deleted through the package lifecycle after the
+real root transaction commits. Copy always creates a new Media identity, applies
+the destination disk/visibility, preserves normalized tags, attributes the new
+row to the actor, and copies only scalar keys allowlisted by
+`media.owner_slots.copy.metadata_keys`. Add domain presentation/provenance keys
+such as `format` explicitly; never allowlist credentials, provider payloads,
+storage identity, redaction state, or association metadata.
+
+Idempotency keys are optional UUIDs. Reuse the same key for retries of the exact
+actor/owner/slot/payload; mismatched reuse fails closed. Completed results replay
+without lifecycle effects, including after a newer request occupies the slot.
+The default same-connection ledger completes atomically with Media. A dedicated
+ledger connection uses immutable recovery checkpoints and remains retry-safe,
+but is a saga boundary. Workflows respect consumer-owned outer transactions:
+files, events, and split-ledger completion follow the actual root commit, while
+rollback keeps the prior slot and makes the operation retryable.
+
+Run `php artisan nvl:media:owner-slots:prune` on a schedule. Doctor validates
+the ledger schema/indexes and lifecycle bounds, atomic mutation-lock support,
+and up to 100 owner type/slot pairs observed in the retained ledger.
+
 ## Localized metadata
 
 `Media` uses `nvl/translatable` for `title`, `alt`, `caption`, and `description`:
@@ -392,12 +476,13 @@ The default `MediaAuthorization` grants cross-owner mutations only to the owning
             'mutate' => 'media.update-any',
             'delete' => 'media.delete-any',
             'reuse' => 'media.reuse-any',
+            'manage_staging' => 'media.manage-staging',
         ],
     ],
 ],
 ```
 
-`MEDIA_GLOBAL_ROLES=admin,super-admin` is the environment shortcut for the role list. Role names are empty by default, so installing an authorization package cannot silently elevate a pre-existing role during an upgrade. The `media.manage` permission grants every Media ability; the `*-any` permissions are granular. Missing roles, permissions, guard mismatches, or an absent Spatie package fail closed and normal ownership policy continues.
+`MEDIA_GLOBAL_ROLES=admin,super-admin` is the environment shortcut for the role list. Role names are empty by default, so installing an authorization package cannot silently elevate a pre-existing role during an upgrade. The `media.manage` permission grants every Media ability; the `*-any` permissions are granular. `media.manage-staging` is the narrow cross-owner grant used when an owner-slot workflow adopts another actor's staged asset. Missing roles, permissions, guard mismatches, or an absent Spatie package fail closed and normal ownership policy continues.
 
 Global access bypasses uploader ownership, including list scoping and private delivery, but does not bypass shared-asset reference integrity, scanner quarantine, mutation locks, or storage verification. Applications may disable the bridge or replace `MediaAuthorization` for a fully custom policy.
 
@@ -423,6 +508,7 @@ php artisan nvl:media:reconcile --production --disk=s3 --orphans
 php artisan nvl:media:regenerate --dry-run --preset=thumb --disk=s3
 php artisan nvl:media:migrate-disk --from=public --to=s3 --dry-run
 php artisan nvl:media:multipart:prune --limit=500
+php artisan nvl:media:owner-slots:prune --days=7 --chunk=500
 ```
 
 Run storage health before and after a disk migration. Back up metadata and verify target-disk credentials before production moves.
@@ -433,7 +519,7 @@ Every option, safety rule, exit status, and production sequence is documented in
 
 ## Database schema and adoption
 
-Package-owned media, association, variation, multipart-session, and translation rows use UUID primary keys. Uploader and owner morph identifiers are strings so integer, UUID, ULID, and string application keys remain compatible. The clean create migrations include composite indexes for visibility, uploader, disk, type and status listings by creation time; multipart indexes cover actor history, status/expiry, and completed media.
+Package-owned media, association, variation, multipart-session, owner-slot-operation, and translation rows use UUID primary keys. Uploader and owner morph identifiers are strings so integer, UUID, ULID, and string application keys remain compatible. The clean create migrations include composite indexes for visibility, uploader, disk, type and status listings by creation time; multipart indexes cover actor history, status/expiry, and completed media. The owner-slot ledger uniquely indexes UUID idempotency keys and indexes owner/slot and creation-time lookups. Its connection, table, processing lease, retention, and pruning chunk are configured under `media.owner_slots.idempotency`; Doctor checks its schema, lifecycle bounds, atomic lock store, and observed model/slot registrations. Expired processing attempts recover under a new operation UUID so stale workers cannot complete the replacement claim. A custom ledger connection is a recoverable saga boundary rather than a cross-database atomic transaction. Schedule `nvl:media:owner-slots:prune` to remove only expired terminal claims in bounded chunks.
 
 Set `media.migrations.enabled=false` only while staging a legacy table whose canonical name would collide with the package migration. Rename that source, create the package schema, then run `nvl:media:adopt-spatie` without `--apply`. The command maps standard Spatie ownership columns into associations, preserves UUIDs or derives stable UUIDs from integer identifiers, accepts optional translation and variation tables, verifies every backing path, and reports source/matched counts. `--apply` is refused until the dry run has no mapping or path errors; it never drops the staged source tables and is idempotent by deterministic identifiers.
 
@@ -486,7 +572,7 @@ composer install
 composer quality
 ```
 
-`composer quality` verifies the manifest, Pint formatting, PHPStan at maximum strictness, direct dependency declarations, generated TypeScript freshness and compilation, and the isolated Testbench/Pest suite. Run Composer and npm security audits separately against their lockfiles. Compatibility verification covers Laravel 12/Testbench 10 and Laravel 13/Testbench 11 on the suite's PHP 8.4+ runtime. The local production integration command additionally requires PostgreSQL, Redis, and MinIO or equivalent S3-compatible storage.
+`composer quality` verifies the manifest, Pint formatting, PHPStan at maximum strictness, direct dependency declarations, generated TypeScript freshness and compilation, and the isolated Testbench/Pest suite. Run Composer and npm security audits separately against their lockfiles. Compatibility verification covers Laravel 13/Testbench 11 on the suite's PHP 8.4+ runtime. The local production integration command additionally requires PostgreSQL, Redis, and MinIO or equivalent S3-compatible storage.
 
 The documentation coverage test keeps facade, trait, adder, slot, conversion, model-helper, management-route, contract, event, and top-level configuration references synchronized with their public source surfaces.
 
