@@ -6237,12 +6237,12 @@
                 ],
                 "Nvl\\Comments\\Actions\\CreateCommentAction": [
                     "final readonly class Nvl\\Comments\\Actions\\CreateCommentAction",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentContentGuard $guard, Nvl\\Comments\\Services\\CommentIdempotencyDigest $idempotency, Nvl\\Comments\\Services\\CommentLifecycleGuard $lifecycle, Nvl\\Comments\\Services\\CommentMutationLock $mutationLock, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentCreationWriter $writer): mixed",
                     "public function execute(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\Mutations\\CreateCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience=Nvl\\Comments\\Enums\\CommentAudience::Public): Nvl\\Comments\\Models\\Comment"
                 ],
                 "Nvl\\Comments\\Actions\\CreateRichCommentAction": [
                     "final readonly class Nvl\\Comments\\Actions\\CreateRichCommentAction",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentContentGuard $guard, Nvl\\Comments\\Services\\CommentDocumentNormalizer $documents, Nvl\\Comments\\Services\\CommentIdempotencyDigest $idempotency, Nvl\\Comments\\Services\\CommentLifecycleGuard $lifecycle, Nvl\\Comments\\Services\\CommentMentionWriter $mentions, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Services\\CommentMutationLock $mutationLock, Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentCreationWriter $writer): mixed",
                     "public function execute(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\Mutations\\CreateRichCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience=Nvl\\Comments\\Enums\\CommentAudience::Public): Nvl\\Comments\\Models\\Comment"
                 ],
                 "Nvl\\Comments\\Actions\\DeleteCommentAction": [
@@ -8359,6 +8359,12 @@
                     "public function updateRich(Nvl\\Comments\\Data\\Mutations\\UpdateRichCommentData $data, string $body, ?array $existingMetadata=null): array",
                     "@param array<string, mixed>|null $existingMetadata",
                     "@return array<string, mixed>"
+                ],
+                "Nvl\\Comments\\Services\\CommentCreationWriter": [
+                    "final readonly class Nvl\\Comments\\Services\\CommentCreationWriter",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentContentGuard $guard, Nvl\\Comments\\Services\\CommentDocumentNormalizer $documents, Nvl\\Comments\\Services\\CommentIdempotencyDigest $idempotency, Nvl\\Comments\\Services\\CommentLifecycleGuard $lifecycle, Nvl\\Comments\\Services\\CommentMentionWriter $mentions, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Services\\CommentMutationLock $mutationLock, Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
+                    "public function create(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\Mutations\\CreateCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience): Nvl\\Comments\\Models\\Comment",
+                    "public function createRich(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\Mutations\\CreateRichCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience): Nvl\\Comments\\Models\\Comment"
                 ],
                 "Nvl\\Comments\\Services\\CommentDocumentNormalizer": [
                     "final readonly class Nvl\\Comments\\Services\\CommentDocumentNormalizer",
