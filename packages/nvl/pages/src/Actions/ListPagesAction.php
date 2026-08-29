@@ -10,7 +10,7 @@ use Nvl\Filterable\Services\EloquentFilterApplier;
 use Nvl\Pages\Contracts\PageAuthorization;
 use Nvl\Pages\Data\PageActorData;
 use Nvl\Pages\Data\PageAuthorizationContextData;
-use Nvl\Pages\Data\PageListItemData;
+use Nvl\Pages\Data\PageData;
 use Nvl\Pages\Enums\PageAbility;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Services\PageFilterSchema;
@@ -33,7 +33,7 @@ final readonly class ListPagesAction
     /**
      * Return one authorized site-scoped management paginator.
      *
-     * @return LengthAwarePaginator<int, PageListItemData>
+     * @return LengthAwarePaginator<int, PageData>
      */
     public function execute(
         FilterSet $filters,
@@ -57,7 +57,7 @@ final readonly class ListPagesAction
         ));
 
         return $pages->through(
-            static fn (Page $page): PageListItemData => PageListItemData::fromModel($page),
+            static fn (Page $page): PageData => PageData::fromModel($page),
         );
     }
 }

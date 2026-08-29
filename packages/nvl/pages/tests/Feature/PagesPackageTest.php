@@ -63,7 +63,6 @@ use Nvl\Pages\Data\PageData;
 use Nvl\Pages\Data\PageEditorBootstrapData;
 use Nvl\Pages\Data\PageEditorSummaryData;
 use Nvl\Pages\Data\PageKeyAvailabilityData;
-use Nvl\Pages\Data\PageListItemData;
 use Nvl\Pages\Data\PageOptionData;
 use Nvl\Pages\Data\PageRequestContextData;
 use Nvl\Pages\Data\PublicPageData;
@@ -455,7 +454,7 @@ it('always scopes management lists to one explicit site', function (): void {
                 'page=2',
                 'site=default',
             )
-            ->and($item)->toBeInstanceOf(PageListItemData::class)
+            ->and($item)->toBeInstanceOf(PageData::class)
             ->and($item?->id)->toBe($default->id)
             ->and($item?->translations['en']['title'] ?? null)->toBe('Default-site')
             ->and(array_keys($serialized ?? []))->toBe([

@@ -103,7 +103,7 @@ git commit -m "feat!: disable omitted suite modules"
 - Modify: `packages/nvl/auth/tests/Feature/RbacManagementTest.php`
 - Modify: `packages/nvl/pages/src/Actions/GetPageAction.php`
 - Modify: `packages/nvl/pages/src/Actions/ListPagesAction.php`
-- Create: `packages/nvl/pages/src/Data/PageListItemData.php`
+- Reuse: `packages/nvl/pages/src/Data/PageData.php`
 - Modify: `packages/nvl/pages/tests/Feature/PagesPackageTest.php`
 - Modify: `packages/nvl/content/src/Actions/GetContentBlockAction.php`
 - Modify: `packages/nvl/content/src/Actions/ListContentBlocksAction.php`
@@ -145,8 +145,10 @@ items plus query-count parity and serialized TypeScript shapes.
 Map Eloquent paginator collections with `through()` while preserving total,
 page, per-page, path/query options, ordering, authorization, and query ceilings.
 `GetPageAction` returns `PageData`; `ListPagesAction` returns
-`LengthAwarePaginator<int, PageListItemData>`. Auth list DTOs include the counts
-and hierarchy labels already eager-loaded by their Actions, reusing the
+`LengthAwarePaginator<int, PageData>`. The final-1.x migration-runway ruling
+requires the page list to reuse the already-shipped `PageData` contract; no
+parallel page-list DTO is introduced. Auth list DTOs include the counts and
+hierarchy labels already eager-loaded by their Actions, reusing the
 `RoleListItemData` and `PermissionListItemData` contracts shipped in 1.1 rather
 than adding a second catalog shape.
 

@@ -22,7 +22,6 @@ use Nvl\Pages\Data\Mutations\MovePageData;
 use Nvl\Pages\Data\Mutations\RestorePageData;
 use Nvl\Pages\Data\Mutations\UpdatePageData;
 use Nvl\Pages\Data\PageData;
-use Nvl\Pages\Data\PageListItemData;
 use Nvl\Pages\Data\Queries\PageIndexQueryData;
 use Nvl\Pages\Data\Queries\PagePreviewQueryData;
 use Nvl\Pages\Models\Page;
@@ -64,7 +63,7 @@ final class PagesManagementController extends Controller
 
         return response()->json([
             'data' => array_map(
-                static fn (PageListItemData $page): array => $page->toArray(),
+                static fn (PageData $page): array => $page->toArray(),
                 $pages->items(),
             ),
             'meta' => [
