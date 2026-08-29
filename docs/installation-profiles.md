@@ -23,15 +23,19 @@ php artisan nvl:suite:configure --profile=auth-only --add=comments --remove=form
 
 The command writes only with `--write`. A new destination is written
 atomically. Replacing an existing file additionally requires `--force`, and the
-command returns a unified diff for review. Destinations must be readable `.php`
-files inside the application root; symlink escapes are rejected.
+command returns a unified diff for review. An actual replacement creates an
+exact sibling backup named `nvl-suite.php.backup-YYYYMMDD-HHMMSS`; a dry run,
+new file, or already-matching file creates no backup. Destinations must be
+readable `.php` files inside the application root; symlink escapes are rejected.
 
 At runtime, a non-null legacy `modules` map remains authoritative. Otherwise,
 the suite resolves `profile`, then `include`, validates `exclude`, and closes
 dependencies. The upgrade checker rejects a host file that mixes the legacy map
 with declarative keys, even though runtime keeps the legacy map authoritative
-for backward compatibility. Minimal overlays work identically with cached and
-uncached Laravel configuration.
+for backward compatibility. In a legacy map, omitted module flags resolve to
+disabled in 2.0; an explicitly enabled root still re-enables its transitive
+dependencies. Minimal overlays work identically with cached and uncached
+Laravel configuration.
 
 Compare the booted application with the selected profile after configuring
 migration ownership, contracts, registries, queues, and schedules:
@@ -92,19 +96,24 @@ passed, exit `1` means actionable adoption or boundary findings remain, and
 exit `2` means the arguments, destination, configuration source, or audit policy
 is invalid.
 
-During 1.x, an omitted module flag remains implicitly enabled for compatibility.
-Once every key has been generated and reviewed, opt into strict explicit-module
-diagnostics with:
+Suite 2.0 disables every omitted flag in a non-null legacy `modules` map. Before
+upgrading a partial 1.x map, generate the replacement with a reviewed profile:
 
-```php
-'adoption' => [
-    'require_explicit_module_decisions' => true,
-],
+```bash
+php artisan nvl:suite:configure --profile=full-suite --full
+php artisan nvl:suite:configure --profile=full-suite --full --write --force
 ```
 
-That switch changes diagnostics only; it does not change module registration in
-1.x. The future 2.0 default can therefore be adopted deliberately rather than
-surprising an existing application.
+Use the narrower documented profile that matches the consumer when the old
+omissions were intentional. The full-suite profile preserves the 1.x
+compatibility-enabled behavior. Review every generated boolean and the unified
+diff before writing. `nvl:suite:upgrade:check` reports one
+`upgrade.module_missing` error per omission, including its disabled 2.0 state
+and this remediation. The legacy
+`adoption.require_explicit_module_decisions` setting may remain during the
+upgrade, but omitted flags are now intentional disabled states rather than
+strict Doctor warnings. See [UPGRADING.md](../UPGRADING.md) for the exact
+before/after configuration.
 
 ## Auth only
 

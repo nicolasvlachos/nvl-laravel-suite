@@ -114,8 +114,8 @@ final readonly class SuiteUpgradeInspector
                 'severity' => 'error',
                 'module' => $module,
                 'symbol' => 'modules.'.$module,
-                'message' => 'The current suite contains a module with no published consumer decision.',
-                'remediation' => 'Choose true or false for the module before adopting this suite version.',
+                'message' => 'The omitted module flag resolves to disabled in Suite 2.0.',
+                'remediation' => 'Run nvl:suite:configure with a reviewed profile and --full, then use --write --force to replace the partial map with explicit decisions.',
             ];
 
             if ($definition['migration']['mode'] === 'configurable') {

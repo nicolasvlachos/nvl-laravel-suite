@@ -10,7 +10,8 @@ return [
     |
     | New installations select a profile plus optional capability roots. The
     | suite closes transitive dependencies and rejects excluded requirements.
-    | A published 1.x modules map remains authoritative when non-null.
+    | A published legacy modules map remains authoritative when non-null;
+    | omitted legacy flags are disabled while dependencies still close.
     |
     */
     'profile' => 'full-suite',

@@ -288,6 +288,7 @@
             "/.mcp.json",
             "/.npmrc",
             "/.phpunit.cache",
+            "/.superpowers",
             "/.worktrees",
             "/AGENTS.md",
             "/CLAUDE.md",

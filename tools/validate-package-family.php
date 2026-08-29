@@ -270,7 +270,10 @@ foreach ($packages as $package) {
 }
 
 $registeredProviders = (new SuiteModuleCatalog(new Repository([
-    'nvl-suite' => ['modules' => []],
+    'nvl-suite' => [
+        'profile' => 'full-suite',
+        'modules' => null,
+    ],
 ])))->effectiveProviders();
 
 $sortedExpectedProviders = $expectedProviders;

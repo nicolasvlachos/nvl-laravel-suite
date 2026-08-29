@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Config\Repository;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Filesystem\Filesystem;
@@ -56,13 +57,15 @@ function suitePackageConfigurationInspector(array $sources): array
     ];
 }
 
-it('distinguishes explicit and implicit module decisions', function (): void {
+it('treats omitted legacy module decisions as intentionally disabled', function (): void {
     config()->set('nvl-suite.modules', ['auth' => true, 'forms' => false]);
     $catalog = app(SuiteModuleCatalog::class);
 
     expect($catalog->moduleDecision('auth'))->toBe('enabled')
         ->and($catalog->moduleDecision('forms'))->toBe('disabled')
-        ->and($catalog->moduleDecision('pages'))->toBe('implicit');
+        ->and($catalog->moduleDecision('pages'))->toBe('implicit')
+        ->and($catalog->requested('pages'))->toBeFalse()
+        ->and($catalog->effectiveModules())->toBe(['support', 'data', 'auth']);
 
     $report = app(SuiteConfigurationInspector::class)->inspect();
 
@@ -74,29 +77,20 @@ it('distinguishes explicit and implicit module decisions', function (): void {
         ->explicit->toBeTrue()
         ->and($report['modules']['pages'])
         ->decision->toBe('implicit')
-        ->explicit->toBeFalse();
+        ->explicit->toBeFalse()
+        ->enabled->toBeFalse();
 });
 
-it('fails strict adoption only when explicit module decisions are required', function (): void {
+it('reports omitted legacy decisions as intentional disabled states in Doctor output', function (): void {
     $modules = suiteDiagnosticModules('support');
     unset($modules['data']);
     config()->set('nvl-suite.modules', $modules);
-    config()->set('nvl-suite.adoption.require_explicit_module_decisions', false);
+    config()->set('nvl-suite.adoption.require_explicit_module_decisions', true);
 
     expect(Artisan::call('nvl:suite:doctor', [
         '--strict' => true,
         '--format' => 'json',
     ]))->toBe(0);
-
-    config()->set('nvl-suite.adoption.require_explicit_module_decisions', true);
-
-    expect(Artisan::call('nvl:suite:doctor', [
-        '--format' => 'json',
-    ]))->toBe(0)
-        ->and(Artisan::call('nvl:suite:doctor', [
-            '--strict' => true,
-            '--format' => 'json',
-        ]))->toBe(1);
 
     $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
     $check = collect($report['checks'] ?? [])
@@ -104,8 +98,80 @@ it('fails strict adoption only when explicit module decisions are required', fun
 
     expect($check)
         ->not->toBeNull()
-        ->passed->toBeFalse()
-        ->severity->toBe('warning');
+        ->passed->toBeTrue()
+        ->severity->toBe('info')
+        ->message->toBe('The omitted module flag is intentionally disabled in Suite 2.0.');
+});
+
+it('disables every omitted legacy module while re-enabling required dependencies', function (): void {
+    $catalog = new SuiteModuleCatalog(new Repository([
+        'nvl-suite' => [
+            'modules' => [
+                'media' => false,
+                'content' => false,
+                'pages' => true,
+            ],
+        ],
+    ]));
+    $omittedModules = [
+        'support',
+        'data',
+        'filterable',
+        'translatable',
+        'activity',
+        'auth',
+        'csv',
+        'mail-notifications',
+        'comments',
+        'metafields',
+        'primitives',
+        'seo',
+        'settings',
+        'taxonomy',
+        'templates',
+        'translations',
+        'forms',
+    ];
+
+    expect(array_map(
+        static fn (string $module): bool => $catalog->requested($module),
+        $omittedModules,
+    ))->toBe(array_fill(0, count($omittedModules), false))
+        ->and(array_map(
+            static fn (string $module): string => $catalog->moduleDecision($module),
+            $omittedModules,
+        ))->toBe(array_fill(0, count($omittedModules), 'implicit'))
+        ->and($catalog->requested('media'))->toBeFalse()
+        ->and($catalog->requested('content'))->toBeFalse()
+        ->and($catalog->requested('pages'))->toBeTrue()
+        ->and($catalog->effectiveModules())->toBe([
+            'support',
+            'data',
+            'filterable',
+            'translatable',
+            'media',
+            'content',
+            'metafields',
+            'seo',
+            'pages',
+        ]);
+});
+
+it('rejects unknown keys in partial legacy module maps', function (): void {
+    $catalog = new SuiteModuleCatalog(new Repository([
+        'nvl-suite' => [
+            'modules' => [
+                'pages' => true,
+                'retired-module' => false,
+            ],
+        ],
+    ]));
+
+    expect(fn (): array => $catalog->effectiveModules())
+        ->toThrow(
+            RuntimeException::class,
+            'Unknown suite module configuration: retired-module.',
+        );
 });
 
 it('provides dependency-complete installation profiles', function (): void {
@@ -221,7 +287,7 @@ it('expresses the KPO module set as capability roots without an application-spec
         ->not->toContain('primitives', 'taxonomy', 'forms');
 });
 
-it('defaults an unpublished suite configuration to the full-suite profile', function (): void {
+it('uses the shipped full-suite default when the consumer has no published configuration', function (): void {
     $configuration = require base_path('config/nvl-suite.php');
     $selection = SuiteModuleSelection::fromConfiguration(
         $configuration,
@@ -231,7 +297,28 @@ it('defaults an unpublished suite configuration to the full-suite profile', func
     expect($configuration)->toHaveKey('modules')
         ->and($configuration['modules'])->toBeNull()
         ->and($configuration['profile'] ?? null)->toBe('full-suite')
-        ->and($selection->effectiveModules())->toHaveCount(20);
+        ->and($selection->effectiveModules())->toBe([
+            'support',
+            'data',
+            'filterable',
+            'translatable',
+            'activity',
+            'auth',
+            'csv',
+            'mail-notifications',
+            'media',
+            'comments',
+            'content',
+            'metafields',
+            'primitives',
+            'seo',
+            'settings',
+            'taxonomy',
+            'templates',
+            'translations',
+            'forms',
+            'pages',
+        ]);
 });
 
 it('accepts declarative upgrade selections and rejects mixed or invalid sources', function (): void {

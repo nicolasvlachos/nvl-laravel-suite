@@ -125,7 +125,7 @@ final readonly class SuiteModuleSelection
 
         foreach (array_keys($definitions) as $module) {
             $explicit = array_key_exists($module, $configured);
-            $requested[$module] = $explicit ? $configured[$module] : true;
+            $requested[$module] = $explicit ? $configured[$module] : false;
             $decisions[$module] = $explicit
                 ? ($configured[$module] ? 'enabled' : 'disabled')
                 : 'implicit';

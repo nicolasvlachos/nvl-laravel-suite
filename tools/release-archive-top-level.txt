@@ -3,6 +3,7 @@ CONTRIBUTING.md
 LICENSE
 README.md
 SECURITY.md
+UPGRADING.md
 composer.json
 config
 docs

@@ -226,15 +226,37 @@ PHP,
     }
 
     /**
-     * Atomically write a new destination or replace one after explicit confirmation.
+     * Atomically write a new destination or back up and replace an existing one.
+     *
+     * @return string|null The timestamped backup path when existing contents changed.
      */
-    public function write(string $path, string $contents, bool $force = false): void
+    public function write(string $path, string $contents, bool $force = false): ?string
     {
-        if ($this->filesystem->exists($path) && ! $force) {
-            throw new RuntimeException('The suite configuration already exists; pass --force to replace it.');
+        $backup = null;
+
+        if ($this->filesystem->exists($path)) {
+            if ($this->filesystem->get($path) === $contents) {
+                return null;
+            }
+
+            if (! $force) {
+                throw new RuntimeException('The suite configuration already exists; pass --force to replace it.');
+            }
+
+            $backup = $path.'.backup-'.now()->format('Ymd-His');
+
+            if ($this->filesystem->exists($backup)) {
+                throw new RuntimeException('The timestamped suite configuration backup already exists; retry after the timestamp changes.');
+            }
+
+            if (! $this->filesystem->copy($path, $backup)) {
+                throw new RuntimeException('The existing suite configuration could not be backed up.');
+            }
         }
 
         $this->filesystem->replace($path, $contents);
+
+        return $backup;
     }
 
     /**

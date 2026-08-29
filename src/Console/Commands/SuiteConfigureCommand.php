@@ -108,9 +108,16 @@ final class SuiteConfigureCommand extends Command
             return self::INVALID;
         }
 
-        if ($write) {
+        $written = false;
+        $backup = null;
+
+        if ($write && $diff !== '') {
             try {
-                $renderer->write($path, $contents, $force);
+                $backupPath = $renderer->write($path, $contents, $force);
+                $backup = is_string($backupPath)
+                    ? $renderer->relativePath($backupPath)
+                    : null;
+                $written = true;
             } catch (Throwable) {
                 $this->components->error('The suite configuration could not be written.');
 
@@ -125,7 +132,8 @@ final class SuiteConfigureCommand extends Command
             'removals' => $selection->exclude,
             'path' => $renderer->relativePath($path),
             'write_requested' => $write,
-            'written' => $write,
+            'written' => $written,
+            'backup' => $backup,
             'modules' => $modules,
             'contents' => $contents,
             'diff' => $diff,
@@ -140,9 +148,15 @@ final class SuiteConfigureCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->components->info($write
-            ? sprintf('Wrote [%s].', $report['path'])
-            : sprintf('Dry run for [%s]; pass --write to create it.', $report['path']));
+        $this->components->info(match (true) {
+            $written => sprintf('Wrote [%s].', $report['path']),
+            $write => sprintf('No write needed; [%s] already matches.', $report['path']),
+            default => sprintf('Dry run for [%s]; pass --write to create it.', $report['path']),
+        });
+
+        if (is_string($backup)) {
+            $this->components->info(sprintf('Backed up the replaced configuration to [%s].', $backup));
+        }
 
         if ($force && $diff !== null && $diff !== '') {
             $this->line($diff);

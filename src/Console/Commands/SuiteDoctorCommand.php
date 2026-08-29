@@ -53,11 +53,11 @@ final class SuiteDoctorCommand extends Command
         foreach ($configuration['modules'] as $module => $definition) {
             $checks[] = $this->check(
                 key: "module.{$module}.explicit_decision",
-                passed: $definition['explicit'],
-                severity: 'warning',
+                passed: true,
+                severity: 'info',
                 message: $definition['explicit']
                     ? 'The module has an explicit enabled or disabled decision.'
-                    : 'The module is enabled by the 1.x compatibility default because its flag is omitted.',
+                    : 'The omitted module flag is intentionally disabled in Suite 2.0.',
             );
 
             if (! $definition['enabled']) {

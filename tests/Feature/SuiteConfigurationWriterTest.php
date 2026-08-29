@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Nvl\Pages\Contracts\PageAuthorization;
@@ -24,10 +25,29 @@ it('renders a dependency-complete profile without writing by default', function 
         $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
 
         expect($report['written'] ?? null)->toBeFalse()
-            ->and($report['modules']['data'] ?? null)->toBeTrue()
-            ->and($report['modules']['auth'] ?? null)->toBeTrue()
-            ->and(collect($report['modules'] ?? [])->except(['support', 'data', 'auth'])->filter())
-            ->toBeEmpty();
+            ->and($report['backup'] ?? null)->toBeNull()
+            ->and($report['modules'] ?? null)->toBe([
+                'support' => true,
+                'data' => true,
+                'filterable' => false,
+                'translatable' => false,
+                'activity' => false,
+                'auth' => true,
+                'csv' => false,
+                'mail-notifications' => false,
+                'media' => false,
+                'comments' => false,
+                'content' => false,
+                'metafields' => false,
+                'primitives' => false,
+                'seo' => false,
+                'settings' => false,
+                'taxonomy' => false,
+                'templates' => false,
+                'translations' => false,
+                'forms' => false,
+                'pages' => false,
+            ]);
     } finally {
         File::delete($path);
     }
@@ -60,6 +80,11 @@ it('writes a complete canonical configuration only with the explicit write flag'
             ->and($configuration['adoption']['require_explicit_module_decisions'] ?? null)
             ->toBeFalse()
             ->and($configuration['consumer_audit']['suppressions'] ?? null)->toBe([]);
+
+        $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['backup'] ?? null)->toBeNull()
+            ->and(File::glob($path.'.backup-*'))->toBe([]);
     } finally {
         File::delete($path);
     }
@@ -99,10 +124,13 @@ it('renders minimal declarative overlays and full legacy maps explicitly', funct
         ]))->toBe(2);
 });
 
-it('requires force and emits a unified diff before replacing an existing configuration', function (): void {
+it('backs up exact overwritten configuration only when contents change', function (): void {
     $path = storage_path('framework/testing/nvl-suite-force-'.bin2hex(random_bytes(4)).'.php');
-    File::put($path, "<?php\n\nreturn ['existing' => true];\n");
+    $original = "<?php\n\ndeclare(strict_types=1);\n\nreturn ['existing' => true];\n";
+    File::put($path, $original);
     $before = hash_file('sha256', $path);
+    Carbon::setTestNow('2026-08-29 12:34:56');
+    $backupPath = $path.'.backup-20260829-123456';
 
     try {
         expect(Artisan::call('nvl:suite:configure', [
@@ -126,9 +154,30 @@ it('requires force and emits a unified diff before replacing an existing configu
 
         expect($report['diff'] ?? null)
             ->toContain('--- config/', '+++ generated/', '@@')
-            ->and(File::get($path))->toBe($report['contents'] ?? null);
+            ->and($report['backup'] ?? null)->toBe(str_replace(base_path().'/', '', $backupPath))
+            ->and(File::get($path))->toBe($report['contents'] ?? null)
+            ->and(File::get($backupPath))->toBe($original);
+
+        Carbon::setTestNow('2026-08-29 12:35:57');
+
+        expect(Artisan::call('nvl:suite:configure', [
+            '--profile' => 'auth-only',
+            '--minimal' => true,
+            '--path' => $path,
+            '--write' => true,
+            '--force' => true,
+            '--format' => 'json',
+        ]))->toBe(0);
+
+        $unchanged = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($unchanged['written'] ?? null)->toBeFalse()
+            ->and($unchanged['backup'] ?? null)->toBeNull()
+            ->and(File::exists($path.'.backup-20260829-123557'))->toBeFalse();
     } finally {
+        Carbon::setTestNow();
         File::delete($path);
+        File::delete($backupPath);
     }
 });
 
@@ -214,7 +263,31 @@ it('reports incomplete published module decisions and their operational reviews'
 
     expect($report['healthy'] ?? null)->toBeFalse()
         ->and($findings->where('code', 'upgrade.module_missing')->pluck('module'))
-        ->toContain('data', 'pages')
+        ->values()->all()->toBe([
+            'activity',
+            'comments',
+            'content',
+            'csv',
+            'data',
+            'filterable',
+            'forms',
+            'mail-notifications',
+            'media',
+            'metafields',
+            'pages',
+            'primitives',
+            'seo',
+            'settings',
+            'support',
+            'taxonomy',
+            'templates',
+            'translatable',
+            'translations',
+        ])
+        ->and($findings->where('code', 'upgrade.module_missing')->pluck('message')->unique()->values()->all())
+        ->toBe(['The omitted module flag resolves to disabled in Suite 2.0.'])
+        ->and($findings->where('code', 'upgrade.module_missing')->pluck('remediation')->unique()->values()->all())
+        ->toBe(['Run nvl:suite:configure with a reviewed profile and --full, then use --write --force to replace the partial map with explicit decisions.'])
         ->and($findings->where('code', 'upgrade.required_contract_review')->pluck('symbol'))
         ->toContain(PageAuthorization::class)
         ->and($findings->where('code', 'upgrade.required_schedule_review')->pluck('symbol'))
@@ -249,8 +322,19 @@ it('reports unknown and non-boolean module keys without exposing their values', 
         flags: JSON_THROW_ON_ERROR,
     )['findings'] ?? []);
 
+    $unknown = $findings->firstWhere('code', 'upgrade.module_unknown');
+    $invalid = $findings->firstWhere('code', 'upgrade.module_invalid');
+
     expect($findings->pluck('code'))
         ->toContain('upgrade.module_unknown', 'upgrade.module_invalid')
+        ->and($unknown['module'] ?? null)->toBe('retired-module')
+        ->and($unknown['symbol'] ?? null)->toBe('retired-module')
+        ->and($unknown['message'] ?? null)
+        ->toBe('The published configuration contains an unknown suite module.')
+        ->and($unknown['remediation'] ?? null)
+        ->toBe('Remove the retired or unsupported module decision after reviewing the upgrade notes.')
+        ->and($invalid['module'] ?? null)->toBe('auth')
+        ->and($invalid['symbol'] ?? null)->toBe('modules.auth')
         ->and($output)->not->toContain('fixture-secret-value', 'definitely-not-a-boolean');
 });
 

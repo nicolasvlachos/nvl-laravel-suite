@@ -39,7 +39,7 @@
 - Consumes: CR-03 decision states and CR-04 configuration renderer/checker.
 - Produces: v2 `effectiveModules()` semantics where omitted keys are disabled.
 
-- [ ] **Step 1: Change the tests first to express v2 behavior**
+- [x] **Step 1: Change the tests first to express v2 behavior**
 
 ```php
 $catalog = new SuiteModuleCatalog(new Repository([
@@ -55,13 +55,13 @@ Add tests for an absent published config using the package's full explicit
 default file, partial configs, explicit false dependencies that are re-enabled
 transitively, unknown keys, configure output, and upgrade-check remediation.
 
-- [ ] **Step 2: Run diagnostics/configuration tests and verify old defaults fail**
+- [x] **Step 2: Run diagnostics/configuration tests and verify old defaults fail**
 
 Run: `php artisan test --compact tests/Feature/SuiteDiagnosticsTest.php tests/Feature/SuiteConfigurationWriterTest.php`
 
 Expected: FAIL because omitted flags still resolve true.
 
-- [ ] **Step 3: Change catalog fallback semantics**
+- [x] **Step 3: Change catalog fallback semantics**
 
 For the legacy non-null `modules` map, replace the missing-key fallback with
 `false` in `SuiteModuleSelection`. Keep dependency closure and CR-28 profile/
@@ -69,7 +69,7 @@ include/exclude semantics unchanged. The shipped `config/nvl-suite.php` keeps
 `profile: full-suite`, so a new installation is unchanged; partial legacy maps
 activate only their explicit modules and dependencies.
 
-- [ ] **Step 4: Make upgrade tooling produce the exact fix**
+- [x] **Step 4: Make upgrade tooling produce the exact fix**
 
 `nvl:suite:upgrade:check` on a 1.x partial config exits 1 and lists every omitted
 module with its effective 2.0 disabled state. `nvl:suite:configure --write`
@@ -77,7 +77,7 @@ renders all keys explicitly and creates a timestamped sibling backup only when
 overwriting an existing file. Doctor no longer calls an omitted decision a
 warning in 2.0; it reports it as an intentional disabled state.
 
-- [ ] **Step 5: Run upgrade, archive, and clean-consumer gates**
+- [x] **Step 5: Run upgrade, archive, and clean-consumer gates**
 
 Run: `php artisan test --compact tests/Feature/SuiteDiagnosticsTest.php tests/Feature/SuiteConfigurationWriterTest.php tests/Contract/PackageArchiveToolsTest.php`
 
@@ -85,7 +85,7 @@ Run both production consumer runners and the final-1.x-to-2.0 archive rehearsal.
 
 Expected: PASS with unchanged effective profiles after config rendering.
 
-- [ ] **Step 6: Commit CR-23**
+- [x] **Step 6: Commit CR-23**
 
 ```bash
 git add src/Support/SuiteModuleCatalog.php config/nvl-suite.php src/Console/Commands/SuiteConfigureCommand.php src/Console/Commands/SuiteUpgradeCheckCommand.php src/Console/Commands/SuiteDoctorCommand.php tests docs/installation-profiles.md UPGRADING.md

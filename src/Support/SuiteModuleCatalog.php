@@ -752,7 +752,7 @@ final readonly class SuiteModuleCatalog
     }
 
     /**
-     * Return whether a module was explicitly or implicitly requested.
+     * Return whether a module is selected as a root before dependency closure.
      */
     public function requested(string $module): bool
     {
@@ -760,7 +760,7 @@ final readonly class SuiteModuleCatalog
     }
 
     /**
-     * Return the consumer's explicit or compatibility-default module decision.
+     * Return the consumer's explicit or omitted-disabled module decision.
      *
      * @return 'enabled'|'disabled'|'implicit'
      */

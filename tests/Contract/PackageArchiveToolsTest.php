@@ -299,6 +299,7 @@ it('ships every module and the central provider in the archive', function (): vo
         $catalog = require dirname(__DIR__, 2).'/tools/package-family.php';
 
         expect($entries)->toContain(
+            'UPGRADING.md',
             'src/SuiteServiceProvider.php',
             'src/Console/Commands/SuiteConfigureCommand.php',
             'src/Console/Commands/SuiteConfigurationCommand.php',
