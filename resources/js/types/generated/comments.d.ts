@@ -82,6 +82,17 @@ anonymizationReason: string | null,
 createdAt: string,
 updatedAt: string,
 };
+export type CommentMentionReferenceData = {
+tokenId: string,
+resourceAlias: string,
+resourceId: string,
+labelSnapshot: string,
+position: number,
+};
+export type CommentMentionResourceData = {
+id: string,
+label: string,
+};
 export type CommentMetadataProjectionData = {
 namespace: string,
 values: Record<string, string | number | boolean | null>,
@@ -201,9 +212,22 @@ reason: string,
 export type AttachCommentMediaData = {
 mediaId: string,
 };
+export type CommentDocumentData = {
+version: number,
+blocks: Array<Record<string, unknown>>,
+};
 export type CreateCommentData = {
 body: string,
 format?: Nvl.Comments.Enums.CommentFormat,
+visibility?: Nvl.Comments.Enums.CommentVisibility,
+locale?: string | null,
+parentId?: string | null,
+tags?: Array<string>,
+metadata?: Record<string, unknown>,
+idempotencyKey?: string | null,
+};
+export type CreateRichCommentData = {
+document: Nvl.Comments.Data.Mutations.CommentDocumentData,
 visibility?: Nvl.Comments.Enums.CommentVisibility,
 locale?: string | null,
 parentId?: string | null,
@@ -247,6 +271,13 @@ locale?: string | null,
 tags?: Array<string>,
 metadata?: Record<string, unknown>,
 };
+export type UpdateRichCommentData = {
+document: Nvl.Comments.Data.Mutations.CommentDocumentData,
+expectedRevision: number,
+locale?: string | null,
+tags?: Array<string>,
+metadata?: Record<string, unknown>,
+};
 }
 namespace Queries {
 export type CommentSelectorData = {
@@ -260,7 +291,7 @@ namespace Enums {
 export type CommentAbility = 'list' | 'view' | 'view_identity' | 'create' | 'reply' | 'update' | 'delete' | 'restore' | 'anonymize' | 'react' | 'report' | 'attach' | 'detach' | 'view_history' | 'restore_revision' | 'moderate';
 export type CommentAudience = 'public' | 'member' | 'management';
 export type CommentChangeOperation = 'created' | 'updated' | 'deleted' | 'restored' | 'anonymized' | 'moderated' | 'report_reviewed' | 'revision_restored';
-export type CommentFormat = 'plain' | 'markdown';
+export type CommentFormat = 'plain' | 'markdown' | 'rich_text';
 export type CommentMetadataValueType = 'string' | 'integer' | 'boolean' | 'uuid';
 export type CommentReportStatus = 'open' | 'resolved' | 'dismissed';
 export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'hidden' | 'spam';

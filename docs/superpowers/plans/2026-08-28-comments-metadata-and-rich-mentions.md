@@ -251,7 +251,7 @@ git commit -m "feat(comments): add registered metadata contracts"
 - Consumes: existing transactional mutation/locking/revision/idempotency lifecycle.
 - Produces: `CommentFormat::RichText`, versioned document storage, and current normalized mention rows.
 
-- [ ] **Step 1: Write failing migration and document-contract tests**
+- [x] **Step 1: Write failing migration and document-contract tests**
 
 Cover fresh migration, upgrade from the four existing Comments migrations,
 application-owned table names, rollback safety, allowed nodes, unknown node/type,
@@ -259,7 +259,7 @@ invalid UUID token, duplicate token, unknown resource alias, excessive depth/
 blocks/nodes/bytes/mentions/resources, empty documents, and Unicode plain-text
 derivation. Run database-portability cases where package CI supports them.
 
-- [ ] **Step 2: Add forward-only schema evolution**
+- [x] **Step 2: Add forward-only schema evolution**
 
 Do not edit the four released migrations. The first new migration adds nullable
 JSON `document` to Comments and Revisions. The second creates the configured
@@ -287,7 +287,7 @@ consumer resource. Hide raw `document` on Comment/Revision model serialization
 and `resource_identity_hash` on CommentMention; public DTO construction is the
 only supported transport boundary.
 
-- [ ] **Step 3: Define document version 1 exactly**
+- [x] **Step 3: Define document version 1 exactly**
 
 `CommentDocumentData` carries `version: 1` and a list of blocks. The normalized
 JSON schema is:
@@ -318,7 +318,7 @@ rows even when the live resource has disappeared. Derive `body` deterministicall
 text nodes are literal normalized text, mention nodes are `@` plus the resolved
 label, hard breaks are `\n`, and paragraphs are separated by `\n\n`.
 
-- [ ] **Step 4: Add dedicated rich mutation Actions**
+- [x] **Step 4: Add dedicated rich mutation Actions**
 
 Keep existing `CreateCommentAction`, `UpdateCommentAction`, and DTO signatures
 unchanged for plain/Markdown comments. `CreateRichCommentAction` and
@@ -327,7 +327,7 @@ registry contract, derive `body`, persist `format=rich_text`, `document`, and
 mention rows inside the existing lock/transaction, and create one consistent
 revision. Until CR-33 lands, tests bind a deterministic fake registry.
 
-- [ ] **Step 5: Preserve lifecycle semantics**
+- [x] **Step 5: Preserve lifecycle semantics**
 
 Restore rebuilds current mention rows from the validated historical document in
 the same locked transaction. Anonymization removes current mention rows and
@@ -335,13 +335,13 @@ scrubs mention IDs/labels from current and revision documents while preserving
 non-identifying text according to the existing anonymization policy. Soft delete
 does not destroy history. Hard/cascade deletion removes current mention rows.
 
-- [ ] **Step 6: Prove concurrency and idempotency**
+- [x] **Step 6: Prove concurrency and idempotency**
 
 Two updates with the same expected revision yield one winner; an idempotent
 retry returns the same rich comment; a reused idempotency key with a changed
 document fails; rollback leaves no partial document/mention/revision state.
 
-- [ ] **Step 7: Verify CR-32**
+- [x] **Step 7: Verify CR-32**
 
 ```bash
 php tools/run-package-quality.php comments
@@ -351,7 +351,7 @@ php artisan test --compact tests/Feature/Integration/CrossPackageIntegrationTest
 Expected: old plain/Markdown payloads and projections remain compatible, while
 rich lifecycle tests pass on the package's supported database matrix.
 
-- [ ] **Step 8: Commit CR-32**
+- [x] **Step 8: Commit CR-32**
 
 ```bash
 git add packages/nvl/comments
