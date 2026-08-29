@@ -640,7 +640,10 @@ it('uses serialization-safe canonical keys for mixed string and integer owners',
         'id' => '1',
         'name' => 'String one',
     ]);
-    $integerOwner = TestIntegerContentOwner::query()->create(['name' => 'Integer one']);
+    $integerOwner = TestIntegerContentOwner::query()->forceCreate([
+        'id' => 1,
+        'name' => 'Integer one',
+    ]);
 
     expect($integerOwner->getKey())->toBe(1);
 
@@ -890,12 +893,16 @@ it('finds exact block and owner-scoped placement DTOs without exposing models', 
         $placementQuery = collect(DB::getQueryLog())->first(
             static fn (array $query): bool => str_contains(
                 $query['query'],
-                'from "content_placements"',
+                'content_placements',
             ),
         );
+        $wrappedPlacementId = DB::connection()
+            ->getQueryGrammar()
+            ->wrap('content_placements.id');
 
         expect($placementQuery['query'] ?? null)
-            ->not->toContain('"content_placements"."id"');
+            ->toBeString()
+            ->not->toContain($wrappedPlacementId);
     } finally {
         DB::disableQueryLog();
     }
