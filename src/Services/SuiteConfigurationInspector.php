@@ -46,6 +46,7 @@ use Throwable;
  *     findings: list<array<string, mixed>>
  * }
  * @phpstan-type SuiteConfigurationReport array{
+ *     selection: array{source: 'legacy'|'declarative', profile: string|null, include: list<string>, exclude: list<string>},
  *     profile: ProfileReport|null,
  *     profiles: array<string, ProfileDefinition>,
  *     modules: array<string, EffectiveModule>,
@@ -60,7 +61,7 @@ final readonly class SuiteConfigurationInspector
         private Repository $configuration,
         private Schedule $schedule,
         private SuiteModuleCatalog $catalog,
-        private SuitePackageConfigurationInspector $packageConfiguration,
+        private ?SuitePackageConfigurationInspector $packageConfiguration = null,
     ) {}
 
     /**
@@ -68,15 +69,16 @@ final readonly class SuiteConfigurationInspector
      */
     public function inspect(?string $profile = null): array
     {
-        $effectiveModules = $this->catalog->effectiveModules();
+        $selection = $this->catalog->selection();
+        $effectiveModules = $selection->effectiveModules();
         $effectiveLookup = array_fill_keys($effectiveModules, true);
         $definitions = $this->catalog->modules();
         $modules = [];
 
         foreach ($definitions as $module => $definition) {
             $enabled = isset($effectiveLookup[$module]);
-            $requested = $this->catalog->requested($module);
-            $decision = $this->catalog->moduleDecision($module);
+            $requested = $selection->requested($module);
+            $decision = $selection->decision($module);
 
             $modules[$module] = [
                 'requested' => $requested,
@@ -101,9 +103,15 @@ final readonly class SuiteConfigurationInspector
             ];
         }
 
-        $packageFindings = $this->packageConfiguration->inspect($effectiveModules);
+        $packageFindings = $this->packageConfiguration?->inspect($effectiveModules) ?? [];
 
         return [
+            'selection' => [
+                'source' => $selection->source,
+                'profile' => $selection->profile,
+                'include' => $selection->include,
+                'exclude' => $selection->exclude,
+            ],
             'profile' => $this->profile($profile, $effectiveModules),
             'profiles' => $this->catalog->profiles(),
             'modules' => $modules,

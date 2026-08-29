@@ -68,3 +68,13 @@ it('registers every stateful migration directory as timestamp-aware', function (
         );
     }
 });
+
+it('publishes a profile-first suite default that remains full-suite for new installs', function (): void {
+    $configuration = require dirname(__DIR__, 2).'/config/nvl-suite.php';
+
+    expect($configuration['profile'] ?? null)->toBe('full-suite')
+        ->and($configuration['include'] ?? null)->toBe([])
+        ->and($configuration['exclude'] ?? null)->toBe([])
+        ->and($configuration)->toHaveKey('modules')
+        ->and($configuration['modules'])->toBeNull();
+});

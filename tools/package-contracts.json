@@ -10,7 +10,7 @@
         ],
         "commands": {
             "Nvl\\Suite\\Console\\Commands\\SuiteConfigurationCommand": "nvl:suite:configuration {--profile= : Compare effective modules with an installation profile} {--format=text : Output format: text or json}",
-            "Nvl\\Suite\\Console\\Commands\\SuiteConfigureCommand": "nvl:suite:configure {--profile= : Start with a documented installation profile} {--add=* : Add a module and its transitive dependencies} {--path= : Destination inside the application; defaults to config/nvl-suite.php} {--write : Atomically replace the destination instead of previewing it} {--format=table : Output format: table or json}",
+            "Nvl\\Suite\\Console\\Commands\\SuiteConfigureCommand": "nvl:suite:configure {--profile= : Start with a documented installation profile} {--add=* : Add a module and its transitive dependencies} {--remove=* : Exclude a module when no retained root requires it} {--minimal : Render only profile, include, and exclude} {--full : Render every resolved module boolean} {--path= : Destination inside the application; defaults to config/nvl-suite.php} {--write : Atomically write the destination instead of previewing it} {--force : Allow --write to replace an existing file after showing its diff} {--format=table : Output format: table or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteConsumerAuditCommand": "nvl:suite:consumer-audit {path? : Consumer application root; defaults to base_path()} {--strict : Fail for errors and strict adoption warnings} {--format=table : Output format: table or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteDoctorCommand": "nvl:suite:doctor {--strict : Treat package warnings as failures} {--production : Enforce production-only deployment requirements} {--format=text : Output format: text or json}",
             "Nvl\\Suite\\Console\\Commands\\SuiteSkillsDoctorCommand": "nvl:suite:skills:doctor {--strict : Treat disabled managed skills as failures} {--format=text : Output format: text or json}",
@@ -18,7 +18,7 @@
             "Nvl\\Suite\\Console\\Commands\\SuiteUpgradeCheckCommand": "nvl:suite:upgrade:check {--path= : Published suite configuration; defaults to config/nvl-suite.php} {--module=* : Limit package configuration inspection to one or more suite modules} {--format=table : Output format: table or json} {--strict : Enable upgrade enforcement without promoting warnings to failures}"
         },
         "configuration": {
-            "config/nvl-suite.php": "b80098d5ded51bdd6f845503757c4f92919b57741f2c40101ad8ee37eaf56d5f"
+            "config/nvl-suite.php": "6e460d926a5fd449116ed5109cef7210221cf984e5619f79ddf6460e087fe606"
         }
     },
     "packages": {

@@ -1,20 +1,37 @@
 # Installation profiles
 
-Installation profiles are reproducible module selections, not hidden runtime
-modes. Preview the full dependency-complete configuration first, then write it
-only after reviewing the exact enabled and disabled module list:
+Installation profiles are reproducible runtime module selections, not hidden
+modes. New installations default to `full-suite`. Consumers can keep a small
+Laravel configuration overlay while the suite resolves all transitive
+dependencies in canonical order:
 
 ```bash
-php artisan nvl:suite:configure --profile=content-platform
-php artisan nvl:suite:configure --profile=content-platform --write
+php artisan nvl:suite:configure --profile=content-platform --minimal
+php artisan nvl:suite:configure --profile=content-platform --minimal --write
 php artisan config:clear
 ```
 
-`nvl:suite:configure` is dry-run-first. It writes only with `--write`, emits all
-twenty module keys in canonical order, and atomically replaces only a `.php`
-destination inside the application root. Use repeatable `--add` options to add
-capabilities and their transitive dependencies to a profile, for example
-`--profile=auth-only --add=comments`.
+`nvl:suite:configure` is dry-run-first and always prints the generated PHP.
+`--minimal` emits only `profile`, `include`, and `exclude`; `--full` emits all
+twenty resolved module booleans and remains the default for command
+compatibility. Use repeatable `--add` options for capability roots and
+`--remove` only for modules that no retained root requires. For example:
+
+```bash
+php artisan nvl:suite:configure --profile=auth-only --add=comments --remove=forms --minimal
+```
+
+The command writes only with `--write`. A new destination is written
+atomically. Replacing an existing file additionally requires `--force`, and the
+command returns a unified diff for review. Destinations must be readable `.php`
+files inside the application root; symlink escapes are rejected.
+
+At runtime, a non-null legacy `modules` map remains authoritative. Otherwise,
+the suite resolves `profile`, then `include`, validates `exclude`, and closes
+dependencies. The upgrade checker rejects a host file that mixes the legacy map
+with declarative keys, even though runtime keeps the legacy map authoritative
+for backward compatibility. Minimal overlays work identically with cached and
+uncached Laravel configuration.
 
 Compare the booted application with the selected profile after configuring
 migration ownership, contracts, registries, queues, and schedules:

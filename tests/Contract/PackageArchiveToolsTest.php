@@ -6,6 +6,7 @@ use Illuminate\Config\Repository;
 use Nvl\Auth\Providers\AuthServiceProvider;
 use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Suite\Support\SuiteModuleCatalog;
+use Nvl\Support\Providers\SupportServiceProvider;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Process\Process;
@@ -199,14 +200,13 @@ it('ships a complete staged-adoption module configuration', function (): void {
     $root = dirname(__DIR__, 2);
     $catalog = require $root.'/tools/package-family.php';
     $configuration = require $root.'/config/nvl-suite.php';
-    $configuredModules = array_keys($configuration['modules'] ?? []);
     $catalogModules = $catalog['packages'];
+    $suiteCatalog = new SuiteModuleCatalog(new Repository([
+        'nvl-suite' => $configuration,
+    ]));
+    $configuredModules = $suiteCatalog->effectiveModules();
     sort($configuredModules);
     sort($catalogModules);
-
-    $suiteCatalog = new SuiteModuleCatalog(new Repository([
-        'nvl-suite' => ['modules' => $configuration['modules']],
-    ]));
     $providerDependencies = array_map(
         static fn (array $definition): array => $definition['dependencies'],
         $suiteCatalog->modules(),
@@ -228,10 +228,9 @@ it('ships a complete staged-adoption module configuration', function (): void {
     sort($catalog['stateful']);
 
     expect($configuredModules)->toBe($catalogModules)
-        ->and(array_filter(
-            $configuration['modules'],
-            static fn (mixed $enabled): bool => $enabled !== true,
-        ))->toBe([])
+        ->and($suiteCatalog->selection()->source)->toBe('declarative')
+        ->and($suiteCatalog->selection()->profile)->toBe('full-suite')
+        ->and($suiteCatalog->selection()->modules())->not->toContain(false)
         ->and($providerDependencies)->toBe($catalogDependencies)
         ->and($typescriptModules)->toBe($catalog['typescript_sources'])
         ->and($statefulModules)->toBe($catalog['stateful']);
@@ -259,6 +258,7 @@ it('selects only an enabled module and its transitive dependencies', function ()
     ]));
 
     expect($suiteCatalog->effectiveProviders())->toBe([
+        SupportServiceProvider::class,
         DataServiceProvider::class,
         AuthServiceProvider::class,
     ]);
@@ -310,6 +310,8 @@ it('ships every module and the central provider in the archive', function (): vo
             'src/Services/SuiteConfigurationInspector.php',
             'src/Services/SuiteConfigurationRenderer.php',
             'src/Services/SuiteConsumerAuditor.php',
+            'src/Services/SuiteModuleSelection.php',
+            'src/Services/SuitePackageConfigurationInspector.php',
             'src/Services/SuiteSkillManager.php',
             'src/Services/SuiteUpgradeInspector.php',
             'src/Services/ConsumerAudit/ComposerSourceRootLocator.php',

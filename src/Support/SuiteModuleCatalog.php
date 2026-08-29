@@ -62,6 +62,7 @@ use Nvl\Settings\Contracts\SettingsAuditContextProvider;
 use Nvl\Settings\Contracts\SettingsAuthorization;
 use Nvl\Settings\Definitions\Tables\SettingsTables;
 use Nvl\Settings\Providers\SettingsServiceProvider;
+use Nvl\Suite\Services\SuiteModuleSelection;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Taxonomy\Definitions\Tables\TaxonomyTables;
 use Nvl\Taxonomy\Providers\TaxonomyServiceProvider;
@@ -729,18 +730,7 @@ final readonly class SuiteModuleCatalog
      */
     public function effectiveModules(): array
     {
-        $configured = $this->configuredModules();
-        $requested = [];
-
-        foreach (self::MODULES as $module => $_definition) {
-            $enabled = array_key_exists($module, $configured) ? $configured[$module] : true;
-
-            if ($enabled) {
-                $requested[$module] = true;
-            }
-        }
-
-        return $this->resolveModules($requested);
+        return $this->selection()->effectiveModules();
     }
 
     /**
@@ -761,10 +751,7 @@ final readonly class SuiteModuleCatalog
      */
     public function requested(string $module): bool
     {
-        $configured = $this->configuredModules();
-        $value = array_key_exists($module, $configured) ? $configured[$module] : true;
-
-        return $value;
+        return $this->selection()->requested($module);
     }
 
     /**
@@ -774,55 +761,21 @@ final readonly class SuiteModuleCatalog
      */
     public function moduleDecision(string $module): string
     {
-        if (! isset(self::MODULES[$module])) {
-            throw new RuntimeException("Unknown suite module [{$module}].");
-        }
-
-        $configured = $this->configuredModules();
-
-        if (! array_key_exists($module, $configured)) {
-            return 'implicit';
-        }
-
-        return $configured[$module] ? 'enabled' : 'disabled';
+        return $this->selection()->decision($module);
     }
 
     /**
-     * @return array<string, bool>
+     * Resolve the current runtime selection through the shared selection model.
      */
-    private function configuredModules(): array
+    public function selection(): SuiteModuleSelection
     {
-        $configured = $this->configuration->get('nvl-suite.modules', []);
+        $configured = $this->configuration->get('nvl-suite', []);
 
         if (! is_array($configured)) {
-            throw new RuntimeException('nvl-suite.modules must be an array of module boolean flags.');
+            throw new RuntimeException('nvl-suite must contain an array.');
         }
 
-        $normalized = [];
-        $unknownModules = [];
-
-        foreach ($configured as $module => $enabled) {
-            if (! is_string($module) || ! isset(self::MODULES[$module])) {
-                $unknownModules[] = (string) $module;
-
-                continue;
-            }
-
-            if (! is_bool($enabled)) {
-                throw new RuntimeException("Suite module [{$module}] must be configured with a boolean flag.");
-            }
-
-            $normalized[$module] = $enabled;
-        }
-
-        if ($unknownModules !== []) {
-            throw new RuntimeException(sprintf(
-                'Unknown suite module configuration: %s.',
-                implode(', ', $unknownModules),
-            ));
-        }
-
-        return $normalized;
+        return SuiteModuleSelection::fromConfiguration($configured, $this);
     }
 
     /**

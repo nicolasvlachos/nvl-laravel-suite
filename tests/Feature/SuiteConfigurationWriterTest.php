@@ -65,6 +65,73 @@ it('writes a complete canonical configuration only with the explicit write flag'
     }
 });
 
+it('renders minimal declarative overlays and full legacy maps explicitly', function (): void {
+    expect(Artisan::call('nvl:suite:configure', [
+        '--profile' => 'auth-only',
+        '--add' => ['comments'],
+        '--remove' => ['forms'],
+        '--minimal' => true,
+        '--format' => 'json',
+    ]))->toBe(0);
+
+    $minimal = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($minimal['mode'] ?? null)->toBe('minimal')
+        ->and($minimal['removals'] ?? null)->toBe(['forms'])
+        ->and($minimal['contents'] ?? null)
+        ->toContain("'profile' => 'auth-only'", "'include' => ['comments']", "'exclude' => ['forms']")
+        ->not->toContain("'modules' =>");
+
+    expect(Artisan::call('nvl:suite:configure', [
+        '--profile' => 'auth-only',
+        '--full' => true,
+        '--format' => 'json',
+    ]))->toBe(0);
+
+    $full = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($full['mode'] ?? null)->toBe('full')
+        ->and($full['contents'] ?? null)->toContain("'modules' => [")
+        ->and(Artisan::call('nvl:suite:configure', [
+            '--profile' => 'auth-only',
+            '--minimal' => true,
+            '--full' => true,
+        ]))->toBe(2);
+});
+
+it('requires force and emits a unified diff before replacing an existing configuration', function (): void {
+    $path = storage_path('framework/testing/nvl-suite-force-'.bin2hex(random_bytes(4)).'.php');
+    File::put($path, "<?php\n\nreturn ['existing' => true];\n");
+    $before = hash_file('sha256', $path);
+
+    try {
+        expect(Artisan::call('nvl:suite:configure', [
+            '--profile' => 'auth-only',
+            '--minimal' => true,
+            '--path' => $path,
+            '--write' => true,
+            '--format' => 'json',
+        ]))->toBe(2)
+            ->and(hash_file('sha256', $path))->toBe($before)
+            ->and(Artisan::call('nvl:suite:configure', [
+                '--profile' => 'auth-only',
+                '--minimal' => true,
+                '--path' => $path,
+                '--write' => true,
+                '--force' => true,
+                '--format' => 'json',
+            ]))->toBe(0);
+
+        $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
+
+        expect($report['diff'] ?? null)
+            ->toContain('--- config/', '+++ generated/', '@@')
+            ->and(File::get($path))->toBe($report['contents'] ?? null);
+    } finally {
+        File::delete($path);
+    }
+});
+
 it('rejects invalid selections formats and destinations without writing', function (): void {
     $outside = sys_get_temp_dir().'/nvl-suite-outside-'.bin2hex(random_bytes(4)).'.php';
     $directoryPath = storage_path('framework/testing/nvl-suite-directory-'.bin2hex(random_bytes(4)).'.php');
@@ -77,6 +144,14 @@ it('rejects invalid selections formats and destinations without writing', functi
         ]))->toBe(2)
             ->and(Artisan::call('nvl:suite:configure', [
                 '--add' => ['unknown'],
+            ]))->toBe(2)
+            ->and(Artisan::call('nvl:suite:configure', [
+                '--profile' => 'auth-only',
+                '--remove' => ['support'],
+            ]))->toBe(2)
+            ->and(Artisan::call('nvl:suite:configure', [
+                '--profile' => 'auth-only',
+                '--force' => true,
             ]))->toBe(2)
             ->and(Artisan::call('nvl:suite:configure'))->toBe(2)
             ->and(Artisan::call('nvl:suite:configure', [

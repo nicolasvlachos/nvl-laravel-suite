@@ -48,24 +48,26 @@ The suite is auto-discoverable and supports Laravel 12 or 13 on PHP 8.4+. Module
 
 ## Staged module adoption
 
-The auto-discovered suite provider can register a safe subset of modules.
-Preview a dependency-complete profile, explicitly write it after review, and
-clear the configuration cache:
+The auto-discovered suite provider can register a safe subset of modules. New
+installs default to the full suite. Preview a dependency-complete minimal
+overlay, explicitly write it after review, and clear the configuration cache:
 
 ```bash
-php artisan nvl:suite:configure --profile=content-platform
-php artisan nvl:suite:configure --profile=content-platform --write
+php artisan nvl:suite:configure --profile=content-platform --minimal
+php artisan nvl:suite:configure --profile=content-platform --minimal --write
 php artisan config:clear
 ```
 
-The command is dry-run-first and writes only with `--write`. Publishing the
-unmodified all-enabled default remains available with
-`php artisan vendor:publish --tag=suite-config`.
+The command is dry-run-first and writes only with `--write`; replacing a file
+also requires `--force` and returns a unified diff. `--add` and `--remove`
+compose capability roots around a profile. Use `--full` when an explicit map of
+all twenty booleans is preferable. Publishing the unmodified full-suite default
+remains available with `php artisan vendor:publish --tag=suite-config`.
 
-Configure `config/nvl-suite.php` before running migrations. Enabling a module
+Configure `config/nvl-suite.php` before running migrations. Including a module
 automatically registers its transitive NVL dependencies in canonical order; it
-does not enable unrelated modules. For example, enabling only `auth` registers
-`data` followed by `auth`.
+does not enable unrelated modules. For example, including only `auth` registers
+`support`, `data`, then `auth`.
 
 Use the documented [installation profiles](docs/installation-profiles.md) for
 auth-only, content-platform, communications, or full-suite adoption. The

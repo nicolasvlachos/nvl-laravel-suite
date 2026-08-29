@@ -22,6 +22,7 @@ use Nvl\Suite\Services\ConsumerAudit\SuiteRuntimeConsumerScanner;
 use Nvl\Suite\Services\SuiteConfigurationInspector;
 use Nvl\Suite\Services\SuiteConfigurationRenderer;
 use Nvl\Suite\Services\SuiteConsumerAuditor;
+use Nvl\Suite\Services\SuiteModuleSelection;
 use Nvl\Suite\Services\SuitePackageConfigurationInspector;
 use Nvl\Suite\Services\SuiteSkillManager;
 use Nvl\Suite\Services\SuiteUpgradeInspector;
@@ -43,6 +44,12 @@ final class SuiteServiceProvider extends ServiceProvider
             static fn (Application $app): SuiteModuleCatalog => new SuiteModuleCatalog(
                 $app->make(Repository::class),
             ),
+        );
+        $this->app->bind(
+            SuiteModuleSelection::class,
+            static fn (Application $app): SuiteModuleSelection => $app
+                ->make(SuiteModuleCatalog::class)
+                ->selection(),
         );
         $this->app->singleton(SuiteConfigurationInspector::class);
         $this->app->singleton(SuiteConfigurationRenderer::class);
@@ -71,8 +78,10 @@ final class SuiteServiceProvider extends ServiceProvider
             ),
         );
 
-        foreach ($this->app->make(SuiteModuleCatalog::class)->effectiveProviders() as $provider) {
-            $this->app->register($provider);
+        $catalog = $this->app->make(SuiteModuleCatalog::class);
+
+        foreach ($this->app->make(SuiteModuleSelection::class)->effectiveModules() as $module) {
+            $this->app->register($catalog->modules()[$module]['provider']);
         }
     }
 

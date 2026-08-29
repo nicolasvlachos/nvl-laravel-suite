@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Suite\Services;
 
 use Nvl\Suite\Support\SuiteModuleCatalog;
+use RuntimeException;
 
 /**
  * Reviews a published suite configuration against the current module catalog.
@@ -28,21 +29,54 @@ final readonly class SuiteUpgradeInspector
      */
     public function inspect(array $configuration): array
     {
-        $configuredModules = $configuration['modules'] ?? null;
+        $hasLegacyModules = array_key_exists('modules', $configuration)
+            && $configuration['modules'] !== null;
+
+        if (! $hasLegacyModules) {
+            try {
+                SuiteModuleSelection::fromConfiguration($configuration, $this->catalog);
+
+                return [];
+            } catch (RuntimeException) {
+                return [[
+                    'code' => 'upgrade.selection_invalid',
+                    'severity' => 'error',
+                    'module' => null,
+                    'symbol' => 'profile/include/exclude',
+                    'message' => 'The declarative suite module selection is invalid.',
+                    'remediation' => 'Review the profile, include roots, exclusions, and their required dependencies.',
+                ]];
+            }
+        }
+
+        $configuredModules = $configuration['modules'];
+        $findings = [];
+
+        if ($this->hasDeclarativeKeys($configuration)) {
+            $findings[] = [
+                'code' => 'upgrade.selection_conflict',
+                'severity' => 'error',
+                'module' => null,
+                'symbol' => 'modules/profile/include/exclude',
+                'message' => 'The published suite configuration mixes legacy and declarative module selection.',
+                'remediation' => 'Keep either the modules map or profile/include/exclude keys, then rerun the check.',
+            ];
+        }
 
         if (! is_array($configuredModules)) {
-            return [[
+            $findings[] = [
                 'code' => 'upgrade.modules_invalid',
                 'severity' => 'error',
                 'module' => null,
                 'symbol' => 'modules',
                 'message' => 'The published suite configuration has no valid modules map.',
                 'remediation' => 'Regenerate config/nvl-suite.php and review every module decision.',
-            ]];
+            ];
+
+            return $findings;
         }
 
         $definitions = $this->catalog->modules();
-        $findings = [];
 
         foreach ($configuredModules as $module => $enabled) {
             if (! is_string($module) || ! isset($definitions[$module])) {
@@ -123,6 +157,22 @@ final readonly class SuiteUpgradeInspector
         }
 
         return $findings;
+    }
+
+    /**
+     * Return whether raw host configuration explicitly declares declarative keys.
+     *
+     * @param  array<mixed>  $configuration
+     */
+    private function hasDeclarativeKeys(array $configuration): bool
+    {
+        foreach (['profile', 'include', 'exclude'] as $key) {
+            if (array_key_exists($key, $configuration)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

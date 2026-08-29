@@ -135,11 +135,11 @@ it('publishes effective skills with versioned ownership and safely updates only 
         );
 
         expect($report['healthy'])->toBeTrue()
-            ->and(array_column($report['results'], 'skill'))->toBe(['nvl-data', 'nvl-auth'])
-            ->and(array_column($report['results'], 'status'))->toBe(['installed', 'installed'])
+            ->and(array_column($report['results'], 'skill'))->toBe(['nvl-support', 'nvl-data', 'nvl-auth'])
+            ->and(array_column($report['results'], 'status'))->toBe(['installed', 'installed', 'installed'])
             ->and($manifest['owner'] ?? null)->toBe(SuiteSkillManager::OWNER)
             ->and($manifest['suite_version'] ?? null)->toBe('1.0.7')
-            ->and(array_keys($manifest['skills'] ?? []))->toBe(['nvl-auth', 'nvl-data'])
+            ->and(array_keys($manifest['skills'] ?? []))->toBe(['nvl-auth', 'nvl-data', 'nvl-support'])
             ->and($manager->inspect()['healthy'])->toBeTrue();
 
         foreach ($applicationSkills as $relativePath => $contents) {
@@ -148,7 +148,7 @@ it('publishes effective skills with versioned ownership and safely updates only 
 
         $unchanged = $manager->publish();
 
-        expect(array_column($unchanged['results'], 'status'))->toBe(['unchanged', 'unchanged']);
+        expect(array_column($unchanged['results'], 'status'))->toBe(['unchanged', 'unchanged', 'unchanged']);
 
         $authSkill = $workspace.'/.agents/skills/nvl-auth/SKILL.md';
         $filesystem->append($authSkill, "\nlocal customization\n");
@@ -200,6 +200,7 @@ it('never overwrites an unmanaged Suite-named skill even when forced', function 
             ->and($filesystem->get($workspace.'/.agents/skills/nvl-auth/SKILL.md'))
             ->toBe('application-authored-auth-guidance')
             ->and($manifest['skills'] ?? [])->toHaveKey('nvl-data')
+            ->toHaveKey('nvl-support')
             ->not->toHaveKey('nvl-auth')
             ->and($doctor['healthy'])->toBeFalse()
             ->and(collect($doctor['checks'])->firstWhere('skill', 'nvl-auth')['status'] ?? null)

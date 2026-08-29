@@ -61,8 +61,11 @@ it('documents every installation profile and suite diagnostic command', function
     }
 
     expect($profiles)->toContain(
-        'nvl:suite:configure --profile=content-platform',
-        'nvl:suite:configure --profile=content-platform --write',
+        'nvl:suite:configure --profile=content-platform --minimal',
+        'nvl:suite:configure --profile=content-platform --minimal --write',
+        '`--force`',
+        'unified diff',
+        'legacy `modules` map remains authoritative',
         'nvl:suite:configuration --format=json',
         'nvl:suite:upgrade:check --strict',
         'nvl:suite:upgrade:check --strict --module=auth --module=comments',

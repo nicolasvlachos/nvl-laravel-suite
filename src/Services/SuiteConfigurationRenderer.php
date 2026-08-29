@@ -22,44 +22,69 @@ final readonly class SuiteConfigurationRenderer
     ) {}
 
     /**
-     * Resolve a profile and explicit additions through the dependency graph.
+     * Resolve profile roots and explicit overlays through the shared selection model.
      *
      * @param  list<string>  $additions
-     * @return array<string, bool>
+     * @param  list<string>  $removals
      */
-    public function modules(?string $profile, array $additions): array
-    {
+    public function selection(
+        ?string $profile,
+        array $additions,
+        array $removals = [],
+    ): SuiteModuleSelection {
         if ($profile === null && $additions === []) {
             throw new RuntimeException('Select a suite profile or at least one module with --add.');
         }
 
-        $selected = [];
-
-        if ($profile !== null) {
-            foreach ($this->catalog->profileModules($profile) as $module) {
-                $selected[$module] = true;
-            }
-        }
-
-        foreach ($additions as $module) {
-            if ($module === '') {
-                throw new RuntimeException('The --add option must contain non-empty module names.');
-            }
-
-            $this->select($module, $selected);
-        }
-
-        $modules = [];
-
-        foreach (array_keys($this->catalog->modules()) as $module) {
-            $modules[$module] = isset($selected[$module]);
-        }
-
-        return $modules;
+        return SuiteModuleSelection::fromConfiguration([
+            'modules' => null,
+            'profile' => $profile,
+            'include' => $additions,
+            'exclude' => $removals,
+        ], $this->catalog);
     }
 
     /**
-     * Render a complete, canonical, publishable suite configuration.
+     * Resolve a profile and explicit overlays into every module decision.
+     *
+     * @param  list<string>  $additions
+     * @param  list<string>  $removals
+     * @return array<string, bool>
+     */
+    public function modules(
+        ?string $profile,
+        array $additions,
+        array $removals = [],
+    ): array {
+        return $this->selection($profile, $additions, $removals)->modules();
+    }
+
+    /**
+     * Render the smallest runtime selection overlay.
+     */
+    public function renderMinimal(SuiteModuleSelection $selection): string
+    {
+        return sprintf(
+            <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+return [
+    'profile' => %s,
+    'include' => %s,
+    'exclude' => %s,
+];
+
+PHP,
+            $selection->profile === null ? 'null' : "'{$selection->profile}'",
+            $this->renderList($selection->include),
+            $this->renderList($selection->exclude),
+        );
+    }
+
+    /**
+     * Render a complete, canonical, publishable legacy suite configuration.
      *
      * @param  array<string, bool>  $modules
      */
@@ -172,28 +197,55 @@ PHP,
     }
 
     /**
-     * Atomically replace the selected application configuration.
+     * Render a reviewable unified diff when a destination already exists.
      */
-    public function write(string $path, string $contents): void
+    public function diff(string $path, string $contents): ?string
     {
+        if (! $this->filesystem->exists($path)) {
+            return null;
+        }
+
+        $current = $this->filesystem->get($path);
+
+        if ($current === $contents) {
+            return '';
+        }
+
+        $currentLines = explode("\n", rtrim($current, "\n"));
+        $generatedLines = explode("\n", rtrim($contents, "\n"));
+        $name = basename($path);
+
+        return implode("\n", [
+            '--- config/'.$name,
+            '+++ generated/'.$name,
+            sprintf('@@ -1,%d +1,%d @@', count($currentLines), count($generatedLines)),
+            ...array_map(static fn (string $line): string => '-'.$line, $currentLines),
+            ...array_map(static fn (string $line): string => '+'.$line, $generatedLines),
+            '',
+        ]);
+    }
+
+    /**
+     * Atomically write a new destination or replace one after explicit confirmation.
+     */
+    public function write(string $path, string $contents, bool $force = false): void
+    {
+        if ($this->filesystem->exists($path) && ! $force) {
+            throw new RuntimeException('The suite configuration already exists; pass --force to replace it.');
+        }
+
         $this->filesystem->replace($path, $contents);
     }
 
     /**
-     * @param  array<string, true>  $selected
+     * @param  list<string>  $values
      */
-    private function select(string $module, array &$selected): void
+    private function renderList(array $values): string
     {
-        $definitions = $this->catalog->modules();
-
-        if (! isset($definitions[$module])) {
-            throw new RuntimeException("Unknown suite module [{$module}].");
+        if ($values === []) {
+            return '[]';
         }
 
-        foreach ($definitions[$module]['dependencies'] as $dependency) {
-            $this->select($dependency, $selected);
-        }
-
-        $selected[$module] = true;
+        return sprintf("['%s']", implode("', '", $values));
     }
 }

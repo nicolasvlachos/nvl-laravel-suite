@@ -369,7 +369,7 @@ git commit -m "feat(suite): diagnose package config drift"
 - Consumes: optional `profile`, `include`, `exclude`, legacy `modules`, and the catalog dependency graph.
 - Produces: one dependency-complete `SuiteModuleSelection` shared by provider registration, configuration output, Doctor, and configure/upgrade commands.
 
-- [ ] **Step 1: Write precedence and compatibility tests**
+- [x] **Step 1: Write precedence and compatibility tests**
 
 Cover legacy booleans with `profile: null`, a profile alone, profile plus include,
 profile plus valid exclude, an excluded dependency, unknown names, an empty
@@ -377,7 +377,7 @@ selection, a no-published-config install, and config-cached boot. Prove the exac
 1.x legacy selection remains unchanged when an existing published `modules` map
 is present.
 
-- [ ] **Step 2: Define one selection algorithm**
+- [x] **Step 2: Define one selection algorithm**
 
 Precedence is:
 
@@ -398,20 +398,20 @@ both legacy and new keys; runtime does not confuse the package's default profile
 with host-authored mixed input. The effective result always contains all twenty
 module decisions.
 
-- [ ] **Step 3: Implement minimal rendering**
+- [x] **Step 3: Implement minimal rendering**
 
 `nvl:suite:configure --profile=<name> --add=<module> --remove=<module>
 --minimal` prints a PHP overlay containing only `profile`, `include`, and
 `exclude`. `--full` prints all resolved module booleans. Both default to stdout;
 `--write` writes only after validation, and `--force` shows a unified diff.
 
-- [ ] **Step 4: Prove a KPO-equivalent selection**
+- [x] **Step 4: Prove a KPO-equivalent selection**
 
 Add a test selection with roots for KPO's application capabilities and assert
 that dependency closure enables exactly the same seventeen modules while
 leaving Primitives, Taxonomy, and Forms disabled. Do not add a `kpo` profile.
 
-- [ ] **Step 5: Verify suite boot and publishing**
+- [x] **Step 5: Verify suite boot and publishing**
 
 Run:
 
@@ -425,7 +425,7 @@ php artisan config:clear
 
 Expected: cached and uncached module selections are identical.
 
-- [ ] **Step 6: Commit CR-28**
+- [x] **Step 6: Commit CR-28**
 
 ```bash
 git add config/nvl-suite.php src tests/Feature/SuiteDiagnosticsTest.php tests/Feature/PackagePublishingContractTest.php docs/installation-profiles.md

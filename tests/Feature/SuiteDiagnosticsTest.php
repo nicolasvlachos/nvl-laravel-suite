@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Nvl\Settings\Contracts\SettingsAuthorization;
 use Nvl\Suite\Services\SuiteConfigurationInspector;
+use Nvl\Suite\Services\SuiteModuleSelection;
 use Nvl\Suite\Services\SuitePackageConfigurationInspector;
+use Nvl\Suite\Services\SuiteUpgradeInspector;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 use Symfony\Component\Console\Output\BufferedOutput;
 
@@ -140,12 +142,130 @@ it('provides dependency-complete installation profiles', function (): void {
     }
 });
 
+it('keeps legacy module maps authoritative while resolving declarative profiles and overlays', function (): void {
+    $catalog = app(SuiteModuleCatalog::class);
+    $legacyModules = array_fill_keys(array_keys($catalog->modules()), false);
+    $legacyModules['auth'] = true;
+    $legacy = SuiteModuleSelection::fromConfiguration([
+        'modules' => $legacyModules,
+        'profile' => 'content-platform',
+        'include' => ['pages'],
+        'exclude' => [],
+    ], $catalog);
+    $declarative = SuiteModuleSelection::fromConfiguration([
+        'modules' => null,
+        'profile' => 'auth-only',
+        'include' => ['pages'],
+        'exclude' => ['forms'],
+    ], $catalog);
+
+    expect($legacy->source)->toBe('legacy')
+        ->and($legacy->effectiveModules())->toBe(['support', 'data', 'auth'])
+        ->and($legacy->decision('pages'))->toBe('disabled')
+        ->and($declarative->source)->toBe('declarative')
+        ->and($declarative->effectiveModules())->toContain('support', 'data', 'auth', 'pages')
+        ->not->toContain('forms')
+        ->and($declarative->requested('pages'))->toBeTrue()
+        ->and($declarative->requested('content'))->toBeFalse();
+});
+
+it('validates declarative selections and supports an intentional empty suite', function (): void {
+    $catalog = app(SuiteModuleCatalog::class);
+    $empty = SuiteModuleSelection::fromConfiguration([
+        'modules' => null,
+        'profile' => null,
+        'include' => [],
+        'exclude' => [],
+    ], $catalog);
+
+    expect($empty->effectiveModules())->toBe([])
+        ->and(fn (): SuiteModuleSelection => SuiteModuleSelection::fromConfiguration([
+            'modules' => null,
+            'profile' => 'auth-only',
+            'include' => [],
+            'exclude' => ['support'],
+        ], $catalog))->toThrow(RuntimeException::class, 'required dependency')
+        ->and(fn (): SuiteModuleSelection => SuiteModuleSelection::fromConfiguration([
+            'modules' => null,
+            'profile' => null,
+            'include' => ['unknown'],
+            'exclude' => [],
+        ], $catalog))->toThrow(RuntimeException::class, 'Unknown suite module')
+        ->and(fn (): SuiteModuleSelection => SuiteModuleSelection::fromConfiguration([
+            'modules' => null,
+            'profile' => 'unknown',
+            'include' => [],
+            'exclude' => [],
+        ], $catalog))->toThrow(RuntimeException::class, 'Unknown suite installation profile');
+});
+
+it('expresses the KPO module set as capability roots without an application-specific profile', function (): void {
+    $selection = SuiteModuleSelection::fromConfiguration([
+        'modules' => null,
+        'profile' => null,
+        'include' => [
+            'activity',
+            'auth',
+            'csv',
+            'mail-notifications',
+            'comments',
+            'pages',
+            'settings',
+            'templates',
+            'translations',
+        ],
+        'exclude' => ['primitives', 'taxonomy', 'forms'],
+    ], app(SuiteModuleCatalog::class));
+
+    expect($selection->effectiveModules())->toHaveCount(17)
+        ->not->toContain('primitives', 'taxonomy', 'forms');
+});
+
+it('defaults an unpublished suite configuration to the full-suite profile', function (): void {
+    $configuration = require base_path('config/nvl-suite.php');
+    $selection = SuiteModuleSelection::fromConfiguration(
+        $configuration,
+        app(SuiteModuleCatalog::class),
+    );
+
+    expect($configuration)->toHaveKey('modules')
+        ->and($configuration['modules'])->toBeNull()
+        ->and($configuration['profile'] ?? null)->toBe('full-suite')
+        ->and($selection->effectiveModules())->toHaveCount(20);
+});
+
+it('accepts declarative upgrade selections and rejects mixed or invalid sources', function (): void {
+    $inspector = app(SuiteUpgradeInspector::class);
+    $legacy = suiteDiagnosticModules('support', 'data', 'auth');
+
+    expect($inspector->inspect([
+        'profile' => 'auth-only',
+        'include' => ['pages'],
+        'exclude' => ['forms'],
+        'modules' => null,
+    ]))->toBe([])
+        ->and(collect($inspector->inspect([
+            'profile' => 'auth-only',
+            'modules' => $legacy,
+        ]))->pluck('code'))->toContain('upgrade.selection_conflict')
+        ->and(collect($inspector->inspect([
+            'profile' => 'auth-only',
+            'exclude' => ['support'],
+            'modules' => null,
+        ]))->pluck('code')->all())->toBe(['upgrade.selection_invalid']);
+});
+
 it('reports effective ownership implementations aliases and schedules without secrets', function (): void {
     config()->set('comments.idempotency.digest_key', 'must-never-appear');
     $report = app(SuiteConfigurationInspector::class)->inspect('full-suite');
     $serialized = json_encode($report, JSON_THROW_ON_ERROR);
 
-    expect($report['profile'])->not->toBeNull()
+    expect($report['selection'])->toBe([
+        'source' => 'declarative',
+        'profile' => 'full-suite',
+        'include' => [],
+        'exclude' => [],
+    ])->and($report['profile'])->not->toBeNull()
         ->and($report['profile']['matches'])->toBeTrue()
         ->and($report['modules'])->toHaveCount(20)
         ->and($report['modules']['auth']['migration']['owner'])->toBe('package')
