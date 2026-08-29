@@ -428,11 +428,14 @@ it('tests the current stack Laravel 13 lowest and every supported database famil
     $mysqlCommands = workflowCommands($jobs['mysql-family'] ?? []);
 
     expect($currentCommands)->toContain(
+        'composer require --dev --no-update',
         '"laravel/framework:^13.0"',
+        '"laravel/tinker:^3.0"',
         '"orchestra/testbench:^11.0"',
         'composer test',
     )
         ->and($lowestCommands)->toContain(
+            'composer require --dev --no-update',
             '"laravel/framework:^13.0"',
             '"laravel/tinker:^3.0"',
             '"orchestra/testbench:^11.0"',

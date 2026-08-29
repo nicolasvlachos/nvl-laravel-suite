@@ -78,8 +78,8 @@ jobs:
 
       - name: Select Laravel 13
         run: |
-          composer require --no-update \
-            "laravel/framework:^13.0" \
+          composer require --no-update "laravel/framework:^13.0"
+          composer require --dev --no-update \
             "laravel/tinker:^3.0" \
             "orchestra/testbench:^11.0"
 
@@ -107,8 +107,8 @@ jobs:
 
       - name: Select Laravel 13
         run: |
-          composer require --no-update \
-            "laravel/framework:^13.0" \
+          composer require --no-update "laravel/framework:^13.0"
+          composer require --dev --no-update \
             "laravel/tinker:^3.0" \
             "orchestra/testbench:^11.0"
 
