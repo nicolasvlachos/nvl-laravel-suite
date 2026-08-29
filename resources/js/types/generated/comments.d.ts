@@ -81,6 +81,23 @@ anonymizedAt: string | null,
 anonymizationReason: string | null,
 createdAt: string,
 updatedAt: string,
+document?: Record<string, unknown>,
+mentions?: Nvl.Comments.Data.CommentMentionData[],
+};
+export type CommentMentionChangeData = {
+resourceAlias: string,
+resourceId: string,
+tokenId: string,
+};
+export type CommentMentionData = {
+tokenId: string,
+resourceAlias: string,
+state: Nvl.Comments.Enums.CommentMentionState,
+labelSnapshot: string,
+resourceId: string | null,
+currentLabel: string | null,
+fields: Record<string, string | number | boolean | null>,
+url: string | null,
 };
 export type CommentMentionReferenceData = {
 tokenId: string,
@@ -91,7 +108,16 @@ position: number,
 };
 export type CommentMentionResourceData = {
 id: string,
+label: string | null,
+fields: Record<string, string | number | boolean | null>,
+url: string | null,
+state: Nvl.Comments.Enums.CommentMentionState,
+};
+export type CommentMentionSuggestionData = {
+id: string,
 label: string,
+fields: Record<string, string | number | boolean | null>,
+url: string | null,
 };
 export type CommentMetadataProjectionData = {
 namespace: string,
@@ -120,6 +146,11 @@ invalidAttachmentAssociations: number,
 healthy: boolean,
 missingMetadataIndexValues: number,
 staleMetadataIndexValues: number,
+documentMentionMismatches: number,
+duplicateMentionIdentities: number,
+invalidMentionSnapshots: number,
+orphanMentionRows: number,
+bodyProjectionMismatches: number,
 };
 export type CommentReportManagementData = {
 id: string,
@@ -176,6 +207,8 @@ isAuthor?: boolean,
 abilities?: Nvl.Comments.Data.CommentAbilitiesData,
 createdAt: string,
 updatedAt: string,
+document?: Record<string, unknown>,
+mentions?: Nvl.Comments.Data.CommentMentionData[],
 };
 export type MemberCommentReactionSummaryData = {
 type: string,
@@ -203,6 +236,8 @@ author?: Nvl.Comments.Data.CommentAuthorData | null,
 reactions?: Nvl.Comments.Data.CommentReactionSummaryData[],
 createdAt: string,
 updatedAt: string,
+document?: Record<string, unknown>,
+mentions?: Nvl.Comments.Data.CommentMentionData[],
 };
 namespace Mutations {
 export type AnonymizeCommentData = {
@@ -292,6 +327,7 @@ export type CommentAbility = 'list' | 'view' | 'view_identity' | 'create' | 'rep
 export type CommentAudience = 'public' | 'member' | 'management';
 export type CommentChangeOperation = 'created' | 'updated' | 'deleted' | 'restored' | 'anonymized' | 'moderated' | 'report_reviewed' | 'revision_restored';
 export type CommentFormat = 'plain' | 'markdown' | 'rich_text';
+export type CommentMentionState = 'resolved' | 'missing' | 'restricted';
 export type CommentMetadataValueType = 'string' | 'integer' | 'boolean' | 'uuid';
 export type CommentReportStatus = 'open' | 'resolved' | 'dismissed';
 export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'hidden' | 'spam';

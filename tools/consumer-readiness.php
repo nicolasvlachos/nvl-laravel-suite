@@ -18,9 +18,17 @@ use Nvl\Auth\Definitions\Tables\AuthTables;
 use Nvl\Comments\Actions\DeleteLatestTargetCommentAction;
 use Nvl\Comments\Actions\FindLatestTargetCommentAction;
 use Nvl\Comments\Actions\ListCommentsAction;
+use Nvl\Comments\Actions\ResolveCommentMentionsAction;
+use Nvl\Comments\Actions\SuggestCommentMentionResourcesAction;
 use Nvl\Comments\Console\CommentsDoctorCommand;
+use Nvl\Comments\Contracts\CommentMentionResourceAuthorization;
+use Nvl\Comments\Contracts\CommentMentionResourceResolver;
+use Nvl\Comments\Contracts\CommentMentionUrlResolver;
 use Nvl\Comments\Contracts\CommentMetadataSchema;
 use Nvl\Comments\Contracts\HasComments;
+use Nvl\Comments\Contracts\ViewerIndependentCommentMentionResource;
+use Nvl\Comments\Data\CommentMentionData;
+use Nvl\Comments\Data\CommentMentionSuggestionData;
 use Nvl\Comments\Data\CommentMetadataProjectionData;
 use Nvl\Comments\Data\Queries\CommentSelectorData;
 use Nvl\Comments\Definitions\CommentMetadataField;
@@ -604,6 +612,14 @@ return [
                     CommentMetadataSchema::class,
                     CommentMetadataField::class,
                     CommentMetadataProjectionData::class,
+                    CommentMentionResourceResolver::class,
+                    CommentMentionResourceAuthorization::class,
+                    CommentMentionUrlResolver::class,
+                    ViewerIndependentCommentMentionResource::class,
+                    CommentMentionSuggestionData::class,
+                    CommentMentionData::class,
+                    SuggestCommentMentionResourcesAction::class,
+                    ResolveCommentMentionsAction::class,
                     HasComments::class,
                 ],
                 'direct_model_access' => 'compatibility_1x',
@@ -612,15 +628,18 @@ return [
             ],
             'performance' => [
                 ...$pass(['packages/nvl/comments/README.md#filtering-and-pagination']),
-                'query_tests' => ['packages/nvl/comments/tests/Feature/CommentsV1ApiProjectionTest.php'],
-                'cache' => ['mode' => 'none', 'rationale' => 'Visibility, moderation, reactions, and attachment projections are actor-sensitive and intentionally fresh.'],
+                'query_tests' => [
+                    'packages/nvl/comments/tests/Feature/CommentsV1ApiProjectionTest.php',
+                    'packages/nvl/comments/tests/Feature/CommentMentionSecurityTest.php',
+                ],
+                'cache' => ['mode' => 'none', 'rationale' => 'Visibility, moderation, reactions, attachments, and private resource mention projections are actor-sensitive and intentionally fresh; public mentions resolve live data only through explicitly viewer-independent resolvers.'],
             ],
             'media_lifecycle' => $pass(['packages/nvl/comments/README.md#attachments']),
             'locale_fallback' => $notApplicable('Comments are authored records and do not use package-managed localized variants.'),
             'boundaries' => $notApplicable('Comments delegates attachments to Media and owns no Content, Metafields, or translation rows.'),
             'presets' => $notApplicable('Audience and moderation policy are consumer configuration, not semantic content presets.'),
             'operations' => [
-                ...$pass(['packages/nvl/comments/README.md#persistence', 'packages/nvl/comments/README.md#adoption-and-privacy']),
+                ...$pass(['packages/nvl/comments/README.md#persistence', 'packages/nvl/comments/README.md#adoption-and-privacy', 'packages/nvl/comments/README.md#rich-documents-and-mentions']),
                 'doctor' => ['symbol' => CommentsDoctorCommand::class, 'command' => 'nvl:comments:doctor'],
                 'adoption' => 'application_owned',
                 'documentation' => 'packages/nvl/comments/UPGRADING.md#schema-changes',
