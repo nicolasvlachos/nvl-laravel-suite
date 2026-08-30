@@ -149,9 +149,7 @@ final class PagesMigrationRollbackGuard
 
     private function isPagesTableRollback(MigrationStarted $event): bool
     {
-        if ($event->method !== 'down'
-            || ! is_string($event->name)
-            || ! str_ends_with($event->name, '_create_pages_table')) {
+        if ($event->method !== 'down') {
             return false;
         }
 

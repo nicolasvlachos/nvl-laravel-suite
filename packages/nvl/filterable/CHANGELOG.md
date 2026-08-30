@@ -4,6 +4,13 @@ All notable changes to `nvl/filterable` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Declared Laravel 13 and `nvl/data` 2.x compatibility while preserving typed
+  `FilterSet` contracts as the explicit Suite 2.0 consumer-query boundary.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

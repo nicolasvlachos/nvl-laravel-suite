@@ -4,6 +4,13 @@ All notable changes to `nvl/csv` are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-29
+
+### Changed
+
+- Declared Laravel 13 and `nvl/data` 2.x compatibility while preserving the
+  typed analysis, import, export, and queued-processing consumer API.
+
 ## [1.0.7] - 2026-08-22
 
 ### Fixed

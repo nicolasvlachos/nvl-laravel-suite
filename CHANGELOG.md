@@ -33,6 +33,8 @@ Module-level implementation history remains available in each
 
 - Release-reviewed the immutable forward-only Comments rich-document migration
   with upgrade, rollback, and application-owned-storage evidence.
+- Excluded nested macOS metadata files from Composer release archives so local
+  packaging produces the same clean distribution as CI.
 
 ## [1.0.7] - 2026-08-22
 

@@ -14,6 +14,11 @@ All notable changes to `nvl/pages` are documented here.
 - Established Page Actions and editor/publication projections as the 2.0
   consumer boundary; direct consumer Page-model queries now fail Suite audit.
 
+### Fixed
+
+- Made the SQLite Pages rollback guard compatible with Laravel 13.0 migration
+  events, which do not expose the later optional migration-name property.
+
 ## [1.0.7] - 2026-08-22
 
 ### Changed

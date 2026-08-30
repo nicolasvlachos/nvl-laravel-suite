@@ -1614,7 +1614,7 @@ it('yields sitemap ownership only to a matching SEO profile that can emit an ent
         ->and($urls)->toContain("https://pages.test/records-map/{$resource->id}");
 });
 
-it('guards rollback of the released self-referencing Pages migration on SQLite', function (): void {
+it('guards rollback when Laravel omits the migration event name', function (): void {
     config()->set([
         'database.connections.pages_rollback' => [
             'driver' => 'sqlite',
@@ -1656,7 +1656,6 @@ it('guards rollback of the released self-referencing Pages migration on SQLite',
     $started = new MigrationStarted(
         $migration,
         'down',
-        '2026_07_28_100001_create_pages_table',
     );
     Event::dispatch($started);
     $migration->down();
