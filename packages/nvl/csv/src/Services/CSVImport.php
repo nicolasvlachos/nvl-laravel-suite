@@ -67,6 +67,9 @@ final class CSVImport
     /** @var array<int, string> */
     private array $headers = [];
 
+    /** @var array<int, string|null>|null */
+    private ?array $pendingRow = null;
+
     private ?Closure $rowProcessor = null;
 
     private ?Closure $progressCallback = null;
@@ -879,9 +882,6 @@ final class CSVImport
             // Ensure all headers are strings
             $this->headers = array_map(fn ($h) => (string) $h, $headers);
         } else {
-            // No headers - determine column count from first row without consuming it
-            $position = ftell($this->handle);
-
             $firstRow = fgetcsv(
                 $this->handle,
                 0,
@@ -890,14 +890,11 @@ final class CSVImport
                 $this->configuration->escape
             );
 
-            // Reset file pointer to beginning of data
-            if ($position !== false) {
-                fseek($this->handle, $position);
-            }
-
             if ($firstRow === false) {
                 throw CSVParseException::invalidHeaders();
             }
+
+            $this->pendingRow = $firstRow;
 
             // Generate generic column names: col_0, col_1, col_2, etc.
             $columnCount = count($firstRow);
@@ -958,13 +955,14 @@ final class CSVImport
             return false;
         }
 
-        $row = fgetcsv(
+        $row = $this->pendingRow ?? fgetcsv(
             $this->handle,
             0,
             $this->configuration->delimiter,
             $this->configuration->enclosure,
             $this->configuration->escape
         );
+        $this->pendingRow = null;
 
         if ($row === false) {
             return false;
@@ -1446,6 +1444,7 @@ final class CSVImport
         $this->warnings = [];
         $this->diagnosticsTruncated = false;
         $this->headers = [];
+        $this->pendingRow = null;
 
         foreach (array_keys($this->uniqueIndexes) as $field) {
             $this->uniqueIndexes[$field] = [];

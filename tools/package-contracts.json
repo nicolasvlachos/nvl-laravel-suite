@@ -6247,12 +6247,12 @@
                 ],
                 "Nvl\\Comments\\Actions\\DeleteCommentAction": [
                     "final readonly class Nvl\\Comments\\Actions\\DeleteCommentAction",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentLifecycleGuard $guard, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Services\\CommentMutationLock $mutationLock, Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Comments\\Services\\CommentTargetLocator $targets): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentDeletionWriter $writer): mixed",
                     "public function execute(Nvl\\Comments\\Models\\Comment|string $comment, Nvl\\Comments\\Data\\Mutations\\DeleteCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience=Nvl\\Comments\\Enums\\CommentAudience::Public): bool"
                 ],
                 "Nvl\\Comments\\Actions\\DeleteLatestTargetCommentAction": [
                     "final readonly class Nvl\\Comments\\Actions\\DeleteLatestTargetCommentAction",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Services\\CommentReadService $reads): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentDeletionWriter $writer, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Contracts\\CommentQueryScope $queryScope, Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Comments\\Services\\CommentTargetLocator $targets): mixed",
                     "public function execute(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\Queries\\CommentSelectorData $selector, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience): bool"
                 ],
                 "Nvl\\Comments\\Actions\\DetachCommentMediaAction": [
@@ -6262,7 +6262,7 @@
                 ],
                 "Nvl\\Comments\\Actions\\FindLatestTargetCommentAction": [
                     "final readonly class Nvl\\Comments\\Actions\\FindLatestTargetCommentAction",
-                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Comments\\Services\\CommentProjectionFactory $projections, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex): mixed",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Comments\\Services\\CommentProjectionFactory $projections, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Services\\CommentTargetLocator $targets): mixed",
                     "public function execute(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Data\\Queries\\CommentSelectorData $selector, Nvl\\Comments\\Enums\\CommentAudience $audience=Nvl\\Comments\\Enums\\CommentAudience::Member): Nvl\\Comments\\Data\\PublicCommentData|Nvl\\Comments\\Data\\MemberCommentData|Nvl\\Comments\\Data\\CommentManagementData|null"
                 ],
                 "Nvl\\Comments\\Actions\\GetCommentAction": [
@@ -8673,6 +8673,11 @@
                     "public function create(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\Mutations\\CreateCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience): Nvl\\Comments\\Models\\Comment",
                     "public function createRich(Illuminate\\Database\\Eloquent\\Model $target, Nvl\\Comments\\Data\\Mutations\\CreateRichCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience): Nvl\\Comments\\Models\\Comment"
                 ],
+                "Nvl\\Comments\\Services\\CommentDeletionWriter": [
+                    "final readonly class Nvl\\Comments\\Services\\CommentDeletionWriter",
+                    "public function __construct(Nvl\\Comments\\Services\\CommentAccessService $access, Nvl\\Comments\\Services\\CommentLifecycleGuard $guard, Nvl\\Comments\\Services\\CommentMetadataIndexWriter $metadataIndex, Nvl\\Comments\\Services\\CommentMutationLock $mutationLock, Nvl\\Comments\\Services\\CommentReadService $reads, Nvl\\Comments\\Services\\CommentTargetLocator $targets): mixed",
+                    "public function delete(Nvl\\Comments\\Models\\Comment|string $comment, Nvl\\Comments\\Data\\Mutations\\DeleteCommentData $data, Nvl\\Comments\\Data\\CommentActorData $actor, Nvl\\Comments\\Enums\\CommentAudience $audience=Nvl\\Comments\\Enums\\CommentAudience::Public): bool"
+                ],
                 "Nvl\\Comments\\Services\\CommentDocumentNormalizer": [
                     "final readonly class Nvl\\Comments\\Services\\CommentDocumentNormalizer",
                     "public function __construct(Nvl\\Comments\\Services\\CommentMentionResourceRegistry $resources): mixed",
@@ -8847,6 +8852,7 @@
                 ],
                 "Nvl\\Comments\\Services\\CommentTargetLocator": [
                     "final class Nvl\\Comments\\Services\\CommentTargetLocator",
+                    "public function reload(Illuminate\\Database\\Eloquent\\Model $target): Illuminate\\Database\\Eloquent\\Model",
                     "public function locate(Nvl\\Comments\\Models\\Comment $comment): Illuminate\\Database\\Eloquent\\Model"
                 ],
                 "Nvl\\Comments\\Services\\CommentTargetRegistry": [
@@ -8996,7 +9002,7 @@
                 ],
                 "Nvl\\Content\\Actions\\DeleteContentPlacementAction": [
                     "final readonly class Nvl\\Content\\Actions\\DeleteContentPlacementAction",
-                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks): mixed",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks, Nvl\\Content\\Services\\ContentMediaSynchronizer $media): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentPlacement|string $placement, int $expectedRevision, Nvl\\Content\\Data\\ContentActorData $actor): void"
                 ],
                 "Nvl\\Content\\Actions\\FindContentBlockByKeyAction": [
@@ -9058,7 +9064,7 @@
                 ],
                 "Nvl\\Content\\Actions\\PlaceContentBlockAction": [
                     "final readonly class Nvl\\Content\\Actions\\PlaceContentBlockAction",
-                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks): mixed",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks, Nvl\\Content\\Services\\ContentMediaSynchronizer $media): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\Mutations\\PlaceContentBlockData $data, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentPlacement"
                 ],
                 "Nvl\\Content\\Actions\\PlanContentDefinitionMigrationsAction": [
@@ -9068,7 +9074,7 @@
                 ],
                 "Nvl\\Content\\Actions\\PublishContentBlockAction": [
                     "final readonly class Nvl\\Content\\Actions\\PublishContentBlockAction",
-                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionVersionGuard $definitionVersions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json): mixed",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionVersionGuard $definitionVersions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json, Nvl\\Content\\Services\\ContentBlockPlacementSynchronizer $placements): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, int $expectedRevision, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock"
                 ],
                 "Nvl\\Content\\Actions\\ReorderContentPlacementsAction": [
@@ -9078,7 +9084,7 @@
                 ],
                 "Nvl\\Content\\Actions\\ReplaceContentPlacementAction": [
                     "final readonly class Nvl\\Content\\Actions\\ReplaceContentPlacementAction",
-                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks): mixed",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks, Nvl\\Content\\Services\\ContentMediaSynchronizer $media): mixed",
                     "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, string $placement, string $block, int $expectedRevision, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\ContentPlacementData"
                 ],
                 "Nvl\\Content\\Actions\\ResolveContentScopesAction": [
@@ -9099,12 +9105,12 @@
                 ],
                 "Nvl\\Content\\Actions\\UpdateContentBlockAction": [
                     "final readonly class Nvl\\Content\\Actions\\UpdateContentBlockAction",
-                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionVersionGuard $definitionVersions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentPatch $patch, Nvl\\Content\\Services\\ContentPayloadGuard $guard, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json, Nvl\\Translatable\\Services\\TranslationWriter $translationWriter): mixed",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionVersionGuard $definitionVersions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentPatch $patch, Nvl\\Content\\Services\\ContentPayloadGuard $guard, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json, Nvl\\Translatable\\Services\\TranslationWriter $translationWriter, Nvl\\Content\\Services\\ContentBlockPlacementSynchronizer $placements): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentBlock|string $block, Nvl\\Content\\Data\\Mutations\\UpdateContentBlockData $data, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock"
                 ],
                 "Nvl\\Content\\Actions\\UpdateContentPlacementAction": [
                     "final readonly class Nvl\\Content\\Actions\\UpdateContentPlacementAction",
-                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks): mixed",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $validator, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks, Nvl\\Content\\Services\\ContentMediaSynchronizer $media): mixed",
                     "public function execute(Nvl\\Content\\Models\\ContentPlacement|string $placement, Nvl\\Content\\Data\\Mutations\\UpdateContentPlacementData $data, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentPlacement"
                 ],
                 "Nvl\\Content\\Casts\\ContentCompositionSnapshotCast": [
@@ -11336,7 +11342,7 @@
                 "Nvl\\Content\\Providers\\ContentServiceProvider": [
                     "final class Nvl\\Content\\Providers\\ContentServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function register(): void",
-                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Services\\ContentDefinitionLoader $loader, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $definitionMigrations, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentSchemaCompiler $schemaCompiler, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentReferenceRegistry $references): void",
+                    "public function boot(Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Content\\Services\\ContentDefinitionLoader $loader, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $definitionMigrations, Nvl\\Content\\Services\\ContentFieldPresetRegistry $presets, Nvl\\Content\\Services\\ContentFieldTypeRegistry $fieldTypes, Nvl\\Content\\Services\\ContentSchemaCompiler $schemaCompiler, Nvl\\Content\\Validation\\ContentSchemaValidator $schemas, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentReferenceRegistry $references, Nvl\\Content\\Services\\ContentOwnerDeletion $ownerDeletion): void",
                     "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
                 "Nvl\\Content\\Relations\\ExactTextValueComparison": [
@@ -11431,8 +11437,13 @@
                 ],
                 "Nvl\\Content\\Services\\ContentBlockDefinitionMigrator": [
                     "final readonly class Nvl\\Content\\Services\\ContentBlockDefinitionMigrator",
-                    "public function __construct(Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $migrations, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentPayloadGuard $guard, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json, Nvl\\Translatable\\Services\\TranslationWriter $translationWriter, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $placements, Nvl\\Content\\Services\\ContentScopeRegistry $scopes): mixed",
+                    "public function __construct(Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry $migrations, Nvl\\Content\\Services\\ContentDefinitionRegistry $definitions, Nvl\\Content\\Validation\\ContentValueValidator $validator, Nvl\\Content\\Services\\ContentPayloadGuard $guard, Nvl\\Content\\Services\\ContentMediaSynchronizer $media, Nvl\\Content\\Services\\ContentRevisionRecorder $revisions, Nvl\\Content\\Services\\CanonicalJson $json, Nvl\\Translatable\\Services\\TranslationWriter $translationWriter, Nvl\\Content\\Services\\ContentBlockPlacementSynchronizer $placements, Nvl\\Content\\Services\\ContentScopeRegistry $scopes): mixed",
                     "public function migrate(Nvl\\Content\\Models\\ContentBlock $block, int $targetVersion, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Models\\ContentBlock"
+                ],
+                "Nvl\\Content\\Services\\ContentBlockPlacementSynchronizer": [
+                    "final readonly class Nvl\\Content\\Services\\ContentBlockPlacementSynchronizer",
+                    "public function __construct(Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentPlacementValidator $placements, Nvl\\Content\\Services\\ContentMediaSynchronizer $media): mixed",
+                    "public function synchronize(Nvl\\Content\\Models\\ContentBlock $block, Nvl\\Content\\Data\\ContentActorData $actor): void"
                 ],
                 "Nvl\\Content\\Services\\ContentDefinitionLoader": [
                     "final class Nvl\\Content\\Services\\ContentDefinitionLoader",
@@ -11533,7 +11544,15 @@
                     "public function synchronize(Nvl\\Content\\Models\\ContentBlock $block, Nvl\\Content\\Schema\\ContentSchema $schema, array $values, array $translations, Nvl\\Content\\Data\\ContentActorData $actor): void",
                     "@param array<string, mixed> $values",
                     "@param array<string, array<string, mixed>> $translations",
-                    "public function detachAll(Nvl\\Content\\Models\\ContentBlock $block): void"
+                    "public function synchronizePlacement(Nvl\\Content\\Models\\ContentPlacement $placement, Nvl\\Content\\Schema\\ContentSchema $schema, array $overrides, Nvl\\Content\\Data\\ContentActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner): void",
+                    "@param array<string, mixed> $overrides",
+                    "public function detachAll(Nvl\\Content\\Models\\ContentBlock|Nvl\\Content\\Models\\ContentPlacement $model): void"
+                ],
+                "Nvl\\Content\\Services\\ContentOwnerDeletion": [
+                    "final readonly class Nvl\\Content\\Services\\ContentOwnerDeletion",
+                    "public function __construct(Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentPlacementOwnerLock $locks, Nvl\\Content\\Services\\ContentMediaSynchronizer $media): mixed",
+                    "public function execute(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, Closure $delete): ?bool",
+                    "@param Closure(): (bool|null) $delete"
                 ],
                 "Nvl\\Content\\Services\\ContentOwnerRegistry": [
                     "final class Nvl\\Content\\Services\\ContentOwnerRegistry implements Nvl\\Content\\Contracts\\ContentOwnerRegistrar",
@@ -11541,6 +11560,7 @@
                     "public function register(string $alias, string $model): void",
                     "@param class-string $model",
                     "public function resolve(string $alias, string $identifier): Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner",
+                    "public function resolveRetained(string $alias, string $identifier): Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner",
                     "public function type(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner): string",
                     "public function id(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner): string",
                     "public function model(string $alias): string",
@@ -11579,7 +11599,7 @@
                 "Nvl\\Content\\Services\\ContentPlacementTree": [
                     "final readonly class Nvl\\Content\\Services\\ContentPlacementTree",
                     "public function __construct(Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentOwnerRegistry $owners): mixed",
-                    "public function load(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group): Illuminate\\Support\\Collection",
+                    "public function load(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, bool $lockForUpdate=false): Illuminate\\Support\\Collection",
                     "@return Collection<int, ContentPlacement>",
                     "public function assertValidProposal(Illuminate\\Support\\Collection $placements, string $ownerType, string $ownerId, string $group): void",
                     "@param Collection<int, ContentPlacement> $placements",
@@ -11645,7 +11665,7 @@
                 ],
                 "Nvl\\Content\\Services\\ContentSnapshotService": [
                     "final readonly class Nvl\\Content\\Services\\ContentSnapshotService",
-                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Validation\\ContentValueValidator $values, Nvl\\Content\\Services\\ContentPatch $patch, Nvl\\Content\\Services\\CanonicalJson $json, Illuminate\\Contracts\\View\\Factory $views, Nvl\\Content\\Services\\ContentPlacementTree $tree, Nvl\\Content\\Services\\ContentMediaReferences $mediaReferences, Nvl\\Content\\Services\\ContentLocalePolicy $locales, Nvl\\Content\\Services\\ContentPayloadGuard $guard, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentLocalizedValues $localizedValues): mixed",
+                    "public function __construct(Nvl\\Content\\Contracts\\ContentAuthorization $authorization, Nvl\\Content\\Services\\ContentOwnerRegistry $owners, Nvl\\Content\\Validation\\ContentValueValidator $values, Nvl\\Content\\Services\\ContentPatch $patch, Nvl\\Content\\Services\\CanonicalJson $json, Illuminate\\Contracts\\View\\Factory $views, Nvl\\Content\\Services\\ContentPlacementTree $tree, Nvl\\Content\\Services\\ContentMediaReferences $mediaReferences, Nvl\\Content\\Services\\ContentLocalePolicy $locales, Nvl\\Content\\Services\\ContentPayloadGuard $guard, Nvl\\Content\\Services\\ContentIdentityGuard $identities, Nvl\\Content\\Services\\ContentLocalizedValues $localizedValues, Nvl\\Content\\Services\\ContentPlacementOwnerLock $ownerLocks): mixed",
                     "public function capture(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, string $group, Nvl\\Content\\Data\\ContentActorData $actor, bool $publishing=false): Nvl\\Content\\Data\\ContentCompositionSnapshotData",
                     "public function render(Nvl\\Content\\Data\\ContentCompositionSnapshotData $snapshot, string $locale, Nvl\\Content\\Data\\ContentActorData $actor): Nvl\\Content\\Data\\RenderedContentCompositionData"
                 ],
@@ -11677,6 +11697,13 @@
                     "public static function stringList(string $key): array",
                     "@return list<string>"
                 ],
+                "Nvl\\Content\\Support\\ContentOwnerDeletionBridge": [
+                    "final class Nvl\\Content\\Support\\ContentOwnerDeletionBridge",
+                    "public static function use(Nvl\\Content\\Services\\ContentOwnerDeletion $runtime): void",
+                    "public static function clear(): void",
+                    "public static function delete(Illuminate\\Database\\Eloquent\\Model&Nvl\\Content\\Contracts\\ContentOwner $owner, Closure $delete): ?bool",
+                    "@param Closure(): (bool|null) $delete"
+                ],
                 "Nvl\\Content\\Support\\ContentRouteConfiguration": [
                     "final class Nvl\\Content\\Support\\ContentRouteConfiguration",
                     "public static function path(string $group): string",
@@ -11700,7 +11727,7 @@
                     "@mixin Model",
                     "public function contentGroups(): array",
                     "@return list<string>",
-                    "public static function bootHasContent(): void",
+                    "public function delete(): ?bool",
                     "public function contentPlacements(): Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
                     "@return MorphMany<ContentPlacement, $this>"
                 ],
@@ -12599,7 +12626,7 @@
                     "public function getEnclosure(): string",
                     "@return string Single character enclosure",
                     "public function getEscape(): string",
-                    "@return string Single character escape",
+                    "@return string Escape character, or an empty string for standard doubled enclosures",
                     "public function getLineEnding(): string",
                     "@return string Line ending sequence",
                     "public static function cases(): array",
@@ -13846,7 +13873,7 @@
                     "public readonly bool $strictMode",
                     "public readonly bool $skipEmptyRows",
                     "public readonly bool $trimValues",
-                    "public function __construct(string $delimiter=\",\", string $enclosure=\"\\\"\", string $escape=\"\\\\\", string $lineEnding=\"\\n\", bool $includeBOM=false, bool $includeHeaders=true, bool $includeIndex=false, ?int $chunkSize=null, Nvl\\Csv\\Enums\\CSVProcessingModeEnum $processingMode=Nvl\\Csv\\Enums\\CSVProcessingModeEnum::MEMORY, ?Nvl\\Csv\\Enums\\CSVExportFormatEnum $exportFormat=null, ?string $encoding=\"UTF-8\", ?int $memoryLimit=null, bool $strictMode=false, bool $skipEmptyRows=true, bool $trimValues=true): mixed",
+                    "public function __construct(string $delimiter=\",\", string $enclosure=\"\\\"\", string $escape=\"\", string $lineEnding=\"\\n\", bool $includeBOM=false, bool $includeHeaders=true, bool $includeIndex=false, ?int $chunkSize=null, Nvl\\Csv\\Enums\\CSVProcessingModeEnum $processingMode=Nvl\\Csv\\Enums\\CSVProcessingModeEnum::MEMORY, ?Nvl\\Csv\\Enums\\CSVExportFormatEnum $exportFormat=null, ?string $encoding=\"UTF-8\", ?int $memoryLimit=null, bool $strictMode=false, bool $skipEmptyRows=true, bool $trimValues=true): mixed",
                     "@param string $delimiter Field separator character (default: comma)",
                     "@param string $enclosure Quote character for fields containing delimiters",
                     "@param string $escape Character for escaping special characters",
@@ -14237,6 +14264,7 @@
                     "public function __construct(Illuminate\\Contracts\\Config\\Repository $config): mixed",
                     "public function existingDirectory(string $path): string",
                     "public function outputDirectory(string $path): string",
+                    "public function artifactPath(string $directory, string $relativePath): string",
                     "public function assertInsideAllowedRoot(string $path): void"
                 ],
                 "Nvl\\Data\\Services\\TypeScriptSourceInspector": [
@@ -14533,12 +14561,12 @@
                 ],
                 "Nvl\\Forms\\Actions\\FormEntry\\CreateFormEntryAction": [
                     "final class Nvl\\Forms\\Actions\\FormEntry\\CreateFormEntryAction implements Nvl\\Forms\\Contracts\\CreateFormEntryContract",
-                    "public function __construct(Nvl\\Forms\\Actions\\FormEntry\\ValidateFormHostAccessAction $validateHostAccess, Nvl\\Forms\\Actions\\FormEntry\\CheckFormRateLimitAction $checkRateLimit, Nvl\\Forms\\Actions\\FormEntry\\DetectFormSubmissionSpamAction $detectSpam, Nvl\\Forms\\Actions\\FormEntry\\PersistFormEntryAction $persistEntry, Nvl\\Forms\\Services\\FormSpamDetectionService $spamDetection, Nvl\\Forms\\Services\\FormSpamRejectionRecorder $spamRejectionRecorder, Nvl\\Forms\\Services\\FormRegistrationFingerprint $registrationFingerprint): mixed",
+                    "public function __construct(Nvl\\Forms\\Actions\\FormEntry\\ValidateFormHostAccessAction $validateHostAccess, Nvl\\Forms\\Actions\\FormEntry\\CheckFormRateLimitAction $checkRateLimit, Nvl\\Forms\\Actions\\FormEntry\\DetectFormSubmissionSpamAction $detectSpam, Nvl\\Forms\\Actions\\FormEntry\\PersistFormEntryAction $persistEntry, Nvl\\Forms\\Contracts\\FormSpamDetector $spamDetection, Nvl\\Forms\\Services\\FormSpamRejectionRecorder $spamRejectionRecorder, Nvl\\Forms\\Services\\FormRegistrationFingerprint $registrationFingerprint): mixed",
                     "@param ValidateFormHostAccessAction $validateHostAccess Validates origin restrictions",
                     "@param CheckFormRateLimitAction $checkRateLimit Enforces per-IP rate limits",
                     "@param DetectFormSubmissionSpamAction $detectSpam Evaluates spam signals",
                     "@param PersistFormEntryAction $persistEntry Persists entry and updates counters",
-                    "@param FormSpamDetectionService $spamDetection Honeypot validation service",
+                    "@param FormSpamDetector $spamDetection Configured honeypot detector",
                     "@param FormSpamRejectionRecorder $spamRejectionRecorder Spam rejection recorder",
                     "@param FormRegistrationFingerprint $registrationFingerprint Repeat-registration identity resolver",
                     "public function execute(Nvl\\Forms\\Data\\FormEntryPayload $data, string $ipAddress, ?string $userAgent, ?string $sessionId, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?string $idempotencyKey=null, ?float $trustedFormLoadTime=null): Nvl\\Forms\\Models\\FormEntry",
@@ -14562,8 +14590,8 @@
                 ],
                 "Nvl\\Forms\\Actions\\FormEntry\\DetectFormSubmissionSpamAction": [
                     "final class Nvl\\Forms\\Actions\\FormEntry\\DetectFormSubmissionSpamAction",
-                    "public function __construct(Nvl\\Forms\\Services\\FormSpamDetectionService $spamDetection): mixed",
-                    "@param FormSpamDetectionService $spamDetection Unified spam scoring service",
+                    "public function __construct(Nvl\\Forms\\Contracts\\FormSpamDetector $spamDetection): mixed",
+                    "@param FormSpamDetector $spamDetection Configured spam scoring implementation",
                     "public function execute(Nvl\\Forms\\Models\\Form $form, Nvl\\Forms\\Data\\FormEntryPayload $data, string $ipAddress, ?string $userAgent, ?float $trustedFormLoadTime=null): array",
                     "@param Form $form Resolved form model",
                     "@param FormEntryPayload $data Submission data DTO",
@@ -14760,12 +14788,12 @@
                 ],
                 "Nvl\\Forms\\Actions\\Form\\GuardCustomFormSubmissionAction": [
                     "final class Nvl\\Forms\\Actions\\Form\\GuardCustomFormSubmissionAction",
-                    "public function __construct(Nvl\\Forms\\Actions\\Form\\PrepareFormSubmissionDataAction $prepareData, Nvl\\Forms\\Actions\\FormEntry\\ValidateFormHostAccessAction $validateHostAccess, Nvl\\Forms\\Actions\\FormEntry\\CheckFormRateLimitAction $checkRateLimit, Nvl\\Forms\\Actions\\FormEntry\\DetectFormSubmissionSpamAction $detectSpam, Nvl\\Forms\\Services\\FormSpamDetectionService $spamDetection, Nvl\\Forms\\Services\\FormSpamRejectionRecorder $spamRejectionRecorder, Nvl\\Forms\\Services\\PublicFormTokenService $tokenService): mixed",
+                    "public function __construct(Nvl\\Forms\\Actions\\Form\\PrepareFormSubmissionDataAction $prepareData, Nvl\\Forms\\Actions\\FormEntry\\ValidateFormHostAccessAction $validateHostAccess, Nvl\\Forms\\Actions\\FormEntry\\CheckFormRateLimitAction $checkRateLimit, Nvl\\Forms\\Actions\\FormEntry\\DetectFormSubmissionSpamAction $detectSpam, Nvl\\Forms\\Contracts\\FormSpamDetector $spamDetection, Nvl\\Forms\\Services\\FormSpamRejectionRecorder $spamRejectionRecorder, Nvl\\Forms\\Services\\PublicFormTokenService $tokenService): mixed",
                     "@param PrepareFormSubmissionDataAction $prepareData Submission normalizer",
                     "@param ValidateFormHostAccessAction $validateHostAccess Host restriction validator",
                     "@param CheckFormRateLimitAction $checkRateLimit Rate-limit guard",
                     "@param DetectFormSubmissionSpamAction $detectSpam Spam detector",
-                    "@param FormSpamDetectionService $spamDetection Honeypot validation service",
+                    "@param FormSpamDetector $spamDetection Configured honeypot detector",
                     "@param FormSpamRejectionRecorder $spamRejectionRecorder Spam rejection recorder",
                     "@param PublicFormTokenService $tokenService Public token metadata service",
                     "public function execute(Nvl\\Forms\\Models\\Form $form, Nvl\\Forms\\Data\\Mutations\\SubmitFormPayload $submissionData, Nvl\\Forms\\Support\\FormSubmissionContext $context): Nvl\\Forms\\Support\\CustomFormGuardResult",
@@ -17955,7 +17983,7 @@
                 ],
                 "Nvl\\Forms\\Services\\FormsDoctor": [
                     "final readonly class Nvl\\Forms\\Services\\FormsDoctor",
-                    "public function __construct(Illuminate\\Contracts\\Container\\Container $container): mixed",
+                    "public function __construct(Illuminate\\Contracts\\Container\\Container $container, Nvl\\Forms\\Services\\PublicFormTokenService $publicTokens): mixed",
                     "public function inspect(): array",
                     "@return list<FormsDoctorCheckData>"
                 ],
@@ -17990,7 +18018,8 @@
                     "public function validateForHandle(?string $token, string $handle): bool",
                     "@param string|null $token Token from header",
                     "@param string $handle Required form handle",
-                    "@return bool Whether token is valid, not expired, and belongs to the expected handle"
+                    "@return bool Whether token is valid, not expired, and belongs to the expected handle",
+                    "public function hasSigningKey(): bool"
                 ],
                 "Nvl\\Forms\\Services\\RequestOriginResolver": [
                     "final class Nvl\\Forms\\Services\\RequestOriginResolver",
@@ -18991,6 +19020,26 @@
                     "final readonly class Nvl\\MailNotifications\\Laravel\\Listeners\\TrackMessageBeforeSending",
                     "public function __construct(Nvl\\MailNotifications\\Services\\TrackingRuntime $runtime): mixed",
                     "public function handle(Illuminate\\Mail\\Events\\MessageSending $event): void"
+                ],
+                "Nvl\\MailNotifications\\Laravel\\ScheduledMailFactory": [
+                    "final readonly class Nvl\\MailNotifications\\Laravel\\ScheduledMailFactory implements Illuminate\\Contracts\\Mail\\Factory",
+                    "public function __construct(Illuminate\\Contracts\\Mail\\Factory $factory, Nvl\\MailNotifications\\ValueObjects\\ScheduledRecipients $recipients): mixed",
+                    "public function mailer(mixed $name=null): Illuminate\\Contracts\\Mail\\Mailer"
+                ],
+                "Nvl\\MailNotifications\\Laravel\\ScheduledRecipientMailer": [
+                    "final readonly class Nvl\\MailNotifications\\Laravel\\ScheduledRecipientMailer implements Illuminate\\Contracts\\Mail\\Mailer",
+                    "public readonly Illuminate\\Contracts\\Mail\\Mailer $mailer",
+                    "public function __construct(Illuminate\\Contracts\\Mail\\Mailer $mailer, Nvl\\MailNotifications\\ValueObjects\\ScheduledRecipients $recipients): mixed",
+                    "public function to(mixed $users): Illuminate\\Mail\\PendingMail",
+                    "public function cc(mixed $users): Illuminate\\Mail\\PendingMail",
+                    "public function bcc(mixed $users): Illuminate\\Mail\\PendingMail",
+                    "public function raw(mixed $text, mixed $callback): ?Illuminate\\Mail\\SentMessage",
+                    "public function send(mixed $view, array $data=[], mixed $callback=null): ?Illuminate\\Mail\\SentMessage",
+                    "@param Mailable|string|array<string, mixed> $view",
+                    "@param array<string, mixed> $data",
+                    "public function sendNow(mixed $mailable, array $data=[], mixed $callback=null): ?Illuminate\\Mail\\SentMessage",
+                    "@param Mailable|string|array<string, mixed> $mailable",
+                    "@param array<string, mixed> $data"
                 ],
                 "Nvl\\MailNotifications\\Laravel\\Transport\\TrackingTransport": [
                     "final readonly class Nvl\\MailNotifications\\Laravel\\Transport\\TrackingTransport implements Stringable, Symfony\\Component\\Mailer\\Transport\\TransportInterface",
@@ -20090,9 +20139,10 @@
                 "Nvl\\Media\\Actions\\AttachMediaAction": [
                     "final class Nvl\\Media\\Actions\\AttachMediaAction implements Nvl\\Media\\Contracts\\AttachMediaContract",
                     "public function __construct(Nvl\\Media\\Services\\MediaVariationDispatcher $variationDispatcher, Nvl\\Media\\Services\\MediaMutationLock $mutationLock): mixed",
-                    "public function execute(Nvl\\Media\\Models\\Media $media, Illuminate\\Database\\Eloquent\\Model $model, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\MediaAssociation",
+                    "public function execute(Nvl\\Media\\Models\\Media $media, Illuminate\\Database\\Eloquent\\Model $model, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true, bool $requirePublic=false): Nvl\\Media\\Models\\MediaAssociation",
                     "@param array<string, mixed> $metadata Optional pivot metadata",
-                    "@param bool $dispatchVariations Whether to trigger association-driven variation generation"
+                    "@param bool $dispatchVariations Whether to trigger association-driven variation generation",
+                    "@param bool $requirePublic Require public visibility inside the association transaction"
                 ],
                 "Nvl\\Media\\Actions\\BulkDeleteMediaAction": [
                     "final class Nvl\\Media\\Actions\\BulkDeleteMediaAction",
@@ -27384,6 +27434,7 @@
                     "@param Builder<static> $query",
                     "public function displayTitle(?string $locale=null): string",
                     "protected static function booted(): void",
+                    "public function delete(): ?bool",
                     "public function forceDelete(): mixed",
                     "@return bool|null",
                     "public static function forceDestroy(mixed $ids): mixed",
@@ -27407,7 +27458,6 @@
                     "@return array",
                     "public function contentGroups(): array",
                     "@return list<string>",
-                    "public static function bootHasContent(): void",
                     "public function contentPlacements(): Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
                     "@return MorphMany<ContentPlacement, $this>",
                     "public function metafields(): Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
@@ -27549,7 +27599,7 @@
                 ],
                 "Nvl\\Pages\\Seo\\PageSitemapSource": [
                     "final readonly class Nvl\\Pages\\Seo\\PageSitemapSource implements Nvl\\Seo\\Contracts\\SitemapSource",
-                    "public function __construct(Nvl\\Pages\\Contracts\\PageUrlGenerator $urls, Nvl\\Pages\\Services\\PageResourceRegistry $resources): mixed",
+                    "public function __construct(Nvl\\Pages\\Contracts\\PageUrlGenerator $urls, Nvl\\Pages\\Services\\PageResourceRegistry $resources, Nvl\\Seo\\Services\\EloquentSeoSitemapSource $seo): mixed",
                     "public function entries(string $scope): iterable",
                     "@return iterable<SitemapEntry>"
                 ],
@@ -28828,7 +28878,8 @@
                     "final class Nvl\\Seo\\Definitions\\Tables\\SeoTables",
                     "public const string Profiles=\"seo_profiles\"",
                     "public const string I18n=\"seo_profiles_i18n\"",
-                    "public const string Redirects=\"seo_redirects\""
+                    "public const string Redirects=\"seo_redirects\"",
+                    "public const string RedirectLocks=\"seo_redirect_locks\""
                 ],
                 "Nvl\\Seo\\Enums\\SeoAbility": [
                     "enum Nvl\\Seo\\Enums\\SeoAbility implements BackedEnum, UnitEnum: string",
@@ -29392,8 +29443,10 @@
                 ],
                 "Nvl\\Seo\\Services\\EloquentSeoSitemapSource": [
                     "final readonly class Nvl\\Seo\\Services\\EloquentSeoSitemapSource implements Nvl\\Seo\\Contracts\\SitemapSource",
-                    "public function __construct(Nvl\\Seo\\Services\\AbsoluteUrl $urls, ?Nvl\\Seo\\Services\\SitemapLocationPolicy $locations=null): mixed",
+                    "public function __construct(Nvl\\Seo\\Services\\AbsoluteUrl $urls, ?Nvl\\Seo\\Services\\SitemapLocationPolicy $locations=null, ?Nvl\\Seo\\Services\\SitemapRegistry $sources=null): mixed",
                     "public function entries(string $scope): iterable",
+                    "@return iterable<SitemapEntry>",
+                    "public function entriesForProfile(Nvl\\Seo\\Models\\SeoProfile $profile): iterable",
                     "@return iterable<SitemapEntry>"
                 ],
                 "Nvl\\Seo\\Services\\FilesystemSitemapArtifactStore": [
@@ -29459,11 +29512,12 @@
                 "Nvl\\Seo\\Services\\SeoRedirectChain": [
                     "final class Nvl\\Seo\\Services\\SeoRedirectChain",
                     "public function __construct(Nvl\\Translatable\\Services\\LocaleRegistry $locales, Nvl\\Seo\\Services\\SeoRedirectLookup $redirects, Nvl\\Seo\\Services\\AbsoluteUrl $urls): mixed",
-                    "public function flatten(string $scope, ?string $locale, string $source, string $target, ?string $ignoreId=null): string"
+                    "public function flatten(string $scope, ?string $locale, string $source, string $target, ?string $ignoreId=null): string",
+                    "public function assertAcyclic(string $scope, string $source): void"
                 ],
                 "Nvl\\Seo\\Services\\SeoRedirectLookup": [
                     "final class Nvl\\Seo\\Services\\SeoRedirectLookup",
-                    "public function findActive(string $scope, ?string $locale, string $source, ?string $ignoreId=null): ?Nvl\\Seo\\Models\\SeoRedirect"
+                    "public function findActive(string $scope, ?string $locale, string $source, ?string $ignoreId=null, bool $lockForUpdate=false): ?Nvl\\Seo\\Models\\SeoRedirect"
                 ],
                 "Nvl\\Seo\\Services\\SeoRedirectResolver": [
                     "final class Nvl\\Seo\\Services\\SeoRedirectResolver",
@@ -29501,7 +29555,10 @@
                 ],
                 "Nvl\\Seo\\Services\\SitemapRegistry": [
                     "final class Nvl\\Seo\\Services\\SitemapRegistry",
-                    "public function register(Nvl\\Seo\\Contracts\\SitemapSource $source, ?string $key=null): self",
+                    "public function register(Nvl\\Seo\\Contracts\\SitemapSource $source, ?string $key=null, array $ownerTypes=[]): self",
+                    "@param list<string> $ownerTypes Model class names validated before registration.",
+                    "public function ownedProfileTypes(): array",
+                    "@return list<string>",
                     "public function all(): array",
                     "@return list<SitemapSource>"
                 ],
@@ -29628,7 +29685,8 @@
                 "database/migrations/2026_07_27_000001_create_seo_profiles_table.php": "32f51e2960feda637879f8d6ee8f1c14f3c3a7992195d5d201ce5292d1469878",
                 "database/migrations/2026_07_27_000002_create_seo_profiles_i18n_table.php": "ad1680fd26a24683f94da926197edab955b2baf3e1352d770e6a4687eca02298",
                 "database/migrations/2026_07_27_000003_create_seo_redirects_table.php": "77907572de70d42b6d306b90ebda56d6ddb7ec637bdc0ca12fe3cd3512b82e3b",
-                "database/migrations/2026_07_29_091026_harden_seo_query_indexes.php": "a1933d0bd8cdb313e50a7aaf9d5baac8184353947b3e5d0d1d50cbd451e6151a"
+                "database/migrations/2026_07_29_091026_harden_seo_query_indexes.php": "a1933d0bd8cdb313e50a7aaf9d5baac8184353947b3e5d0d1d50cbd451e6151a",
+                "database/migrations/2026_09_15_211750_create_seo_redirect_locks_table.php": "88dbff6bba5c6a01b622de42638e1625256cd7bc525a0ce60a0e13c691481429"
             }
         },
         "settings": {
@@ -32541,6 +32599,7 @@
                     "public function scopePublished(Illuminate\\Database\\Eloquent\\Builder $query): void",
                     "@param Builder<static> $query",
                     "protected static function booted(): void",
+                    "public function delete(): ?bool",
                     "public function getKeyType(): mixed",
                     "@return string",
                     "public function getIncrementing(): mixed",
@@ -32557,7 +32616,6 @@
                     "@return array",
                     "public function contentGroups(): array",
                     "@return list<string>",
-                    "public static function bootHasContent(): void",
                     "public function contentPlacements(): Illuminate\\Database\\Eloquent\\Relations\\MorphMany",
                     "@return MorphMany<ContentPlacement, $this>",
                     "protected function isValidUniqueId(mixed $value): bool",
@@ -32645,7 +32703,7 @@
                 ],
                 "Nvl\\Templates\\Rendering\\MpdfTemplateRenderer": [
                     "final readonly class Nvl\\Templates\\Rendering\\MpdfTemplateRenderer implements Nvl\\Templates\\Contracts\\TemplateRenderer",
-                    "public function __construct(Illuminate\\Contracts\\View\\Factory $views, Nvl\\Templates\\Services\\PdfHtmlGuard $htmlGuard, Nvl\\Templates\\Services\\PdfOptionsResolver $optionsResolver, Nvl\\Templates\\Services\\PdfTemporaryDirectoryResolver $temporaryDirectories): mixed",
+                    "public function __construct(Illuminate\\Contracts\\View\\Factory $views, Nvl\\Templates\\Services\\PdfHtmlGuard $htmlGuard, Nvl\\Templates\\Services\\PdfOptionsResolver $optionsResolver, Nvl\\Templates\\Services\\PdfTemporaryDirectoryResolver $temporaryDirectories, Nvl\\Templates\\Services\\PdfAssetFetcher $assets): mixed",
                     "public function render(Nvl\\Templates\\Rendering\\TemplateRenderContext $context): Nvl\\Templates\\Data\\RenderedTemplateData"
                 ],
                 "Nvl\\Templates\\Rendering\\ResolvedPdfOptions": [
@@ -32763,6 +32821,13 @@
                     "public function scope(string $scope, ?string $type=null): array",
                     "@return array<string, string>"
                 ],
+                "Nvl\\Templates\\Services\\PdfAssetFetcher": [
+                    "final class Nvl\\Templates\\Services\\PdfAssetFetcher extends Mpdf\\AssetFetcher",
+                    "public function __construct(Nvl\\Templates\\Services\\TemplateAssetGuard $assets, Illuminate\\Http\\Client\\Factory $http): mixed",
+                    "public function fetchDataFromPath(mixed $path, mixed $originalSrc=null): string",
+                    "@param string $path",
+                    "@param string|false|null $originalSrc"
+                ],
                 "Nvl\\Templates\\Services\\PdfHtmlGuard": [
                     "final class Nvl\\Templates\\Services\\PdfHtmlGuard",
                     "public function __construct(Nvl\\Templates\\Services\\TemplateAssetGuard $assets): mixed",
@@ -32821,6 +32886,7 @@
                     "public function key(string $key): void",
                     "public function value(string $value): void",
                     "public function local(string $path): void",
+                    "public function localPath(string $path): string",
                     "public function inline(string $value): void",
                     "public function imageMimeType(string $mimeType): void",
                     "public function remote(string $url): void"

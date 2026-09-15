@@ -80,10 +80,36 @@ test('public tokens validate form scope handle expiry and malformed inputs', fun
             'nonce' => 'zero-issued-at',
         ], JSON_THROW_ON_ERROR), $key), $form))->toBeNull();
 
-    config()->set('app.key', 'base64:not-valid-base64***');
-    $fallbackToken = $service->issue($form, now()->addMinute());
-    expect($service->validate($fallbackToken, $form))->toBeTrue();
+    config()->set('app.key', 'plain-application-key');
+    $plainKeyToken = $service->issue($form, now()->addMinute());
+    expect($service->validate($plainKeyToken, $form))->toBeTrue();
 });
+
+test('public token signing fails closed for unavailable or malformed application keys', function (mixed $key): void {
+    config()->set('app.key', $key);
+    $form = Form::factory()->create(['handle' => 'invalid-key-form']);
+    $service = app(PublicFormTokenService::class);
+    $payload = rtrim(strtr(base64_encode(json_encode([
+        'form_id' => $form->id,
+        'iat' => now()->timestamp,
+        'exp' => now()->addMinute()->timestamp,
+        'nonce' => 'attacker-controlled',
+    ], JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
+    $unsafeKey = is_string($key) ? $key : '';
+    $signature = rtrim(strtr(base64_encode(hash_hmac('sha256', $payload, $unsafeKey, true)), '+/', '-_'), '=');
+    $forgedToken = $payload.'.'.$signature;
+
+    expect($service->validate($forgedToken, $form))->toBeFalse()
+        ->and($service->validateForHandle($forgedToken, $form->handle))->toBeFalse()
+        ->and($service->issuedAt($forgedToken, $form))->toBeNull();
+    expect(fn () => $service->issue($form, now()->addMinute()))->toThrow(FormException::class);
+})->with([
+    'missing' => [null],
+    'empty' => [''],
+    'whitespace' => ['   '],
+    'empty base64' => ['base64:'],
+    'malformed base64' => ['base64:not-valid-base64***'],
+]);
 
 test('submission context normalizes every supported transport source', function (): void {
     $session = new Store('forms-test', new ArraySessionHandler(120));

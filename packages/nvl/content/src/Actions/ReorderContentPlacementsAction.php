@@ -78,6 +78,7 @@ final readonly class ReorderContentPlacementsAction
                     $ownerType,
                     $proposal,
                 ): ContentEditorData {
+                    $this->owners->id($owner);
                     /** @var Collection<int, ContentPlacement> $placements */
                     $placements = ContentPlacement::query()
                         ->with(['block.definition', 'block.translations'])

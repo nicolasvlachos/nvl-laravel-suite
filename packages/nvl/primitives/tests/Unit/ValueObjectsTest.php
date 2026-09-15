@@ -43,7 +43,20 @@ it('rejects non-rfc3339 date-time input', function (string $value): void {
     'timezone-less input' => '2026-07-27 12:00:00',
     'invalid calendar date' => '2026-02-30T12:00:00Z',
     'date only' => '2026-07-27',
+    'offset hour overflow' => '2026-07-27T12:00:00+24:00',
+    'offset minute overflow' => '2026-07-27T12:00:00+01:60',
+    'negative offset overflow' => '2026-07-27T12:00:00-99:99',
 ]);
+
+it('preserves quoted email local parts containing an at sign', function (): void {
+    $email = EmailAddress::from('"Team@OFFICE"@Example.COM');
+
+    expect($email->storageValue())->toBe('"Team@OFFICE"@example.com')
+        ->and($email->localPart())->toBe('"Team@OFFICE"')
+        ->and($email->domain())->toBe('example.com')
+        ->and($email->masked())->toBe('"******"@example.com')
+        ->and(EmailAddress::from($email->storageValue())->equals($email))->toBeTrue();
+});
 
 it('parses bcp 47 core language tags in canonical order', function (
     string $input,
@@ -276,6 +289,10 @@ it('rejects malformed coordinate and address payloads', function (): void {
         ->and(fn () => Coordinates::from('0', '181'))->toThrow(InvalidPrimitive::class)
         ->and(fn () => Coordinates::fromString('1,2,3'))->toThrow(InvalidPrimitive::class)
         ->and(fn () => Coordinates::fromArray(['latitude' => '1']))
+        ->toThrow(InvalidPrimitive::class)
+        ->and(fn () => Coordinates::fromArray(['latitude' => true, 'longitude' => '1']))
+        ->toThrow(InvalidPrimitive::class)
+        ->and(fn () => Coordinates::fromArray(['latitude' => '1', 'longitude' => true]))
         ->toThrow(InvalidPrimitive::class)
         ->and(fn () => new PostalAddress('', null, 'Sofia', null, null, CountryCode::from('BG')))
         ->toThrow(InvalidPrimitive::class)

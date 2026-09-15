@@ -32,7 +32,9 @@ final class MarkFormEntryAsSpamAction
     ): FormEntry {
         /** @var array{entry: FormEntry, form: Form} $result */
         $result = DB::transaction(function () use ($entry, $reason): array {
-            $entryModel = $entry instanceof FormEntry ? $entry : FormEntry::findOrFail($entry);
+            $entryId = $entry instanceof FormEntry ? $entry->id : $entry;
+            $entryModel = FormEntry::query()->lockForUpdate()->findOrFail($entryId);
+            $form = Form::query()->lockForUpdate()->findOrFail($entryModel->form_id);
             $wasSpam = $entryModel->is_spam === true;
 
             $entryModel->setSecurityFlag('marked_spam_at', now()->toISOString());
@@ -45,13 +47,11 @@ final class MarkFormEntryAsSpamAction
                 'is_spam' => true,
             ]);
 
-            $entryModel->loadMissing('form');
             if (! $wasSpam) {
-                $entryModel->form->increment('spam_count');
+                $form->increment('spam_count');
             }
 
             $freshEntry = $entryModel->refresh();
-            $form = Form::query()->findOrFail($freshEntry->form_id);
             $freshEntry->setRelation('form', $form);
 
             return [

@@ -54,6 +54,7 @@ parameters:
         - packages/nvl/translatable/src
         - packages/nvl/translatable/tests/Support/TestTranslatableModel.php
         - packages/nvl/translatable/tests/Support/TestSelfTranslatableModel.php
+        - packages/nvl/translatable/tests/Support/TestSoftDeletingSelfTranslatableModel.php
         - packages/nvl/translatable/tests/Support/TestDomainManagedTranslatableModel.php
         - packages/nvl/translations/src
 

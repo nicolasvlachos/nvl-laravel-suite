@@ -65,6 +65,10 @@ Direct URLs work through `DirectSeoImageResolver`. For `nvl/media`, bind `SeoIma
 Enable package routes only when the application does not already own `/sitemap.xml` or `/robots.txt`.
 
 - Register additional domain sources through `SitemapSource`.
+- Register exclusive profile ownership with `SitemapRegistry::register()`'s
+  `ownerTypes` model-class argument when an owner package controls publication eligibility.
+  Apply owner and SEO exclusions before reusing `entriesForProfile()` with
+  eager-loaded translations; do not reintroduce excluded profiles as fallback URLs.
 - Yield entries lazily; do not load an entire catalog into memory.
 - Keep chunks within configured URL and uncompressed-byte limits and expose a
   sitemap index when multiple chunks exist.
@@ -103,6 +107,8 @@ Enable package routes only when the application does not already own `/sitemap.x
   preserve omitted metadata during redirect updates.
 - Prefer exact-locale redirects, then locale-neutral fallbacks. Prune retained
   soft-deleted redirects with `nvl:seo:redirects:prune`.
+- Run the redirect-lock migration. Redirect Actions serialize graph mutations
+  through commit and validate every configured locale's effective fallback graph.
 
 ## Read profiles from owners
 

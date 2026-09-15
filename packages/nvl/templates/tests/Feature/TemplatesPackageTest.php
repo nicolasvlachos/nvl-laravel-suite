@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\GenericUser;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -34,6 +37,7 @@ use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaPathResolver;
+use Nvl\Templates\Actions\AdoptTemplatesAction;
 use Nvl\Templates\Actions\AssignTemplateAction;
 use Nvl\Templates\Actions\CreateTemplateAction;
 use Nvl\Templates\Actions\CreateTemplateVersionAction;
@@ -74,21 +78,26 @@ use Nvl\Templates\Enums\TemplateVersionStatus;
 use Nvl\Templates\Exceptions\StaleTemplateException;
 use Nvl\Templates\Exceptions\TemplateResolutionException;
 use Nvl\Templates\Exceptions\TemplatesException;
+use Nvl\Templates\Html\HtmlPayload;
 use Nvl\Templates\Http\Controllers\TemplateRenderController;
 use Nvl\Templates\Jobs\RenderTemplateJob;
 use Nvl\Templates\Models\Template;
 use Nvl\Templates\Models\TemplateVersion;
+use Nvl\Templates\Pdf\Options\PdfOptions as CompatiblePdfOptions;
+use Nvl\Templates\Pdf\PdfService;
 use Nvl\Templates\Providers\TemplatesServiceProvider;
 use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\ConfiguredTemplatePayloadValidator;
 use Nvl\Templates\Services\MediaTemplateAssetRegistry;
 use Nvl\Templates\Services\MediaTemplateAssetResolver;
 use Nvl\Templates\Services\NullTemplateAssetResolver;
+use Nvl\Templates\Services\PdfAssetFetcher;
 use Nvl\Templates\Services\PdfHtmlGuard;
 use Nvl\Templates\Services\PdfTemporaryDirectoryResolver;
 use Nvl\Templates\Services\SafeFilesystemPathResolver;
 use Nvl\Templates\Services\StoredTemplateRenderResolver;
 use Nvl\Templates\Services\TemplateAdoptionManifest;
+use Nvl\Templates\Services\TemplateAdoptionSchema;
 use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Services\TemplateResponseFactory;
 use Nvl\Templates\Support\PdfConfig\Data\HeaderFooterData;
@@ -1672,3 +1681,258 @@ it('scopes render history to its requester and exposes only transport-safe facts
     expect(fn () => app(GetTemplateRenderAction::class)->execute($render, $otherActor))
         ->toThrow(AuthorizationException::class);
 });
+
+it('reloads render requester facts and media before disclosure', function (): void {
+    app()->instance(TemplateAuthorization::class, new class implements TemplateAuthorization
+    {
+        public function authorize(
+            TemplateAbility $ability,
+            TemplateActorData $actor,
+            array $context = [],
+        ): void {}
+    });
+    Queue::fake();
+    $actor = new TemplateActorData(type: 'member', id: 'owner');
+    $otherActor = new TemplateActorData(type: 'member', id: 'other');
+    $system = TemplateActorData::system();
+    $template = app(CreateTemplateAction::class)->execute(
+        new CreateTemplateData(key: 'welcome'),
+        $system,
+    );
+    [$version] = createComposedTemplateVersion(
+        $template,
+        $system,
+        [],
+        ['en' => ['text' => 'Welcome']],
+    );
+    app(PublishTemplateVersionAction::class)->execute($version, $version->revision, $system);
+    $render = app(QueueTemplateRenderAction::class)->execute(
+        $template,
+        new RenderTemplateData('en', ['name' => 'Ada']),
+        $actor,
+    );
+    $forged = clone $render;
+    $forged->requested_by = $otherActor->id;
+
+    expect(fn () => app(GetTemplateRenderAction::class)->execute($forged, $otherActor))
+        ->toThrow(AuthorizationException::class);
+
+    $render->setRelation('media', new EloquentCollection([
+        new Media(['file_name' => 'forged.pdf']),
+    ]));
+    $resolved = app(GetTemplateRenderAction::class)->execute($render, $actor);
+
+    expect($resolved)->not->toBe($render)
+        ->and($resolved->media)->toBeEmpty();
+});
+
+it('uses persisted template state for both stored render entry points', function (string $action): void {
+    Queue::fake();
+    $actor = TemplateActorData::system();
+    $template = app(CreateTemplateAction::class)->execute(
+        new CreateTemplateData(key: 'welcome'),
+        $actor,
+    );
+    [$version] = createComposedTemplateVersion(
+        $template,
+        $actor,
+        [],
+        ['en' => ['text' => 'Welcome']],
+    );
+    app(PublishTemplateVersionAction::class)->execute($version, $version->revision, $actor);
+    app(UpdateTemplateAction::class)->execute($template, new UpdateTemplateData(
+        status: TemplateStatus::Archived,
+        expectedRevision: $template->revision,
+    ), $actor);
+
+    expect($template->status)->toBe(TemplateStatus::Active)
+        ->and(fn () => app($action)->execute(
+            $template,
+            new RenderTemplateData('en', ['name' => 'Ada']),
+            $actor,
+        ))->toThrow(TemplateResolutionException::class, 'is not active');
+})->with([
+    'synchronous' => RenderStoredTemplateAction::class,
+    'queued' => QueueTemplateRenderAction::class,
+]);
+
+it('checks relative PDF resources against local roots at the file read boundary', function (): void {
+    $root = storage_path('framework/testing/template-relative-'.str()->uuid());
+    $allowed = $root.'/allowed';
+    $outside = $root.'/outside';
+    File::ensureDirectoryExists($allowed);
+    File::ensureDirectoryExists($outside);
+    File::put($allowed.'/logo.png', base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    ));
+    File::copy($allowed.'/logo.png', $outside.'/private.png');
+    config()->set('templates.compatibility.assets.allowed_local_roots', [$allowed]);
+    $workingDirectory = getcwd();
+    chdir($root);
+
+    try {
+        $guard = app(PdfHtmlGuard::class);
+        $guard->validate('<a href="#section">Jump</a><a href="details/report">Report</a>');
+        $rendered = app(PdfService::class)->renderHtml(
+            new HtmlPayload('<div style="background-image: url(allowed/logo.png)">Logo</div>'),
+            new CompatiblePdfOptions,
+        );
+
+        expect($rendered->getContent())->toContain('/Subtype /Image')
+            ->and(fn () => app(PdfService::class)->renderHtml(
+                new HtmlPayload('<img src="outside/private.png">'),
+                new CompatiblePdfOptions,
+            ))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => app(PdfService::class)->renderHtml(
+                new HtmlPayload('<img src="missing.png">'),
+                new CompatiblePdfOptions,
+            ))
+            ->toThrow(InvalidArgumentException::class);
+    } finally {
+        chdir($workingDirectory);
+        File::deleteDirectory($root);
+    }
+});
+
+it('guards nested PDF image reads after the source HTML has passed validation', function (): void {
+    $root = storage_path('framework/testing/template-nested-'.str()->uuid());
+    $allowed = $root.'/allowed';
+    $outside = $root.'/outside';
+    File::ensureDirectoryExists($allowed);
+    File::ensureDirectoryExists($outside);
+    File::put($outside.'/private.png', base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    ));
+    File::put($allowed.'/image.svg', '<svg xmlns="http://www.w3.org/2000/svg" '
+        .'xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10">'
+        .'<image width="10" height="10" xlink:href="'.$outside.'/private.png"/></svg>');
+    config()->set('templates.compatibility.assets.allowed_local_roots', [$allowed]);
+
+    try {
+        expect(fn () => app(PdfService::class)->renderHtml(
+            new HtmlPayload('<img src="'.$allowed.'/image.svg">'),
+            new CompatiblePdfOptions(new EngineConfig),
+        ))->toThrow(InvalidArgumentException::class);
+    } finally {
+        File::deleteDirectory($root);
+    }
+});
+
+it('enforces PDF remote asset policy at the actual nested fetch boundary', function (): void {
+    Http::fake();
+    $root = storage_path('framework/testing/template-nested-remote-'.str()->uuid());
+    File::ensureDirectoryExists($root);
+    File::put($root.'/image.svg', '<svg xmlns="http://www.w3.org/2000/svg" '
+        .'xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10">'
+        .'<image width="10" height="10" xlink:href="https://forbidden.example.test/private.png"/></svg>');
+    config()->set([
+        'templates.compatibility.assets.allowed_local_roots' => [$root],
+        'templates.pdf.remote_assets.enabled' => true,
+        'templates.pdf.remote_assets.allowed_hosts' => ['allowed.example.test'],
+    ]);
+
+    try {
+        expect(fn () => app(PdfService::class)->renderHtml(
+            new HtmlPayload('<img src="'.$root.'/image.svg">'),
+            new CompatiblePdfOptions,
+        ))->toThrow(InvalidArgumentException::class);
+        Http::assertNothingSent();
+    } finally {
+        File::deleteDirectory($root);
+    }
+});
+
+it('fetches allowed PDF assets with bounded bodies and no redirects', function (): void {
+    config()->set([
+        'templates.pdf.remote_assets.enabled' => true,
+        'templates.pdf.remote_assets.allowed_hosts' => ['allowed.example.test'],
+    ]);
+    $png = base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    );
+    Http::fake([
+        'https://allowed.example.test/logo.png' => Http::response($png),
+        'https://allowed.example.test/oversized' => Http::response('12345'),
+        'https://allowed.example.test/redirect' => Http::response('', 302, [
+            'Location' => 'https://forbidden.example.test/private.png',
+        ]),
+    ]);
+    $rendered = app(PdfService::class)->renderHtml(
+        new HtmlPayload('<img src="https://allowed.example.test/logo.png">'),
+        new CompatiblePdfOptions,
+    );
+    expect($rendered->getContent())->toContain('/Subtype /Image');
+
+    config()->set('templates.compatibility.assets.maximum_bytes', 4);
+    $fetcher = app(PdfAssetFetcher::class);
+    expect(fn () => $fetcher->fetchDataFromPath('https://allowed.example.test/oversized'))
+        ->toThrow(TemplateResolutionException::class, 'byte limit')
+        ->and(fn () => $fetcher->fetchDataFromPath('https://allowed.example.test/redirect'))
+        ->toThrow(TemplateResolutionException::class, 'unsuccessful response')
+        ->and(fn () => $fetcher->fetchDataFromPath('file:///tmp/private.png'))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $fetcher->fetchDataFromPath('https://allowed.example.test:8443/logo.png'))
+        ->toThrow(InvalidArgumentException::class);
+    Http::assertSentCount(3);
+});
+
+it('preserves unique staging indexes while removing canonical name collisions', function (): void {
+    Schema::create('adoption_unique_sources', function (Blueprint $table): void {
+        $table->id();
+        $table->string('alias');
+        $table->string('code');
+        $table->unique('alias', 'adoption_constraint_unique');
+    });
+    DB::statement('CREATE UNIQUE INDEX adoption_standalone_unique ON adoption_unique_sources (code)');
+    DB::table('adoption_unique_sources')->insert(['alias' => 'logo', 'code' => 'brand']);
+    $schema = app(TemplateAdoptionSchema::class);
+    $operations = $schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']);
+
+    expect(array_column($operations, 'operation'))->toBe(['renamed', 'renamed'])
+        ->and(collect(Schema::getIndexes('adoption_unique_sources'))->pluck('name'))
+        ->not->toContain('adoption_constraint_unique')
+        ->not->toContain('adoption_standalone_unique')
+        ->and(fn () => DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
+            'alias' => 'logo',
+            'code' => 'different',
+        ])))->toThrow(UniqueConstraintViolationException::class)
+        ->and(fn () => DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
+            'alias' => 'different',
+            'code' => 'brand',
+        ])))->toThrow(UniqueConstraintViolationException::class)
+        ->and($schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']))->toBe([]);
+});
+
+it('keeps adoption preflight read-only for invalid scope and locale mappings', function (string $invalid): void {
+    $manifest = [
+        'version' => 1,
+        'legacy_asset_count' => 0,
+        'templates' => [[
+            'legacy_key' => 'legacy-welcome',
+            'key' => 'welcome',
+            'translations' => ['en' => ['title' => 'Welcome']],
+        ]],
+        'content' => [[
+            'legacy_key' => 'legacy-copy',
+            'legacy_scope' => 'legacy-global',
+            'legacy_scope_key' => 'legacy',
+            'definition' => 'template-copy',
+            'key' => 'adopted-copy',
+            'scope' => 'global',
+            'scope_key' => '*',
+            'translations' => ['en' => ['text' => 'Welcome']],
+        ]],
+    ];
+
+    if ($invalid === 'scope') {
+        $manifest['content'][0]['scope'] = 'unknown';
+    } else {
+        $manifest['templates'][0]['translations'] = ['xx' => ['title' => 'Welcome']];
+    }
+
+    expect(fn () => app(AdoptTemplatesAction::class)->execute($manifest, apply: true))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(Template::query()->count())->toBe(0)
+        ->and(ContentBlock::query()->count())->toBe(0);
+})->with(['scope', 'locale']);

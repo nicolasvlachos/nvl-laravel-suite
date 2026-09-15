@@ -109,7 +109,10 @@ final readonly class MoneyCast implements CastsAttributes
         }
 
         /** @var array<string, mixed> $payload */
-        return Money::fromArray($payload);
+        $money = Money::fromArray($payload);
+        $this->assertCurrency($money, $key);
+
+        return $money;
     }
 
     /**
@@ -166,16 +169,24 @@ final readonly class MoneyCast implements CastsAttributes
             }
         }
 
-        if ($this->currency !== null && (string) $money->currency() !== mb_strtoupper($this->currency)) {
-            throw new InvalidArgumentException(
-                "Attribute [{$key}] expects [{$this->currency}], [{$money->currency()}] given.",
-            );
-        }
+        $this->assertCurrency($money, $key);
 
         return match ($this->mode) {
             self::Minor => $money->minorAmount(),
             self::Decimal => $money->amount(),
             default => json_encode($money->toArray(), JSON_THROW_ON_ERROR),
         };
+    }
+
+    /**
+     * Enforce an explicitly configured currency during hydration and assignment.
+     */
+    private function assertCurrency(Money $money, string $key): void
+    {
+        if ($this->currency !== null && (string) $money->currency() !== $this->currency) {
+            throw new InvalidArgumentException(
+                "Attribute [{$key}] expects [{$this->currency}], [{$money->currency()}] given.",
+            );
+        }
     }
 }

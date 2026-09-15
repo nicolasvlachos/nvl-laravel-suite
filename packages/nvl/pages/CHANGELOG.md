@@ -4,6 +4,13 @@ All notable changes to `nvl/pages` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Apply Page publication, site, and sitemap eligibility to every Page SEO entry,
+  honoring explicit SEO exclusions without fallback URLs.
+- Recompute restored Page paths from their current parent and expose the
+  requested move destination to consumer authorization.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

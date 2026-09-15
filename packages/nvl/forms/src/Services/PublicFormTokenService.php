@@ -7,6 +7,7 @@ namespace Nvl\Forms\Services;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
+use Nvl\Forms\Exceptions\FormException;
 use Nvl\Forms\Models\Form;
 use Throwable;
 
@@ -28,6 +29,11 @@ final class PublicFormTokenService
      */
     public function issue(Form $form, CarbonInterface $expiresAt): string
     {
+        $key = $this->keyBytes();
+        if ($key === null) {
+            throw new FormException('A valid APP_KEY is required to sign public form tokens.');
+        }
+
         $payload = [
             'form_id' => (string) $form->id,
             'iat' => CarbonImmutable::now()->getTimestamp(),
@@ -36,7 +42,7 @@ final class PublicFormTokenService
         ];
 
         $encodedPayload = $this->base64UrlEncode(json_encode($payload, JSON_THROW_ON_ERROR));
-        $signature = $this->base64UrlEncode(hash_hmac('sha256', $encodedPayload, $this->keyBytes(), true));
+        $signature = $this->base64UrlEncode(hash_hmac('sha256', $encodedPayload, $key, true));
 
         return $encodedPayload.'.'.$signature;
     }
@@ -101,17 +107,28 @@ final class PublicFormTokenService
     }
 
     /**
+     * Determine whether public tokens have a usable application signing key.
+     */
+    public function hasSigningKey(): bool
+    {
+        return $this->keyBytes() !== null;
+    }
+
+    /**
      * Resolve the application key bytes for HMAC.
      */
-    private function keyBytes(): string
+    private function keyBytes(): ?string
     {
         $configuredKey = config('app.key', '');
-        $key = is_string($configuredKey) ? $configuredKey : '';
+        if (! is_string($configuredKey) || trim($configuredKey) === '') {
+            return null;
+        }
+
+        $key = $configuredKey;
         if (Str::startsWith($key, 'base64:')) {
             $decoded = base64_decode(substr($key, 7), true);
-            if (is_string($decoded) && $decoded !== '') {
-                return $decoded;
-            }
+
+            return is_string($decoded) && $decoded !== '' ? $decoded : null;
         }
 
         return $key;
@@ -122,6 +139,11 @@ final class PublicFormTokenService
      */
     private function validatedPayload(?string $token): ?array
     {
+        $key = $this->keyBytes();
+        if ($key === null) {
+            return null;
+        }
+
         if (! is_string($token) || trim($token) === '') {
             return null;
         }
@@ -137,7 +159,7 @@ final class PublicFormTokenService
             return null;
         }
 
-        $expected = $this->base64UrlEncode(hash_hmac('sha256', $encodedPayload, $this->keyBytes(), true));
+        $expected = $this->base64UrlEncode(hash_hmac('sha256', $encodedPayload, $key, true));
         if (! hash_equals($expected, $encodedSignature)) {
             return null;
         }

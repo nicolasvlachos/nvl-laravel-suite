@@ -6,6 +6,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Events\MigrationStarted;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -83,6 +84,7 @@ use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Data\SeoProfileData;
+use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Support\SeoAuthorizationContext;
 use Nvl\Translatable\Exceptions\InvalidLocaleException;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
@@ -390,6 +392,63 @@ it('rewrites descendant paths only when the canonical parent path changes', func
 
     expect($child->refresh()->path)->toBe('renamed-parent/child')
         ->and($child->revision)->toBe($childRevision + 1);
+});
+
+it('restores a child using its current parent path after a rename', function (): void {
+    $parent = createTestPage('pages.restore-parent', 'parent');
+    $child = createTestPage('pages.restore-child', 'child', $parent->id);
+    app(DeletePageAction::class)->execute($child, new DeletePageData($child->revision), PageActorData::system());
+    app(UpdatePageAction::class)->execute(
+        $parent,
+        new UpdatePageData(
+            slug: 'renamed',
+            kind: PageKind::Static,
+            resource: null,
+            status: PageStatus::Published,
+            expectedRevision: $parent->revision,
+            translations: ['en' => ['title' => 'Renamed']],
+        ),
+        PageActorData::system(),
+    );
+    $deleted = Page::withTrashed()->findOrFail($child->id);
+    $restored = app(RestorePageAction::class)->execute(
+        $deleted,
+        new RestorePageData($deleted->revision),
+        PageActorData::system(),
+    );
+
+    expect($restored->path)->toBe('renamed/child')
+        ->and(app(ResolvePageAction::class)->execute(
+            'renamed/child', 'default', 'en', PageActorData::anonymous(),
+        )->page->id)->toBe($child->id);
+});
+
+it('authorizes the destination parent before moving a page', function (): void {
+    $page = createTestPage('pages.move-source', 'source');
+    $destination = createTestPage('pages.move-forbidden', 'forbidden');
+    app()->instance(PageAuthorization::class, new class($destination->id) implements PageAuthorization
+    {
+        public function __construct(private readonly string $forbiddenParent) {}
+
+        public function authorize(
+            PageAbility $ability,
+            PageActorData $actor,
+            ?Page $page = null,
+            ?PageAuthorizationContextData $context = null,
+        ): void {
+            if ($ability === PageAbility::Move && $context?->parentId === $this->forbiddenParent) {
+                throw new AuthorizationException('The destination parent is forbidden.');
+            }
+        }
+    });
+
+    expect(fn () => app(MovePageAction::class)->execute(
+        $page,
+        new MovePageData(parentId: $destination->id, position: 0, expectedRevision: $page->revision),
+        PageActorData::anonymous(),
+    ))->toThrow(AuthorizationException::class);
+    expect($page->refresh()->parent_id)->toBeNull()
+        ->and($page->path)->toBe('source');
 });
 
 it('rejects stale updates', function (): void {
@@ -1557,7 +1616,8 @@ it('resolves only resources admitted by the handler query', function (): void {
     ))->toThrow(NotFoundHttpException::class);
 });
 
-it('yields sitemap ownership only to a matching SEO profile that can emit an entry', function (): void {
+it('projects sitemap urls only from a matching SEO profile that has a route', function (): void {
+    config()->set('seo.site.base_url', 'https://pages.test');
     $static = createTestPage('pages.info', 'info');
     createTestPage(
         'pages.records-map',
@@ -1601,7 +1661,7 @@ it('yields sitemap ownership only to a matching SEO profile that can emit an ent
     app(SyncSeoProfileAction::class)->execute(
         $static,
         SeoProfilePayload::from([
-            'translations' => ['en' => ['path' => '/info']],
+            'translations' => ['en' => ['path' => '/localized-info']],
         ]),
         'default',
     );
@@ -1611,8 +1671,112 @@ it('yields sitemap ownership only to a matching SEO profile that can emit an ent
     );
 
     expect($urls)->not->toContain('https://pages.test/info')
+        ->and($urls)->toContain('https://pages.test/localized-info')
         ->and($urls)->toContain("https://pages.test/records-map/{$resource->id}");
 });
+
+it('applies Page eligibility to SEO backed sitemap entries', function (string $state): void {
+    config()->set(['seo.site.base_url' => 'https://pages.test', 'seo.sitemap.cache_seconds' => 0]);
+    $page = createTestPage('pages.sitemap-eligibility', 'eligibility');
+    app(SyncSeoProfileAction::class)->execute($page, SeoProfilePayload::from([
+        'translations' => ['en' => ['path' => '/eligibility']],
+    ]), 'default');
+
+    expect(app(SitemapGenerator::class)->generate('default'))->toContain('https://pages.test/eligibility');
+
+    if ($state === 'deleted') {
+        app(DeletePageAction::class)->execute($page, new DeletePageData($page->revision), PageActorData::system());
+    } else {
+        app(UpdatePageAction::class)->execute($page, new UpdatePageData(
+            slug: 'eligibility',
+            kind: PageKind::Static,
+            resource: null,
+            status: match ($state) {
+                'draft' => PageStatus::Draft,
+                'archived' => PageStatus::Archived,
+                'scheduled' => PageStatus::Scheduled,
+                default => PageStatus::Published,
+            },
+            expectedRevision: $page->revision,
+            sitemapIncluded: $state !== 'excluded',
+            publishedAt: in_array($state, ['scheduled', 'future-published'], true) ? now()->addDay()->toAtomString() : null,
+            expiresAt: $state === 'expired' ? now()->subMinute()->toAtomString() : null,
+            translations: ['en' => ['title' => 'Eligibility']],
+        ), PageActorData::system());
+    }
+
+    expect(app(SitemapGenerator::class)->generate('default'))->not->toContain('https://pages.test/eligibility');
+})->with(['deleted', 'draft', 'archived', 'scheduled', 'future-published', 'expired', 'excluded']);
+
+it('honors explicit SEO exclusions instead of emitting Page fallback urls', function (array $policy): void {
+    config()->set(['seo.site.base_url' => 'https://pages.test', 'seo.sitemap.cache_seconds' => 0]);
+    $page = createTestPage('pages.sitemap-excluded', 'excluded');
+    app(SyncSeoProfileAction::class)->execute($page, SeoProfilePayload::from([
+        ...$policy,
+        'translations' => ['en' => ['path' => '/excluded']],
+    ]), 'default');
+
+    expect(app(SitemapGenerator::class)->generate('default'))->not->toContain('https://pages.test/excluded');
+})->with([
+    'noindex' => [['isIndexable' => false]],
+    'sitemap exclusion' => [['sitemapIncluded' => false]],
+]);
+
+it('keeps Page sitemap profile projection localized scoped and bounded', function (): void {
+    config()->set(['seo.site.base_url' => 'https://pages.test', 'seo.sitemap.cache_seconds' => 0]);
+    $first = createTestPage('pages.sitemap-first', 'first');
+    app(SyncSeoProfileAction::class)->execute($first, SeoProfilePayload::from([
+        'translations' => ['en' => ['path' => '/first'], 'bg' => ['path' => '/bg/first']],
+    ]), 'default');
+    DB::enableQueryLog();
+    $single = app(SitemapGenerator::class)->generate('default');
+    $singleQueries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+    DB::flushQueryLog();
+
+    foreach (range(2, 25) as $index) {
+        $page = createTestPage('pages.sitemap-'.$index, 'page-'.$index);
+        app(SyncSeoProfileAction::class)->execute($page, SeoProfilePayload::from([
+            'translations' => ['en' => ['path' => '/page-'.$index]],
+        ]), 'default');
+    }
+
+    DB::enableQueryLog();
+    $populated = app(SitemapGenerator::class)->generate('default');
+    $populatedQueries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+    DB::flushQueryLog();
+
+    expect($single)->toContain('hreflang="bg"', 'https://pages.test/bg/first')
+        ->and(substr_count($single, '<loc>https://pages.test/first</loc>'))->toBe(1)
+        ->and($populated)->toContain('https://pages.test/page-25')
+        ->and($populatedQueries)->toBe($singleQueries)
+        ->and($populatedQueries)->toBeLessThanOrEqual(5)
+        ->and(app(SitemapGenerator::class)->generate('other'))->not->toContain('https://pages.test/first');
+});
+
+it('keeps sitemap ownership when the host registers a late Page morph alias', function (bool $createdBeforeMap): void {
+    config()->set(['seo.site.base_url' => 'https://pages.test', 'seo.sitemap.cache_seconds' => 0]);
+    $originalMap = Relation::morphMap();
+
+    try {
+        if (! $createdBeforeMap) {
+            Relation::morphMap(['late-page' => Page::class]);
+        }
+        $page = createTestPage('pages.late-morph', 'late-morph');
+        app(SyncSeoProfileAction::class)->execute($page, SeoProfilePayload::from([
+            'translations' => ['en' => ['path' => '/late-morph']],
+        ]), 'default');
+        if ($createdBeforeMap) {
+            Relation::morphMap(['late-page' => Page::class]);
+        }
+        app(DeletePageAction::class)->execute($page, new DeletePageData($page->revision), PageActorData::system());
+
+        expect(app(SitemapGenerator::class)->generate('default'))->not->toContain('https://pages.test/late-morph');
+    } finally {
+        Relation::morphMap($originalMap, false);
+    }
+})->with(['profile before host alias' => true, 'profile after host alias' => false]);
 
 it('guards rollback when Laravel omits the migration event name', function (): void {
     config()->set([

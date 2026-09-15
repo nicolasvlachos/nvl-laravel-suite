@@ -48,6 +48,9 @@ jobs:
       - name: Validate optimized autoloading
         run: composer autoload:check
 
+      - name: Audit declared package dependencies
+        run: composer dependencies:check
+
       - name: Validate architecture and public contracts
         run: |
           composer packages:validate

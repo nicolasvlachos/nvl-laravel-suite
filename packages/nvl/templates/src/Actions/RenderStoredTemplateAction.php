@@ -36,7 +36,7 @@ final readonly class RenderStoredTemplateAction
         TemplateActorData $actor,
     ): RenderedTemplateData {
         $model = $template instanceof StoredTemplate
-            ? $template
+            ? StoredTemplate::query()->findOrFail($template->id)
             : StoredTemplate::query()
                 ->when(
                     Str::isUuid($template),

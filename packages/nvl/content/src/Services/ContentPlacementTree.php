@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Content\Services;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
@@ -28,7 +29,7 @@ final readonly class ContentPlacementTree
      *
      * @return Collection<int, ContentPlacement>
      */
-    public function load(Model&ContentOwner $owner, string $group): Collection
+    public function load(Model&ContentOwner $owner, string $group, bool $lockForUpdate = false): Collection
     {
         $this->identities->group($group);
         $ownerType = $this->owners->type($owner);
@@ -37,16 +38,21 @@ final readonly class ContentPlacementTree
             'content.placements.maximum_per_group',
             1_000,
         );
-        /** @var Collection<int, ContentPlacement> $placements */
-        $placements = $owner->contentPlacements()
+        $query = $owner->contentPlacements()
             ->with(['block.definition', 'block.translations'])
             ->whereHas('block')
             ->where('group', $group)
             ->orderBy('region')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->limit($maximum + 1)
-            ->get();
+            ->limit($maximum + 1);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate()->with(['block' => $this->lockBlocks(...)]);
+        }
+
+        /** @var Collection<int, ContentPlacement> $placements */
+        $placements = $query->get();
 
         if ($placements->count() > $maximum) {
             throw new InvalidArgumentException(
@@ -160,6 +166,16 @@ final readonly class ContentPlacementTree
                 $cursor = $parent;
             }
         }
+    }
+
+    /**
+     * Lock each eager-loaded block before reading its translations.
+     *
+     * @param  Relation<*, *, *>  $blocks
+     */
+    private function lockBlocks(Relation $blocks): void
+    {
+        $blocks->getQuery()->orderBy('id')->lockForUpdate();
     }
 
     /**

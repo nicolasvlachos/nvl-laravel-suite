@@ -67,11 +67,9 @@ it('installs Activity from the tagged suite archive', function (): void {
             'php artisan config:cache',
             'php artisan route:cache',
         )
-        ->not->toContain(
-            'packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")',
-            'composer config repositories.nvl composer',
-            'QUEUE_CONNECTION=sync',
-        )
+        ->not->toContain('packages+=("nvl/$(basename "$directory"):$PACKAGE_VERSION")')
+        ->not->toContain('composer config repositories.nvl composer')
+        ->not->toContain('QUEUE_CONNECTION=sync')
         ->and($releaseProvider)->toBeFile()
         ->and(file_get_contents($releaseProvider))->toContain(
             "Config::set('taxonomy.owners.users', User::class)",

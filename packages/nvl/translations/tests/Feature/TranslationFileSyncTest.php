@@ -50,6 +50,24 @@ afterEach(function (): void {
     File::deleteDirectory($this->translationSyncRoot);
 });
 
+test('top-level numeric PHP keys round trip through the translation workspace', function (): void {
+    File::ensureDirectoryExists($this->translationSource.'/en');
+    $payload = [0 => 'Zero', 42 => 'Forty-two', 'nested' => [0 => 'Nested zero']];
+    File::put(
+        $this->translationSource.'/en/numbers.php',
+        '<?php return '.var_export($payload, true).';',
+    );
+
+    $imported = app(ImportTranslationsAction::class)->execute(['app'], 'php');
+
+    expect($imported['entries'])->toBe(3)
+        ->and(TranslationEntry::query()->where('key', '0')->firstOrFail()->value)->toBe('Zero');
+
+    app(ExportTranslationsAction::class)->execute(['app'], ['en'], 'php', 'generated');
+
+    expect(require $this->translationTarget.'/en/numbers.php')->toBe($payload);
+});
+
 test('PHP and JSON files round trip through editable database rows into a configured target', function (): void {
     File::ensureDirectoryExists($this->translationSource.'/en');
     File::put($this->translationSource.'/en/messages.php', <<<'PHP'

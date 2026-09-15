@@ -163,12 +163,11 @@ it('runs six routine gates without scheduled fan-out', function (): void {
         ->and($qualityWorkflowSource)->toBeString()->toContain(
             SUITE_CHECKOUT_ACTION,
             SUITE_UPLOAD_ARTIFACT_ACTION,
-        )->not->toContain(
-            'actions/checkout@v6',
-            'actions/upload-artifact@v7',
-            'actions/checkout@v4',
-            'actions/upload-artifact@v4',
         )
+        ->not->toContain('actions/checkout@v6')
+        ->not->toContain('actions/upload-artifact@v7')
+        ->not->toContain('actions/checkout@v4')
+        ->not->toContain('actions/upload-artifact@v4')
         ->and(is_file($root.'/.github/workflows/media-quality.yml'))->toBeFalse();
 
     $releaseWorkflow = Yaml::parseFile($releaseWorkflowPath);
@@ -186,14 +185,13 @@ it('runs six routine gates without scheduled fan-out', function (): void {
             SUITE_CHECKOUT_ACTION,
             SUITE_UPLOAD_ARTIFACT_ACTION,
             SUITE_DOWNLOAD_ARTIFACT_ACTION,
-        )->not->toContain(
-            'actions/checkout@v6',
-            'actions/upload-artifact@v7',
-            'actions/download-artifact@v8',
-            'actions/checkout@v4',
-            'actions/upload-artifact@v4',
-            'actions/download-artifact@v4',
-        );
+        )
+        ->not->toContain('actions/checkout@v6')
+        ->not->toContain('actions/upload-artifact@v7')
+        ->not->toContain('actions/download-artifact@v8')
+        ->not->toContain('actions/checkout@v4')
+        ->not->toContain('actions/upload-artifact@v4')
+        ->not->toContain('actions/download-artifact@v4');
 });
 
 it('documents one discoverable push and automated release path', function (): void {
@@ -256,11 +254,10 @@ it('pins Composer and retries dependency downloads without weakening TLS', funct
         ->and($retrySource)->toBeString()->toContain(
             'COMPOSER_RETRY_DELAYS_SECONDS:-15 30 60 120 180',
             '"$composer_binary" "$@"',
-        )->not->toContain(
-            'disable-tls',
-            'secure-http false',
-            'source-fallback true',
-        );
+        )
+        ->not->toContain('disable-tls')
+        ->not->toContain('secure-http false')
+        ->not->toContain('source-fallback true');
 
     foreach (['package-quality.yml', 'package-release.yml'] as $filename) {
         $workflow = Yaml::parseFile($root.'/.github/workflows/'.$filename);
@@ -393,16 +390,15 @@ it('keeps routine quality focused on formatting analysis manifests and contracts
             'vendor/bin/pest --compact tests/Contract',
             'composer validate --strict',
             'composer autoload:check',
+            'composer dependencies:check',
             'composer packages:validate',
             'composer contracts:check',
             'composer analyse',
             'composer packages:analyse',
             'composer format:test',
         )
-        ->not->toContain(
-            'npm ci',
-            'composer test:packages',
-        );
+        ->not->toContain('npm ci')
+        ->not->toContain('composer test:packages');
 });
 
 it('exposes the root package quality runner through Composer', function (): void {
@@ -577,11 +573,9 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
             'schema.nvl_auth_challenges.index.nvl_auth_challenges_secondary_secret_hash_unique',
             'retry-composer.sh" audit --locked --no-interaction',
         )
-        ->not->toContain(
-            'for directory in packages/nvl/*; do',
-            'build-public-composer-repository.php',
-            'actions/deploy-pages',
-        )
+        ->not->toContain('for directory in packages/nvl/*; do')
+        ->not->toContain('build-public-composer-repository.php')
+        ->not->toContain('actions/deploy-pages')
         ->and($previousMinor['needs'] ?? null)->toBe('archive')
         ->and($previousMinorCheckout)->toBeArray()
         ->and($previousMinorCheckout['with']['fetch-depth'] ?? null)->toBe(0)
@@ -622,11 +616,10 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
         ->and($publish['permissions']['pages'] ?? null)->toBeNull()
         ->and(json_encode($workflow, JSON_THROW_ON_ERROR))->toContain(
             'nvl-laravel-suite-v${{ inputs.version }}',
-        )->not->toContain(
-            'build-public-composer-repository.php',
-            'actions/deploy-pages',
-            'actions/upload-pages-artifact',
-        );
+        )
+        ->not->toContain('build-public-composer-repository.php')
+        ->not->toContain('actions/deploy-pages')
+        ->not->toContain('actions/upload-pages-artifact');
 });
 
 it('lets both proof-consumer runners reuse the candidate archive without rebuilding it', function (): void {
@@ -642,10 +635,9 @@ it('lets both proof-consumer runners reuse the candidate archive without rebuild
             'candidate_archive="${NVL_CANDIDATE_ARCHIVE:-}"',
             'if [[ -n "$candidate_archive" ]]',
             'cp "$candidate_archive" "$consumer_workspace/archives/"',
-        )->not->toContain(
-            '--ignore-platform-reqs',
-            'sleep ',
-        );
+        )
+            ->not->toContain('--ignore-platform-reqs')
+            ->not->toContain('sleep ');
     }
 });
 
@@ -677,12 +669,11 @@ it('rehearses the prepared final 1.x archive through the complete 2.0 consumer b
             '"nvl/laravel-suite:$candidate_version"',
             'auth_consumer_artisan auth-consumer:smoke --verify-queued-mail --format=json',
             './node_modules/.bin/tsc --noEmit -p auth-consumer-types/tsconfig.json',
-        )->not->toContain(
-            'sleep ',
-            '--ignore-platform-reqs',
-            '"symlink":true',
-            'sk_live_',
-        );
+        )
+        ->not->toContain('sleep ')
+        ->not->toContain('--ignore-platform-reqs')
+        ->not->toContain('"symlink":true')
+        ->not->toContain('sk_live_');
 });
 
 it('documents prepared final 1.x evidence without claiming published warnings', function (): void {
@@ -967,7 +958,10 @@ it('emits value-free JSON without leaking absolute paths or process output', fun
             'status' => 'passed',
         ])->and($decoded['packages'][0]['package'] ?? null)->toBe('alpha')
             ->and($decoded['packages'][0]['steps'] ?? [])->toHaveCount(3)
-            ->and($output)->not->toContain($root, 'sensitive=', '/absolute/consumer/config');
+            ->and($output)
+            ->not->toContain($root)
+            ->not->toContain('sensitive=')
+            ->not->toContain('/absolute/consumer/config');
     } finally {
         removePackageQualityFixture($root);
     }
@@ -1047,12 +1041,10 @@ it('uses one deep-map and atomic-list merger in every config-bearing provider', 
             ->toContain('use Nvl\Support\Traits\MergesPackageConfiguration;')
             ->toContain('use MergesPackageConfiguration;')
             ->toContain('mergePackageConfiguration(')
-            ->not->toContain(
-                'replaceConfigRecursivelyFrom(',
-                'mergeConfigFrom(',
-                'mergeConfigurationValues(',
-                'mergeConfigurationRecursively(',
-            );
+            ->not->toContain('replaceConfigRecursivelyFrom(')
+            ->not->toContain('mergeConfigFrom(')
+            ->not->toContain('mergeConfigurationValues(')
+            ->not->toContain('mergeConfigurationRecursively(');
     }
 });
 

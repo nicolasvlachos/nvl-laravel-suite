@@ -4,6 +4,10 @@ All notable changes to `nvl/translations` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve top-level numeric PHP translation keys during import and exact file round trips instead of failing the typed key boundary.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

@@ -124,7 +124,7 @@ final class CSVImportOptionsData extends Data
         return [
             'delimiter' => CSVDelimiterEnum::COMMA,
             'enclosure' => '"',
-            'escape' => '\\',
+            'escape' => '',
             'processingMode' => CSVProcessingModeEnum::MEMORY,
             'chunkSize' => null,
             'skipRows' => 0,

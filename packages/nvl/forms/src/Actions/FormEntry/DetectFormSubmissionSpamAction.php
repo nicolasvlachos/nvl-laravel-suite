@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Forms\Actions\FormEntry;
 
+use Nvl\Forms\Contracts\FormSpamDetector;
 use Nvl\Forms\Data\FormEntryPayload;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Services\FormSpamDetectionService;
@@ -12,8 +13,8 @@ use Spatie\LaravelData\Optional;
 /**
  * Orchestrates spam signal evaluation for a form submission.
  *
- * Delegates all heuristic analysis (text patterns, email domain reputation,
- * user agent inspection, IP reputation, rapid submissions) to FormSpamDetectionService.
+ * Delegates scoring to the configured detector and retains diagnostic flags
+ * when the built-in detector is active.
  * Returns a structured result with spam/flag decisions and detected signals.
  *
  * @see FormSpamDetectionService
@@ -21,10 +22,10 @@ use Spatie\LaravelData\Optional;
 final class DetectFormSubmissionSpamAction
 {
     /**
-     * @param  FormSpamDetectionService  $spamDetection  Unified spam scoring service
+     * @param  FormSpamDetector  $spamDetection  Configured spam scoring implementation
      */
     public function __construct(
-        private readonly FormSpamDetectionService $spamDetection,
+        private readonly FormSpamDetector $spamDetection,
     ) {}
 
     /**
@@ -47,20 +48,33 @@ final class DetectFormSubmissionSpamAction
         ?string $userAgent,
         ?float $trustedFormLoadTime = null,
     ): array {
-        $analysis = $this->spamDetection->analyzeSubmission(
-            form: $form,
-            data: $this->normalizedPayload($data),
-            ipAddress: $ipAddress,
-            userAgent: $userAgent,
-            trustedFormLoadTime: $trustedFormLoadTime,
-        );
+        $payload = $this->normalizedPayload($data);
+        $analysis = $this->spamDetection instanceof FormSpamDetectionService
+            ? $this->spamDetection->analyzeSubmission(
+                form: $form,
+                data: $payload,
+                ipAddress: $ipAddress,
+                userAgent: $userAgent,
+                trustedFormLoadTime: $trustedFormLoadTime,
+            )
+            : [
+                'score' => $this->spamDetection->calculateSpamScore(
+                    $form,
+                    $payload,
+                    $ipAddress,
+                    $userAgent,
+                    null,
+                    $trustedFormLoadTime,
+                ),
+                'flags' => [],
+            ];
 
         $finalScore = (float) $analysis['score'];
 
         return [
             'is_spam' => $this->spamDetection->shouldBlockSubmission($finalScore),
             'is_flagged' => $this->spamDetection->shouldFlagSubmission($finalScore),
-            'score' => $analysis['score'],
+            'score' => (int) round($finalScore),
             'flags' => $analysis['flags'],
         ];
     }

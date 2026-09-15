@@ -376,10 +376,8 @@ it('reports runtime and adoption risks with stable finding codes', function (): 
             'consumer.stale_suite_skill',
         )->and($missingContracts)
             ->toContain(AuthManagementAccess::class)
-            ->not->toContain(
-                MediaContentScanner::class,
-                MultipartUploadGateway::class,
-            );
+            ->not->toContain(MediaContentScanner::class)
+            ->not->toContain(MultipartUploadGateway::class);
     } finally {
         if (is_array($authBinding)) {
             $application->bind(
@@ -983,9 +981,7 @@ it('returns one for error findings and emits secret-free JSON', function (): voi
         ->and(collect($payload['findings'] ?? [])->pluck('code'))
         ->toContain('consumer.package_model_write', 'consumer.package_table_reference')
         ->and($output)
-        ->not->toContain(
-            'guard_name',
-            'Temporary 1.x compatibility migration.',
-            'sk_live_consumer_secret',
-        );
+        ->not->toContain('guard_name')
+        ->not->toContain('Temporary 1.x compatibility migration.')
+        ->not->toContain('sk_live_consumer_secret');
 });

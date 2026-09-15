@@ -39,7 +39,7 @@ final readonly class QueueTemplateRenderAction
         TemplateActorData $actor,
     ): TemplateRender {
         $model = $template instanceof Template
-            ? $template
+            ? Template::query()->findOrFail($template->id)
             : Template::query()
                 ->when(
                     Str::isUuid($template),

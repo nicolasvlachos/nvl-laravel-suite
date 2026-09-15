@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Nvl\Forms\Events\FormChangedEvent;
+use Nvl\Forms\Exceptions\FormException;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormEntry;
 use Nvl\Forms\Services\FormEntryExportService;
@@ -80,9 +81,11 @@ final class ExportFormEntriesAction
             $csvContent = $this->exportService->generateCsvContent($form, $entries, $options);
 
             $filename = $this->exportService->generateFilename($form, $actorId);
-            $path = 'exports/forms/'.$filename;
+            $path = 'exports/forms/'.$exportId.'_'.$filename;
 
-            Storage::disk('local')->put($path, $csvContent);
+            if (! Storage::disk('local')->put($path, $csvContent)) {
+                throw new FormException('Unable to store the form entry export.');
+            }
 
             Cache::put($progressKey, ['status' => 'completed', 'progress' => 100], now()->addHours());
 

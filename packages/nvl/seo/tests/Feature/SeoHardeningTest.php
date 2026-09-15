@@ -329,10 +329,9 @@ it('omits valid external canonical profiles from the built in sitemap', function
         '<loc>https://example.test/local-copy</loc>',
         'href="https://canonical.example.org/original"',
     )
-        ->and($xml)->not->toContain(
-            '<loc>https://canonical.example.org/original</loc>',
-            '<loc>https://example.test/duplicate</loc>',
-        );
+        ->and($xml)
+        ->not->toContain('<loc>https://canonical.example.org/original</loc>')
+        ->not->toContain('<loc>https://example.test/duplicate</loc>');
 });
 
 it('treats unregistered runtime owner types as advisory until management is enabled', function (): void {
@@ -481,6 +480,37 @@ it('rejects direct and chained loops through same-site absolute urls', function 
     ])))->toThrow(SeoRedirectLoopException::class);
 });
 
+it('rejects neutral redirects that close a localized fallback loop', function (): void {
+    $action = app(SyncSeoRedirectAction::class);
+    $action->execute(null, new SeoRedirectPayload('/a', '/b', locale: 'en'));
+
+    expect(fn () => $action->execute(null, new SeoRedirectPayload('/b', '/a')))
+        ->toThrow(SeoRedirectLoopException::class);
+    expect(app(SeoRedirectResolver::class)->resolve('/b', 'en'))->toBeNull();
+});
+
+it('rejects updates that expose a loop through neutral fallback', function (): void {
+    $action = app(SyncSeoRedirectAction::class);
+    $shadow = $action->execute(null, new SeoRedirectPayload('/a', '/safe', locale: 'en'));
+    $action->execute(null, new SeoRedirectPayload('/b', '/a?from=legacy', locale: 'en'));
+    $action->execute(null, new SeoRedirectPayload('/a', '/b'));
+
+    expect(fn () => $action->execute($shadow, new SeoRedirectPayload(
+        '/a', '/safe', locale: 'en', isActive: false, expectedRevision: $shadow->revision,
+    )))->toThrow(SeoRedirectLoopException::class);
+    expect($shadow->refresh()->is_active)->toBeTrue();
+});
+
+it('allows neutral redirects whose localized source is safely shadowed', function (): void {
+    $action = app(SyncSeoRedirectAction::class);
+    $action->execute(null, new SeoRedirectPayload('/b', '/safe', locale: 'en'));
+    $action->execute(null, new SeoRedirectPayload('/a', '/b', locale: 'en'));
+    $action->execute(null, new SeoRedirectPayload('/b', '/a'));
+
+    expect(app(SeoRedirectResolver::class)->resolve('/b', 'en')?->target)->toBe('/safe')
+        ->and(app(SeoRedirectResolver::class)->resolve('/b')?->target)->toBe('/a');
+});
+
 it('increments a restored redirect revision exactly once', function (): void {
     $action = app(SyncSeoRedirectAction::class);
     $redirect = $action->execute(null, SeoRedirectPayload::from([
@@ -543,13 +573,22 @@ it('rejects robots directive injection and oversized output', function (): void 
         ->toBeFalse();
 });
 
+it('reports an unapplied redirect lock migration as an unhealthy schema', function (): void {
+    Schema::drop(SeoTables::RedirectLocks);
+
+    expect(collect(app(SeoDoctor::class)->inspect())
+        ->firstWhere('key', 'schema.table.'.SeoTables::RedirectLocks)?->passed)->toBeFalse();
+    $this->artisan('nvl:seo:doctor', ['--strict' => true, '--format' => 'json'])->assertFailed();
+});
+
 it('rolls package migrations back cleanly and fails loudly on an occupied table', function (): void {
-    $this->artisan('migrate:rollback', ['--step' => 4, '--force' => true])
+    $this->artisan('migrate:rollback', ['--step' => 5, '--force' => true])
         ->assertSuccessful();
 
     expect(Schema::hasTable(SeoTables::Profiles))->toBeFalse()
         ->and(Schema::hasTable(SeoTables::I18n))->toBeFalse()
-        ->and(Schema::hasTable(SeoTables::Redirects))->toBeFalse();
+        ->and(Schema::hasTable(SeoTables::Redirects))->toBeFalse()
+        ->and(Schema::hasTable(SeoTables::RedirectLocks))->toBeFalse();
 
     Schema::create(SeoTables::Profiles, function (Blueprint $table): void {
         $table->uuid('id')->primary();
@@ -565,5 +604,6 @@ it('rolls package migrations back cleanly and fails loudly on an occupied table'
 
     expect(Schema::hasTable(SeoTables::Profiles))->toBeTrue()
         ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()
-        ->and(Schema::hasTable(SeoTables::Redirects))->toBeTrue();
+        ->and(Schema::hasTable(SeoTables::Redirects))->toBeTrue()
+        ->and(Schema::hasTable(SeoTables::RedirectLocks))->toBeTrue();
 });

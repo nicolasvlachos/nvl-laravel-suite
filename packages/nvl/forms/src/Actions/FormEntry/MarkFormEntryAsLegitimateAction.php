@@ -28,7 +28,9 @@ final class MarkFormEntryAsLegitimateAction
     {
         /** @var array{entry: FormEntry, form: Form, was_spam: bool} $result */
         $result = DB::transaction(function () use ($entry): array {
-            $entryModel = $entry instanceof FormEntry ? $entry : FormEntry::findOrFail($entry);
+            $entryId = $entry instanceof FormEntry ? $entry->id : $entry;
+            $entryModel = FormEntry::query()->lockForUpdate()->findOrFail($entryId);
+            $form = Form::query()->lockForUpdate()->findOrFail($entryModel->form_id);
 
             $wasSpam = $entryModel->is_spam === true;
 
@@ -38,12 +40,8 @@ final class MarkFormEntryAsLegitimateAction
                 'is_spam' => false,
             ]);
 
-            if ($wasSpam) {
-                $entryModel->loadMissing('form');
-
-                if ($entryModel->form->spam_count > 0) {
-                    $entryModel->form->decrement('spam_count');
-                }
+            if ($wasSpam && $form->spam_count > 0) {
+                $form->decrement('spam_count');
             }
 
             $freshEntry = $entryModel->refresh()->load('form');

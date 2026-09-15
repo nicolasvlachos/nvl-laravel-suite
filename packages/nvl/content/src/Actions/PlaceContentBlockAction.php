@@ -17,6 +17,7 @@ use Nvl\Content\Events\ContentPlacementChanged;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentIdentityGuard;
+use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
@@ -33,6 +34,7 @@ final readonly class PlaceContentBlockAction
         private ContentPlacementValidator $validator,
         private ContentIdentityGuard $identities,
         private ContentPlacementOwnerLock $ownerLocks,
+        private ContentMediaSynchronizer $media,
     ) {}
 
     /**
@@ -69,6 +71,7 @@ final readonly class PlaceContentBlockAction
                     $ownerId,
                     $ownerType,
                 ): ContentPlacement {
+                    $this->owners->id($owner);
                     $lockedBlock = ContentBlock::query()
                         ->with(['definition', 'translations'])
                         ->lockForUpdate()
@@ -125,6 +128,13 @@ final readonly class PlaceContentBlockAction
                         'is_visible' => $data->isVisible,
                         'overrides' => $overrides === [] ? null : $overrides,
                     ]);
+                    $this->media->synchronizePlacement(
+                        $placement,
+                        $lockedBlock->definition_schema,
+                        $overrides,
+                        $actor,
+                        $owner,
+                    );
                     ContentPlacementChanged::dispatch(
                         $placement->id,
                         ContentPlacementEvent::Created,

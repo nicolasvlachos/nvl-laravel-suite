@@ -414,7 +414,9 @@ it('reports unknown and non-boolean module keys without exposing their values', 
         ->toBe('Remove the retired or unsupported module decision after reviewing the upgrade notes.')
         ->and($invalid['module'] ?? null)->toBe('auth')
         ->and($invalid['symbol'] ?? null)->toBe('modules.auth')
-        ->and($output)->not->toContain('fixture-secret-value', 'definitely-not-a-boolean');
+        ->and($output)
+        ->not->toContain('fixture-secret-value')
+        ->not->toContain('definitely-not-a-boolean');
 });
 
 it('rejects a configuration source that does not return an array', function (): void {
@@ -464,7 +466,9 @@ PHP);
         expect($report['modules'] ?? null)->toBe(['translations'])
             ->and($findings->where('code', 'configuration.deprecated_key'))->toHaveCount(1)
             ->and($findings->where('module', 'translations'))->toHaveCount(1)
-            ->and($output)->not->toContain('must-never-appear', 'published configuration was executed');
+            ->and($output)
+            ->not->toContain('must-never-appear')
+            ->not->toContain('published configuration was executed');
     } finally {
         app()->forgetInstance(SuitePackageConfigurationInspector::class);
         File::deleteDirectory($directory);
@@ -497,7 +501,8 @@ it('keeps expanded-overlay warnings non-failing in strict upgrade checks', funct
 
         expect(collect($report['findings'] ?? [])->pluck('code'))
             ->toContain('configuration.expanded_overlay')
-            ->not->toContain('configuration.unknown_key', 'configuration.deprecated_key');
+            ->not->toContain('configuration.unknown_key')
+            ->not->toContain('configuration.deprecated_key');
     } finally {
         app()->forgetInstance(SuitePackageConfigurationInspector::class);
         File::deleteDirectory($directory);

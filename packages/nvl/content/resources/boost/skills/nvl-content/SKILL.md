@@ -48,6 +48,10 @@ composition snapshots.
   alt text, labels, captions, and copy live in locale rows.
 - Register every Content locale in `translatable.locales`; Content may narrow
   that canonical registry but must not create a second locale universe.
+- Require complete localized values in `content.locales.required_on_publish`;
+  an empty list requires every available locale. Other locales may remain
+  partial, including nested translations, but every supplied value must still
+  pass validation. Resolve missing optional copy through normal locale fallback.
 - Keep JSON fields bounded and validate them with a Draft 2020-12 schema.
 - Never evaluate database content as PHP or Blade.
 
@@ -127,7 +131,8 @@ $pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
   $expectedRevision, Nvl\Content\Data\ContentActorData $actor):
   Nvl\Content\Data\ContentPlacementData`. It locks the complete composition,
   revalidates existing overrides against the replacement definition, and
-  changes only block identity and revision.
+  saves normalized overrides and synchronizes their Media associations while
+  retaining the placement identity and tree position.
 - Reorder with a complete
   `Nvl\Content\Data\Mutations\ReorderContentPlacementsData` set and inject
   `Nvl\Content\Actions\ReorderContentPlacementsAction::execute(Illuminate\Database\Eloquent\Model&Nvl\Content\Contracts\ContentOwner
@@ -144,15 +149,20 @@ $pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
   authorization adapter. These workflows are focused injected Actions, not
   `Content` facade methods, so the original service constructor stays callable.
 
-- Treat model-returning `Content::placements()` as a documented 1.x identity
-  compatibility surface. Build new reads from editor or placement-summary DTOs
-  so consumers do not serialize lazy package relations.
+- Read `Content::placements()` as a collection of `ContentPlacementData` DTOs.
+  Pass each DTO's `id` and current `revision` to placement mutations; never
+  pass the DTO where an Eloquent placement or string identity is required.
 - Remove leaf placements through `Content::deletePlacement()`; never delete
   placed blocks or silently orphan a child tree.
 - Use Patch as the safe update default. Request Replace only when omitted base,
   locale, and metadata values are intentionally being removed.
 - Keep localized values in block locale rows; placement overrides are
   non-localized.
+- Validate the final base-plus-override values with the actual owner, group,
+  and actor context. Block updates, publication, and definition migration must
+  revalidate every dependent placement and synchronize its Media usages in the
+  same transaction. Include retained soft-deleted owners internally while
+  keeping public owner resolution live-only and preserving other model scopes.
 - Merge locale fallback schema-aware and leaf by leaf. Match translated
   repeater rows to explicit, stable base `_key` values; never infer row
   identity from an array position or let translations invent structural rows.
@@ -170,6 +180,18 @@ $pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
   paths.
 - Preserve locale on localized Media associations and keep Content and Media
   association writes on the same named database connection.
+- Associate override Media with the placement UUID independently of block
+  usages, through public Media Actions. Creation, edits, block replacement,
+  publication, definition migration, and removal must preserve shared Media
+  deletion protection and authorize with the registered composition owner.
+- Preserve the provider's stable `nvl-content-placement` morph alias, or an
+  explicit consumer mapping, when enforcing morph maps.
+- Use the `HasContent` deletion boundary for owner cleanup; consumer `delete()`
+  overrides must delegate to it. Soft deletion retains placements and usages;
+  hard deletion removes both atomically on the same named owner/Content/Media
+  connection. A vetoed placement deletion or cleanup failure must roll back
+  the owner deletion and all usage changes. Keep the provider-injected deletion
+  runtime bridge clear between application lifecycles.
 - Register `ContentReferenceResolver` aliases for consumer models. A resolver
   owns existence, policy, and locale-aware display data. Use the supplied
   `ContentValidationContext` for actor, owner, locale, visibility, field path,
@@ -180,6 +202,12 @@ $pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
 - Use `Content::render()` for live model/group compositions.
 - Use `Content::capture()` and `Content::renderSnapshot()` when a publishing
   consumer needs immutable copy.
+- Capture under the owner-group mutation lock and placement/block row locks.
+  With `publishing: true`, validate the merged placement values using owner
+  and group context; overrides may satisfy required fields. Freeze the
+  validator's normalized final payload in snapshot `values` and translations,
+  with empty `overrides`, so rendering cannot reapply stale values. Keep older
+  snapshots with separate overrides readable.
 - Keep render-resource caches per composition; never move Media/reference
   projections into static or long-lived worker state.
 - Verify snapshot hashes and owner identity on every render.

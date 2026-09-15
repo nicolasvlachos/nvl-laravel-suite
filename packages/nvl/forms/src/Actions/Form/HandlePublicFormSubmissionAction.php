@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Forms\Actions\Form;
 
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Nvl\Forms\Actions\FormEntry\CreateFormEntryAction;
 use Nvl\Forms\Data\Mutations\SubmitFormPayload;
 use Nvl\Forms\Enums\FormAnalyticEventType;
@@ -187,7 +188,9 @@ final class HandlePublicFormSubmissionAction
             $this->tokenService->issuedAt($context->publicToken, $form),
         );
         if (! $entry->isIdempotentReplay()) {
-            $this->entryCallbacks->dispatch($form, $entry, $request);
+            DB::afterCommit(function () use ($form, $entry, $request): void {
+                $this->entryCallbacks->dispatch($form, $entry, $request);
+            });
         }
 
         return new FormSubmissionResult(

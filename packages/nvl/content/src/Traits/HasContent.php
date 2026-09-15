@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Relations\StringMorphMany;
+use Nvl\Content\Support\ContentOwnerDeletionBridge;
 
 /**
  * Adds the direct polymorphic Content relationship and owner lifecycle cleanup.
@@ -74,22 +75,20 @@ trait HasContent
     }
 
     /**
-     * Boot owner cleanup without removing placements for reversible soft deletes.
+     * Delete the owner atomically with its placements while preserving reversible soft deletes.
      */
-    public static function bootHasContent(): void
+    public function delete(): ?bool
     {
-        static::deleting(static function (Model $owner): void {
-            if (method_exists($owner, 'isForceDeleting')
-                && $owner->isForceDeleting() !== true) {
-                return;
-            }
+        if (! $this instanceof ContentOwner
+            || ! $this->exists
+            || (method_exists($this, 'isForceDeleting') && $this->isForceDeleting() !== true)) {
+            return parent::delete();
+        }
 
-            if (! $owner instanceof ContentOwner) {
-                return;
-            }
-
-            $owner->contentPlacements()->delete();
-        });
+        return ContentOwnerDeletionBridge::delete(
+            $this,
+            fn (): ?bool => parent::delete(),
+        );
     }
 
     /**

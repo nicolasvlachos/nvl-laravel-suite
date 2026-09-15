@@ -20,6 +20,7 @@ Use this package as the package family's only DTO and PHP-to-TypeScript boundary
 - Register package or application sources through `TypeScriptSourceRegistry`.
 - Use stable provider keys and priorities; duplicate keys or symbols must fail clearly.
 - Keep roots inside configured project boundaries and reject traversal or symlink escape.
+- Use regular files and directories beneath the generated output root. Publication preflights declaration and manifest paths and rejects child symlinks before writing artifacts.
 - Never add application-specific source paths to package configuration.
 
 ## Generate artifacts

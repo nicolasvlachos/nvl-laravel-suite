@@ -107,7 +107,7 @@ protected function casts(): array
 }
 ```
 
-Fixed modes accept a `Money` instance or a scalar representing that column's minor/decimal value. The cast rejects a different currency. For variable-currency relational schemas, keep amount and currency in separate application-owned columns and construct `Money` at the model boundary.
+Fixed modes accept a `Money` instance or a scalar representing that column's minor/decimal value. The cast rejects a different currency. An explicit `Money::class.':json,EUR'` currency is also enforced on both assignment and hydration. For variable-currency relational schemas, keep amount and currency in separate application-owned columns and construct `Money` at the model boundary.
 
 SQLite hydrates `DECIMAL` columns as floating-point values. Decimal-mode casts normalize only those database-hydrated floats to the currency's fraction digits; assigning a float remains invalid. Prefer JSON or fixed-currency minor-unit storage when amounts may exceed SQLite's exact numeric range.
 
@@ -226,7 +226,7 @@ $sofia->distanceTo($plovdiv);       // kilometres
 $sofia->googleMapsUrl();
 ```
 
-`PostalAddress` keeps components separate for country-specific presentation and permits countries without postal codes. `DateTimeValue` accepts only timezone-qualified RFC 3339 input, preserves microseconds, and stores one canonical UTC value; convert only at display boundaries.
+`PostalAddress` keeps components separate for country-specific presentation and permits countries without postal codes. `DateTimeValue` accepts only timezone-qualified RFC 3339 input with valid offset hours and minutes, preserves microseconds, and stores one canonical UTC value; convert only at display boundaries. Coordinate arrays accept numeric strings, integers, or floats and reject booleans. Email normalization preserves the complete local part, including quoted `@` characters, and lowercases only the domain.
 
 ## Laravel validation
 

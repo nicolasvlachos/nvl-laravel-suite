@@ -603,7 +603,10 @@ Configure available locales and locales required for publication under
 `content.locales`. Every Content locale must also be registered in
 `translatable.locales`, which remains the canonical locale runtime. Publishing
 validates the complete schema again, including
-required localized fields and Media/reference availability. When
+required localized fields and Media/reference availability. Locales listed in
+`required_on_publish` must contain every required localized value; other
+locales may remain partial, and every supplied value is still validated.
+An empty `required_on_publish` list requires all available locales. When
 `content.locales.available` is empty, Content uses the Translatable locale
 registry. Locale aliases that normalize to the same key are rejected instead
 of silently overwriting one another. HTTP rendering defaults to the
@@ -690,6 +693,10 @@ otherwise ineligible. Placement create/update/delete operations are serialized
 with an atomic cache lock keyed by owner and group, including the empty-tree
 case that a database row lock cannot protect.
 
+Publishing and updating blocks revalidate every dependent placement's final
+values with its owner and group context. Retained placements on soft-deleted
+owners remain validated without making those owners publicly resolvable.
+
 `Nvl\Content\Content::render()` loads a complete owner composition with
 stable ordering, validates its complete tree before rendering, groups root
 blocks by region, resolves locale values, converts Media IDs to safe Media
@@ -716,6 +723,50 @@ Public Content may reference only reusable public Media by default. Private
 Content may reference private Media when enabled, but mutation requires the
 configured Media authorization/uploader policy. Content creates and removes
 associations only through Media Actions.
+
+Media referenced by placement overrides is associated with the placement UUID,
+independently of block Media. The provider registers the stable
+`nvl-content-placement` morph alias and preserves explicit consumer mappings.
+Override edits, block replacement, definition migration, unplacement, and owner
+hard deletion synchronize these usages. Soft deletion preserves them.
+Hard-deleting an owner through `HasContent` rolls back the owner, placements,
+and usages together if cleanup fails or a placement deletion is vetoed. The
+owner and Content must share the same named connection for this cleanup, and
+Content and Media association writes must share a named connection. Consumer
+`delete()` overrides must delegate to the trait's deletion boundary.
+
+### Upgrading existing placement Media references
+
+Pre-existing override references need resynchronization before their Media
+usage records provide deletion protection. For each live owner and declared
+group, reapply the current placement DTO values through the canonical boundary
+with an authorized actor:
+
+```php
+use Nvl\Content\Data\Mutations\UpdateContentPlacementData;
+
+foreach ($content->placements($owner, $group, $actor) as $placement) {
+    $content->updatePlacement(
+        $placement->id,
+        new UpdateContentPlacementData(
+            expectedRevision: $placement->revision,
+            region: $placement->region,
+            parentId: $placement->parentId,
+            sortOrder: $placement->sortOrder,
+            isVisible: $placement->isVisible,
+            overrides: $placement->overrides,
+        ),
+        $actor,
+    );
+}
+```
+
+Each update validates, synchronizes usages, increments the placement revision,
+and emits its normal update event. Resolve validation errors and reload stale
+revisions before retrying. For retained placements on soft-deleted owners, an
+empty Patch through `Content::updateBlock()` on their non-deleted block, using
+its ID and current revision, resynchronizes every dependent placement and
+records a normal block update. No bulk backfill runs automatically.
 
 At render time:
 
@@ -796,6 +847,11 @@ or reference IDs. Every entry is a
 `ContentCompositionSnapshotBlockData` containing a typed
 `ContentSchemaData`; array hydration restores the same nested DTO graph. The
 snapshot includes a SHA-256 integrity version.
+Capture holds the owner-group mutation lock and locks placement and block rows.
+With `publishing: true`, it validates the merged placement values, freezes that
+normalized final payload in `values`, and stores an empty `overrides` map.
+This lets overrides satisfy required fields and preserves publication-specific
+normalization. Existing snapshots with separate overrides remain renderable.
 Consumers that persist the snapshot can use
 `Nvl\Content\Casts\ContentCompositionSnapshotCast` to keep the Eloquent
 attribute typed as `ContentCompositionSnapshotData` rather than repeatedly

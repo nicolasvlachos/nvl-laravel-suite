@@ -1,5 +1,15 @@
 # Upgrading NVL CSV
 
+## Standard CSV escaping
+
+Defaults, format presets, and analyzer reads now disable PHP's proprietary
+escape mechanism with an empty escape string. Embedded quotes use doubled
+enclosures, preserving quotes and trailing backslashes across CSV round trips.
+
+For a legacy import that intentionally uses backslash escaping, set
+`new CSVConfiguration(escape: '\\')` or the equivalent explicit import DTO
+option. Custom escape settings remain supported.
+
 ## Migrating from `App\Lib\CSV` to 1.0
 
 Version 1.0 preserves the original class names and public fluent methods under the package namespace.

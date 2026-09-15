@@ -98,7 +98,7 @@ The SEO and Metafields aliases are configurable and checked for collisions. The 
 
 ## Hierarchy and paths
 
-Pages use stable UUIDs, globally unique keys, site-scoped sibling slugs, a canonical materialized path, and a SHA-256 path identity. The hierarchy limit defaults to four and cannot be configured above four. Every structural mutation acquires one stable per-site database lock before validating the tree. Moves reject cycles and cross-site parents, update only paths that changed, increment affected revisions, and invalidate the sitemap scope once after commit.
+Pages use stable UUIDs, globally unique keys, site-scoped sibling slugs, a canonical materialized path, and a SHA-256 path identity. The hierarchy limit defaults to four and cannot be configured above four. Every structural mutation acquires one stable per-site database lock before validating the tree. Moves authorize the requested destination through `PageAuthorizationContextData::parentId`, reject cycles and cross-site parents, update only paths that changed, increment affected revisions, and invalidate the sitemap scope once after commit. Restoration recomputes a deleted page's path from its current parent, including parent moves and renames performed during deletion.
 
 Slugs are structural and locale-independent. Titles, navigation labels, and summaries live only in `pages_i18n` and use Translatable’s deterministic locale fallback.
 
@@ -298,7 +298,7 @@ There is no page-block pivot in this package because Content already provides pl
 
 ## SEO, structured data, and sitemaps
 
-Attach SEO profiles through SEO Actions or the `HasSeo` relation. SEO profiles own localized canonical paths, social metadata, robots rules, images, and JSON-LD providers. Pages without an active indexable SEO profile are emitted by the Pages sitemap source using the page path. Pages with a qualifying SEO profile are left to SEO’s profile source, preventing duplicate responsibility.
+Attach SEO profiles through SEO Actions. SEO profiles own localized canonical paths, social metadata, robots rules, images, and JSON-LD providers. Pages owns all Page sitemap entries and registers that ownership with SEO so the generic profile source does not emit them independently. Every entry requires a currently public, sitemap-included Page in the requested site. An active scoped profile with `isIndexable=false` or `sitemapIncluded=false` suppresses the Page entry, including dynamic handler entries. A qualifying routed profile supplies canonical URLs and language alternates through SEO's shared projection; absent profiles or profiles without routes use the Page path. External canonical overrides do not trigger a local fallback URL.
 
 Dynamic handlers stream their own canonical `SitemapEntry` objects because only the application knows how to chunk and constrain its resource query. Every page mutation invalidates only the changed site’s sitemap cache after commit.
 

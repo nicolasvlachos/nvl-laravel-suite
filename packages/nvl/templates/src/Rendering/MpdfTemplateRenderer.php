@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Nvl\Templates\Rendering;
 
 use Illuminate\Contracts\View\Factory;
+use Mpdf\Container\SimpleContainer;
 use Mpdf\Mpdf;
 use Nvl\Templates\Contracts\TemplateRenderer;
 use Nvl\Templates\Data\RenderedTemplateData;
+use Nvl\Templates\Services\PdfAssetFetcher;
 use Nvl\Templates\Services\PdfHtmlGuard;
 use Nvl\Templates\Services\PdfOptionsResolver;
 use Nvl\Templates\Services\PdfTemporaryDirectoryResolver;
@@ -23,6 +25,7 @@ final readonly class MpdfTemplateRenderer implements TemplateRenderer
         private PdfHtmlGuard $htmlGuard,
         private PdfOptionsResolver $optionsResolver,
         private PdfTemporaryDirectoryResolver $temporaryDirectories,
+        private PdfAssetFetcher $assets,
     ) {}
 
     /**
@@ -57,7 +60,7 @@ final readonly class MpdfTemplateRenderer implements TemplateRenderer
             'PDFAauto' => $options->pdfaAuto,
             'allowAnnotationFiles' => false,
             'curlAllowUnsafeSslRequests' => false,
-        ]);
+        ], new SimpleContainer(['assetFetcher' => $this->assets]));
         $mpdf->SetCompression($options->compress);
         $mpdf->SetTitle($options->title ?? $context->subject ?? $context->template->key);
         $mpdf->SetAuthor($options->author);

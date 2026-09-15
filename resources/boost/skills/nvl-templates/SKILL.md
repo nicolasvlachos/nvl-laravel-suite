@@ -38,9 +38,14 @@ share one pipeline:
 - Use `Content::resolveScopes()` for bounded ordered class-template copy. Do
   not page the HTTP-style block catalog or query Content models directly.
 - Keep local assets under configured roots; exact-allowlist every remote host.
+- Keep mPDF's guarded asset fetcher enabled so nested SVG/CSS resources pass
+  the same root/host checks, byte limits, timeouts, and no-redirect policy.
 - Use the versioned `nvl:templates:adopt` manifest for legacy key/scope/locale
   and Media alias mapping. Plan first, prepare named staging indexes, migrate,
   apply, and require exact reconciliation before removing staging.
+- Preserve unique staging enforcement by renaming named unique indexes during
+  preparation; ordinary index names may be removed. Keep the exact reviewed
+  Content read/preflight imports inside the adoption classes only.
 - Treat raw header/footer HTML as trusted source only. Stored definitions use
   header/footer view names.
 - Keep PDF image diagnostics disabled outside explicitly enabled debug
@@ -97,6 +102,8 @@ share one pipeline:
 - Let only the matching processing token complete or fail a claimed render.
 - Use `GetTemplateRenderAction` and `ListTemplateRendersAction` for authorized
   history; never expose payload, settings, failure text, or processing tokens.
+- Treat model arguments to stored rendering and history Actions as persisted
+  identifiers; reload canonical state and relationships before authorization.
 - Keep payload-related values JSON-only and use only the built-in bounded JSON
   Schema keywords unless the application binds a custom validator.
 - Never write package, Content, or Media tables directly.

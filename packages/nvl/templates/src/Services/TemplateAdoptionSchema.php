@@ -63,10 +63,28 @@ final class TemplateAdoptionSchema
     }
 
     /**
+     * Prepare declared staging indexes without removing unique constraints.
+     *
      * @param  list<string>  $tables
      * @return list<array{table: string, index: string, operation: string}>
      */
     public function prepare(string $connection, array $tables): array
+    {
+        $schema = Schema::connection($connection);
+        $prepare = fn (): array => $this->prepareIndexes($connection, $tables);
+
+        return $schema->getConnection()->getSchemaGrammar()->supportsSchemaTransactions()
+            ? $schema->getConnection()->transaction($prepare)
+            : $prepare();
+    }
+
+    /**
+     * Free legacy index names while preserving unique staging constraints.
+     *
+     * @param  list<string>  $tables
+     * @return list<array{table: string, index: string, operation: string}>
+     */
+    private function prepareIndexes(string $connection, array $tables): array
     {
         $schema = Schema::connection($connection);
         $operations = [];
@@ -81,17 +99,28 @@ final class TemplateAdoptionSchema
 
                 if ($name === ''
                     || $index['primary']
-                    || str_starts_with($name, 'sqlite_autoindex_')) {
+                    || str_starts_with($name, 'sqlite_autoindex_')
+                    || str_starts_with($name, 'nvl_templates_staging_')) {
                     continue;
                 }
 
-                $schema->table($table, static function (Blueprint $blueprint) use ($name): void {
-                    $blueprint->dropIndex($name);
+                $unique = $index['unique'];
+                $stagingName = 'nvl_templates_staging_'.substr(
+                    hash('sha256', $connection.':'.$table.':'.$name),
+                    0,
+                    32,
+                );
+                $schema->table($table, static function (Blueprint $blueprint) use ($name, $stagingName, $unique): void {
+                    if ($unique) {
+                        $blueprint->renameIndex($name, $stagingName);
+                    } else {
+                        $blueprint->dropIndex($name);
+                    }
                 });
                 $operations[] = [
                     'table' => $table,
                     'index' => $name,
-                    'operation' => 'dropped',
+                    'operation' => $unique ? 'renamed' : 'dropped',
                 ];
             }
         }

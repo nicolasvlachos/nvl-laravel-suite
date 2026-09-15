@@ -4,6 +4,13 @@ All notable changes to `nvl/primitives` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve quoted email local parts containing `@` while normalizing only the domain.
+- Reject out-of-range RFC 3339 offset hours and minutes with `InvalidPrimitive`.
+- Reject boolean coordinates instead of coercing them to numeric values.
+- Enforce an explicitly configured currency when hydrating JSON money casts.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

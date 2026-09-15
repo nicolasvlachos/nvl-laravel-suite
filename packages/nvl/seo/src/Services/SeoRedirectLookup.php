@@ -19,14 +19,15 @@ final class SeoRedirectLookup
         ?string $locale,
         string $source,
         ?string $ignoreId = null,
+        bool $lockForUpdate = false,
     ): ?SeoRedirect {
-        $redirect = $this->findExact($scope, $locale, $source, $ignoreId);
+        $redirect = $this->findExact($scope, $locale, $source, $ignoreId, $lockForUpdate);
 
         if ($redirect instanceof SeoRedirect || $locale === null) {
             return $redirect;
         }
 
-        return $this->findExact($scope, null, $source, $ignoreId);
+        return $this->findExact($scope, null, $source, $ignoreId, $lockForUpdate);
     }
 
     /**
@@ -37,6 +38,7 @@ final class SeoRedirectLookup
         ?string $locale,
         string $source,
         ?string $ignoreId,
+        bool $lockForUpdate,
     ): ?SeoRedirect {
         return SeoRedirect::query()
             ->where('source_hash', SeoRedirect::sourceHash($scope, $locale, $source))
@@ -48,6 +50,7 @@ final class SeoRedirectLookup
                 $ignoreId !== null,
                 static fn ($query) => $query->whereKeyNot($ignoreId),
             )
+            ->when($lockForUpdate, static fn ($query) => $query->lockForUpdate())
             ->first();
     }
 }

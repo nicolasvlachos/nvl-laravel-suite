@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Nvl\Forms\Actions\FormEntry\ExportFormEntriesAction;
 use Nvl\Forms\Events\FormChangedEvent;
+use Nvl\Forms\Exceptions\FormException;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormEntry;
 use Nvl\Forms\Tests\Stubs\TestFormsUser;
@@ -94,4 +95,33 @@ test('export form entries action rejects empty datasets', function (): void {
     $this->expectExceptionMessage($message);
 
     app(ExportFormEntriesAction::class)->execute($form, [], $user);
+});
+
+test('exports in the same second preserve distinct selected datasets', function (): void {
+    $this->freezeTime();
+    $user = TestFormsUser::factory()->create();
+    $form = Form::factory()->create();
+    FormEntry::factory()->for($form)->create(['email' => 'private@example.com']);
+    $action = app(ExportFormEntriesAction::class);
+
+    $publicPath = $action->execute($form, ['include_sensitive_data' => false], $user);
+    $sensitivePath = $action->execute($form, ['include_sensitive_data' => true], $user);
+
+    expect($publicPath)->not->toBe($sensitivePath)
+        ->and(file_get_contents($publicPath))->not->toContain('private@example.com')
+        ->and(file_get_contents($sensitivePath))->toContain('private@example.com');
+});
+
+test('failed export writes cannot report a completed artifact', function (): void {
+    Event::fake([FormChangedEvent::class]);
+    $user = TestFormsUser::factory()->create();
+    $form = Form::factory()->create();
+    FormEntry::factory()->for($form)->create();
+    $disk = Mockery::mock(Storage::disk('local'));
+    $disk->shouldReceive('put')->andReturnFalse();
+    Storage::partialMock()->shouldReceive('disk')->with('local')->andReturn($disk);
+
+    expect(fn () => app(ExportFormEntriesAction::class)->execute($form, [], $user))
+        ->toThrow(FormException::class);
+    Event::assertNotDispatched(FormChangedEvent::class);
 });

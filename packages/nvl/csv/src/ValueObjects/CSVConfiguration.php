@@ -46,7 +46,7 @@ final readonly class CSVConfiguration
     public function __construct(
         public string $delimiter = ',',
         public string $enclosure = '"',
-        public string $escape = '\\',
+        public string $escape = '',
         public string $lineEnding = "\n",
         public bool $includeBOM = false,
         public bool $includeHeaders = true,

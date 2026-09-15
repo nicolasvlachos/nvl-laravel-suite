@@ -24,9 +24,8 @@ final readonly class GetTemplateRenderAction
         TemplateRender|string $render,
         TemplateActorData $actor,
     ): TemplateRender {
-        $model = $render instanceof TemplateRender
-            ? $render
-            : TemplateRender::query()->findOrFail($render);
+        $renderId = $render instanceof TemplateRender ? $render->id : $render;
+        $model = TemplateRender::query()->findOrFail($renderId);
         $this->authorization->authorize(
             TemplateAbility::View,
             $actor,

@@ -14,4 +14,6 @@ final class SeoTables
     public const string I18n = 'seo_profiles_i18n';
 
     public const string Redirects = 'seo_redirects';
+
+    public const string RedirectLocks = 'seo_redirect_locks';
 }

@@ -26,12 +26,14 @@ final readonly class EmailAddress implements ScalarPrimitive
     public static function from(string $value): static
     {
         $value = trim($value);
+        $separator = strrpos($value, '@');
 
-        if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+        if ($separator === false || filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
             throw InvalidPrimitive::for('email address', 'the value is not a valid address.');
         }
 
-        [$local, $domain] = explode('@', $value, 2);
+        $local = substr($value, 0, $separator);
+        $domain = substr($value, $separator + 1);
 
         return new self($local.'@'.mb_strtolower($domain));
     }
@@ -53,7 +55,7 @@ final readonly class EmailAddress implements ScalarPrimitive
      */
     public function localPart(): string
     {
-        return explode('@', $this->value, 2)[0];
+        return substr($this->value, 0, $this->separator());
     }
 
     /**
@@ -61,7 +63,21 @@ final readonly class EmailAddress implements ScalarPrimitive
      */
     public function domain(): string
     {
-        return explode('@', $this->value, 2)[1];
+        return substr($this->value, $this->separator() + 1);
+    }
+
+    /**
+     * Locate the domain separator after any at signs in a quoted local part.
+     */
+    private function separator(): int
+    {
+        $separator = strrpos($this->value, '@');
+
+        if ($separator === false) {
+            throw InvalidPrimitive::for('email address', 'the value is not a valid address.');
+        }
+
+        return $separator;
     }
 
     /**

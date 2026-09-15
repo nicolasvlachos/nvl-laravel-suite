@@ -292,7 +292,9 @@ it('expresses the KPO module set as capability roots without an application-spec
     ], app(SuiteModuleCatalog::class));
 
     expect($selection->effectiveModules())->toHaveCount(17)
-        ->not->toContain('primitives', 'taxonomy', 'forms');
+        ->not->toContain('primitives')
+        ->not->toContain('taxonomy')
+        ->not->toContain('forms');
 });
 
 it('uses the shipped full-suite default when the consumer has no published configuration', function (): void {
@@ -539,7 +541,9 @@ it('detects full copied defaults but does not serialize their values', function 
 
         expect(collect($findings)->where('code', 'configuration.expanded_overlay'))
             ->toHaveCount(1)
-            ->and($serialized)->not->toContain('NVL_AUTH_', 'Laravel');
+            ->and($serialized)
+            ->not->toContain('NVL_AUTH_')
+            ->not->toContain('Laravel');
     } finally {
         File::deleteDirectory($directory);
     }
@@ -563,7 +567,9 @@ PHP,
         $serialized = json_encode($findings->all(), JSON_THROW_ON_ERROR);
 
         expect($findings->where('code', 'configuration.source_unavailable'))->toHaveCount(1)
-            ->and($serialized)->not->toContain('must-never-appear', 'unexpected');
+            ->and($serialized)
+            ->not->toContain('must-never-appear')
+            ->not->toContain('unexpected');
     } finally {
         File::deleteDirectory($directory);
     }

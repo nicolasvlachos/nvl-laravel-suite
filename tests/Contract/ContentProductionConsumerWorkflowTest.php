@@ -143,15 +143,14 @@ it('uses package Actions, stable aliases, and explicit authorization', function 
             "'articles.detail' => ArticlePageResourceHandler::class",
             "'disk' => 'local'",
         )
-        ->and($probe)->not->toContain(
-            'Page::query(',
-            'ContentBlock::query(',
-            'ContentPlacement::query(',
-            'Media::query(',
-            'SeoProfile::query(',
-            'Metafield::query(',
-            'TranslationEntry::query(',
-        )
+        ->and($probe)
+        ->not->toContain('Page::query(')
+        ->not->toContain('ContentBlock::query(')
+        ->not->toContain('ContentPlacement::query(')
+        ->not->toContain('Media::query(')
+        ->not->toContain('SeoProfile::query(')
+        ->not->toContain('Metafield::query(')
+        ->not->toContain('TranslationEntry::query(')
         ->and($probe)->toContain(
             'CreatePageAction',
             'ResolvePageAction',
@@ -282,12 +281,11 @@ it('runs both migration ownership modes from a sealed artifact', function (): vo
         'rm -- "$document_absolute_path"',
         './node_modules/.bin/tsc --noEmit -p content-consumer-types/tsconfig.json',
     )
-        ->and($runner)->not->toContain(
-            '"symlink":true',
-            'QUEUE_CONNECTION=sync',
-            '--ignore-platform-reqs',
-            'consumer-audit-ignore',
-        );
+        ->and($runner)
+        ->not->toContain('"symlink":true')
+        ->not->toContain('QUEUE_CONNECTION=sync')
+        ->not->toContain('--ignore-platform-reqs')
+        ->not->toContain('consumer-audit-ignore');
 
     expect($skillsPosition)->toBeInt()
         ->and($typesPosition)->toBeInt()

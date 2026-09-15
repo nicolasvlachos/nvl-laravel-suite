@@ -124,7 +124,7 @@ This is the stable package-family pagination envelope. Pagination does not belon
 ],
 ```
 
-Every source and output must resolve inside an allowed root. Invalid roots, traversal, missing source directories, and symlink escape fail with diagnostics.
+Every source and output must resolve inside an allowed root. Invalid roots, traversal, missing source directories, and symlink escape fail with diagnostics. Publication rejects symlinked paths beneath the output directory, including declarations and both manifests, before replacing any artifacts. Use regular files and directories for generated output.
 
 The default split writer groups `Modules\{Module}\*` and `Nvl\{Package}\*` symbols into stable scope files under `generated/`, then writes `output_file` as the compatibility entrypoint. Use longest-prefix `scope_mappings` for application-specific grouping such as a shared `users` scope. Set `writer=global` only when a consumer explicitly requires one declaration file.
 

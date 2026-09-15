@@ -22,6 +22,8 @@ Keep definitions, public rendering, submissions, and entry operations behind pac
 - Treat submission origin as request-derived; never accept `submittedFrom` from public payloads.
 - Configure allowed origins and typed `FormCorsSettings`; enforce iframe embedding with origin policy and CSP rather than spoofable request headers.
 - Configure CSRF or signed tokens, rate limits, payload bounds, idempotency keys, repeat-registration identity, and spam detection deliberately.
+- Supply a nonempty application key; malformed `base64:` keys cannot issue or validate public tokens.
+- Bind `FormSpamDetector` for custom honeypot, score, and threshold decisions in both entry and custom submissions; its existing methods are sufficient.
 - Treat trusted token issue time as the minimum-submission-time source.
 - When repeat registrations are disabled, require normalized email or an active session and preserve the fingerprint uniqueness constraint.
 - Preserve custom-handler receipts. Completed retries replay; changed, processing, or failed receipts conflict instead of re-running unknown side effects.
@@ -31,8 +33,10 @@ Keep definitions, public rendering, submissions, and entry operations behind pac
 
 - Use `ExportFormEntriesAction`, `RedactFormEntryAction`, `AnonymizeFormEntryAction`, and `DeleteFormEntryAction`.
 - Bind `FormEntryPrivacyPolicy` and `FormEntryDeletionPolicy` for application decisions.
+- Evaluate moderation, security flags, counters, and deletion policies against freshly locked entry state.
+- Preserve unique export paths and treat rejected storage writes as failures.
 - Deliver notifications and optional audit activity from `FormChangedEvent` and sanitized `FormEntryChangedEvent`.
-- Keep entry callbacks best-effort and isolated after durable persistence.
+- Keep entry callbacks best-effort and isolated after the outermost commit; rollback discards pending callbacks.
 - Run `nvl:forms:doctor --strict --format=json` before enabling routes or adopting tables.
 
 ## Verify

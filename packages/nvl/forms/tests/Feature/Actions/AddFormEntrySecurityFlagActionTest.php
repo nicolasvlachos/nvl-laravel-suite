@@ -48,3 +48,16 @@ test('add form entry security flag action resolves entry by id', function (): vo
     expect($result->id)->toBe($entry->id)
         ->and($result->getSecurityFlag('test_key'))->toBe(42);
 });
+
+test('adding security flags from stale snapshots preserves earlier writes', function (): void {
+    $entry = FormEntry::factory()->create(['security_flags' => null]);
+    $staleEntry = $entry->fresh();
+
+    app(AddFormEntrySecurityFlagAction::class)->execute($entry, 'first_flag', true);
+    app(AddFormEntrySecurityFlagAction::class)->execute($staleEntry, 'second_flag', true);
+
+    expect($entry->fresh()->security_flags)->toBe([
+        'first_flag' => true,
+        'second_flag' => true,
+    ]);
+});

@@ -4,6 +4,12 @@ All notable changes to `nvl/csv` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Use empty proprietary escape defaults and presets so embedded quotes and trailing backslashes survive standard CSV round trips; analyzer reads use the same convention. Explicit legacy escape settings remain available.
+- Preserve the first row’s inferred export field order across reordered or incomplete rows, and reset inferred fields between exports.
+- Preserve the first headerless input row on non-seekable and decoded streams without attempting to rewind the input.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

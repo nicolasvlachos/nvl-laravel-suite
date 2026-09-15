@@ -31,31 +31,25 @@ final class DeleteFormEntryAction
      */
     public function execute(FormEntry|string $formEntry, ?Authenticatable $actor = null): bool
     {
-        // Resolve model if ID provided and eager load form relationship
-        $formEntry = $formEntry instanceof FormEntry
-            ? $formEntry->load('form:id,handle,submissions_count,spam_count')
-            : FormEntry::with('form:id,handle,submissions_count,spam_count')->findOrFail($formEntry);
-
-        // Validate that entry can be deleted
-        $this->validateCanDelete($formEntry, $actor);
+        $entryId = $formEntry instanceof FormEntry ? $formEntry->id : $formEntry;
 
         /** @var array{deleted: bool, form: Form, entry: FormEntry, was_spam: bool} $result */
-        $result = DB::transaction(function () use ($formEntry) {
-            $form = $formEntry->form;
+        $result = DB::transaction(function () use ($entryId, $actor) {
+            $formEntry = FormEntry::query()->lockForUpdate()->findOrFail($entryId);
+            $form = Form::query()->lockForUpdate()->findOrFail($formEntry->form_id);
+            $formEntry->setRelation('form', $form);
+            $this->validateCanDelete($formEntry, $actor);
             $wasSpam = $formEntry->is_spam;
 
-            // Update form counters before deletion
+            $deleted = $formEntry->delete();
+            if ($deleted !== true) {
+                throw new Exception((string) trans('forms::forms/shared.messages.error.delete_failed', ['item' => (string) trans('forms::entries/general.entities.singular')]));
+            }
+
             if ($wasSpam && $form->spam_count > 0) {
                 $form->decrement('spam_count');
             } elseif (! $wasSpam && $form->submissions_count > 0) {
                 $form->decrement('submissions_count');
-            }
-
-            // Delete the form entry
-            $deleted = $formEntry->delete();
-
-            if ($deleted === null) {
-                throw new Exception((string) trans('forms::forms/shared.messages.error.delete_failed', ['item' => (string) trans('forms::entries/general.entities.singular')]));
             }
 
             $freshForm = $form->fresh();

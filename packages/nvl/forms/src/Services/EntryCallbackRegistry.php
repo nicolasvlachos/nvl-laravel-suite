@@ -60,8 +60,8 @@ final class EntryCallbackRegistry
     /**
      * Dispatch all configured callbacks for the given form handle.
      *
-     * This method runs outside the entry-creation transaction — the entry is
-     * already committed when callbacks fire. Each callback is isolated so a
+     * The submission action schedules this method after the outermost transaction
+     * commits. Each callback is isolated so a
      * failing integration cannot turn a durable submission into a client-visible
      * failure or prevent later callbacks from running.
      *

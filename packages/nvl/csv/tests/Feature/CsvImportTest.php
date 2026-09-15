@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Nvl\Csv\Data\CSVImportOptionsData;
@@ -17,6 +18,30 @@ use Nvl\Csv\Exceptions\CSVValidationException;
 use Nvl\Csv\Services\CSVImport;
 use Nvl\Csv\ValueObjects\CSVConfiguration;
 use Nvl\Csv\ValueObjects\CSVFieldMapping;
+
+it('preserves trailing backslashes in standard quoted CSV fields', function (): void {
+    $path = $this->temporaryCsv("path,label\n\"folder,\\\",first\nplain,second\n");
+    $import = CSVImport::make()
+        ->withOptions(CSVImportOptionsData::from(array_merge(CSVImportOptionsData::defaults(), ['filePath' => $path])))
+        ->fromFile($path);
+
+    expect(array_values(iterator_to_array($import->stream())))->toBe([
+        ['path' => 'folder,\\', 'label' => 'first'],
+        ['path' => 'plain', 'label' => 'second'],
+    ]);
+});
+
+it('honors explicit legacy escape configuration for imports', function (): void {
+    $path = $this->temporaryCsv('value,label'."\n".'"before\\"after",kept'."\n");
+    $rows = CSVImport::make()
+        ->configure(new CSVConfiguration(escape: '\\'))
+        ->fromFile($path)
+        ->stream();
+
+    expect(array_values(iterator_to_array($rows)))->toBe([
+        ['value' => 'before\\"after', 'label' => 'kept'],
+    ]);
+});
 
 it('imports mapped and transformed rows through the fluent compatibility API', function (): void {
     $path = $this->temporaryCsv(
@@ -82,6 +107,35 @@ it('supports headerless CSV files and normalizes uneven rows', function (): void
         ['col_0' => 'C', 'col_1' => ''],
         ['col_0' => 'D', 'col_1' => 'E'],
     ]);
+});
+
+it('preserves the first headerless row on non-seekable disk streams', function (): void {
+    $contents = "\xFF\xFE".mb_convert_encoding("Иван,София\nМария,Пловдив\n", 'UTF-16LE', 'UTF-8');
+    $disk = Mockery::mock(FilesystemAdapter::class);
+    $disk->shouldReceive('exists')->with('people.csv')->andReturnTrue();
+    $disk->shouldReceive('readStream')->with('people.csv')->andReturnUsing(function () use ($contents) {
+        $pair = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+        if ($pair === false) {
+            throw new RuntimeException('Unable to create a non-seekable CSV fixture.');
+        }
+
+        fwrite($pair[0], $contents);
+        fclose($pair[0]);
+
+        return $pair[1];
+    });
+    Storage::shouldReceive('disk')->with('csv-non-seekable')->andReturn($disk);
+
+    $import = CSVImport::make()
+        ->configure(new CSVConfiguration(includeHeaders: false))
+        ->fromDisk('csv-non-seekable', 'people.csv');
+    $expected = [
+        1 => ['col_0' => 'Иван', 'col_1' => 'София'],
+        2 => ['col_0' => 'Мария', 'col_1' => 'Пловдив'],
+    ];
+
+    expect(iterator_to_array($import->stream()))->toBe($expected)
+        ->and(iterator_to_array($import->stream()))->toBe($expected);
 });
 
 it('rejects uneven rows in strict mode while preserving lenient normalization', function (): void {

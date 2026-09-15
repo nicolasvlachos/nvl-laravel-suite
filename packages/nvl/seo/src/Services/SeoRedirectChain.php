@@ -72,6 +72,7 @@ final class SeoRedirectChain
                 $locale,
                 $targetPath,
                 $ignoreId,
+                lockForUpdate: true,
             );
 
             if ($next === null) {
@@ -105,6 +106,20 @@ final class SeoRedirectChain
         throw new SeoRedirectLoopException(
             "SEO redirect [{$source}] exceeds the configured chain limit.",
         );
+    }
+
+    /**
+     * Reject cycles from the stored source in every effective locale after a graph mutation.
+     */
+    public function assertAcyclic(string $scope, string $source): void
+    {
+        foreach ([null, ...$this->locales->supported()] as $locale) {
+            $redirect = $this->redirects->findActive($scope, $locale, $source, lockForUpdate: true);
+
+            if ($redirect !== null) {
+                $this->flatten($scope, $locale, $source, $redirect->target);
+            }
+        }
     }
 
     /**

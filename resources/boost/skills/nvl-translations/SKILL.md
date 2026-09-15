@@ -31,7 +31,7 @@ Treat PHP and JSON language files as authoritative. The database is an editable 
 - Authorize list, update, import, export, scan, and prune through `TranslationsAuthorization`; pruning requires its own ability.
 - Require `force=true` for every non-dry-run API export.
 - Require expected workspace versions in `UpdateTranslationEntryAction`.
-- Preserve valid UTF-8 string/null values, unambiguous nested PHP keys, long keys, and case-sensitive JSON keys deterministically.
+- Preserve valid UTF-8 string/null values, unambiguous nested and numeric PHP keys, long keys, and case-sensitive JSON keys deterministically.
 
 ## Build catalog reads
 

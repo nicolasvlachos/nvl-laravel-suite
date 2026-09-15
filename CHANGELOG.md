@@ -9,6 +9,21 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+### Changed
+
+- Use standard CSV escaping by default; explicit legacy backslash escaping
+  remains supported. Suite upgrade notes also cover the new SEO redirect-lock
+  migration and generated-TypeScript symlink restrictions.
+
+### Fixed
+
+- Hardened package validation, authorization, storage, transaction, and
+  lifecycle boundaries; detailed fixes are recorded in the affected module
+  changelogs.
+- Corrected missing dependency declarations and added dependency auditing to
+  package CI without changing installed dependency versions.
+- Made privacy and architecture tests check every forbidden value independently.
+
 ## [2.0.0] - 2026-08-29
 
 ### Added

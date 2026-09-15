@@ -1,5 +1,17 @@
 # Upgrading NVL SEO
 
+## Unreleased hardening
+
+Run the new `create_seo_redirect_locks_table` migration before redirect writes.
+It adds a stable database mutex that keeps loop validation and graph updates
+serialized through the enclosing transaction. Installations maintaining copied
+migrations should copy this new migration through their existing migration
+ownership workflow; do not enable both vendor and copied migration sources.
+
+Owner packages may now register exclusive SEO sitemap ownership. Pages uses
+this to enforce its publication state and SEO exclusions together. Other
+profile owners retain the existing standalone sitemap behavior.
+
 ## Upgrading to 1.0
 
 Version 1.0 is headless, uses dedicated translation rows, and has no application-specific importer.

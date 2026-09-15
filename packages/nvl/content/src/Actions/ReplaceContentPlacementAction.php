@@ -19,6 +19,7 @@ use Nvl\Content\Events\ContentPlacementChanged;
 use Nvl\Content\Exceptions\StaleContentException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
@@ -34,6 +35,7 @@ final readonly class ReplaceContentPlacementAction
         private ContentOwnerRegistry $owners,
         private ContentPlacementValidator $validator,
         private ContentPlacementOwnerLock $ownerLocks,
+        private ContentMediaSynchronizer $media,
     ) {}
 
     /**
@@ -72,6 +74,7 @@ final readonly class ReplaceContentPlacementAction
                     $ownerType,
                     $placement,
                 ): ContentPlacementData {
+                    $this->owners->id($owner);
                     $maximum = ContentConfiguration::positiveInteger(
                         'content.placements.maximum_per_group',
                         1_000,
@@ -125,7 +128,7 @@ final readonly class ReplaceContentPlacementAction
                         );
                     }
 
-                    $this->validator->validate(
+                    $overrides = $this->validator->validate(
                         $replacement,
                         $owner,
                         $ownerType,
@@ -139,8 +142,16 @@ final readonly class ReplaceContentPlacementAction
                     );
                     $model->forceFill([
                         'content_block_id' => $replacement->id,
+                        'overrides' => $overrides === [] ? null : $overrides,
                         'revision' => $model->revision + 1,
                     ])->save();
+                    $this->media->synchronizePlacement(
+                        $model,
+                        $replacement->definition_schema,
+                        $overrides,
+                        $actor,
+                        $owner,
+                    );
                     ContentPlacementChanged::dispatch(
                         $model->id,
                         ContentPlacementEvent::Updated,

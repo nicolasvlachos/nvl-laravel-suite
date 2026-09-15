@@ -384,7 +384,7 @@ final class CSVAnalyzerService
             $columnCounts = [];
 
             while (count($columnCounts) < 5) {
-                $row = fgetcsv($stream, 0, $delimiter, '"', '\\');
+                $row = fgetcsv($stream, 0, $delimiter, '"', '');
                 if ($row === false) {
                     break;
                 }
@@ -485,7 +485,9 @@ final class CSVAnalyzerService
         $headers = fgetcsv(
             $this->handle,
             0,
-            $this->delimiter->getCharacter()
+            $this->delimiter->getCharacter(),
+            '"',
+            '',
         );
 
         if ($headers === false) {
@@ -527,7 +529,9 @@ final class CSVAnalyzerService
         return fgetcsv(
             $this->handle,
             0,
-            $this->delimiter->getCharacter()
+            $this->delimiter->getCharacter(),
+            '"',
+            '',
         );
     }
 

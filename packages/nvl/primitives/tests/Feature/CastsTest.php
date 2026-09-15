@@ -140,3 +140,13 @@ it('covers every money cast mode and rejection boundary', function (): void {
         ->and(fn () => $minor->set($model, 'money_minor', Money::of('1.00', 'USD'), []))
         ->toThrow(InvalidArgumentException::class);
 });
+
+it('enforces the configured currency when hydrating json money', function (): void {
+    $model = new PrimitiveTestModel;
+    $cast = new MoneyCast('json', 'EUR');
+
+    expect($cast->get($model, 'money', '{"minor":"1234","currency":"EUR"}', [])?->amount())
+        ->toBe('12.34')
+        ->and(fn () => $cast->get($model, 'money', '{"minor":"1234","currency":"USD"}', []))
+        ->toThrow(InvalidArgumentException::class);
+});

@@ -6,6 +6,7 @@ namespace Nvl\Content\Providers;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Content\Actions\GetOwnerContentEditorAction;
@@ -37,6 +38,7 @@ use Nvl\Content\FieldTypes\RichTextFieldTypeAdapter;
 use Nvl\Content\FieldTypes\StringFieldTypeAdapter;
 use Nvl\Content\FieldTypes\StructuredFieldTypeAdapter;
 use Nvl\Content\Models\ContentBlock;
+use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Services\ConfiguredContentAuthorization;
 use Nvl\Content\Services\ContentDefinitionLoader;
@@ -46,11 +48,13 @@ use Nvl\Content\Services\ContentFieldPresetRegistry;
 use Nvl\Content\Services\ContentFieldTypeRegistry;
 use Nvl\Content\Services\ContentJsonSchemaBuilder;
 use Nvl\Content\Services\ContentLocalizedValues;
+use Nvl\Content\Services\ContentOwnerDeletion;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentReferenceRegistry;
 use Nvl\Content\Services\ContentSchemaCompiler;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Content\Support\ContentOwnerDeletionBridge;
 use Nvl\Content\Support\ContentUriSchemePolicy;
 use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
@@ -67,6 +71,7 @@ final class ContentServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        ContentOwnerDeletionBridge::clear();
         $this->mergePackageConfiguration(__DIR__.'/../../config/content.php', 'content');
         $this->validateUriSchemeConfiguration();
         $authorization = config(
@@ -127,6 +132,7 @@ final class ContentServiceProvider extends ServiceProvider
         ContentSchemaValidator $schemas,
         ContentOwnerRegistry $owners,
         ContentReferenceRegistry $references,
+        ContentOwnerDeletion $ownerDeletion,
     ): void {
         $typeScriptSources->register(__DIR__.'/..', 'nvl/content');
         $this->registerFieldTypes($fieldTypes);
@@ -136,6 +142,8 @@ final class ContentServiceProvider extends ServiceProvider
         $this->registerDefinitionMigrations($definitionMigrations);
         $this->registerDefinitions($loader, $definitions);
         $this->registerOwners($owners);
+        $this->registerPlacementMorphAlias();
+        ContentOwnerDeletionBridge::use($ownerDeletion);
 
         if ((bool) config('content.migrations.enabled', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
@@ -175,6 +183,25 @@ final class ContentServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../resources/boost/skills' => base_path('.agents/skills'),
         ], 'content-skills');
+    }
+
+    /**
+     * Register the package-owned placement alias while retaining explicit consumer mappings.
+     */
+    private function registerPlacementMorphAlias(): void
+    {
+        if (in_array(ContentPlacement::class, Relation::morphMap(), true)) {
+            return;
+        }
+
+        $alias = 'nvl-content-placement';
+        $existing = Relation::getMorphedModel($alias);
+
+        if ($existing !== null && $existing !== ContentPlacement::class) {
+            throw new InvalidArgumentException("Content placement morph alias [{$alias}] is already in use.");
+        }
+
+        Relation::morphMap([$alias => ContentPlacement::class], merge: true);
     }
 
     private function registerFieldTypes(ContentFieldTypeRegistry $registry): void

@@ -20,7 +20,10 @@ use Throwable;
  */
 final readonly class FormsDoctor
 {
-    public function __construct(private Container $container) {}
+    public function __construct(
+        private Container $container,
+        private PublicFormTokenService $publicTokens,
+    ) {}
 
     /**
      * @return list<FormsDoctorCheckData>
@@ -238,8 +241,7 @@ final readonly class FormsDoctor
      */
     private function securityChecks(): array
     {
-        $applicationKey = config('app.key');
-        $hasApplicationKey = is_string($applicationKey) && trim($applicationKey) !== '';
+        $hasApplicationKey = $this->publicTokens->hasSigningKey();
 
         return [
             $this->check(
@@ -247,7 +249,7 @@ final readonly class FormsDoctor
                 $hasApplicationKey,
                 $hasApplicationKey
                     ? 'Application key is available for signing public form tokens.'
-                    : 'APP_KEY is required to sign public form tokens.',
+                    : 'A nonempty, correctly encoded APP_KEY is required to sign public form tokens.',
             ),
         ];
     }

@@ -37,3 +37,13 @@ test('forms doctor rejects enabled public routes without throttling', function (
     expect($check)->not->toBeNull()
         ->and($check->passed)->toBeFalse();
 });
+
+test('forms doctor rejects a malformed public token signing key', function (): void {
+    config(['app.key' => 'base64:not-valid-base64***']);
+
+    $check = collect(app(FormsDoctor::class)->inspect())
+        ->firstWhere('key', 'security.application_key');
+
+    expect($check)->not->toBeNull()
+        ->and($check->passed)->toBeFalse();
+});

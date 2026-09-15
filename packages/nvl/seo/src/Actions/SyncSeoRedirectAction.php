@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Exceptions\StaleSeoRedirectException;
 use Nvl\Seo\Models\SeoRedirect;
@@ -55,6 +56,7 @@ final readonly class SyncSeoRedirectAction
                 $scope,
                 $source,
             ): SeoRedirect {
+                $this->lockGraph();
                 $model = $redirectId === null
                     ? SeoRedirect::withTrashed()
                         ->where('source_hash', SeoRedirect::sourceHash($scope, $locale, $source))
@@ -62,6 +64,8 @@ final readonly class SyncSeoRedirectAction
                         ->first()
                     : SeoRedirect::withTrashed()->lockForUpdate()->findOrFail($redirectId);
                 $wasDeleted = $model?->trashed() ?? false;
+                $previousScope = $model?->scope;
+                $previousSource = $model?->source_path;
                 $model ??= new SeoRedirect;
 
                 if (is_int($data->expectedRevision)
@@ -111,6 +115,13 @@ final readonly class SyncSeoRedirectAction
                     $model->save();
                 }
 
+                $this->chains->assertAcyclic($scope, $source);
+
+                if ($previousScope !== null && $previousSource !== null
+                    && ($previousScope !== $scope || $previousSource !== $source)) {
+                    $this->chains->assertAcyclic($previousScope, $previousSource);
+                }
+
                 return $model->refresh();
             });
         } catch (QueryException $exception) {
@@ -126,5 +137,14 @@ final readonly class SyncSeoRedirectAction
 
             throw $exception;
         }
+    }
+
+    /**
+     * Serialize redirect graph writes through the outermost database commit.
+     */
+    private function lockGraph(): void
+    {
+        DB::table(SeoTables::RedirectLocks)->insertOrIgnore(['name' => 'graph']);
+        DB::table(SeoTables::RedirectLocks)->where('name', 'graph')->lockForUpdate()->first();
     }
 }

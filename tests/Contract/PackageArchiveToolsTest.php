@@ -24,7 +24,7 @@ it('advertises the main development branch on the Suite 2 line', function (): vo
     expect($manifest['extra']['branch-alias']['dev-main'] ?? null)->toBe('2.x-dev');
 });
 
-it('archives the complete package-owned 2.0 release notes with blank Unreleased sections', function (): void {
+it('keeps the complete package-owned 2.0 release notes under dated headings', function (): void {
     $root = dirname(__DIR__, 2);
     $changedPackages = [
         'activity',
@@ -47,11 +47,18 @@ it('archives the complete package-owned 2.0 release notes with blank Unreleased 
         'translations',
     ];
 
-    expect(releaseChangelogErrors($root, '2.0.0', $changedPackages))->toBe([])
-        ->and(releaseChangelogSection(
-            (string) file_get_contents($root.'/packages/nvl/comments/CHANGELOG.md'),
-            '2.0.0',
-        ))->toContain('forward-only rich-document columns')
+    foreach (['CHANGELOG.md', ...array_map(
+        static fn (string $package): string => 'packages/nvl/'.$package.'/CHANGELOG.md',
+        $changedPackages,
+    )] as $path) {
+        expect(file_get_contents($root.'/'.$path))
+            ->toMatch('/^## \[2\.0\.0\] - \d{4}-\d{2}-\d{2}$/m');
+    }
+
+    expect(releaseChangelogSection(
+        (string) file_get_contents($root.'/packages/nvl/comments/CHANGELOG.md'),
+        '2.0.0',
+    ))->toContain('forward-only rich-document columns')
         ->and(releaseChangelogSection(
             (string) file_get_contents($root.'/packages/nvl/pages/CHANGELOG.md'),
             '2.0.0',
@@ -90,16 +97,10 @@ it('keeps v1.0.5 release history under dated suite and every package heading', f
         ->and($mediaChangelog)->toBeString()
         ->toContain("## [{$version}] - 2026-08-12")
         ->not->toMatch('/target(?:ed)?(?: for|:) v?1\.0\.5/i')
-        ->and(trim((string) releaseChangelogSection($rootChangelog, 'Unreleased')))
-        ->toBe('')
         ->and(releaseChangelogSection($rootChangelog, $version))
         ->toContain('mass-assignable attributes', 'SQLite adoption constraints')
-        ->and(trim((string) releaseChangelogSection($authChangelog, 'Unreleased')))
-        ->toBe('')
         ->and(releaseChangelogSection($authChangelog, $version))
         ->toContain('$fillable')
-        ->and(trim((string) releaseChangelogSection($mediaChangelog, 'Unreleased')))
-        ->toBe('')
         ->and(releaseChangelogSection($mediaChangelog, $version))
         ->toContain('missing-binary incident recovery runbook')
         ->and($filterableChangelog)->toBeString()
@@ -114,8 +115,7 @@ it('keeps v1.0.5 release history under dated suite and every package heading', f
 
         expect($contents)->toBeString()
             ->toContain("## [{$version}] - 2026-08-12")
-            ->not->toMatch('/^## \[\d+\.\d+\.\d+\] - Unreleased$/m')
-            ->and(trim((string) releaseChangelogSection($contents, 'Unreleased')))->toBe('');
+            ->not->toMatch('/^## \[\d+\.\d+\.\d+\] - Unreleased$/m');
     }
 });
 
@@ -158,6 +158,47 @@ MARKDOWN);
         $filesystem->remove($workspace);
     }
 });
+
+it('rejects populated Unreleased sections in otherwise ready release fixtures', function (string $path, string $name): void {
+    $workspace = sys_get_temp_dir().'/nvl-pending-changelog-'.bin2hex(random_bytes(8));
+    $filesystem = new Filesystem;
+    $readyChangelog = <<<'MARKDOWN'
+# Changelog
+
+## [Unreleased]
+
+## [1.2.3] - 2026-08-12
+
+- Archived release notes.
+MARKDOWN;
+
+    try {
+        $filesystem->dumpFile($workspace.'/tools/package-family.php', <<<'PHP'
+<?php
+
+return ['packages' => ['auth']];
+PHP);
+        $filesystem->dumpFile($workspace.'/CHANGELOG.md', $readyChangelog);
+        $filesystem->dumpFile($workspace.'/packages/nvl/auth/CHANGELOG.md', $readyChangelog);
+
+        expect(releaseChangelogErrors($workspace, '1.2.3', ['auth']))->toBe([]);
+
+        $filesystem->dumpFile($workspace.'/'.$path, str_replace(
+            '## [Unreleased]',
+            "## [Unreleased]\n\n- Pending change.",
+            $readyChangelog,
+        ));
+
+        expect(releaseChangelogErrors($workspace, '1.2.3', ['auth']))->toBe([
+            "Release changelog [{$name}] must leave [Unreleased] blank when publishing [1.2.3].",
+        ]);
+    } finally {
+        $filesystem->remove($workspace);
+    }
+})->with([
+    'suite notes' => ['CHANGELOG.md', 'suite'],
+    'package notes' => ['packages/nvl/auth/CHANGELOG.md', 'auth'],
+]);
 
 it('declares the repository root as the only installable package', function (): void {
     $manifest = suiteArchiveManifest();
@@ -396,7 +437,7 @@ it('ships every module and the central provider in the archive', function (): vo
     }
 });
 
-it('validates release changelogs from the materialized suite archive', function (): void {
+it('validates a prepared release fixture while preserving the materialized archive changelogs', function (): void {
     [$workspace, $archive] = suiteArchiveBuild();
     $extracted = sys_get_temp_dir().'/nvl-suite-changelog-'.bin2hex(random_bytes(8));
     $filesystem = new Filesystem;
@@ -410,9 +451,36 @@ it('validates release changelogs from the materialized suite archive', function 
 
         $zip->close();
 
-        $catalog = require dirname(__DIR__, 2).'/tools/package-family.php';
+        $root = dirname(__DIR__, 2);
+        $catalog = require $root.'/tools/package-family.php';
 
-        expect(releaseChangelogErrors($extracted, '1.0.5', $catalog['packages']))->toBe([]);
+        expect(releaseChangelogErrors($extracted, '1.0.5', $catalog['packages']))
+            ->toBe(releaseChangelogErrors($root, '1.0.5', $catalog['packages']));
+
+        foreach (['CHANGELOG.md', ...array_map(
+            static fn (string $package): string => 'packages/nvl/'.$package.'/CHANGELOG.md',
+            $catalog['packages'],
+        )] as $path) {
+            $contents = file_get_contents($extracted.'/'.$path);
+
+            expect($contents)->toBeString()
+                ->toBe(file_get_contents($root.'/'.$path));
+
+            $prepared = preg_replace(
+                '/^## \[Unreleased\]$/m',
+                "## [Unreleased]\n\n## [1.2.3] - 2026-08-12",
+                $contents,
+                1,
+                $replacements,
+            );
+
+            expect($replacements)->toBe(1)
+                ->and($prepared)->toBeString();
+
+            $filesystem->dumpFile($extracted.'/'.$path, $prepared);
+        }
+
+        expect(releaseChangelogErrors($extracted, '1.2.3', $catalog['packages']))->toBe([]);
     } finally {
         $filesystem->remove($extracted);
         expect($workspace)->toBeDirectory();
@@ -621,13 +689,12 @@ it('publishes clean Packagist tags without a custom Composer repository', functi
         'git write-tree',
         'git commit-tree',
         'git push origin',
-    )->not->toContain(
-        'build-archive-repository.php',
-        'build-public-composer-repository.php',
-        'inspect-package-archive.php',
-        'deploy-pages',
-        'upload-pages-artifact',
     )
+        ->not->toContain('build-archive-repository.php')
+        ->not->toContain('build-public-composer-repository.php')
+        ->not->toContain('inspect-package-archive.php')
+        ->not->toContain('deploy-pages')
+        ->not->toContain('upload-pages-artifact')
         ->and($root.'/tools/build-archive-repository.php')->not->toBeFile()
         ->and($root.'/tools/build-public-composer-repository.php')->not->toBeFile()
         ->and($root.'/tools/inspect-package-archive.php')->not->toBeFile();

@@ -19,6 +19,36 @@ beforeEach(function (): void {
     Storage::fake('csv-exports');
 });
 
+it('round trips quotes and backslashes through standard CSV readers', function (?CSVExportFormatEnum $format): void {
+    $options = [
+        'disk' => 'csv-exports',
+        'filename' => 'escaping.csv',
+        'path' => '',
+        'includeHeaders' => false,
+    ];
+    $options = $format === null
+        ? array_merge(CSVExportOptionsData::defaults(), $options)
+        : [...$options, 'format' => $format];
+    $row = ['quote' => 'say "hello"', 'path' => 'folder,\\', 'escaped' => 'before\\"after'];
+
+    CSVExport::make()->withOptions(CSVExportOptionsData::from($options))->fromArray([$row]);
+
+    $contents = Storage::disk('csv-exports')->get('escaping.csv');
+    if (str_starts_with($contents, "\xEF\xBB\xBF")) {
+        $contents = substr($contents, 3);
+    }
+
+    $stream = fopen('php://temp', 'w+');
+    fwrite($stream, $contents);
+    rewind($stream);
+
+    try {
+        expect(fgetcsv($stream, 0, $format?->getDelimiter() ?? ',', '"', ''))->toBe(array_values($row));
+    } finally {
+        fclose($stream);
+    }
+})->with([null, ...CSVExportFormatEnum::cases()]);
+
 it('exports arrays with DTO-controlled dialect, headings, fields, and BOM', function (): void {
     $options = CSVExportOptionsData::from([
         'disk' => 'csv-exports',
@@ -189,6 +219,28 @@ it('infers headings and serializes common PHP value objects predictably', functi
     expect(Storage::disk('csv-exports')->get('exports/inferred.csv'))->toBe(
         "created_at,label,state\n2026-01-02T03:04:05+02:00,\"display value\",UTF-8\n",
     );
+});
+
+it('keeps inferred field order across rows and resets it between exports', function (): void {
+    $export = CSVExport::make()
+        ->disk('csv-exports')
+        ->filename('inferred-order.csv');
+
+    $export->stream(function (Closure $write): void {
+        $write([['name' => 'Ada', 'email' => 'ada@example.test']]);
+        $write([
+            ['email' => 'bob@example.test', 'name' => 'Bob'],
+            ['name' => 'Cora', 'extra' => 'ignored'],
+        ]);
+    });
+
+    expect(Storage::disk('csv-exports')->get('exports/inferred-order.csv'))->toBe(
+        "name,email\nAda,ada@example.test\nBob,bob@example.test\nCora,\n",
+    );
+
+    $export->fromArray([['city' => 'Sofia']]);
+
+    expect(Storage::disk('csv-exports')->get('exports/inferred-order.csv'))->toBe("city\nSofia\n");
 });
 
 it('does not write a UTF-8 BOM for legacy single-byte encodings', function (): void {

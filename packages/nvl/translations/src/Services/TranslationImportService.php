@@ -259,7 +259,7 @@ final class TranslationImportService
                         $locale,
                         TranslationFormat::Php,
                         $group,
-                        $key,
+                        (string) $key,
                         $value,
                         $now,
                     );

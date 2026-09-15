@@ -74,6 +74,7 @@ final readonly class RestorePageAction
 
                     $this->authorization->authorize(PageAbility::Restore, $actor, $page);
                     $this->hierarchy->assertValid($page->site, $page->parent_id, $page->id);
+                    $page->path = $this->hierarchy->path($page->site, $page->parent_id, $page->slug);
                     $page->restore();
                     PageChanged::dispatch(
                         $page->id,

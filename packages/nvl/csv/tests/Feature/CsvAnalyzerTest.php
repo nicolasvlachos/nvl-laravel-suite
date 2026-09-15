@@ -8,6 +8,15 @@ use Nvl\Csv\Enums\CSVEncodingEnum;
 use Nvl\Csv\Exceptions\CSVFileNotFoundException;
 use Nvl\Csv\Services\CSVAnalyzerService;
 
+it('analyzes standard quoted fields ending in a backslash', function (): void {
+    $path = $this->temporaryCsv("path,label\n\"folder,\\\",first\nplain,second\n");
+    $result = (new CSVAnalyzerService)->analyzeFile($path);
+
+    expect($result->rowCount)->toBe(2)
+        ->and($result->columnCount)->toBe(2)
+        ->and($result->inconsistentRowCount)->toBe(0);
+});
+
 it('detects dialect, types, duplicates, quality issues, and recommendations', function (): void {
     $path = $this->temporaryCsv(
         "id;name;amount;active;created_at\r\n".

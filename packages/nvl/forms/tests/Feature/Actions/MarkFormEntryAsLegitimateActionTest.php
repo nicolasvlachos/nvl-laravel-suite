@@ -57,3 +57,14 @@ test('mark form entry as legitimate action resolves entry by id', function (): v
     expect($result->is_spam)->toBeFalse()
         ->and($form->fresh()->spam_count)->toBe(1);
 });
+
+test('marking legitimate from stale snapshots counts the transition only once', function (): void {
+    $form = Form::factory()->create(['spam_count' => 2]);
+    $entry = FormEntry::factory()->for($form)->create(['is_spam' => true]);
+    $staleEntry = $entry->fresh();
+
+    app(MarkFormEntryAsLegitimateAction::class)->execute($entry);
+    app(MarkFormEntryAsLegitimateAction::class)->execute($staleEntry);
+
+    expect($form->fresh()->spam_count)->toBe(1);
+});

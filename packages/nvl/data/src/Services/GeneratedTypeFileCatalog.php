@@ -286,9 +286,7 @@ final readonly class GeneratedTypeFileCatalog
      */
     public function manifestPath(): string
     {
-        return $this->outputDirectory()
-            .DIRECTORY_SEPARATOR
-            .str_replace('/', DIRECTORY_SEPARATOR, $this->manifestFilename());
+        return $this->pathGuard->artifactPath($this->outputDirectory(), $this->manifestFilename());
     }
 
     /**

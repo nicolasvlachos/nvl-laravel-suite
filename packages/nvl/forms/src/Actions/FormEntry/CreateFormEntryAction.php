@@ -9,13 +9,13 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Nvl\Forms\Contracts\CreateFormEntryContract;
+use Nvl\Forms\Contracts\FormSpamDetector;
 use Nvl\Forms\Data\FormEntryPayload;
 use Nvl\Forms\Events\FormEntryChangedEvent;
 use Nvl\Forms\Exceptions\FormSubmissionRejectionException;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormEntry;
 use Nvl\Forms\Services\FormRegistrationFingerprint;
-use Nvl\Forms\Services\FormSpamDetectionService;
 use Nvl\Forms\Services\FormSpamRejectionRecorder;
 use Spatie\LaravelData\Optional;
 use Throwable;
@@ -38,7 +38,7 @@ final class CreateFormEntryAction implements CreateFormEntryContract
      * @param  CheckFormRateLimitAction  $checkRateLimit  Enforces per-IP rate limits
      * @param  DetectFormSubmissionSpamAction  $detectSpam  Evaluates spam signals
      * @param  PersistFormEntryAction  $persistEntry  Persists entry and updates counters
-     * @param  FormSpamDetectionService  $spamDetection  Honeypot validation service
+     * @param  FormSpamDetector  $spamDetection  Configured honeypot detector
      * @param  FormSpamRejectionRecorder  $spamRejectionRecorder  Spam rejection recorder
      * @param  FormRegistrationFingerprint  $registrationFingerprint  Repeat-registration identity resolver
      */
@@ -47,7 +47,7 @@ final class CreateFormEntryAction implements CreateFormEntryContract
         private readonly CheckFormRateLimitAction $checkRateLimit,
         private readonly DetectFormSubmissionSpamAction $detectSpam,
         private readonly PersistFormEntryAction $persistEntry,
-        private readonly FormSpamDetectionService $spamDetection,
+        private readonly FormSpamDetector $spamDetection,
         private readonly FormSpamRejectionRecorder $spamRejectionRecorder,
         private readonly FormRegistrationFingerprint $registrationFingerprint,
     ) {}

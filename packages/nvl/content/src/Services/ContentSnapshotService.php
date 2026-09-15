@@ -6,6 +6,7 @@ namespace Nvl\Content\Services;
 
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
@@ -16,6 +17,7 @@ use Nvl\Content\Data\ContentSchemaData;
 use Nvl\Content\Data\RenderedContentBlockData;
 use Nvl\Content\Data\RenderedContentCompositionData;
 use Nvl\Content\Enums\ContentAbility;
+use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Validation\ContentValueValidator;
@@ -38,6 +40,7 @@ final readonly class ContentSnapshotService
         private ContentPayloadGuard $guard,
         private ContentIdentityGuard $identities,
         private ContentLocalizedValues $localizedValues,
+        private ContentPlacementOwnerLock $ownerLocks,
     ) {}
 
     /**
@@ -62,78 +65,23 @@ final readonly class ContentSnapshotService
                 'publishing' => $publishing,
             ],
         );
-        $placements = $this->tree->eligible(
-            $this->tree->load($owner, $group),
-            publicOnly: false,
-        );
-        $blocks = [];
 
-        foreach ($placements as $placement) {
-            $block = $placement->block;
-            $translations = [];
-
-            foreach ($block->translations as $translation) {
-                $locale = $translation->getAttribute('locale');
-                $values = $translation->getAttribute('values');
-
-                if (is_string($locale) && is_array($values)) {
-                    $translations[$locale] = ContentArrays::stringMap(
-                        $values,
-                        "content snapshot translation {$locale}",
-                    );
-                }
-            }
-
-            ksort($translations);
-            $baseValues = is_array($block->values)
-                ? ContentArrays::stringMap(
-                    $block->values,
-                    "content snapshot block {$block->id} values",
-                )
-                : [];
-
-            if ($publishing) {
-                $validated = $this->values->validate(
-                    $block->definition_schema,
-                    $baseValues,
-                    $translations,
-                    $actor,
-                    $block->visibility,
-                    publishing: true,
-                    owner: $owner,
-                    group: $group,
-                );
-                $baseValues = $validated->values;
-                $translations = $validated->translations;
-            }
-
-            $blocks[] = new ContentCompositionSnapshotBlockData(
-                placementId: $placement->id,
-                parentId: $placement->parent_id,
-                key: $placement->key,
-                region: $placement->region,
-                sortOrder: $placement->sort_order,
-                blockId: $block->id,
-                definitionKey: $block->definition->key,
-                definitionSchema: ContentSchemaData::fromSchema($block->definition_schema),
-                definitionView: $block->definition_view,
-                visibility: $block->visibility,
-                values: $baseValues,
-                translations: $translations,
-                overrides: is_array($placement->overrides) ? $placement->overrides : [],
-                blockRevision: $block->revision,
-                placementRevision: $placement->revision,
-            );
-        }
-
-        $this->assertSize($ownerType, $ownerId, $group, $blocks);
-
-        return new ContentCompositionSnapshotData(
-            ownerType: $ownerType,
-            ownerId: $ownerId,
-            group: $group,
-            blocks: $blocks,
-            version: $this->version($ownerType, $ownerId, $group, $blocks),
+        return $this->ownerLocks->run(
+            $ownerType,
+            $ownerId,
+            $group,
+            fn (): ContentCompositionSnapshotData => DB::connection((new ContentPlacement)->getConnectionName())
+                ->transaction(
+                    fn (): ContentCompositionSnapshotData => $this->captureLocked(
+                        $owner,
+                        $ownerType,
+                        $ownerId,
+                        $group,
+                        $actor,
+                        $publishing,
+                    ),
+                    3,
+                ),
         );
     }
 
@@ -243,6 +191,98 @@ final readonly class ContentSnapshotService
             blocks: $roots,
             regions: $regions,
             version: $snapshot->version,
+        );
+    }
+
+    /**
+     * Capture one composition while its placement and block rows remain locked.
+     */
+    private function captureLocked(
+        Model&ContentOwner $owner,
+        string $ownerType,
+        string $ownerId,
+        string $group,
+        ContentActorData $actor,
+        bool $publishing,
+    ): ContentCompositionSnapshotData {
+        $this->owners->id($owner);
+        $placements = $this->tree->eligible(
+            $this->tree->load($owner, $group, lockForUpdate: true),
+            publicOnly: false,
+        );
+        $blocks = [];
+
+        foreach ($placements as $placement) {
+            $block = $placement->block;
+            $translations = [];
+
+            foreach ($block->translations as $translation) {
+                $locale = $translation->getAttribute('locale');
+                $values = $translation->getAttribute('values');
+
+                if (is_string($locale) && is_array($values)) {
+                    $translations[$locale] = ContentArrays::stringMap(
+                        $values,
+                        "content snapshot translation {$locale}",
+                    );
+                }
+            }
+
+            ksort($translations);
+            $baseValues = is_array($block->values)
+                ? ContentArrays::stringMap(
+                    $block->values,
+                    "content snapshot block {$block->id} values",
+                )
+                : [];
+            $overrides = ContentArrays::stringMap(
+                is_array($placement->overrides) ? $placement->overrides : [],
+                "content snapshot placement {$placement->id} overrides",
+            );
+
+            if ($publishing) {
+                $validated = $this->values->validate(
+                    $block->definition_schema,
+                    $this->patch->merge($baseValues, $overrides),
+                    $translations,
+                    $actor,
+                    $block->visibility,
+                    publishing: true,
+                    owner: $owner,
+                    group: $group,
+                );
+                $baseValues = $validated->values;
+                $translations = $validated->translations;
+                $overrides = [];
+            }
+
+            $blocks[] = new ContentCompositionSnapshotBlockData(
+                placementId: $placement->id,
+                parentId: $placement->parent_id,
+                key: $placement->key,
+                region: $placement->region,
+                sortOrder: $placement->sort_order,
+                blockId: $block->id,
+                definitionKey: $block->definition->key,
+                definitionSchema: ContentSchemaData::fromSchema($block->definition_schema),
+                definitionView: $block->definition_view,
+                visibility: $block->visibility,
+                values: $baseValues,
+                translations: $translations,
+                overrides: $overrides,
+                blockRevision: $block->revision,
+                placementRevision: $placement->revision,
+            );
+        }
+
+        $this->assertSize($ownerType, $ownerId, $group, $blocks);
+
+        return new ContentCompositionSnapshotData(
+            ownerType: $ownerType,
+            ownerId: $ownerId,
+            group: $group,
+            blocks: $blocks,
+            version: $this->version($ownerType, $ownerId, $group, $blocks),
         );
     }
 

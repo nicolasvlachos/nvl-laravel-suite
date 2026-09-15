@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Nvl\Pages\Contracts\PageAuthorization;
 use Nvl\Pages\Data\Mutations\MovePageData;
 use Nvl\Pages\Data\PageActorData;
+use Nvl\Pages\Data\PageAuthorizationContextData;
 use Nvl\Pages\Enums\PageAbility;
 use Nvl\Pages\Enums\PageChangeOperation;
 use Nvl\Pages\Events\PageChanged;
@@ -60,7 +61,12 @@ final readonly class MovePageAction
                         throw StalePageException::forPage($page->id);
                     }
 
-                    $this->authorization->authorize(PageAbility::Move, $actor, $page);
+                    $this->authorization->authorize(
+                        PageAbility::Move,
+                        $actor,
+                        $page,
+                        new PageAuthorizationContextData(site: $site, parentId: $data->parentId),
+                    );
                     $this->hierarchy->assertValid($page->site, $data->parentId, $page->id);
                     $originalPath = $page->path;
                     $page->parent_id = $data->parentId;

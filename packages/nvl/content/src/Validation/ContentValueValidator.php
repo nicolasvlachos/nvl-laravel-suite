@@ -237,7 +237,7 @@ final readonly class ContentValueValidator
             $value = $hasValue ? $values[$key] : ($useDefault ? $field->default : null);
 
             if (! $hasValue && (! $useDefault || $field->default === null)) {
-                if ($publishing && $field->required && $field->localized === $localized) {
+                if ($publishing && ! $localized && $field->required && $field->localized === $localized) {
                     throw new InvalidArgumentException("Required content field [{$key}] is missing.");
                 }
 
@@ -245,6 +245,7 @@ final readonly class ContentValueValidator
             }
 
             if ($publishing
+                && ! $localized
                 && $field->required
                 && $field->localized === $localized
                 && $this->empty($value)) {
@@ -646,6 +647,7 @@ final readonly class ContentValueValidator
 
             if (! $hasValue && (! $useDefault || $field->default === null)) {
                 if ($context->publishing
+                    && ! $localized
                     && $field->required
                     && $effectiveLocalized === $localized) {
                     throw new InvalidArgumentException(
@@ -657,6 +659,7 @@ final readonly class ContentValueValidator
             }
 
             if ($context->publishing
+                && ! $localized
                 && $field->required
                 && $effectiveLocalized === $localized
                 && $this->empty($value)) {

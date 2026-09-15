@@ -98,7 +98,7 @@ After a transaction commits, Forms dispatches the sanitized `FormChangedEvent` a
 
 Registries reject duplicate keys and invalid capabilities. Providers and handlers are container-resolved; the package never imports an application model or module.
 
-Entry callbacks run after the entry transaction. Each callback is isolated and reported independently: a failed integration does not make a persisted submission appear to have failed and does not stop later callbacks.
+Entry callbacks run after the outermost database transaction commits, including any transaction opened by the consuming application. A rollback discards pending callbacks. Each callback is isolated and reported independently: a failed integration does not make a persisted submission appear to have failed and does not stop later callbacks.
 
 Forms registers `forms.forms` with `TranslationResourceRegistry`. Central gathering and synchronized translation edits therefore use the same field whitelist, authorization, and optimistic concurrency rules as other localized packages.
 
@@ -132,6 +132,8 @@ Bind custom implementations of:
 - `FormEntryDeletionPolicy`
 
 The supplied privacy and deletion policies are permissive building blocks, not substitutes for application policy.
+
+Both entry and custom submissions resolve honeypot checks, scores, and blocking/flagging decisions through the configured `FormSpamDetector`. Implementations need only the existing interface; built-in diagnostic flags are included when the default detector is used. Token issuance and validation require a nonempty application key. Malformed or empty `base64:` keys fail closed, and the doctor checks the same signing readiness rule.
 
 ## CORS and iframe embedding
 
@@ -192,6 +194,8 @@ Schema responses expose `PublicFormSchemaPayload`. Every rule is converted to a 
 ## Entry privacy and operations
 
 `ExportFormEntriesAction` exports only the selected authorized entry set. `RedactFormEntryAction` removes configured sensitive fields, `AnonymizeFormEntryAction` removes identifying values while preserving permitted aggregate data, and `DeleteFormEntryAction` delegates the final decision to `FormEntryDeletionPolicy`.
+
+Exports use a unique file path for each invocation and fail if storage rejects the write. Moderation, security flags, and deletion reload and lock stored entry state before applying changes. Deletion policies inspect that current state; a stale model cannot bypass a legal hold or repeat a counter decrement.
 
 Queue large exports and retention jobs in the consuming application. Do not place complete submission payloads in logs or events sent to untrusted listeners.
 

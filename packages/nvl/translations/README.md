@@ -73,7 +73,7 @@ lang/
 - JSON catalogs use one `<locale>.json` object per locale.
 - PHP rows retain their group path, such as `messages` or `admin/actions`.
 - JSON rows use Laravel's full source string as the key.
-- Only valid UTF-8 string or null leaf values are managed. Booleans and numbers are rejected instead of being silently coerced. Nested PHP arrays are flattened and reconstructed; empty arrays contain no translation leaves.
+- Only valid UTF-8 string or null leaf values are managed. Booleans and numbers are rejected instead of being silently coerced. Nested PHP arrays are flattened and reconstructed, including numeric keys at the top level or inside arrays; empty arrays contain no translation leaves.
 - Dots in PHP leaf identities represent nesting. Literal dots or empty strings inside an individual PHP array-key segment are rejected because they cannot be round-tripped without changing the array shape.
 
 ## Configure source locations

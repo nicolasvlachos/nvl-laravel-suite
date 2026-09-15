@@ -31,7 +31,7 @@ final readonly class DateTimeValue implements ScalarPrimitive
         $value = trim($value);
 
         if (preg_match(
-            '/^(?<date>\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d{1,6}))?(?<timezone>[Zz]|[+-]\d{2}:\d{2})$/D',
+            '/^(?<date>\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2})(?:\.(?<fraction>\d{1,6}))?(?<timezone>[Zz]|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/D',
             $value,
             $matches,
         ) !== 1) {

@@ -108,6 +108,10 @@ final readonly class SeoDoctor
                     'seo_redirects_source_hash_unique' => true,
                 ],
             ],
+            SeoTables::RedirectLocks => [
+                'columns' => ['name'],
+                'indexes' => [],
+            ],
         ];
         $checks = [];
 

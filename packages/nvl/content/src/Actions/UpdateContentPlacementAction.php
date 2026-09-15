@@ -12,8 +12,10 @@ use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Enums\ContentPlacementEvent;
 use Nvl\Content\Events\ContentPlacementChanged;
 use Nvl\Content\Exceptions\StaleContentException;
+use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentIdentityGuard;
+use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
@@ -29,6 +31,7 @@ final readonly class UpdateContentPlacementAction
         private ContentPlacementValidator $validator,
         private ContentIdentityGuard $identities,
         private ContentPlacementOwnerLock $ownerLocks,
+        private ContentMediaSynchronizer $media,
     ) {}
 
     /**
@@ -52,9 +55,13 @@ final readonly class UpdateContentPlacementAction
             fn (): ContentPlacement => DB::connection((new ContentPlacement)->getConnectionName())
                 ->transaction(function () use ($actor, $data, $placementId): ContentPlacement {
                     $model = ContentPlacement::query()
-                        ->with(['block.definition', 'block.translations'])
                         ->lockForUpdate()
                         ->findOrFail($placementId);
+                    $block = ContentBlock::query()
+                        ->with(['definition', 'translations'])
+                        ->lockForUpdate()
+                        ->findOrFail($model->content_block_id);
+                    $model->setRelation('block', $block);
                     $owner = $this->owners->resolve($model->owner_type, $model->owner_id);
                     $this->owners->assertGroup($owner, $model->group);
                     $this->authorization->authorize(
@@ -103,6 +110,13 @@ final readonly class UpdateContentPlacementAction
                         'overrides' => $overrides === [] ? null : $overrides,
                         'revision' => $model->revision + 1,
                     ])->save();
+                    $this->media->synchronizePlacement(
+                        $model,
+                        $block->definition_schema,
+                        $overrides,
+                        $actor,
+                        $owner,
+                    );
                     ContentPlacementChanged::dispatch(
                         $model->id,
                         ContentPlacementEvent::Updated,

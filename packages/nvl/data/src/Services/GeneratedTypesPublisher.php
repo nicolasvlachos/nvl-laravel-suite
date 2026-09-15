@@ -46,7 +46,21 @@ final readonly class GeneratedTypesPublisher
         ): string {
             $targetDirectory = $this->outputDirectory();
             $this->files->ensureDirectoryExists($targetDirectory);
+
+            foreach ([
+                ...$newPaths,
+                $this->artifacts->transformerManifestFilename(),
+                $this->relativeManifestPath($targetDirectory),
+            ] as $path) {
+                $this->absolutePath($targetDirectory, $path);
+            }
+
             $oldPaths = $this->publishedPaths($targetDirectory);
+
+            foreach ($oldPaths as $path) {
+                $this->absolutePath($targetDirectory, $path);
+            }
+
             $backupDirectory = $stagingDirectory.DIRECTORY_SEPARATOR.'.publication-backup';
             $backup = $this->backupPublishedFiles($targetDirectory, $oldPaths, $backupDirectory);
 
@@ -60,9 +74,7 @@ final readonly class GeneratedTypesPublisher
                 }
 
                 $this->files->replace(
-                    $targetDirectory
-                    .DIRECTORY_SEPARATOR
-                    .$this->artifacts->transformerManifestFilename(),
+                    $this->absolutePath($targetDirectory, $this->artifacts->transformerManifestFilename()),
                     $transformerManifest,
                 );
 
@@ -241,25 +253,7 @@ final readonly class GeneratedTypesPublisher
      */
     private function absolutePath(string $directory, string $relativePath): string
     {
-        $normalized = str_replace('\\', '/', $relativePath);
-        $segments = explode('/', $normalized);
-
-        if (
-            $normalized === ''
-            || $normalized !== trim($normalized)
-            || str_contains($normalized, "\0")
-            || str_starts_with($normalized, '/')
-            || array_filter(
-                $segments,
-                static fn (string $segment): bool => $segment === '' || $segment === '.' || $segment === '..',
-            ) !== []
-        ) {
-            throw new RuntimeException('Publication paths must be safe and relative.');
-        }
-
-        return rtrim($directory, DIRECTORY_SEPARATOR)
-            .DIRECTORY_SEPARATOR
-            .str_replace('/', DIRECTORY_SEPARATOR, $normalized);
+        return $this->pathGuard->artifactPath($directory, $relativePath);
     }
 
     /**

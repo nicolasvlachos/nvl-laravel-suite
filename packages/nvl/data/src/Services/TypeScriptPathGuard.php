@@ -77,6 +77,41 @@ final readonly class TypeScriptPathGuard
     }
 
     /**
+     * Resolve an artifact path without following existing or dangling output symlinks.
+     */
+    public function artifactPath(string $directory, string $relativePath): string
+    {
+        $directory = $this->outputDirectory($directory);
+        $normalized = str_replace('\\', '/', $relativePath);
+        $segments = explode('/', $normalized);
+
+        if ($normalized === ''
+            || $normalized !== trim($normalized)
+            || str_contains($normalized, "\0")
+            || str_starts_with($normalized, '/')
+            || preg_match('/^[A-Za-z]:/', $normalized) === 1
+            || array_filter(
+                $segments,
+                static fn (string $segment): bool => $segment === '' || $segment === '.' || $segment === '..',
+            ) !== []) {
+            throw new RuntimeException('Generated artifact paths must be safe and relative.');
+        }
+
+        $path = $directory;
+
+        foreach ($segments as $segment) {
+            $path .= DIRECTORY_SEPARATOR.$segment;
+            clearstatcache(true, $path);
+
+            if (is_link($path)) {
+                throw new RuntimeException('Generated artifact paths cannot contain symbolic links.');
+            }
+        }
+
+        return $path;
+    }
+
+    /**
      * Assert that an existing path resolves within one configured allowed root.
      */
     public function assertInsideAllowedRoot(string $path): void

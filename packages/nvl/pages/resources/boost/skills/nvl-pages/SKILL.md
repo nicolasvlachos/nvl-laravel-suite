@@ -53,5 +53,10 @@ Use this skill when application work creates, resolves, translates, composes, or
     `PreviewPageAction` for management preview.
 18. Keep public and management routes disabled unless the application explicitly secures and enables them.
 19. Run `nvl:pages:doctor --strict` after configuration or schema changes.
+20. Let Pages own sitemap eligibility for Page SEO profiles. Page visibility,
+    site and sitemap inclusion apply before SEO metadata; explicit active SEO
+    `noindex` or sitemap exclusion suppresses static and dynamic entries.
+    Moves provide the requested `parentId` to authorization, and restoration
+    derives the path from the current parent.
 
 Use `ResolvePageAction` for headless delivery. Its `ResolvedPageData` combines a localized redacted Page projection, Content, SEO, and the optional dynamic resource projection.

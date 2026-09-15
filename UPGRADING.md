@@ -1,5 +1,28 @@
 # Upgrading NVL Laravel Suite
 
+## Unreleased hardening
+
+### Apply the SEO redirect-lock migration
+
+Before accepting redirect writes, run the new
+`2026_09_15_211750_create_seo_redirect_locks_table` migration. Applications that
+maintain copied migrations must add it through their existing migration
+ownership workflow; do not enable vendor migrations alongside copied ones.
+See [the SEO upgrade notes](packages/nvl/seo/UPGRADING.md#unreleased-hardening).
+
+### Review CSV escaping
+
+CSV defaults now use standard doubled quotes with an empty escape string.
+For an existing integration that requires legacy backslash escaping, set
+`new CSVConfiguration(escape: '\\')` explicitly, or use the equivalent import
+DTO option. See [the CSV upgrade notes](packages/nvl/csv/UPGRADING.md#standard-csv-escaping).
+
+### Keep generated TypeScript output free of symlinks
+
+The Data publisher rejects symlinks within its generated artifact paths,
+including declaration files and manifests. Replace such links with regular
+files or directories before regenerating declarations.
+
 ## From 1.x to 2.0
 
 ### Make every legacy module decision explicit

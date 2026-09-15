@@ -145,7 +145,7 @@ $result = CSVImport::make()
 
 `columnMapping` accepts source-to-target field names or `CSVFieldMapping` objects. `columnTypes` accepts `CSVTypeEnum` instances or enum values and augments those mappings with validation and casting. Result metadata includes caller-provided DTO metadata plus operational fields.
 
-`CSVConfiguration(includeHeaders: false)` produces `col_0`, `col_1`, and subsequent generated names for headerless input. Header names must be non-empty and unique. In lenient mode, short rows are padded and long rows are truncated to the known column count. Strict mode records a `CSVParseException` for uneven rows instead. Failed-row payloads and error strings are retained for the first 1,000 failures; counters remain exact and the result contains a warning when further diagnostic details are omitted.
+`CSVConfiguration(includeHeaders: false)` produces `col_0`, `col_1`, and subsequent generated names for headerless input. Its first row is retained on non-seekable and decoded streams. Header names must be non-empty and unique. In lenient mode, short rows are padded and long rows are truncated to the known column count. Strict mode records a `CSVParseException` for uneven rows instead. Failed-row payloads and error strings are retained for the first 1,000 failures; counters remain exact and the result contains a warning when further diagnostic details are omitted.
 
 ## Duplicate handling
 
@@ -181,7 +181,7 @@ Export sources are:
 - `fromQuery(Builder $query)`, which always reads in bounded chunks
 - `stream(Closure $provider)`, where the provider receives a writer callback
 
-Fields may be dot-notated array keys or closures receiving the complete row. When fields and headings are omitted, the first row’s keys define both. Closure-based fields require explicit headings. Arrays and ordinary objects are JSON encoded, `DateTimeInterface` values use ISO 8601, backed enums use their values, and `Stringable` objects use their string representation. Booleans become `1` or `0`, and null becomes an empty field.
+Fields may be dot-notated array keys or closures receiving the complete row. When fields and headings are omitted, the first row’s keys define both for the complete export. Later rows follow that field order; missing keys become empty fields and extra keys are ignored. Reusing the exporter infers a fresh set of fields. Closure-based fields require explicit headings. Arrays and ordinary objects are JSON encoded, `DateTimeInterface` values use ISO 8601, backed enums use their values, and `Stringable` objects use their string representation. Booleans become `1` or `0`, and null becomes an empty field.
 
 `fromQuery()` is generic over the concrete Eloquent model. A correctly typed
 `Builder<App\Models\User>` may be passed directly under maximum-level PHPStan;
@@ -208,6 +208,8 @@ $result = CSVExport::make()->withOptions($options)->fromArray($rows);
 ```
 
 Fluent builder methods initialize an `exports` directory by default. A DTO created directly without `path` writes at the disk root. `CSVExportResult::path` is an absolute path when the adapter supports `path()` and otherwise contains the storage key. The result metadata always includes `storage_path`, and `fileExists()` uses the configured disk.
+
+Defaults, format presets, and the analyzer use standard doubled enclosure characters with `escape: ''`. This preserves embedded quotes and trailing backslashes. To read a legacy file that deliberately uses PHP’s backslash escape convention, configure `new CSVConfiguration(escape: '\\')` or provide that explicit escape in the import DTO. Explicit custom escape settings remain supported. See the [PHP CSV escaping contract](https://www.php.net/manual/en/function.fputcsv.php).
 
 The package does not neutralize spreadsheet formulas. If untrusted fields will be opened in Excel or similar software, the application must apply its chosen CSV/formula-injection policy before export.
 

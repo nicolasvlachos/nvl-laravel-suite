@@ -4,6 +4,24 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Revalidate final block and placement override values during block updates,
+  publication, and definition migration, including retained placements on
+  soft-deleted owners.
+- Permit partial optional locale translations once every configured required
+  publication locale is complete; continue validating every supplied value.
+- Maintain placement override Media associations through placement and block
+  mutations, unplacement, and owner hard deletion, with a stable
+  `nvl-content-placement` morph alias and transactional cleanup rollback.
+  Soft deletion retains placements and their usages.
+- Capture publishing snapshots under composition and row locks, freezing the
+  validated, normalized final values with empty overrides. Overrides may
+  satisfy required fields; existing snapshots remain readable and Media and
+  reference delivery still resolve at render time.
+- Document canonical resynchronization for pre-existing placement override
+  Media references in the README upgrade guidance.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\DB;
 use Nvl\Forms\Actions\FormEntry\CheckFormRateLimitAction;
 use Nvl\Forms\Actions\FormEntry\DetectFormSubmissionSpamAction;
 use Nvl\Forms\Actions\FormEntry\ValidateFormHostAccessAction;
+use Nvl\Forms\Contracts\FormSpamDetector;
 use Nvl\Forms\Data\FormEntryPayload;
 use Nvl\Forms\Data\Mutations\SubmitFormPayload;
 use Nvl\Forms\Exceptions\FormSubmissionRejectionException;
 use Nvl\Forms\Models\Form;
-use Nvl\Forms\Services\FormSpamDetectionService;
 use Nvl\Forms\Services\FormSpamRejectionRecorder;
 use Nvl\Forms\Services\PublicFormTokenService;
 use Nvl\Forms\Support\CustomFormGuardResult;
@@ -40,7 +40,7 @@ final class GuardCustomFormSubmissionAction
      * @param  ValidateFormHostAccessAction  $validateHostAccess  Host restriction validator
      * @param  CheckFormRateLimitAction  $checkRateLimit  Rate-limit guard
      * @param  DetectFormSubmissionSpamAction  $detectSpam  Spam detector
-     * @param  FormSpamDetectionService  $spamDetection  Honeypot validation service
+     * @param  FormSpamDetector  $spamDetection  Configured honeypot detector
      * @param  FormSpamRejectionRecorder  $spamRejectionRecorder  Spam rejection recorder
      * @param  PublicFormTokenService  $tokenService  Public token metadata service
      */
@@ -49,7 +49,7 @@ final class GuardCustomFormSubmissionAction
         private readonly ValidateFormHostAccessAction $validateHostAccess,
         private readonly CheckFormRateLimitAction $checkRateLimit,
         private readonly DetectFormSubmissionSpamAction $detectSpam,
-        private readonly FormSpamDetectionService $spamDetection,
+        private readonly FormSpamDetector $spamDetection,
         private readonly FormSpamRejectionRecorder $spamRejectionRecorder,
         private readonly PublicFormTokenService $tokenService,
     ) {}

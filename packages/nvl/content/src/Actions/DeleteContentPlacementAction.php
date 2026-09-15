@@ -13,6 +13,7 @@ use Nvl\Content\Enums\ContentPlacementEvent;
 use Nvl\Content\Events\ContentPlacementChanged;
 use Nvl\Content\Exceptions\StaleContentException;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 
@@ -25,6 +26,7 @@ final readonly class DeleteContentPlacementAction
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
         private ContentPlacementOwnerLock $ownerLocks,
+        private ContentMediaSynchronizer $media,
     ) {}
 
     /**
@@ -78,7 +80,12 @@ final readonly class DeleteContentPlacementAction
                         }
 
                         $nextRevision = $model->revision + 1;
-                        $model->delete();
+                        $this->media->detachAll($model);
+
+                        if ($model->delete() !== true) {
+                            throw new InvalidArgumentException('Content placement deletion was canceled.');
+                        }
+
                         ContentPlacementChanged::dispatch(
                             $model->id,
                             ContentPlacementEvent::Deleted,

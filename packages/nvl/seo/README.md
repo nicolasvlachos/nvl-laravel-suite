@@ -584,6 +584,17 @@ final class StaticPagesSitemapSource implements SitemapSource
 
 Register the class in `seo.sitemap.sources`.
 
+An owner package can take exclusive responsibility for its profiles by calling
+`SitemapRegistry::register($source, $key, ownerTypes: [$owner::class])`.
+Register stable model classes; their current morph aliases are resolved when
+the sitemap is read, including aliases registered later during host boot.
+The built-in profile source excludes those owner types, allowing the owner
+source to enforce publication, soft deletion, tenancy, and explicit SEO
+exclusions in bounded queries. The owner source may reuse
+`EloquentSeoSitemapSource::entriesForProfile($profile)` with eager-loaded
+translations for canonical and hreflang parity. Each owner model has one source;
+profiles without a delegated owner type keep the standalone SEO behavior.
+
 Every source is registered under a unique deterministic key. A cached build
 scans the sources once, writes completed XML to the configured Laravel
 filesystem, and publishes only a small cache manifest after every artifact is
@@ -684,7 +695,11 @@ expiry, loop detection, bounded chain resolution, optimistic revisions, and
 hit metadata. Revision `0` protects first creates. Internal targets preserve
 safe query strings/fragments; network-path targets and non-HTTP schemes are
 rejected. Localized resolution prefers an exact locale and then falls back to a
-locale-neutral redirect. Redirect delivery remains application-owned: resolve
+locale-neutral redirect. Redirect mutations serialize through a stable database
+mutex until the outer transaction commits, and validate the resulting graph in
+every configured locale, including fallback exposed by deactivation or source
+changes. Run the `create_seo_redirect_locks_table` migration before using these
+mutations. Redirect delivery remains application-owned: resolve
 the request path and return the typed `ResolvedRedirectData` decision where
 appropriate.
 

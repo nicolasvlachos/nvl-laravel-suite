@@ -120,13 +120,12 @@ it('uses package Actions and explicit authorization without direct package queri
             'AuthConsumerMailReadAuthorization::class',
             "'array' => 'array'",
         )
-        ->and($probe)->not->toContain(
-            'Role::query(',
-            'Permission::query(',
-            'Setting::query(',
-            'MailNotification::query(',
-            'ActivityLog::query(',
-        )
+        ->and($probe)
+        ->not->toContain('Role::query(')
+        ->not->toContain('Permission::query(')
+        ->not->toContain('Setting::query(')
+        ->not->toContain('MailNotification::query(')
+        ->not->toContain('ActivityLog::query(')
         ->and($probe)->toContain(
             'BootstrapRbacAction',
             'CreateUserAction',
@@ -245,12 +244,11 @@ it('runs both Auth migration ownership modes from a sealed artifact', function (
         'queue:work --stop-when-empty',
         './node_modules/.bin/tsc --noEmit -p auth-consumer-types/tsconfig.json',
     )
-        ->and($runner)->not->toContain(
-            '"symlink":true',
-            'QUEUE_CONNECTION=sync',
-            '--ignore-platform-reqs',
-            'consumer-audit-ignore',
-        );
+        ->and($runner)
+        ->not->toContain('"symlink":true')
+        ->not->toContain('QUEUE_CONNECTION=sync')
+        ->not->toContain('--ignore-platform-reqs')
+        ->not->toContain('consumer-audit-ignore');
 
     expect($skillsPosition)->toBeInt()
         ->and($typesPosition)->toBeInt()

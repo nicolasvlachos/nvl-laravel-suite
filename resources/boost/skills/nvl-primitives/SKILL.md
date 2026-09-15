@@ -33,6 +33,8 @@ protected function casts(): array
 
 `Money::class` stores `{"minor":"…","currency":"…"}`. Use `Money::class.':minor,EUR'` or `Money::class.':decimal,EUR'` only for an explicitly fixed-currency column. Store variable-currency money as JSON or as two application-owned columns; never silently infer record currency.
 
+An explicit `Money::class.':json,EUR'` currency is enforced on assignment and hydration. Coordinate arrays reject booleans, date-time offsets must have valid hours and minutes, and email normalization preserves quoted local parts while lowercasing only the domain.
+
 ## Calculate money
 
 - Construct from decimal strings or integer minor units with an explicit currency.

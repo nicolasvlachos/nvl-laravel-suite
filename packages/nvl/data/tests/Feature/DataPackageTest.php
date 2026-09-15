@@ -731,6 +731,47 @@ test('it restores the prior artifact set when staged publication fails', functio
     }
 });
 
+test('it rejects publication through output symlinks before replacing any artifacts', function (string $kind): void {
+    $stagingDirectory = $this->generatedTypesDirectory.'-staging';
+    $outsideDirectory = $this->generatedTypesDirectory.'-outside';
+    File::ensureDirectoryExists($outsideDirectory);
+    File::put($outsideDirectory.'/sentinel', '{}');
+    File::put($this->generatedTypesDirectory.'/generated.types.d.ts', 'original entrypoint');
+
+    $link = match ($kind) {
+        'directory' => $this->generatedTypesDirectory.'/generated',
+        'declaration' => $this->generatedTypesDirectory.'/generated.types.d.ts',
+        'transformer manifest' => $this->generatedTypesDirectory.'/typescript-transformer-manifest.json',
+        'integrity manifest' => $this->generatedTypesDirectory.'/generated.manifest.json',
+    };
+
+    if ($kind === 'directory') {
+        File::deleteDirectory($link);
+    } else {
+        File::delete($link);
+    }
+
+    expect(symlink($kind === 'directory' ? $outsideDirectory : $outsideDirectory.'/sentinel', $link))
+        ->toBeTrue();
+    $originalEntrypoint = File::get($this->generatedTypesDirectory.'/generated.types.d.ts');
+    writeDataPackageTransform($stagingDirectory, [
+        'generated.types.d.ts' => "/// <reference path=\"./generated/core.d.ts\" />\n",
+        'generated/core.d.ts' => "declare namespace Nvl.Core {}\n",
+    ]);
+
+    try {
+        expect(fn (): string => app(GeneratedTypesPublisher::class)->publish($stagingDirectory))
+            ->toThrow(RuntimeException::class);
+        expect(File::get($outsideDirectory.'/sentinel'))->toBe('{}')
+            ->and(File::get($this->generatedTypesDirectory.'/generated.types.d.ts'))->toBe($originalEntrypoint)
+            ->and(file_exists($outsideDirectory.'/core.d.ts'))->toBeFalse();
+    } finally {
+        unlink($link);
+        File::deleteDirectory($stagingDirectory);
+        File::deleteDirectory($outsideDirectory);
+    }
+})->with(['directory', 'declaration', 'transformer manifest', 'integrity manifest']);
+
 test('its generated types check rejects a tampered integrity manifest', function (): void {
     config()->set('nvl-data.typescript.source_paths', [__DIR__.'/../Fixtures']);
 

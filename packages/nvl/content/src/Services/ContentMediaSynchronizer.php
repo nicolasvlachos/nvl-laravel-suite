@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Content\Services;
 
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Models\ContentBlock;
+use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Media\Actions\AttachMediaAction;
 use Nvl\Media\Actions\DetachMediaAction;
@@ -51,14 +54,78 @@ final readonly class ContentMediaSynchronizer
             ];
         }
 
-        $current = MediaAssociation::query()
-            ->where('associable_type', $block->getMorphClass())
-            ->where('associable_id', $block->getKey())
+        $this->synchronizeReferences($block, $desired, $actor, $block);
+    }
+
+    /**
+     * Synchronize only Media explicitly referenced by one placement's overrides.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public function synchronizePlacement(
+        ContentPlacement $placement,
+        ContentSchema $schema,
+        array $overrides,
+        ContentActorData $actor,
+        Model&ContentOwner $owner,
+    ): void {
+        $this->synchronizeReferences(
+            $placement,
+            $this->references->extract($schema, $overrides, null),
+            $actor,
+            $owner,
+        );
+    }
+
+    /**
+     * Detach every Content-managed association while preserving Media records.
+     */
+    public function detachAll(ContentBlock|ContentPlacement $model): void
+    {
+        $associations = MediaAssociation::query()
+            ->where('associable_type', $model->getMorphClass())
+            ->where('associable_id', $model->getKey())
             ->where('collection', 'like', 'content:%')
+            ->orderBy('media_id')
+            ->get();
+
+        if ($associations->isNotEmpty()) {
+            $this->assertSharedConnection($model);
+        }
+
+        foreach ($associations as $association) {
+            $this->detach->execute(
+                $association->media_id,
+                $model,
+                $association->collection,
+            );
+        }
+    }
+
+    /**
+     * Reconcile one stable association target using Media's mutation Actions.
+     *
+     * @param  list<array{id: string, path: string, locale: string|null, order: int}>  $desired
+     */
+    private function synchronizeReferences(
+        ContentBlock|ContentPlacement $model,
+        array $desired,
+        ContentActorData $actor,
+        Model $authorizationOwner,
+    ): void {
+        usort($desired, static fn (array $left, array $right): int => [
+            $left['id'], $left['path'], $left['locale'],
+        ] <=> [$right['id'], $right['path'], $right['locale']]);
+
+        $current = MediaAssociation::query()
+            ->where('associable_type', $model->getMorphClass())
+            ->where('associable_id', $model->getKey())
+            ->where('collection', 'like', 'content:%')
+            ->orderBy('media_id')
             ->get();
 
         if ($desired !== [] || $current->isNotEmpty()) {
-            $this->assertSharedConnection($block);
+            $this->assertSharedConnection($model);
         }
 
         $desiredKeys = [];
@@ -76,16 +143,16 @@ final readonly class ContentMediaSynchronizer
                 new MediaActorData($actor->type, $actor->id, system: $actor->system),
                 $ability,
                 $media,
-                $block,
+                $authorizationOwner,
             )) {
                 throw new InvalidArgumentException(
-                    "Media [{$media->id}] cannot be associated with content block [{$block->id}].",
+                    "Media [{$media->id}] cannot be associated with content [{$model->id}].",
                 );
             }
 
             $this->attach->execute(
                 media: $media,
-                model: $block,
+                model: $model,
                 collection: $collection,
                 locale: $reference['locale'],
                 order: $reference['order'],
@@ -95,6 +162,7 @@ final readonly class ContentMediaSynchronizer
                     'content_managed' => true,
                 ],
                 dispatchVariations: false,
+                requirePublic: $media->visibility === MediaVisibility::Public,
             );
         }
 
@@ -104,31 +172,10 @@ final readonly class ContentMediaSynchronizer
             if (! isset($desiredKeys[$key])) {
                 $this->detach->execute(
                     $association->media_id,
-                    $block,
+                    $model,
                     $association->collection,
                 );
             }
-        }
-    }
-
-    public function detachAll(ContentBlock $block): void
-    {
-        $associations = MediaAssociation::query()
-            ->where('associable_type', $block->getMorphClass())
-            ->where('associable_id', $block->getKey())
-            ->where('collection', 'like', 'content:%')
-            ->get();
-
-        if ($associations->isNotEmpty()) {
-            $this->assertSharedConnection($block);
-        }
-
-        foreach ($associations as $association) {
-            $this->detach->execute(
-                $association->media_id,
-                $block,
-                $association->collection,
-            );
         }
     }
 
@@ -137,10 +184,10 @@ final readonly class ContentMediaSynchronizer
         return 'content:'.substr(hash('sha256', ($locale ?? '*').'|'.$path), 0, 24);
     }
 
-    private function assertSharedConnection(ContentBlock $block): void
+    private function assertSharedConnection(ContentBlock|ContentPlacement $model): void
     {
         $contentConnection = $this->database
-            ->connection($block->getConnectionName())
+            ->connection($model->getConnectionName())
             ->getName();
         $mediaConnection = $this->database
             ->connection((new MediaAssociation)->getConnectionName())
@@ -148,7 +195,7 @@ final readonly class ContentMediaSynchronizer
 
         if ($contentConnection !== $mediaConnection) {
             throw new InvalidArgumentException(
-                'Content and Media must use the same named database connection so block and media-association writes remain atomic.',
+                'Content and Media must use the same named database connection so content and media-association writes remain atomic.',
             );
         }
     }

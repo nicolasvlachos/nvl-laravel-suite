@@ -117,7 +117,11 @@ final class PagesServiceProvider extends ServiceProvider
             displayColumns: ['key', 'site', 'path', 'kind', 'status', 'revision'],
             orderColumn: 'path',
         );
-        $sitemaps->register($this->app->make(PageSitemapSource::class), 'nvl/pages');
+        $sitemaps->register(
+            $this->app->make(PageSitemapSource::class),
+            'nvl/pages',
+            [Page::class],
+        );
         Event::listen(PageChanged::class, InvalidatePageSitemap::class);
         Event::listen(MigrationStarted::class, $migrationRollbackGuard->before(...));
 

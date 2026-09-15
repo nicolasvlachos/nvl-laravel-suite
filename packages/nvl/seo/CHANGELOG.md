@@ -4,6 +4,14 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Support exclusive owner-package sitemap eligibility while retaining shared
+  canonical and hreflang projection.
+- Reject redirect cycles across localized and neutral fallback, including
+  fallback exposed by updates, under a transaction-held database graph mutex.
+  The new redirect-lock migration is required before redirect writes.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

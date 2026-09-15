@@ -15,6 +15,7 @@ use Nvl\Content\Events\ContentBlockChanged;
 use Nvl\Content\Exceptions\StaleContentException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\CanonicalJson;
+use Nvl\Content\Services\ContentBlockPlacementSynchronizer;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentDefinitionVersionGuard;
 use Nvl\Content\Services\ContentMediaSynchronizer;
@@ -35,6 +36,7 @@ final readonly class PublishContentBlockAction
         private ContentMediaSynchronizer $media,
         private ContentRevisionRecorder $revisions,
         private CanonicalJson $json,
+        private ContentBlockPlacementSynchronizer $placements,
     ) {}
 
     public function execute(
@@ -108,6 +110,7 @@ final readonly class PublishContentBlockAction
                     'updated_by_type' => $actor->type,
                     'updated_by_id' => $actor->id,
                 ])->save();
+                $this->placements->synchronize($model, $actor);
                 $this->media->synchronize(
                     $model,
                     $schema,
@@ -124,6 +127,6 @@ final readonly class PublishContentBlockAction
                 );
 
                 return $model->refresh()->load(['definition', 'translations']);
-            });
+            }, 3);
     }
 }

@@ -4,6 +4,17 @@ All notable changes to `nvl/templates` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Reload stored template and render model state before rendering, queueing, or
+  disclosing requester-owned history and Media relationships.
+- Enforce local roots and exact remote hosts at every mPDF asset fetch,
+  including nested SVG resources, with bounded remote reads and no redirects.
+- Preserve unique staging constraints through repeatable index renaming during
+  adoption, including PostgreSQL constraint-backed and standalone indexes.
+- Check architecture restrictions independently while confining reviewed
+  Content preflight and mutation dependencies to the adoption integration.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

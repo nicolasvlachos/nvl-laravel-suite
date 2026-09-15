@@ -40,3 +40,15 @@ test('mark form entry as spam action resolves entry by id', function (): void {
     expect($result->is_spam)->toBeTrue()
         ->and($form->fresh()->spam_count)->toBe(3);
 });
+
+test('marking spam from stale snapshots counts the transition only once', function (): void {
+    $form = Form::factory()->create(['spam_count' => 0]);
+    $entry = FormEntry::factory()->for($form)->create(['is_spam' => false]);
+    $staleEntry = $entry->fresh();
+
+    app(MarkFormEntryAsSpamAction::class)->execute($entry, 'first reason');
+    app(MarkFormEntryAsSpamAction::class)->execute($staleEntry);
+
+    expect($form->fresh()->spam_count)->toBe(1)
+        ->and($entry->fresh()->getSecurityFlag('spam_reason'))->toBe('first reason');
+});

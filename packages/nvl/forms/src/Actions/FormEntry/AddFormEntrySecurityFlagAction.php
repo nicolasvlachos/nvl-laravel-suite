@@ -34,7 +34,8 @@ final class AddFormEntrySecurityFlagAction
     ): FormEntry {
         /** @var array{entry: FormEntry, form: Form} $result */
         $result = DB::transaction(function () use ($entry, $key, $value): array {
-            $entryModel = $entry instanceof FormEntry ? $entry : FormEntry::findOrFail($entry);
+            $entryId = $entry instanceof FormEntry ? $entry->id : $entry;
+            $entryModel = FormEntry::query()->lockForUpdate()->findOrFail($entryId);
 
             $entryModel->setSecurityFlag($key, $value);
             $entryModel->save();

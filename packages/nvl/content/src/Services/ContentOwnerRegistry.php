@@ -6,6 +6,7 @@ namespace Nvl\Content\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
@@ -71,29 +72,15 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      */
     public function resolve(string $alias, string $identifier): Model&ContentOwner
     {
-        $this->identities->owner($alias, $identifier);
-        $class = $this->models[$alias]
-            ?? throw new InvalidArgumentException("Content owner [{$alias}] is not registered.");
-        $owner = (new $class)->newQuery()->find($identifier)
-            ?? throw new InvalidArgumentException(
-                "Content owner [{$alias}:{$identifier}] does not exist.",
-            );
+        return $this->resolveOwner($alias, $identifier, false);
+    }
 
-        if (! $owner instanceof ContentOwner) {
-            throw new InvalidArgumentException(
-                "Resolved Content owner [{$alias}] does not implement ContentOwner.",
-            );
-        }
-
-        $key = $owner->getKey();
-
-        if ((! is_int($key) && ! is_string($key)) || (string) $key !== $identifier) {
-            throw new InvalidArgumentException(
-                "Resolved content owner [{$alias}] does not match identifier [{$identifier}].",
-            );
-        }
-
-        return $owner;
+    /**
+     * Resolve an owner of a retained placement, including reversible soft deletion.
+     */
+    public function resolveRetained(string $alias, string $identifier): Model&ContentOwner
+    {
+        return $this->resolveOwner($alias, $identifier, true);
     }
 
     /**
@@ -217,5 +204,41 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
                 "Content group [{$group}] is not declared by owner [{$ownerClass}].",
             );
         }
+    }
+
+    /**
+     * Resolve an exact owner identity while preserving every non-deletion scope.
+     */
+    private function resolveOwner(string $alias, string $identifier, bool $withTrashed): Model&ContentOwner
+    {
+        $this->identities->owner($alias, $identifier);
+        $class = $this->models[$alias]
+            ?? throw new InvalidArgumentException("Content owner [{$alias}] is not registered.");
+        $query = (new $class)->newQuery();
+
+        if ($withTrashed) {
+            $query->withoutGlobalScope(SoftDeletingScope::class);
+        }
+
+        $owner = $query->find($identifier)
+            ?? throw new InvalidArgumentException(
+                "Content owner [{$alias}:{$identifier}] does not exist.",
+            );
+
+        if (! $owner instanceof ContentOwner) {
+            throw new InvalidArgumentException(
+                "Resolved Content owner [{$alias}] does not implement ContentOwner.",
+            );
+        }
+
+        $key = $owner->getKey();
+
+        if ((! is_int($key) && ! is_string($key)) || (string) $key !== $identifier) {
+            throw new InvalidArgumentException(
+                "Resolved content owner [{$alias}] does not match identifier [{$identifier}].",
+            );
+        }
+
+        return $owner;
     }
 }

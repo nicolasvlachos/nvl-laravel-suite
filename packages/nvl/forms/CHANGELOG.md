@@ -4,6 +4,14 @@ All notable changes to `nvl/forms` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Delay entry callbacks until the outermost transaction commits and discard them on rollback.
+- Reload and lock entry lifecycle state so stale moderation, flag, and deletion requests preserve counters, flags, and current deletion-policy decisions.
+- Apply configured `FormSpamDetector` implementations throughout entry and custom submission guards without adding required interface methods.
+- Give every export its own file path and reject failed storage writes before reporting completion.
+- Reject missing or malformed public-token signing keys and apply the same readiness check in the doctor.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

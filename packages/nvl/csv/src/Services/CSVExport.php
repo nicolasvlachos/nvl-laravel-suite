@@ -59,6 +59,9 @@ final class CSVExport
     /** @var list<string|Closure> */
     private array $fields = [];
 
+    /** @var list<string>|null */
+    private ?array $inferredFields = null;
+
     private bool $headersWritten = false;
 
     /**
@@ -474,6 +477,7 @@ final class CSVExport
         $this->errors = [];
         $this->warnings = [];
         $this->headersWritten = false;
+        $this->inferredFields = null;
 
         if ($this->configuration->memoryLimit !== null) {
             $this->memoryManager->setLimit($this->configuration->memoryLimit);
@@ -657,7 +661,7 @@ final class CSVExport
         }
 
         if (empty($fields)) {
-            $fields = array_keys($row);
+            $fields = $this->inferredFields ??= array_keys($row);
         }
 
         if (! $this->headersWritten && $this->configuration->includeHeaders) {

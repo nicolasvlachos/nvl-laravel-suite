@@ -7,14 +7,11 @@ namespace Nvl\Content\Services;
 use InvalidArgumentException;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentDefinitionMigrationContextData;
-use Nvl\Content\Enums\ContentPlacementEvent;
 use Nvl\Content\Enums\ContentRevisionEvent;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Events\ContentBlockChanged;
-use Nvl\Content\Events\ContentPlacementChanged;
 use Nvl\Content\Exceptions\ContentDefinitionMigrationException;
 use Nvl\Content\Models\ContentBlock;
-use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Validation\ContentValueValidator;
 use Nvl\Translatable\Services\TranslationWriter;
@@ -36,8 +33,7 @@ final readonly class ContentBlockDefinitionMigrator
         private ContentRevisionRecorder $revisions,
         private CanonicalJson $json,
         private TranslationWriter $translationWriter,
-        private ContentOwnerRegistry $owners,
-        private ContentPlacementValidator $placements,
+        private ContentBlockPlacementSynchronizer $placements,
         private ContentScopeRegistry $scopes,
     ) {}
 
@@ -150,7 +146,7 @@ final readonly class ContentBlockDefinitionMigrator
             $this->translationPayloads($validated->translations),
         );
         $block->load('translations');
-        $this->validatePlacements($block, $actor);
+        $this->placements->synchronize($block, $actor);
 
         if (! $block->trashed()) {
             $this->media->synchronize(
@@ -171,51 +167,6 @@ final readonly class ContentBlockDefinitionMigrator
         );
 
         return $block->refresh()->load(['definition', 'translations']);
-    }
-
-    private function validatePlacements(ContentBlock $block, ContentActorData $actor): void
-    {
-        $placements = ContentPlacement::query()
-            ->where('content_block_id', $block->id)
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-
-        foreach ($placements as $placement) {
-            $owner = $this->owners->resolve($placement->owner_type, $placement->owner_id);
-            $this->owners->assertGroup($owner, $placement->group);
-            $overrides = ContentArrays::stringMap(
-                is_array($placement->overrides) ? $placement->overrides : [],
-                "content placement {$placement->id} overrides",
-            );
-            $normalized = $this->placements->validateDefinition(
-                $block,
-                $owner,
-                $placement->group,
-                $placement->region,
-                $overrides,
-                $actor,
-            );
-
-            if ($normalized === $overrides) {
-                continue;
-            }
-
-            $placement->forceFill([
-                'overrides' => $normalized === [] ? null : $normalized,
-                'revision' => $placement->revision + 1,
-            ])->save();
-            ContentPlacementChanged::dispatch(
-                $placement->id,
-                ContentPlacementEvent::Updated,
-                $placement->revision,
-                $actor,
-                $placement->owner_type,
-                $placement->owner_id,
-                $placement->group,
-                $block->id,
-            );
-        }
     }
 
     /**

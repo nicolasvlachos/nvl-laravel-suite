@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Pages\Seo;
 
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Nvl\Pages\Contracts\PageUrlGenerator;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Models\Page;
@@ -13,9 +14,10 @@ use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
+use Nvl\Seo\Services\EloquentSeoSitemapSource;
 
 /**
- * Streams pages without SEO profiles and delegates dynamic entries to their handlers.
+ * Owns Page sitemap eligibility and composes SEO metadata or dynamic handler entries.
  */
 final readonly class PageSitemapSource implements SitemapSource
 {
@@ -25,6 +27,7 @@ final readonly class PageSitemapSource implements SitemapSource
     public function __construct(
         private PageUrlGenerator $urls,
         private PageResourceRegistry $resources,
+        private EloquentSeoSitemapSource $seo,
     ) {}
 
     /**
@@ -36,10 +39,27 @@ final readonly class PageSitemapSource implements SitemapSource
             ->where('site', $scope)
             ->where('sitemap_included', true)
             ->publiclyVisible()
-            ->with(['translations', 'seoProfiles.translations'])
+            ->with([
+                'translations',
+                'seoProfiles' => static function (Relation $profiles) use ($scope): void {
+                    $profiles->getBaseQuery()->where('scope', $scope)->where('status', 'active')->whereNull('archived_at');
+                },
+                'seoProfiles.translations',
+            ])
             ->lazyById(500, column: 'id');
 
         foreach ($pages as $page) {
+            $profile = $page->seoProfiles->first(
+                static fn (SeoProfile $profile): bool => $profile->scope === $scope
+                    && $profile->status === 'active'
+                    && $profile->archived_at === null,
+            );
+
+            if ($profile instanceof SeoProfile
+                && (! $profile->is_indexable || ! $profile->sitemap_included)) {
+                continue;
+            }
+
             if ($page->kind === PageKind::Resource) {
                 foreach ($this->resourceEntries($page, $scope) as $entry) {
                     yield $entry;
@@ -48,19 +68,15 @@ final readonly class PageSitemapSource implements SitemapSource
                 continue;
             }
 
-            $hasSeoSitemapEntry = $page->seoProfiles->contains(
-                static fn (SeoProfile $profile): bool => $profile->scope === $scope
-                    && $profile->status === 'active'
-                    && $profile->archived_at === null
-                    && $profile->is_indexable
-                    && $profile->sitemap_included
-                    && $profile->translations->contains(
-                        static fn (SeoProfileTranslation $translation): bool => $translation->canonical_url !== null
-                            || $translation->path !== null,
-                    ),
-            );
+            if ($profile instanceof SeoProfile
+                && $profile->translations->contains(
+                    static fn (SeoProfileTranslation $translation): bool => $translation->canonical_url !== null
+                        || $translation->path !== null,
+                )) {
+                foreach ($this->seo->entriesForProfile($profile) as $entry) {
+                    yield $entry;
+                }
 
-            if ($hasSeoSitemapEntry) {
                 continue;
             }
 

@@ -32,7 +32,7 @@ enum CSVExportFormatEnum: string
      * Returns all necessary parameters for CSV generation:
      * - delimiter: Field separator character
      * - enclosure: Quote character for fields containing delimiters
-     * - escape: Character used to escape special characters
+     * - escape: Empty string to use standard doubled enclosures
      * - line_ending: Platform-appropriate line terminator
      * - include_bom: Whether to include UTF-8 Byte Order Mark
      *
@@ -44,42 +44,42 @@ enum CSVExportFormatEnum: string
             self::STANDARD => [
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'escape' => '\\',
+                'escape' => '',
                 'line_ending' => "\n",
                 'include_bom' => false,
             ],
             self::EXCEL => [
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'escape' => '"',
+                'escape' => '',
                 'line_ending' => "\r\n",
                 'include_bom' => true,
             ],
             self::EXCEL_MAC => [
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'escape' => '"',
+                'escape' => '',
                 'line_ending' => "\r",
                 'include_bom' => true,
             ],
             self::RFC4180 => [
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'escape' => '"',
+                'escape' => '',
                 'line_ending' => "\r\n",
                 'include_bom' => false,
             ],
             self::TSV => [
                 'delimiter' => "\t",
                 'enclosure' => '"',
-                'escape' => '\\',
+                'escape' => '',
                 'line_ending' => "\n",
                 'include_bom' => false,
             ],
             self::UNIX => [
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'escape' => '\\',
+                'escape' => '',
                 'line_ending' => "\n",
                 'include_bom' => false,
             ],
@@ -187,10 +187,10 @@ enum CSVExportFormatEnum: string
      * Get the escape character for this format.
      *
      * Returns the character used to escape special characters
-     * within quoted fields. Excel uses quote doubling (""),
-     * while standard formats often use backslash escaping.
+     * within quoted fields. Presets use standard quote doubling ("")
+     * without PHP's additional escape character.
      *
-     * @return string Single character escape
+     * @return string Escape character, or an empty string for standard doubled enclosures
      */
     public function getEscape(): string
     {

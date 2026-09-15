@@ -57,7 +57,8 @@ final readonly class Coordinates implements ArrayPrimitive
         $latitude = $value['latitude'] ?? $value['lat'] ?? null;
         $longitude = $value['longitude'] ?? $value['lng'] ?? null;
 
-        if (! is_scalar($latitude) || ! is_scalar($longitude)) {
+        if ((! is_string($latitude) && ! is_int($latitude) && ! is_float($latitude))
+            || (! is_string($longitude) && ! is_int($longitude) && ! is_float($longitude))) {
             throw InvalidPrimitive::for('coordinates', 'latitude and longitude are required.');
         }
 

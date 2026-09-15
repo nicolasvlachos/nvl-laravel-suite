@@ -120,7 +120,7 @@ final class CSVExportOptionsData extends Data
             'format' => CSVExportFormatEnum::STANDARD,
             'delimiter' => CSVDelimiterEnum::COMMA,
             'enclosure' => '"',
-            'escape' => '\\',
+            'escape' => '',
             'includeBom' => false,
             'includeHeaders' => true,
             'includeIndex' => false,

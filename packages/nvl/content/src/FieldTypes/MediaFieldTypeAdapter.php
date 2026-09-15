@@ -243,7 +243,12 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
             ? MediaAbility::Reuse
             : MediaAbility::Associate;
 
-        if (! $this->authorization->allows($this->mediaActor($actor), $ability, $media)) {
+        if (! $this->authorization->allows(
+            $this->mediaActor($actor),
+            $ability,
+            $media,
+            $context->owner,
+        )) {
             throw new InvalidArgumentException(
                 "Media [{$media->id}] is not reusable by the actor for [{$context->path}].",
             );

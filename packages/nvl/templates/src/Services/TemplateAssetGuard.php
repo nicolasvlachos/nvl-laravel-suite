@@ -76,6 +76,20 @@ final class TemplateAssetGuard
         }
     }
 
+    /**
+     * Resolve an existing local source to the exact allowed file used for reading.
+     */
+    public function localPath(string $path): string
+    {
+        $absolute = str_starts_with($path, DIRECTORY_SEPARATOR)
+            ? $path
+            : getcwd().DIRECTORY_SEPARATOR.$path;
+        $this->local($absolute);
+
+        return realpath($absolute)
+            ?: throw new InvalidArgumentException('Template local asset cannot be resolved.');
+    }
+
     public function inline(string $value): void
     {
         if (preg_match(
@@ -148,6 +162,14 @@ final class TemplateAssetGuard
             || parse_url($url, PHP_URL_PASS) !== null) {
             throw new InvalidArgumentException(
                 'Remote template asset is not allowed by the exact host policy.',
+            );
+        }
+
+        $port = parse_url($url, PHP_URL_PORT);
+
+        if ($port !== null && $port !== (strtolower($scheme) === 'https' ? 443 : 80)) {
+            throw new InvalidArgumentException(
+                'Remote template asset URLs must use the standard port for their scheme.',
             );
         }
     }

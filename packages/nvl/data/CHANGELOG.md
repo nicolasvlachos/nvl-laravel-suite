@@ -4,6 +4,11 @@ All notable changes to `nvl/data` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject symlinked declaration directories, declaration files, and manifests
+  before generated TypeScript publication writes or replaces any artifacts.
+
 ## [2.0.0] - 2026-08-29
 
 ### Changed

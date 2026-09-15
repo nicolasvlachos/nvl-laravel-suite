@@ -307,6 +307,9 @@ PDF safety defaults:
 - absolute local paths outside configured asset roots, traversal, credentialed
   URLs, nonstandard remote ports, and unsafe schemes are rejected;
 - remote resources are disabled unless HTTPS hosts are exactly allowlisted;
+- every asset read, including images referenced inside SVG files, rechecks the
+  local root or remote host policy; remote reads disable redirects and enforce
+  byte and time limits;
 - data images are size bounded, MIME allowlisted, and byte-sniffed against
   their declared MIME type;
 - the mPDF temporary directory must be writable beneath an allowed root;
@@ -673,6 +676,10 @@ injected `Nvl\Content\Content` application surface; the stored model attribute
 is a typed `ContentCompositionSnapshotData`, not an array that each consumer
 must rehydrate.
 
+Stored render Actions treat model arguments as persisted identifiers and reload
+their current state. Render-history reads also reload requester ownership and
+Media relationships before authorization and disclosure.
+
 ### Assignments
 
 Register owner aliases through `TemplateOwnerResolver`. `AssignTemplateAction`
@@ -821,7 +828,8 @@ rendering without the package tables.
 - Missing assignments/versions, stale revisions, inactive templates, and
   corrupt snapshots fail closed.
 - Renderer output with inconsistent facts or unsafe headers is rejected.
-- PDF resource and path violations fail before mPDF receives the HTML.
+- Top-level PDF resources are checked before rendering; nested resources are
+  checked at mPDF's actual asset-read boundary.
 - Queue processing records bounded failure context, recovers only sufficiently
   old pending records or expired leases, and rethrows for normal retry handling.
 
@@ -844,9 +852,11 @@ Use this staged sequence:
    `staging_tables` in the manifest.
 3. Run the command without options and inspect the JSON inventory and mapping
    plan.
-4. Run `--prepare` to drop every non-primary, non-SQLite-autoindex named index
-   from only those declared staging tables. This prevents SQLite schema-wide
-   index-name collisions when canonical migrations run.
+4. Run `--prepare` to free non-primary, non-SQLite-autoindex names on only those
+   declared staging tables. Ordinary indexes are dropped; unique indexes and
+   PostgreSQL unique-constraint indexes are renamed to deterministic staging
+   names so uniqueness remains enforced. Preparation is repeatable and uses a
+   transaction when the database supports transactional schema changes.
 5. Enable and run package migrations. The compatibility preflight rejects any
    unowned or structurally incomplete canonical Templates table.
 6. Run `--apply`. Template and Content writes use their public Actions,
@@ -858,6 +868,14 @@ Use this staged sequence:
 The apply phase is restart-safe and reconciles target counts, but it may span
 different configured database connections and therefore is deliberately not
 presented as one cross-database transaction.
+
+The adoption command has one reviewed integration exception: its Action reads
+Content models for reconciliation and invokes Content mutation Actions, while
+manifest preflight uses Content's definition, locale, scope, merge, and value
+validation services without writes. These exact dependencies are confined to
+the two adoption classes; normal rendering consumes the canonical Content
+application surface. Architecture tests check each forbidden namespace
+independently and permit only the reviewed adoption imports.
 
 A minimal manifest is:
 
