@@ -13,7 +13,7 @@ php artisan config:clear
 
 `nvl:suite:configure` is dry-run-first and always prints the generated PHP.
 `--minimal` emits only `profile`, `include`, and `exclude`; `--full` emits all
-twenty resolved module booleans and remains the default for command
+twenty-one resolved module booleans and remains the default for command
 compatibility. Use repeatable `--add` options for capability roots and
 `--remove` only for modules that no retained root requires. For example:
 
@@ -154,7 +154,7 @@ Enable `auth`, `forms`, `mail-notifications`, `templates`, and `translations`.
 
 ## Full suite
 
-Keep all twenty module flags enabled.
+Keep all twenty-one module flags enabled.
 
 | Concern | Adoption requirement |
 |---|---|

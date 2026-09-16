@@ -45,6 +45,7 @@ $managementConfiguration = [
 ];
 $packagePhpConstraints = [
     'activity' => '^8.4',
+    'tenancy' => '^8.4',
 ];
 $releasedCorrectiveMigrations = [
     'activity' => [
@@ -617,9 +618,18 @@ foreach ($packages as $package) {
         }
     }
 
-    $skillDirectories = glob("{$path}/resources/boost/skills/*", GLOB_ONLYDIR) ?: [];
-    if (count($skillDirectories) !== 1 || basename($skillDirectories[0]) !== "nvl-{$package}") {
-        $fail($package, 'exactly one standardized packaged skill is allowed');
+    $skillDirectories = array_map(
+        'basename',
+        glob("{$path}/resources/boost/skills/*", GLOB_ONLYDIR) ?: [],
+    );
+    $expectedSkillDirectories = $package === 'tenancy'
+        ? ['backend-tenancy', 'nvl-tenancy']
+        : ["nvl-{$package}"];
+    sort($skillDirectories);
+    sort($expectedSkillDirectories);
+
+    if ($skillDirectories !== $expectedSkillDirectories) {
+        $fail($package, 'packaged skills do not match the canonical package skill set');
     }
 
     if (selfReadTree("{$path}/skills") !== '') {

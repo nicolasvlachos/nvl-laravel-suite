@@ -1,13 +1,19 @@
 # Changelog
 
 All notable changes to `nvl/laravel-suite` are documented in this file. The
-suite follows [Semantic Versioning](https://semver.org/) and versions all 20
+suite follows [Semantic Versioning](https://semver.org/) and versions all 21
 embedded modules together.
 
 Module-level implementation history remains available in each
 `packages/nvl/<module>/CHANGELOG.md` file.
 
 ## [Unreleased]
+
+### Added
+
+- Added the inert-by-default `nvl/tenancy` foundation with deployment
+  configuration, scoped context values, adapter contracts, stable failure codes,
+  package discovery, and disabled compatibility without tenant schema.
 
 ### Changed
 

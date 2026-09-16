@@ -1,6 +1,6 @@
 # NVL Packages
 
-The `nvl/laravel-suite` Composer package contains 20 internal Laravel modules. The installable suite supports PHP 8.4+ and Laravel 13, is headless by default, retains explicit dependency boundaries, and includes module-specific configuration, API, operational, and testing documentation.
+The `nvl/laravel-suite` Composer package contains 21 internal Laravel modules. The installable suite supports PHP 8.4+ and Laravel 13, is headless by default, retains explicit dependency boundaries, and includes module-specific configuration, API, operational, and testing documentation.
 
 ## `nvl/activity`
 
@@ -48,6 +48,20 @@ The shared DTO and PHP-to-TypeScript boundary for the NVL package family, built 
 - Generates declarations, integrity manifests, checksums, and stale-output reports.
 - Optionally serves existing generated artifacts through protected, bounded, non-generating HTTP routes.
 - Validates configured roots against traversal and symlink escape.
+
+## `nvl/tenancy`
+
+An inert-by-default tenant context and isolation foundation for Laravel 13.
+
+- Defines canonical UUID tenant IDs, immutable context snapshots, and a
+  read-only scoped context contract.
+- Validates the frozen shared-database deployment configuration and adapter
+  class strings without resolving scoped services or opening database
+  connections.
+- Declares host extension contracts for directories, membership, platform
+  authorization, HTTP selection, and verified public-site context.
+- Loads no tenant schema, routes, middleware, or resource integration while
+  disabled.
 
 ## `nvl/comments`
 

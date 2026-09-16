@@ -117,6 +117,7 @@
         "nvl/support": "self.version",
         "nvl/taxonomy": "self.version",
         "nvl/templates": "self.version",
+        "nvl/tenancy": "self.version",
         "nvl/translatable": "self.version",
         "nvl/translations": "self.version"
     },
@@ -158,6 +159,7 @@
             "Nvl\\Seo\\Database\\Factories\\": "packages/nvl/seo/database/factories/",
             "Nvl\\Settings\\": "packages/nvl/settings/src/",
             "Nvl\\Support\\": "packages/nvl/support/src/",
+            "Nvl\\Tenancy\\": "packages/nvl/tenancy/src/",
             "Nvl\\Taxonomy\\": "packages/nvl/taxonomy/src/",
             "Nvl\\Templates\\": "packages/nvl/templates/src/",
             "Nvl\\Translatable\\": "packages/nvl/translatable/src/",
@@ -186,6 +188,7 @@
             "Nvl\\Seo\\Tests\\": "packages/nvl/seo/tests/",
             "Nvl\\Settings\\Tests\\": "packages/nvl/settings/tests/",
             "Nvl\\Support\\Tests\\": "packages/nvl/support/tests/",
+            "Nvl\\Tenancy\\Tests\\": "packages/nvl/tenancy/tests/",
             "Nvl\\Taxonomy\\Tests\\": "packages/nvl/taxonomy/tests/",
             "Nvl\\Templates\\Tests\\": "packages/nvl/templates/tests/",
             "Nvl\\Translatable\\Tests\\": "packages/nvl/translatable/tests/",

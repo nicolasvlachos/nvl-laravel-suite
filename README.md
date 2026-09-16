@@ -5,7 +5,7 @@
 [![Package quality](https://github.com/nicolasvlachos/nvl-laravel-suite/actions/workflows/package-quality.yml/badge.svg?branch=main)](https://github.com/nicolasvlachos/nvl-laravel-suite/actions/workflows/package-quality.yml)
 [![License](https://img.shields.io/packagist/l/nvl/laravel-suite)](LICENSE)
 
-The NVL Laravel Suite is one installable Composer package containing 20 focused Laravel modules and an integration workbench. The modules remain isolated under `packages/nvl`, retain their namespaces, providers, migrations, tests, documentation, and Laravel Boost skills, and ship together under one version.
+The NVL Laravel Suite is one installable Composer package containing 21 focused Laravel modules and an integration workbench. The modules remain isolated under `packages/nvl`, retain their namespaces, providers, migrations, tests, documentation, and Laravel Boost skills, and ship together under one version.
 
 ## Packages and API documentation
 
@@ -31,6 +31,7 @@ extension contracts, operational behavior, and verification where applicable.
 | `nvl/seo` | Localized metadata, canonical/social/structured output, robots, and sitemaps | [Documentation](packages/nvl/seo/README.md) |
 | `nvl/settings` | Typed database-backed application-wide settings | [Documentation](packages/nvl/settings/README.md) |
 | `nvl/support` | Transport-neutral business exceptions and stable response codes | [Documentation](packages/nvl/support/README.md) |
+| `nvl/tenancy` | Inert tenant context, deployment configuration, and isolation extension contracts | [Documentation](packages/nvl/tenancy/README.md) |
 | `nvl/taxonomy` | Hierarchical attachable vocabularies and localized terms | [Documentation](packages/nvl/taxonomy/README.md) |
 | `nvl/templates` | Versioned Content compositions, validated payloads, PDF/HTML rendering, assignments, and queues | [Documentation](packages/nvl/templates/README.md) |
 | `nvl/translatable` | Shared locale validation, request-scoped content locale, fallback, queries, and writes | [Documentation](packages/nvl/translatable/README.md) |
@@ -61,7 +62,7 @@ php artisan config:clear
 The command is dry-run-first and writes only with `--write`; replacing a file
 also requires `--force` and returns a unified diff. `--add` and `--remove`
 compose capability roots around a profile. Use `--full` when an explicit map of
-all twenty booleans is preferable. Publishing the unmodified full-suite default
+all twenty-one booleans is preferable. Publishing the unmodified full-suite default
 remains available with `php artisan vendor:publish --tag=suite-config`.
 
 Configure `config/nvl-suite.php` before running migrations. Including a module
@@ -367,6 +368,7 @@ Available package skill tags are:
 - `seo-skills`
 - `settings-skills`
 - `support-skills`
+- `tenancy-skills`
 - `taxonomy-skills`
 - `templates-skills`
 - `translatable-skills`
@@ -374,8 +376,10 @@ Available package skill tags are:
 
 Skill sources must describe current package code, validate with the Codex skill validator, and avoid historical namespaces or proposed architectures.
 
-Every package uses this one layout. Historical top-level skill directories and
-future-proposal guidance are rejected by the family validator.
+Every package provides its canonical `nvl-*` skill. Tenancy also ships the
+backend execution skill required by its staged rollout. Historical top-level
+skill directories and future-proposal guidance are rejected by the family
+validator.
 
 ## Generated TypeScript contracts
 

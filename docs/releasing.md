@@ -286,8 +286,8 @@ The automated archive gate exercises both ownership modes on fresh SQLite
 databases. It also publishes the suite-level and package-level tags recorded in
 `tools/package-contracts.json` and verifies materialized configuration,
 migrations, translations, views, adoption templates, generated-type tooling,
-and all 20 `.agents/skills/nvl-*` directories. The archive independently ships
-the same 20 skills under `resources/boost/skills` so a consumer with Laravel
+and all 21 `.agents/skills/nvl-*` directories. The archive independently ships
+the same 21 skills under `resources/boost/skills` so a consumer with Laravel
 Boost may install them through `php artisan boost:install --skills` without
 first publishing them.
 

@@ -83,7 +83,7 @@ it('registers one aggregate skill tag for every effective Suite module', functio
     }
 });
 
-it('publishes all twenty full-suite skills and one aggregate ownership manifest', function (): void {
+it('publishes all twenty-one full-suite skills and one aggregate ownership manifest', function (): void {
     $workspace = sys_get_temp_dir().'/nvl-suite-skills-'.bin2hex(random_bytes(8));
     $filesystem = new Filesystem;
     $family = require dirname(__DIR__, 2).'/tools/package-family.php';
@@ -98,9 +98,9 @@ it('publishes all twenty full-suite skills and one aggregate ownership manifest'
         );
 
         expect($report['healthy'])->toBeTrue()
-            ->and($report['results'])->toHaveCount(20)
+            ->and($report['results'])->toHaveCount(21)
             ->and(array_unique(array_column($report['results'], 'status')))->toBe(['installed'])
-            ->and($manifest['skills'] ?? [])->toHaveCount(20)
+            ->and($manifest['skills'] ?? [])->toHaveCount(21)
             ->and($manager->inspect(strict: true)['healthy'])->toBeTrue();
     } finally {
         $filesystem->deleteDirectory($workspace);

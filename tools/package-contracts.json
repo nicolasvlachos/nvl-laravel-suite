@@ -33318,6 +33318,165 @@
                 "database/migrations/2026_07_27_100007_create_template_renders_table.php": "d7cd36f3eaaf568a99ca447f73f8fffbd8e9f0777976e791ae75872cc532247b"
             }
         },
+        "tenancy": {
+            "providers": [
+                "Nvl\\Tenancy\\Providers\\TenancyServiceProvider"
+            ],
+            "autoload_files": [],
+            "publish_tags": [
+                "tenancy-config",
+                "tenancy-skills"
+            ],
+            "commands": [],
+            "symbols": {
+                "Nvl\\Tenancy\\Contracts\\PlatformAccess": [
+                    "interface Nvl\\Tenancy\\Contracts\\PlatformAccess",
+                    "public abstract function authorize(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void"
+                ],
+                "Nvl\\Tenancy\\Contracts\\TenantContext": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantContext",
+                    "public abstract function snapshot(): Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot",
+                    "public abstract function requireTenant(): Nvl\\Tenancy\\ValueObjects\\TenantId"
+                ],
+                "Nvl\\Tenancy\\Contracts\\TenantDirectory": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantDirectory",
+                    "public abstract function find(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): Nvl\\Tenancy\\ValueObjects\\TenantDescriptor",
+                    "@throws TenantNotFound When the identifier is unknown"
+                ],
+                "Nvl\\Tenancy\\Contracts\\TenantHttpResolver": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantHttpResolver",
+                    "public abstract function resolve(Illuminate\\Http\\Request $request): Nvl\\Tenancy\\ValueObjects\\TenantId"
+                ],
+                "Nvl\\Tenancy\\Contracts\\TenantMembershipAccess": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantMembershipAccess",
+                    "public abstract function assertMember(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): void"
+                ],
+                "Nvl\\Tenancy\\Contracts\\TenantSiteResolver": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantSiteResolver",
+                    "public abstract function resolve(Illuminate\\Http\\Request $request): Nvl\\Tenancy\\ValueObjects\\TenantSiteContext"
+                ],
+                "Nvl\\Tenancy\\Enums\\TenancyResponseCode": [
+                    "enum Nvl\\Tenancy\\Enums\\TenancyResponseCode implements BackedEnum, Nvl\\Support\\Contracts\\ResponseCode, UnitEnum: string",
+                    "public const mixed TenantContextMissing=Nvl\\Tenancy\\Enums\\TenancyResponseCode::TenantContextMissing=tenant_context_missing",
+                    "public const mixed TenantNotFound=Nvl\\Tenancy\\Enums\\TenancyResponseCode::TenantNotFound=tenant_not_found",
+                    "public const mixed TenantInactive=Nvl\\Tenancy\\Enums\\TenancyResponseCode::TenantInactive=tenant_inactive",
+                    "public const mixed TenantBoundaryViolation=Nvl\\Tenancy\\Enums\\TenancyResponseCode::TenantBoundaryViolation=tenant_boundary_violation",
+                    "public const mixed TenantConfigurationInvalid=Nvl\\Tenancy\\Enums\\TenancyResponseCode::TenantConfigurationInvalid=tenant_configuration_invalid",
+                    "public const mixed TenantSchemaNotReady=Nvl\\Tenancy\\Enums\\TenancyResponseCode::TenantSchemaNotReady=tenant_schema_not_ready",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Tenancy\\Enums\\TenantContextMode": [
+                    "enum Nvl\\Tenancy\\Enums\\TenantContextMode implements BackedEnum, UnitEnum: string",
+                    "public const mixed Disabled=Nvl\\Tenancy\\Enums\\TenantContextMode::Disabled=disabled",
+                    "public const mixed Unresolved=Nvl\\Tenancy\\Enums\\TenantContextMode::Unresolved=unresolved",
+                    "public const mixed Tenant=Nvl\\Tenancy\\Enums\\TenantContextMode::Tenant=tenant",
+                    "public const mixed Platform=Nvl\\Tenancy\\Enums\\TenantContextMode::Platform=platform",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Tenancy\\Enums\\TenantStatus": [
+                    "enum Nvl\\Tenancy\\Enums\\TenantStatus implements BackedEnum, UnitEnum: string",
+                    "public const mixed Active=Nvl\\Tenancy\\Enums\\TenantStatus::Active=active",
+                    "public const mixed Suspended=Nvl\\Tenancy\\Enums\\TenantStatus::Suspended=suspended",
+                    "public const mixed Deleted=Nvl\\Tenancy\\Enums\\TenantStatus::Deleted=deleted",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Tenancy\\Exceptions\\TenancyException": [
+                    "class Nvl\\Tenancy\\Exceptions\\TenancyException extends Nvl\\Support\\Exceptions\\BusinessException"
+                ],
+                "Nvl\\Tenancy\\Exceptions\\TenantBoundaryViolation": [
+                    "final class Nvl\\Tenancy\\Exceptions\\TenantBoundaryViolation extends Nvl\\Tenancy\\Exceptions\\TenancyException",
+                    "public function __construct(string $message=\"Tenant resource is outside the active context.\"): mixed"
+                ],
+                "Nvl\\Tenancy\\Exceptions\\TenantConfigurationInvalid": [
+                    "final class Nvl\\Tenancy\\Exceptions\\TenantConfigurationInvalid extends Nvl\\Tenancy\\Exceptions\\TenancyException",
+                    "public function __construct(string $message=\"Tenancy configuration is invalid.\"): mixed"
+                ],
+                "Nvl\\Tenancy\\Exceptions\\TenantContextMissing": [
+                    "final class Nvl\\Tenancy\\Exceptions\\TenantContextMissing extends Nvl\\Tenancy\\Exceptions\\TenancyException",
+                    "public function __construct(string $message=\"Tenant context is not resolved.\"): mixed"
+                ],
+                "Nvl\\Tenancy\\Exceptions\\TenantInactive": [
+                    "final class Nvl\\Tenancy\\Exceptions\\TenantInactive extends Nvl\\Tenancy\\Exceptions\\TenancyException",
+                    "public function __construct(string $message=\"Tenant is not active.\"): mixed"
+                ],
+                "Nvl\\Tenancy\\Exceptions\\TenantNotFound": [
+                    "final class Nvl\\Tenancy\\Exceptions\\TenantNotFound extends Nvl\\Tenancy\\Exceptions\\TenancyException",
+                    "public function __construct(string $message=\"Tenant was not found.\"): mixed"
+                ],
+                "Nvl\\Tenancy\\Exceptions\\TenantSchemaNotReady": [
+                    "final class Nvl\\Tenancy\\Exceptions\\TenantSchemaNotReady extends Nvl\\Tenancy\\Exceptions\\TenancyException",
+                    "public function __construct(string $message=\"Tenant schema is not ready.\"): mixed"
+                ],
+                "Nvl\\Tenancy\\Providers\\TenancyServiceProvider": [
+                    "final class Nvl\\Tenancy\\Providers\\TenancyServiceProvider extends Illuminate\\Support\\ServiceProvider",
+                    "public function boot(): void",
+                    "public function register(): void",
+                    "protected function mergePackageConfiguration(string $path, string $key): void"
+                ],
+                "Nvl\\Tenancy\\Services\\ScopedTenantContext": [
+                    "final class Nvl\\Tenancy\\Services\\ScopedTenantContext implements Nvl\\Tenancy\\Contracts\\TenantContext",
+                    "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function snapshot(): Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot",
+                    "public function requireTenant(): Nvl\\Tenancy\\ValueObjects\\TenantId",
+                    "@throws TenantContextMissing When no tenant is active"
+                ],
+                "Nvl\\Tenancy\\Services\\TenancyConfiguration": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenancyConfiguration",
+                    "public function __construct(Illuminate\\Config\\Repository $configuration, Illuminate\\Container\\Container $container): mixed",
+                    "public function validate(): void",
+                    "@throws TenantConfigurationInvalid When any configured value is unsupported"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\PlatformOperation": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\PlatformOperation",
+                    "public readonly string $purpose",
+                    "public readonly string $actorType",
+                    "public readonly string $actorId",
+                    "public function __construct(string $purpose, string $actorType, string $actorId): mixed"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot",
+                    "public readonly Nvl\\Tenancy\\Enums\\TenantContextMode $mode",
+                    "public readonly ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId",
+                    "public function __construct(Nvl\\Tenancy\\Enums\\TenantContextMode $mode, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId=null): mixed"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantDescriptor": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantDescriptor",
+                    "public readonly Nvl\\Tenancy\\ValueObjects\\TenantId $id",
+                    "public readonly Nvl\\Tenancy\\Enums\\TenantStatus $status",
+                    "public function __construct(Nvl\\Tenancy\\ValueObjects\\TenantId $id, Nvl\\Tenancy\\Enums\\TenantStatus $status): mixed"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantId": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantId",
+                    "public readonly string $value",
+                    "public function __construct(string $value): mixed",
+                    "@throws InvalidArgumentException When the identifier is not a UUID"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantSiteContext": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantSiteContext",
+                    "public readonly Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId",
+                    "public readonly string $site",
+                    "public readonly string $canonicalOrigin",
+                    "public function __construct(Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId, string $site, string $canonicalOrigin): mixed"
+                ]
+            },
+            "configuration": {
+                "config/tenancy.php": "6b2531a87253d4f6dae707017b052e3fb28be7e461044c28588c02f85bddb9de"
+            },
+            "routes": [],
+            "migrations": []
+        },
         "translatable": {
             "providers": [
                 "Nvl\\Translatable\\Providers\\TranslatableServiceProvider"

@@ -110,7 +110,7 @@ it('keeps v1.0.5 release history under dated suite and every package heading', f
         ->toContain('## [1.0.0] - 2026-08-08')
         ->not->toContain('## [1.0.0] - Unreleased');
 
-    foreach ($catalog['packages'] as $package) {
+    foreach (array_diff($catalog['packages'], ['tenancy']) as $package) {
         $contents = file_get_contents($root.'/packages/nvl/'.$package.'/CHANGELOG.md');
 
         expect($contents)->toBeString()
@@ -243,7 +243,7 @@ it('autoloads every internal module from the suite archive layout', function ():
         ->and($manifest['autoload-dev']['psr-4']['Nvl\\Workbench\\'] ?? null)->toBe('app/');
 });
 
-it('discovers one suite provider instead of twenty package providers', function (): void {
+it('discovers one suite provider instead of twenty-one package providers', function (): void {
     $manifest = suiteArchiveManifest();
 
     expect($manifest['extra']['laravel']['providers'] ?? null)->toBe([

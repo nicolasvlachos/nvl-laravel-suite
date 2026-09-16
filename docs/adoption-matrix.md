@@ -47,6 +47,7 @@ explicit root enables it through dependency closure.
 |---|---|---|---|---|---|---|---|
 | `support` | None | None | None | None | None | No | N/A |
 | `data` | None | None | None | None | None | Yes | N/A |
+| `tenancy` | Optional ownership schema remains disabled in this foundation via `tenancy.migrations.enabled` | None in this foundation | None | `TenantContext` plus host directory, membership, platform, HTTP, and public-site adapter contracts | None | No | N/A in this foundation |
 | `filterable` | None | None | None | Caller-owned query definitions | None | Yes | N/A |
 | `translatable` | Domain-owned translation tables | None | None | Typed definitions and locale policy | Translation resource keys | Yes | `nvl:translatable:doctor` |
 | `activity` | Package/application via `activity.migrations.enabled` | `maintenance` for retention jobs | Package-registers `nvl:activity:purge-system` when retention scheduling is enabled | Gate abilities and policies | Activity mappings | Yes | `nvl:activity:doctor` |

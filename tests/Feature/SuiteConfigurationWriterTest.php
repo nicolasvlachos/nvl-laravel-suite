@@ -29,6 +29,7 @@ it('renders a dependency-complete profile without writing by default', function 
             ->and($report['modules'] ?? null)->toBe([
                 'support' => true,
                 'data' => true,
+                'tenancy' => false,
                 'filterable' => false,
                 'translatable' => false,
                 'activity' => false,
@@ -362,6 +363,7 @@ it('reports incomplete published module decisions and their operational reviews'
             ['module' => 'support', 'message' => 'The omitted module flag is requested-disabled and is effectively enabled in Suite 2.0 through dependency closure.'],
             ['module' => 'taxonomy', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
             ['module' => 'templates', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
+            ['module' => 'tenancy', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
             ['module' => 'translatable', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
             ['module' => 'translations', 'message' => 'The omitted module flag is requested-disabled and is effectively disabled in Suite 2.0.'],
         ])

@@ -21,6 +21,7 @@ return [
     'packages' => [
         'support',
         'data',
+        'tenancy',
         'auth',
         'csv',
         'filterable',
@@ -47,6 +48,7 @@ return [
         'content' => ['data', 'filterable', 'media', 'support', 'translatable'],
         'csv' => ['data'],
         'data' => ['support'],
+        'tenancy' => ['data', 'support'],
         'filterable' => ['data'],
         'forms' => ['data', 'filterable', 'support', 'translatable'],
         'media' => ['data', 'filterable', 'support', 'translatable'],
@@ -282,6 +284,16 @@ return [
                     'tests/Fixtures/ConfigurationServiceProvider.php',
                 ],
                 'migration_tests' => [],
+            ],
+            'tenancy' => [
+                'analysis_paths' => [
+                    'src',
+                    'tests/Fixtures',
+                ],
+                'migration_tests' => [
+                    'tests/TenancyTestCase.php',
+                    'tests/Feature/DisabledCompatibilityTest.php',
+                ],
             ],
             'taxonomy' => [
                 'analysis_paths' => [

@@ -72,6 +72,8 @@ use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Providers\TemplatesServiceProvider;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
 use Nvl\Templates\Services\TemplateRendererRegistry;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Nvl\Translations\Contracts\TranslationsAuthorization;
@@ -143,6 +145,7 @@ final readonly class SuiteModuleCatalog
             'modules' => [
                 'support',
                 'data',
+                'tenancy',
                 'filterable',
                 'translatable',
                 'activity',
@@ -194,6 +197,18 @@ final readonly class SuiteModuleCatalog
             'queues' => [],
             'schedules' => [],
             'typescript' => true,
+        ],
+        'tenancy' => [
+            'provider' => TenancyServiceProvider::class,
+            'dependencies' => ['data', 'support'],
+            'stateful' => false,
+            'migration' => ['mode' => 'none', 'config' => null],
+            'doctor' => null,
+            'contracts' => [TenantContext::class],
+            'aliases' => [],
+            'queues' => [],
+            'schedules' => [],
+            'typescript' => false,
         ],
         'filterable' => [
             'provider' => FilterableServiceProvider::class,
@@ -463,6 +478,14 @@ final readonly class SuiteModuleCatalog
             'default' => 'packages/nvl/data/config/nvl-data.php',
             'published' => 'nvl-data.php',
             'open_maps' => ['typescript.scope_mappings', 'typescript.type_replacements'],
+            'deprecated' => [],
+            'merge_strategy' => 'deep-map-atomic-list',
+        ],
+        'tenancy' => [
+            'key' => 'tenancy',
+            'default' => 'packages/nvl/tenancy/config/tenancy.php',
+            'published' => 'tenancy.php',
+            'open_maps' => ['resources'],
             'deprecated' => [],
             'merge_strategy' => 'deep-map-atomic-list',
         ],

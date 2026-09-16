@@ -237,7 +237,7 @@ Translatable/Media/Content before packages that compose those capabilities.
 
 The canonical [suite adoption matrix](adoption-matrix.md) covers migration
 ownership, queues, scheduler entries, replaceable contracts, registered aliases,
-generated TypeScript, and Doctor availability for all twenty modules.
+generated TypeScript, and Doctor availability for all twenty-one modules.
 `nvl:suite:configuration` renders the effective application state from the same
 runtime catalog, and `nvl:suite:doctor --strict` aggregates every enabled package
 Doctor.
