@@ -34584,7 +34584,7 @@
                 ],
                 "Nvl\\Translatable\\Services\\TranslationDoctor": [
                     "final readonly class Nvl\\Translatable\\Services\\TranslationDoctor",
-                    "public function __construct(Illuminate\\Contracts\\Config\\Repository $config, Nvl\\Translatable\\Services\\TranslationResourceRegistry $resources): mixed",
+                    "public function __construct(Illuminate\\Contracts\\Config\\Repository $config, Nvl\\Translatable\\Services\\TranslationResourceRegistry $resources, Nvl\\Translatable\\Services\\TranslationOwnership $ownership, Nvl\\Tenancy\\Services\\TenantResourceRegistry $tenantResources, Nvl\\Tenancy\\Services\\TenantInstallationState $installation): mixed",
                     "public function inspect(): Nvl\\Translatable\\TranslationDiagnosticReport"
                 ],
                 "Nvl\\Translatable\\Services\\TranslationOwnership": [
@@ -34621,7 +34621,7 @@
                 ],
                 "Nvl\\Translatable\\Services\\TranslationResourceGatherer": [
                     "final readonly class Nvl\\Translatable\\Services\\TranslationResourceGatherer",
-                    "public function __construct(Nvl\\Translatable\\Services\\TranslationResourceRegistry $resources, Nvl\\Translatable\\Services\\LocaleRegistry $locales, Nvl\\Translatable\\Services\\TranslationResourceAuthorization $authorization, Nvl\\Translatable\\Services\\TranslationResourceVersioner $versioner, Nvl\\Translatable\\Services\\TranslationResourceLocator $locator): mixed",
+                    "public function __construct(Nvl\\Translatable\\Services\\TranslationResourceRegistry $resources, Nvl\\Translatable\\Services\\LocaleRegistry $locales, Nvl\\Translatable\\Services\\TranslationResourceAuthorization $authorization, Nvl\\Translatable\\Services\\TranslationResourceVersioner $versioner, Nvl\\Translatable\\Services\\TranslationResourceLocator $locator, Nvl\\Translatable\\Services\\TranslationOwnership $ownership, Nvl\\Tenancy\\Services\\TenantResourceRegistry $tenantResources, Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration $tenantOwnership): mixed",
                     "public function summaries(Nvl\\Translatable\\Data\\TranslationActorData $actor): array",
                     "@return list<TranslationResourceSummaryData>",
                     "public function gather(string $resourceKey, Nvl\\Translatable\\Data\\TranslationActorData $actor, ?Nvl\\Translatable\\TranslationResourceQuery $query=null): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
@@ -34630,12 +34630,15 @@
                 ],
                 "Nvl\\Translatable\\Services\\TranslationResourceLocator": [
                     "final readonly class Nvl\\Translatable\\Services\\TranslationResourceLocator",
+                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership): mixed",
                     "public function query(Nvl\\Translatable\\TranslationResourceDefinition $resource): Illuminate\\Database\\Eloquent\\Builder",
                     "@return Builder<Model>",
                     "public function find(Nvl\\Translatable\\TranslationResourceDefinition $resource, string|int $id): Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel",
                     "public function lock(Nvl\\Translatable\\TranslationResourceDefinition $resource, string|int $id): Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel",
                     "public function loadTranslations(Illuminate\\Database\\Eloquent\\Collection $records): void",
-                    "@param Collection<int, covariant Model> $records"
+                    "@param Collection<int, covariant Model> $records",
+                    "public function rows(Nvl\\Translatable\\TranslationResourceDefinition $resource): Illuminate\\Database\\Eloquent\\Builder",
+                    "@return Builder<Model>"
                 ],
                 "Nvl\\Translatable\\Services\\TranslationResourceRegistry": [
                     "final class Nvl\\Translatable\\Services\\TranslationResourceRegistry",
@@ -34656,6 +34659,7 @@
                 ],
                 "Nvl\\Translatable\\Services\\TranslationResourceVersioner": [
                     "final class Nvl\\Translatable\\Services\\TranslationResourceVersioner",
+                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership): mixed",
                     "public function version(Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel $owner): string"
                 ],
                 "Nvl\\Translatable\\Services\\TranslationWriter": [
