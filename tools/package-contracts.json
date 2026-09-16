@@ -34333,11 +34333,11 @@
                     "public function addConstraints(): void",
                     "public function addEagerConstraints(array $models): void",
                     "@param array<int, TDeclaringModel> $models",
-                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Illuminate\\Database\\Eloquent\\Builder",
+                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Nvl\\Translatable\\Relations\\TranslationRelationBuilder",
                     "@param Builder<TRelatedModel> $query",
                     "@param Builder<TDeclaringModel> $parentQuery",
                     "@param array<array-key, string>|string $columns",
-                    "@return Builder<TRelatedModel>"
+                    "@return TranslationRelationBuilder<TRelatedModel>"
                 ],
                 "Nvl\\Translatable\\Relations\\TranslationHasMany": [
                     "final class Nvl\\Translatable\\Relations\\TranslationHasMany extends Illuminate\\Database\\Eloquent\\Relations\\HasMany",
@@ -34350,28 +34350,46 @@
                     "public function addConstraints(): void",
                     "public function addEagerConstraints(array $models): void",
                     "@param array<int, TDeclaringModel> $models",
-                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Illuminate\\Database\\Eloquent\\Builder",
+                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Nvl\\Translatable\\Relations\\TranslationRelationBuilder",
                     "@param Builder<TRelatedModel> $query",
                     "@param Builder<TDeclaringModel> $parentQuery",
                     "@param array<array-key, string>|string $columns",
-                    "@return Builder<TRelatedModel>"
+                    "@return TranslationRelationBuilder<TRelatedModel>"
                 ],
                 "Nvl\\Translatable\\Relations\\TranslationHasOne": [
                     "final class Nvl\\Translatable\\Relations\\TranslationHasOne extends Illuminate\\Database\\Eloquent\\Relations\\HasOne",
                     "@template TRelatedModel of Model",
                     "@template TDeclaringModel of Model",
                     "@extends HasOne<TRelatedModel, TDeclaringModel>",
-                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Illuminate\\Database\\Eloquent\\Builder",
+                    "public function getRelationExistenceQuery(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Builder $parentQuery, mixed $columns=[\"*\"]): Nvl\\Translatable\\Relations\\TranslationRelationBuilder",
                     "@param Builder<TRelatedModel> $query",
                     "@param Builder<TDeclaringModel> $parentQuery",
                     "@param array<array-key, string>|string $columns",
-                    "@return Builder<TRelatedModel>",
+                    "@return TranslationRelationBuilder<TRelatedModel>",
                     "public function __construct(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Model $parent, string $foreignKey, string $localKey, Nvl\\Translatable\\Services\\RelatedTranslationStore $translationStore, Nvl\\Translatable\\RelatedTranslationDefinition $translationDefinition): mixed",
                     "@param Builder<TRelatedModel> $query",
                     "@param TDeclaringModel $parent",
                     "public function addConstraints(): void",
                     "public function addEagerConstraints(array $models): void",
                     "@param array<int, TDeclaringModel> $models"
+                ],
+                "Nvl\\Translatable\\Relations\\TranslationRelationBuilder": [
+                    "final class Nvl\\Translatable\\Relations\\TranslationRelationBuilder extends Illuminate\\Database\\Eloquent\\Builder",
+                    "@template TModel of Model",
+                    "@extends Builder<TModel>",
+                    "public function __construct(Illuminate\\Database\\Eloquent\\Builder $query): mixed",
+                    "@param Builder<TModel> $query",
+                    "public static function guarded(Illuminate\\Database\\Eloquent\\Builder $query, Illuminate\\Database\\Eloquent\\Model $owner, Nvl\\Translatable\\Services\\RelatedTranslationStore $store, Nvl\\Translatable\\RelatedTranslationDefinition $definition): self",
+                    "@template TRelated of Model",
+                    "@param Builder<TRelated> $query",
+                    "@return self<TRelated>",
+                    "public function restrictToOwners(array $owners): self",
+                    "@param array<int, Model> $owners",
+                    "@return self<TModel>",
+                    "public function restrictToExistence(string $parentColumn, string $childColumn): self",
+                    "@return self<TModel>",
+                    "public function applyScopes(): self",
+                    "@return self<TModel>"
                 ],
                 "Nvl\\Translatable\\Rules\\SupportedLocaleMapRule": [
                     "final readonly class Nvl\\Translatable\\Rules\\SupportedLocaleMapRule implements Illuminate\\Contracts\\Validation\\ValidationRule",
@@ -34532,7 +34550,7 @@
                 ],
                 "Nvl\\Translatable\\Services\\RelatedTranslationStore": [
                     "final readonly class Nvl\\Translatable\\Services\\RelatedTranslationStore",
-                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership): mixed",
+                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Tenancy\\Services\\TenantResourceRegistry $resources): mixed",
                     "public function upsert(Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableModel $owner, Nvl\\Translatable\\RelatedTranslationDefinition $definition, string $locale, array $attributes): Illuminate\\Database\\Eloquent\\Model",
                     "@param array<string, mixed> $attributes",
                     "public function deleteExcept(Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableModel $owner, Nvl\\Translatable\\RelatedTranslationDefinition $definition, array $locales): void",
