@@ -691,3 +691,15 @@ it('detects missing required host scheduler entries for enabled features', funct
         ->and($schedules['nvl:mail-notifications:recover-scheduled']['required'] ?? null)
         ->toBeTrue();
 });
+
+it('advertises tenancy adoption diagnostics and opt-in schema through suite inspection', function (): void {
+    config()->set('nvl-suite.modules', suiteDiagnosticModules('tenancy'));
+    $report = app(SuiteConfigurationInspector::class)->inspect();
+    expect($report['modules']['tenancy']['doctor'])->toBe('nvl:tenancy:doctor')
+        ->and($report['modules']['tenancy']['migration']['config'])->toBe('tenancy.migrations.enabled')
+        ->and($report['modules']['tenancy']['migration']['enabled'])->toBeFalse();
+    $output = new BufferedOutput;
+    expect(app(Kernel::class)->call('nvl:suite:doctor', ['--strict' => true, '--format' => 'json'], $output))->toBe(0);
+    $diagnostics = json_decode($output->fetch(), true, flags: JSON_THROW_ON_ERROR);
+    expect($diagnostics['doctors']['tenancy']['healthy'])->toBeTrue();
+});

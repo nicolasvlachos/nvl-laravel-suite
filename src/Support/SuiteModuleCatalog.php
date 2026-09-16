@@ -201,9 +201,9 @@ final readonly class SuiteModuleCatalog
         'tenancy' => [
             'provider' => TenancyServiceProvider::class,
             'dependencies' => ['data', 'support'],
-            'stateful' => false,
-            'migration' => ['mode' => 'none', 'config' => null],
-            'doctor' => null,
+            'stateful' => true,
+            'migration' => ['mode' => 'configurable', 'config' => 'tenancy.migrations.enabled'],
+            'doctor' => 'nvl:tenancy:doctor',
             'contracts' => [TenantContext::class],
             'aliases' => [],
             'queues' => [],

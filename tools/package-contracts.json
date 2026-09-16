@@ -33328,7 +33328,10 @@
                 "tenancy-migrations",
                 "tenancy-skills"
             ],
-            "commands": [],
+            "commands": {
+                "Nvl\\Tenancy\\Console\\Commands\\TenancyAdoptCommand": "nvl:tenancy:adopt {phase : prepare|backfill|verify|activate} {--packages=} {--mapping=} {--run=} {--limit=500} {--actor-type=} {--actor-id=} {--purpose=}",
+                "Nvl\\Tenancy\\Console\\Commands\\TenancyDoctorCommand": "nvl:tenancy:doctor {--json : Output JSON} {--strict : Treat warnings as failures} {--format=text : Output format: text or json}"
+            },
             "symbols": {
                 "Nvl\\Tenancy\\Actions\\ChangeTenantStatusAction": [
                     "final readonly class Nvl\\Tenancy\\Actions\\ChangeTenantStatusAction",
@@ -33343,9 +33346,33 @@
                     "public function execute(string $name, Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): Nvl\\Tenancy\\ValueObjects\\TenantDescriptor",
                     "@throws TenantConfigurationInvalid When the name or effective directory is incompatible"
                 ],
+                "Nvl\\Tenancy\\Console\\Commands\\TenancyAdoptCommand": [
+                    "final class Nvl\\Tenancy\\Console\\Commands\\TenancyAdoptCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:tenancy:adopt {phase : prepare|backfill|verify|activate} {--packages=} {--mapping=} {--run=} {--limit=500} {--actor-type=} {--actor-id=} {--purpose=}\"",
+                    "protected mixed $description=\"Coordinate explicit resumable resource adoption during maintenance\"",
+                    "public function handle(Nvl\\Tenancy\\Services\\TenantAdoptionCoordinator $coordinator): int"
+                ],
+                "Nvl\\Tenancy\\Console\\Commands\\TenancyDoctorCommand": [
+                    "final class Nvl\\Tenancy\\Console\\Commands\\TenancyDoctorCommand extends Illuminate\\Console\\Command",
+                    "protected mixed $signature=\"nvl:tenancy:doctor {--json : Output JSON} {--strict : Treat warnings as failures} {--format=text : Output format: text or json}\"",
+                    "protected mixed $description=\"Inspect tenant ownership configuration and adoption readiness\"",
+                    "public function handle(Illuminate\\Contracts\\Config\\Repository $configuration, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Nvl\\Tenancy\\Services\\TenantResourceRegistry $resources, Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration $ownership, Nvl\\Tenancy\\Services\\TenantInstallationState $installation): int"
+                ],
                 "Nvl\\Tenancy\\Contracts\\PlatformAccess": [
                     "interface Nvl\\Tenancy\\Contracts\\PlatformAccess",
                     "public abstract function authorize(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void"
+                ],
+                "Nvl\\Tenancy\\Contracts\\TenantAdoptionAdapter": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantAdoptionAdapter",
+                    "public abstract function resources(): array",
+                    "public abstract function prepare(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void",
+                    "public abstract function backfill(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, ?string $cursor, int $limit): Nvl\\Tenancy\\ValueObjects\\TenantBackfillResult",
+                    "public abstract function verify(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): Nvl\\Tenancy\\ValueObjects\\TenantVerification",
+                    "public abstract function activate(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void"
+                ],
+                "Nvl\\Tenancy\\Contracts\\TenantAdoptionMetadataValidator": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantAdoptionMetadataValidator",
+                    "public abstract function validateAssignment(Nvl\\Tenancy\\ValueObjects\\TenantAssignment $assignment): void"
                 ],
                 "Nvl\\Tenancy\\Contracts\\TenantContext": [
                     "interface Nvl\\Tenancy\\Contracts\\TenantContext",
@@ -33548,6 +33575,68 @@
                     "public function validate(): void",
                     "@throws TenantConfigurationInvalid When any configured value is unsupported"
                 ],
+                "Nvl\\Tenancy\\Services\\TenantAdoptionCoordinator": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantAdoptionCoordinator",
+                    "public function __construct(Illuminate\\Container\\Container $container, Illuminate\\Contracts\\Config\\Repository $configuration, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Nvl\\Tenancy\\Services\\TenantAdoptionGraph $graphs, Nvl\\Tenancy\\Services\\TenantAdoptionStore $store, Nvl\\Tenancy\\Services\\TenantAdoptionLock $lock, Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration $ownership, Nvl\\Tenancy\\Services\\TenantInstallationState $installation, Nvl\\Tenancy\\Services\\TenantOperationRecorder $audit, Nvl\\Tenancy\\Services\\TenantAdoptionScope $scope): mixed",
+                    "public function prepare(array $packages, iterable $mappings, Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan",
+                    "@param list<string> $packages",
+                    "@param iterable<TenantAssignment> $mappings",
+                    "public function backfill(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, int $limit, Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): bool",
+                    "public function verify(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): Nvl\\Tenancy\\ValueObjects\\TenantVerification",
+                    "public function activate(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void",
+                    "public function resume(string $runId): Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantAdoptionGraph": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantAdoptionGraph",
+                    "public function __construct(Illuminate\\Container\\Container $container, Nvl\\Tenancy\\Services\\TenantAdoptionRegistry $adoptions, Nvl\\Tenancy\\Services\\TenantResourceRegistry $resources, Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration $ownership, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function resolve(array $packages): array",
+                    "@param list<string> $packages",
+                    "@return Graph"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantAdoptionLock": [
+                    "final class Nvl\\Tenancy\\Services\\TenantAdoptionLock",
+                    "public function during(Illuminate\\Database\\Connection $connection, Closure $callback): mixed",
+                    "@template T",
+                    "@param Closure(): T $callback",
+                    "@return T"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantAdoptionMappings": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantAdoptionMappings",
+                    "public function __construct(Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function tenantFor(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, string $resource, string $recordId): Nvl\\Tenancy\\ValueObjects\\TenantId",
+                    "public function assignments(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, string $resource, ?string $afterRecordId, int $limit): array",
+                    "@return list<TenantAssignment>",
+                    "public function metadataFor(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, string $resource, string $recordId): array"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantAdoptionRegistry": [
+                    "final class Nvl\\Tenancy\\Services\\TenantAdoptionRegistry",
+                    "public function register(string $package, string $adapter): void",
+                    "public function all(): array",
+                    "@return array<string, class-string<TenantAdoptionAdapter>>"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantAdoptionScope": [
+                    "final class Nvl\\Tenancy\\Services\\TenantAdoptionScope",
+                    "public function __construct(Illuminate\\Container\\Container $container, Nvl\\Tenancy\\Services\\TenantSynchronousCallbacks $synchronous): mixed",
+                    "public function active(): bool",
+                    "public function assertQueueAllowed(): void",
+                    "public function during(string $run, string $adapter, string $phase, Closure $callback): mixed",
+                    "@template T",
+                    "@param class-string<TenantAdoptionAdapter> $adapter",
+                    "@param Closure(): T $callback",
+                    "@return T"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantAdoptionStore": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantAdoptionStore",
+                    "public function __construct(Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Container\\Container $container): mixed",
+                    "public function load(string $id): array",
+                    "public function ingest(string $runId, iterable $assignments, array $graph): string",
+                    "@param iterable<TenantAssignment> $assignments",
+                    "@param Graph $graph",
+                    "public function mappingHash(string $runId, array $graph): string",
+                    "@param Graph $graph",
+                    "public function checkpoint(string $id, string $status, array $checkpoints): void",
+                    "@param Checkpoints $checkpoints"
+                ],
                 "Nvl\\Tenancy\\Services\\TenantBoundary": [
                     "final readonly class Nvl\\Tenancy\\Services\\TenantBoundary",
                     "public function __construct(Illuminate\\Container\\Container $container): mixed",
@@ -33640,12 +33729,41 @@
                     "@param Closure(): T $callback",
                     "@return T"
                 ],
+                "Nvl\\Tenancy\\Services\\TenantSynchronousCallbacks": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantSynchronousCallbacks",
+                    "public function run(Illuminate\\Contracts\\Bus\\Dispatcher $dispatcher, Closure $callback): mixed",
+                    "@template T",
+                    "@param Closure(): T $callback",
+                    "@return T"
+                ],
                 "Nvl\\Tenancy\\ValueObjects\\PlatformOperation": [
                     "final readonly class Nvl\\Tenancy\\ValueObjects\\PlatformOperation",
                     "public readonly string $purpose",
                     "public readonly string $actorType",
                     "public readonly string $actorId",
                     "public function __construct(string $purpose, string $actorType, string $actorId): mixed"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan",
+                    "public readonly string $id",
+                    "public readonly string $connection",
+                    "public readonly string $mappingHash",
+                    "public readonly string $configurationHash",
+                    "public function __construct(string $id, string $connection, string $mappingHash, string $configurationHash): mixed"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantAssignment": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantAssignment",
+                    "public readonly string $resource",
+                    "public readonly string $recordId",
+                    "public readonly Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId",
+                    "public readonly array $metadata",
+                    "public function __construct(string $resource, string $recordId, Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId, array $metadata=[]): mixed"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantBackfillResult": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantBackfillResult",
+                    "public readonly ?string $nextCursor",
+                    "public readonly int $processed",
+                    "public function __construct(?string $nextCursor, int $processed): mixed"
                 ],
                 "Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot": [
                     "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot",
@@ -33684,6 +33802,12 @@
                     "public readonly string $site",
                     "public readonly string $canonicalOrigin",
                     "public function __construct(Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId, string $site, string $canonicalOrigin): mixed"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantVerification": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantVerification",
+                    "public readonly array $errors",
+                    "public function __construct(array $errors): mixed",
+                    "public function passed(): bool"
                 ]
             },
             "configuration": {

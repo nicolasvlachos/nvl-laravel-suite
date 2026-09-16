@@ -400,6 +400,12 @@ interface TenantAdoptionAdapter
     public function activate(TenantAdoptionPlan $plan): void;
 }
 
+// Contracts/TenantAdoptionMetadataValidator.php (optional, additive F5 ruling)
+interface TenantAdoptionMetadataValidator
+{
+    public function validateAssignment(TenantAssignment $assignment): void;
+}
+
 // Services/TenantAdoptionRegistry.php
 final class TenantAdoptionRegistry
 {
