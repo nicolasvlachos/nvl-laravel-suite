@@ -30159,12 +30159,34 @@
                 ],
                 "Nvl\\Settings\\Services\\ConfigOverrideApplier": [
                     "final readonly class Nvl\\Settings\\Services\\ConfigOverrideApplier",
-                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Settings\\Services\\SettingCache $cache): mixed",
-                    "public function apply(): void"
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Settings\\Services\\PlatformSettingsReader $settings, Nvl\\Settings\\Services\\PlatformConfigWriter $writer): mixed",
+                    "public function apply(): void",
+                    "@throws TenantBoundaryViolation When invoked from tenant or unresolved runtime context"
                 ],
                 "Nvl\\Settings\\Services\\ConfiguredSettingsAuthorization": [
                     "final class Nvl\\Settings\\Services\\ConfiguredSettingsAuthorization implements Nvl\\Settings\\Contracts\\SettingsAuthorization",
                     "public function authorize(Nvl\\Settings\\Enums\\SettingAbility $ability, ?string $key=null): void"
+                ],
+                "Nvl\\Settings\\Services\\PlatformConfigWriter": [
+                    "final readonly class Nvl\\Settings\\Services\\PlatformConfigWriter",
+                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions): mixed",
+                    "public function apply(Illuminate\\Support\\Collection $records): void",
+                    "@param Collection<int, Setting> $records"
+                ],
+                "Nvl\\Settings\\Services\\PlatformSettingsBootstrap": [
+                    "final readonly class Nvl\\Settings\\Services\\PlatformSettingsBootstrap",
+                    "public function __construct(Illuminate\\Contracts\\Foundation\\Application $app, Nvl\\Settings\\Services\\PlatformSettingsReader $settings, Nvl\\Settings\\Services\\PlatformConfigWriter $writer): mixed",
+                    "public function apply(): void",
+                    "@throws TenantBoundaryViolation When invoked after application bootstrap"
+                ],
+                "Nvl\\Settings\\Services\\PlatformSettingsReader": [
+                    "final readonly class Nvl\\Settings\\Services\\PlatformSettingsReader",
+                    "public function __construct(Nvl\\Settings\\Support\\DefinitionRepository $definitions, Nvl\\Tenancy\\Services\\TenantInstallationState $installation): mixed",
+                    "public function available(): bool",
+                    "@throws TenantSchemaNotReady When persisted adoption or partial ownership schema exists",
+                    "public function records(): Illuminate\\Support\\Collection",
+                    "@return Collection<int, Setting>",
+                    "@throws TenantSchemaNotReady When persisted adoption or partial ownership schema exists"
                 ],
                 "Nvl\\Settings\\Services\\SettingCache": [
                     "final readonly class Nvl\\Settings\\Services\\SettingCache",
@@ -33689,6 +33711,8 @@
                     "final class Nvl\\Tenancy\\Services\\TenantInstallationState",
                     "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration, Nvl\\Tenancy\\Services\\TenantResourceRegistry $registry, Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration $ownership, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
                     "public function assertUsable(string $resource): void",
+                    "public function assertUnadopted(Illuminate\\Database\\Connection $connection, ?string $resource=null): void",
+                    "@throws TenantSchemaNotReady When any marker, or the requested marker, exists",
                     "public function invalidate(): void"
                 ],
                 "Nvl\\Tenancy\\Services\\TenantMaintenanceLease": [

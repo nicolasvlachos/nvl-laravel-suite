@@ -58,7 +58,7 @@ return [
         'pages' => ['content', 'data', 'filterable', 'metafields', 'seo', 'support', 'translatable'],
         'primitives' => ['data', 'support'],
         'seo' => ['data', 'support', 'translatable'],
-        'settings' => ['data', 'support'],
+        'settings' => ['data', 'support', 'tenancy'],
         'support' => [],
         'taxonomy' => ['data', 'support', 'translatable'],
         'templates' => ['content', 'data', 'filterable', 'media', 'support', 'translatable'],
