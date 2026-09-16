@@ -238,7 +238,7 @@ final readonly class SuiteModuleCatalog
         ],
         'activity' => [
             'provider' => ActivityServiceProvider::class,
-            'dependencies' => ['data', 'support'],
+            'dependencies' => ['data', 'support', 'tenancy'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'activity.migrations.enabled'],
             'doctor' => 'nvl:activity:doctor',

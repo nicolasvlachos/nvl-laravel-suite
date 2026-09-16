@@ -131,7 +131,7 @@ abstract class TenancyTestCase extends Orchestra
         TenantScenario::bind($app);
     }
 
-    protected function defineDatabaseMigrations(): void
+    protected function defineDatabaseMigrationsAfterDatabaseRefreshed(): void
     {
         $provider = new ReflectionClass(TenancyServiceProvider::class);
         $this->loadMigrationsFrom(dirname($provider->getFileName()).'/../../database/migrations/tenancy');

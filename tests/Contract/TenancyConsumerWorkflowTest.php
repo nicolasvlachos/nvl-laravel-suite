@@ -62,3 +62,19 @@ it('boots cached Tenancy archives with only the declared NVL dependency profile'
         expect($result['relation_ids'])->toBe($result['expected_relation_ids']);
     }
 })->with(['minimal' => false, 'explicit Filterable' => true]);
+
+it('records tenant-partitioned Activity facts from cached standalone archives without Auth', function (): void {
+    $result = TenancyArchiveConsumer::runActivity();
+
+    expect($result['packages'])->toBe(['nvl/activity', 'nvl/data', 'nvl/support', 'nvl/tenancy'])
+        ->and($result['source_paths'])->each->toBeTrue()
+        ->and($result['loader_local'])->toBeTrue()
+        ->and($result['auth_absent'])->toBeTrue()
+        ->and($result['suite_absent'])->toBeTrue()
+        ->and($result['cached'])->toBeTrue()
+        ->and($result['activity_provider_loaded'])->toBeTrue()
+        ->and($result['tenancy_provider_loaded'])->toBeTrue()
+        ->and($result['activity_ids'])->toBe($result['expected_activity_ids'])
+        ->and($result['ownership_keys'])->toBe(['tenant:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'])
+        ->and($result['ownership_schema'])->toBeTrue();
+});

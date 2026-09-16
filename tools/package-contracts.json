@@ -47,7 +47,7 @@
                 ],
                 "Nvl\\Activity\\Actions\\Activity\\ListActivityCauserSuggestionsAction": [
                     "final class Nvl\\Activity\\Actions\\Activity\\ListActivityCauserSuggestionsAction",
-                    "public function __construct(Nvl\\Activity\\Support\\ModelKeyIdentifierValidator $modelKeyIdentifierValidator=Nvl\\Activity\\Support\\ModelKeyIdentifierValidator): mixed",
+                    "public function __construct(Nvl\\Activity\\Support\\ModelKeyIdentifierValidator $modelKeyIdentifierValidator=Nvl\\Activity\\Support\\ModelKeyIdentifierValidator, ?Nvl\\Activity\\Tenancy\\ActivityOwnershipGuard $ownership=null): mixed",
                     "public function execute(?string $search=null, int $limit=10): Spatie\\LaravelData\\DataCollection",
                     "@return DataCollection<int, ActivityCauserSuggestion>"
                 ],
@@ -1143,6 +1143,8 @@
                 ],
                 "Nvl\\Activity\\Models\\ActivityLog": [
                     "final class Nvl\\Activity\\Models\\ActivityLog extends Spatie\\Activitylog\\Models\\Activity",
+                    "@property string|null $tenant_id Immutable tenant owner after adoption",
+                    "@property string $ownership_key Canonical platform or tenant partition after adoption",
                     "@property string $id UUID primary key",
                     "@property string|null $log_name Activity log namespace",
                     "@property string $description Human-readable activity description",
@@ -1160,6 +1162,7 @@
                     "public const string DEFAULT_TABLE=\"activity_log\"",
                     "protected mixed $keyType=\"string\"",
                     "public mixed $incrementing=false",
+                    "protected static function booted(): void",
                     "protected function attributeChanges(): Illuminate\\Database\\Eloquent\\Casts\\Attribute",
                     "@return Attribute<Collection<int|string, mixed>|null, never>",
                     "public function getTable(): string",
@@ -1264,6 +1267,7 @@
                 ],
                 "Nvl\\Activity\\Services\\ActivityReadService": [
                     "final class Nvl\\Activity\\Services\\ActivityReadService",
+                    "public function __construct(Nvl\\Activity\\Tenancy\\ActivityOwnershipGuard $ownership): mixed",
                     "public function latest(int $limit=12): Illuminate\\Database\\Eloquent\\Collection",
                     "@return EloquentCollection<int, ActivityLog>",
                     "public function paginateIndex(Nvl\\Activity\\Data\\ActivityIndexFilter $filters): Illuminate\\Pagination\\LengthAwarePaginator",
@@ -1286,6 +1290,7 @@
                 ],
                 "Nvl\\Activity\\Services\\ActivityRecorder": [
                     "final class Nvl\\Activity\\Services\\ActivityRecorder",
+                    "public function __construct(Nvl\\Activity\\Tenancy\\ActivityOwnershipGuard $ownership): mixed",
                     "public function record(?Illuminate\\Database\\Eloquent\\Model $subject, BackedEnum|string $event, string $description=\"\", array $context=[], ?array $attributes=null, ?array $old=null, Illuminate\\Database\\Eloquent\\Model|string|int|null $actor=null, ?string $logName=null, BackedEnum|string|null $source=null, BackedEnum|string|null $visibility=null, BackedEnum|string|null $importance=null, bool $resolveChanges=true, ?string $batchUuid=null): ?Spatie\\Activitylog\\Contracts\\Activity",
                     "@param string|BackedEnum $event Canonical event key or backed enum",
                     "@param string $description Optional machine description; defaults to the event key",
@@ -1306,13 +1311,13 @@
                 ],
                 "Nvl\\Activity\\Services\\ActivityRelationLoader": [
                     "final class Nvl\\Activity\\Services\\ActivityRelationLoader",
-                    "public function __construct(Nvl\\Activity\\Support\\ModelKeyIdentifierValidator $modelKeyIdentifierValidator): mixed",
+                    "public function __construct(Nvl\\Activity\\Support\\ModelKeyIdentifierValidator $modelKeyIdentifierValidator, Nvl\\Activity\\Tenancy\\ActivityOwnershipGuard $ownership): mixed",
                     "public function load(Illuminate\\Database\\Eloquent\\Collection $activities): void",
                     "@param EloquentCollection<int, ActivityLog> $activities"
                 ],
                 "Nvl\\Activity\\Services\\ActivitySubjectTimelineResolver": [
                     "final class Nvl\\Activity\\Services\\ActivitySubjectTimelineResolver",
-                    "public function __construct(Nvl\\Activity\\Support\\ModelKeyIdentifierValidator $modelKeyIdentifierValidator): mixed",
+                    "public function __construct(Nvl\\Activity\\Support\\ModelKeyIdentifierValidator $modelKeyIdentifierValidator, Nvl\\Activity\\Tenancy\\ActivityOwnershipGuard $ownership): mixed",
                     "public function resolve(string $subjectType, string $subjectId): Illuminate\\Database\\Eloquent\\Model&Nvl\\Activity\\Contracts\\MergesActivity",
                     "@param string $subjectType Stored morph type or model class name",
                     "@param string $subjectId Subject primary key value",
@@ -1475,6 +1480,8 @@
                 "Nvl\\Activity\\Support\\ModelActivityTimelineResolver": [
                     "final class Nvl\\Activity\\Support\\ModelActivityTimelineResolver",
                     "public static function use(Nvl\\Activity\\Services\\ModelActivityTimelineService $service): void",
+                    "public static function resolveUsing(Closure $resolver): void",
+                    "@param Closure(): ModelActivityTimelineService $resolver",
                     "public static function forSubject(Illuminate\\Database\\Eloquent\\Model $subject, ?int $limit=null): array",
                     "@param int|null $limit Optional maximum number of newest activity rows to return",
                     "@return array<int, ActivityItem>"
@@ -1503,12 +1510,46 @@
                     "@param string $key Change key name",
                     "@return bool Whether the key is noisy"
                 ],
+                "Nvl\\Activity\\Tenancy\\ActivityAdoptionAdapter": [
+                    "final readonly class Nvl\\Activity\\Tenancy\\ActivityAdoptionAdapter implements Nvl\\Tenancy\\Contracts\\TenantAdoptionAdapter",
+                    "public function __construct(Illuminate\\Database\\Migrations\\Migrator $migrator): mixed",
+                    "public function resources(): array",
+                    "public function prepare(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void",
+                    "public function backfill(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, ?string $cursor, int $limit): Nvl\\Tenancy\\ValueObjects\\TenantBackfillResult",
+                    "public function verify(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): Nvl\\Tenancy\\ValueObjects\\TenantVerification",
+                    "public function activate(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void"
+                ],
+                "Nvl\\Activity\\Tenancy\\ActivityOwnershipGuard": [
+                    "final readonly class Nvl\\Activity\\Tenancy\\ActivityOwnershipGuard",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Tenancy\\Services\\TenantResourceRegistry $resources, Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function enabled(): bool",
+                    "public function attributes(): array",
+                    "public function stamp(Nvl\\Activity\\Models\\ActivityLog $activity): void",
+                    "public function updating(Nvl\\Activity\\Models\\ActivityLog $activity): void",
+                    "public function canonicalActivities(Illuminate\\Database\\Eloquent\\Collection $activities): Illuminate\\Database\\Eloquent\\Collection",
+                    "@param EloquentCollection<int, ActivityLog> $activities",
+                    "@return EloquentCollection<int, ActivityLog>",
+                    "public function captureDeletingSubject(Illuminate\\Database\\Eloquent\\Model $subject): void",
+                    "public function assertSubject(Illuminate\\Database\\Eloquent\\Model $subject): void",
+                    "public function registered(Illuminate\\Database\\Eloquent\\Model $model): bool",
+                    "public function relationModel(string $storedType, bool $causer): ?Illuminate\\Database\\Eloquent\\Model",
+                    "public function relatedQuery(Illuminate\\Database\\Eloquent\\Builder $query): Illuminate\\Database\\Eloquent\\Builder",
+                    "@template T of Model",
+                    "@param Builder<T> $query",
+                    "@return Builder<T>",
+                    "public function causerColumns(Illuminate\\Database\\Eloquent\\Model $model): array"
+                ],
+                "Nvl\\Activity\\Tenancy\\ActivityResourceRegistrar": [
+                    "final readonly class Nvl\\Activity\\Tenancy\\ActivityResourceRegistrar",
+                    "public function register(Nvl\\Tenancy\\Services\\TenantResourceRegistry $resources, Nvl\\Tenancy\\Services\\TenantAdoptionRegistry $adapters): void"
+                ],
                 "Nvl\\Activity\\Traits\\HasModelActivity": [
                     "trait Nvl\\Activity\\Traits\\HasModelActivity",
                     "@method \\Illuminate\\Database\\Eloquent\\Relations\\MorphMany<\\Nvl\\Activity\\Models\\ActivityLog, $this> activitiesAsSubject()",
                     "protected array $oldAttributes=[]",
                     "protected ?Spatie\\Activitylog\\Support\\LogOptions $activitylogOptions",
                     "public bool $enableLoggingModelsEvents=true",
+                    "protected static function bootHasModelActivity(): void",
                     "public function getActivitylogOptions(): Spatie\\Activitylog\\Support\\LogOptions",
                     "public function mergedActivities(?int $limit=null): array",
                     "@param int|null $limit Optional maximum number of newest activity rows to return",
@@ -1556,7 +1597,8 @@
             },
             "migrations": {
                 "database/migrations/2026_07_25_090858_create_activity_log_table.php": "4675fdcf393f36c00c0dbbecbc5bd411c324ecfd3664810cc180cd4f4f1e3b54",
-                "database/migrations/2026_08_10_123558_add_activitylog_v5_attribute_changes.php": "9fa3e052500ae7a13022d58608f7886eb088e3fdd27910b9d340bcdab5085b76"
+                "database/migrations/2026_08_10_123558_add_activitylog_v5_attribute_changes.php": "9fa3e052500ae7a13022d58608f7886eb088e3fdd27910b9d340bcdab5085b76",
+                "database/tenancy-migrations/2026_09_16_160001_add_activity_ownership.php": "5cea10b0ee29f3c66b81ae7292de59f1f53e35eacaaea3895b6f0d643f411a64"
             }
         },
         "auth": {

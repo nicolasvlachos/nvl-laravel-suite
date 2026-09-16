@@ -43,7 +43,7 @@ return [
         'forms',
     ],
     'internal_dependencies' => [
-        'activity' => ['data', 'support'],
+        'activity' => ['data', 'support', 'tenancy'],
         'auth' => ['data', 'support'],
         'comments' => ['data', 'filterable', 'media', 'support'],
         'content' => ['data', 'filterable', 'media', 'support', 'translatable'],
@@ -134,6 +134,7 @@ return [
                     'src',
                     'database/factories',
                     'database/seeders',
+                    'database/tenancy-migrations',
                     'tests/Stubs/TestActivitySubjectWithHasModelActivity.php',
                     'tests/Stubs/TestActivityTimelineHost.php',
                 ],
@@ -141,6 +142,7 @@ return [
                     'tests/TestCase.php',
                     'tests/Feature/ActivitySafetyTest.php',
                     'tests/Feature/ActivityConsoleCommandCoverageTest.php',
+                    'tests/Tenancy/ActivityTenantTest.php',
                 ],
             ],
             'auth' => [

@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Nvl\Suite\Quality;
 
 use Closure;
+use FilesystemIterator;
 use InvalidArgumentException;
 use JsonException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
+use SplFileInfo;
 
 /**
  * Runs package-scoped formatting, analysis, and tests from the suite root.
@@ -426,17 +430,30 @@ final readonly class PackageQualityRunner
             throw new RuntimeException("Package [nvl/{$package}] has invalid migration contracts.");
         }
 
-        $migrationDirectory = $packageDirectory.'/database/migrations';
+        $migrations = [];
 
-        if (! is_dir($migrationDirectory)) {
-            return [];
+        foreach (['database/migrations', 'database/tenancy-migrations', 'database/tenancy'] as $directory) {
+            $migrationDirectory = $packageDirectory.'/'.$directory;
+
+            if (! is_dir($migrationDirectory)) {
+                continue;
+            }
+
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($migrationDirectory, FilesystemIterator::SKIP_DOTS),
+            );
+
+            foreach ($iterator as $file) {
+                if ($file instanceof SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
+                    $migrations[] = $file->getPathname();
+                }
+            }
         }
 
-        $migrations = glob($migrationDirectory.'/*.php') ?: [];
         $unreleased = array_filter(
             $migrations,
-            static fn (string $path): bool => ! array_key_exists(
-                'database/migrations/'.basename($path),
+            fn (string $path): bool => ! array_key_exists(
+                substr($path, strlen($packageDirectory) + 1),
                 $released,
             ),
         );

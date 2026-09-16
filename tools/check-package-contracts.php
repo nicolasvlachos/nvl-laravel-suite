@@ -432,6 +432,24 @@ function contractDirectoryHashes(string $packagePath, string $directory): array
 }
 
 /**
+ * Hash every selected package schema directory by package-relative path.
+ *
+ * @return array<string, string>
+ */
+function contractMigrationHashes(string $packagePath): array
+{
+    $hashes = [];
+
+    foreach (['database/migrations', 'database/tenancy-migrations', 'database/tenancy'] as $directory) {
+        $hashes = [...$hashes, ...contractDirectoryHashes($packagePath, $directory)];
+    }
+
+    ksort($hashes);
+
+    return $hashes;
+}
+
+/**
  * Resolve one Composer PSR-4 class name from a package file.
  */
 function contractClassName(string $prefix, string $basePath, string $file): string
@@ -689,7 +707,7 @@ function contractPackage(string $root, string $package): array
         'symbols' => $symbols,
         'configuration' => contractDirectoryHashes($packagePath, 'config'),
         'routes' => contractDirectoryHashes($packagePath, 'routes'),
-        'migrations' => contractDirectoryHashes($packagePath, 'database/migrations'),
+        'migrations' => contractMigrationHashes($packagePath),
     ];
 }
 

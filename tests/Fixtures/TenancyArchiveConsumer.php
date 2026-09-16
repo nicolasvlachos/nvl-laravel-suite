@@ -18,10 +18,32 @@ final class TenancyArchiveConsumer
      */
     public static function run(bool $filterable): array
     {
+        return self::runMode($filterable ? 'filterable' : 'minimal');
+    }
+
+    /**
+     * Run an independent Activity consumer without the optional Auth package.
+     *
+     * @return array<string, mixed>
+     */
+    public static function runActivity(): array
+    {
+        return self::runMode('activity');
+    }
+
+    /**
+     * Build and run one selected standalone archive profile.
+     *
+     * @return array<string, mixed>
+     */
+    private static function runMode(string $mode): array
+    {
         $root = dirname(__DIR__, 2);
         $workspace = sys_get_temp_dir().'/nvl-tenancy-consumer-'.bin2hex(random_bytes(8));
         $filesystem = new Filesystem;
-        $packages = ['support', 'data', 'tenancy', ...($filterable ? ['filterable'] : [])];
+        $filterable = $mode === 'filterable';
+        $activity = $mode === 'activity';
+        $packages = ['support', 'data', 'tenancy', ...($filterable ? ['filterable'] : []), ...($activity ? ['activity'] : [])];
 
         try {
             $filesystem->mkdir([$workspace.'/app', $workspace.'/archives', $workspace.'/bootstrap/cache', $workspace.'/config', $workspace.'/storage/framework/views']);
@@ -58,7 +80,12 @@ final class TenancyArchiveConsumer
             $repositories[] = ['packagist.org' => false];
             $manifest = [
                 'name' => 'consumer/tenancy-proof',
-                'require' => ['php' => '^8.4', 'nvl/tenancy' => '2.0.0', ...($filterable ? ['nvl/filterable' => '2.0.0'] : [])],
+                'require' => [
+                    'php' => '^8.4',
+                    'nvl/tenancy' => '2.0.0',
+                    ...($filterable ? ['nvl/filterable' => '2.0.0'] : []),
+                    ...($activity ? ['nvl/activity' => '2.0.0'] : []),
+                ],
                 'repositories' => $repositories,
                 'autoload' => ['psr-4' => [
                     'Nvl\\Data\\Tests\\Fixtures\\' => 'fixtures/data/',
@@ -91,7 +118,7 @@ ARTISAN);
             self::command([PHP_BINARY, 'artisan', 'package:discover', '--no-interaction'], $workspace);
             self::command([PHP_BINARY, 'artisan', 'config:cache', '--no-interaction'], $workspace);
 
-            return json_decode(self::command([PHP_BINARY, 'consumer.php', $filterable ? 'filterable' : 'minimal'], $workspace), true, flags: JSON_THROW_ON_ERROR);
+            return json_decode(self::command([PHP_BINARY, 'consumer.php', $mode], $workspace), true, flags: JSON_THROW_ON_ERROR);
         } finally {
             $filesystem->remove($workspace);
         }

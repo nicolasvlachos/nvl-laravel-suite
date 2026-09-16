@@ -1004,20 +1004,30 @@ it('preserves paths containing spaces as individual process arguments', function
     }
 });
 
-it('leaves unreleased migrations in mutable PHPStan analysis', function (): void {
+it('leaves unreleased migrations from every selected schema set in mutable PHPStan analysis', function (): void {
     [$root, $catalog] = createPackageQualityFixture(['alpha']);
-    $migration = $root.'/packages/nvl/alpha/database/migrations/2099_01_01_000000_create_alpha_table.php';
+    $migrations = [
+        $root.'/packages/nvl/alpha/database/migrations/2099_01_01_000000_create_alpha_table.php',
+        $root.'/packages/nvl/alpha/database/migrations/tenancy/2099_01_01_000001_create_tenant_core.php',
+        $root.'/packages/nvl/alpha/database/tenancy-migrations/2099_01_01_000002_add_tenant_ownership.php',
+        $root.'/packages/nvl/alpha/database/tenancy/phase-one/2099_01_01_000003_prepare_domain.php',
+    ];
     $commands = [];
 
     try {
-        (new Filesystem)->dumpFile(
-            $migration,
-            "<?php\n\ndeclare(strict_types=1);\n",
-        );
+        foreach ($migrations as $migration) {
+            (new Filesystem)->dumpFile(
+                $migration,
+                "<?php\n\ndeclare(strict_types=1);\n",
+            );
+        }
         $runner = packageQualityRunner(root: $root, catalog: $catalog, commands: $commands);
 
-        expect($runner->run(['alpha']))->toBe(0)
-            ->and($commands[1]['command'])->toContain($migration);
+        expect($runner->run(['alpha']))->toBe(0);
+
+        foreach ($migrations as $migration) {
+            expect($commands[1]['command'])->toContain($migration);
+        }
     } finally {
         removePackageQualityFixture($root);
     }

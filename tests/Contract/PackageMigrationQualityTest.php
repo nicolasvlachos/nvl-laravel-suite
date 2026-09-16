@@ -118,3 +118,23 @@ it('release-reviews the forward-only Comments document migration without changin
         ->toContain('tests/Feature/CommentRichDocumentLifecycleTest.php')
         ->and($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });
+
+it('locks the selected Activity ownership migration outside the primary migration set', function (): void {
+    $root = dirname(__DIR__, 2);
+    $catalog = require $root.'/tools/package-family.php';
+    $contractPath = $root.'/'.$catalog['quality']['released_migrations_contract'];
+    $contracts = json_decode(
+        file_get_contents($contractPath),
+        true,
+        flags: JSON_THROW_ON_ERROR,
+    );
+    $relativePath = 'database/tenancy-migrations/2026_09_16_160001_add_activity_ownership.php';
+    $migrationPath = $root.'/packages/nvl/activity/'.$relativePath;
+
+    expect($contracts['packages']['activity']['migrations'][$relativePath] ?? null)
+        ->toBe(migrationContractChecksum($migrationPath))
+        ->and($catalog['quality']['packages']['activity']['analysis_paths'] ?? [])
+        ->toContain('database/tenancy-migrations')
+        ->and($catalog['quality']['packages']['activity']['migration_tests'] ?? [])
+        ->toContain('tests/Tenancy/ActivityTenantTest.php');
+});

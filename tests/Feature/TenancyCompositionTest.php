@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
+use Nvl\Activity\Models\ActivityLog;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Pages\Models\Page;
 use Nvl\Settings\Models\Setting;
@@ -103,7 +104,15 @@ it('keeps enabled incomplete composition bootable and unresolved for platform di
     expect(Artisan::call('nvl:tenancy:doctor', ['--json' => true], $output))->toBe(1);
     $report = json_decode($output->fetch(), true, flags: JSON_THROW_ON_ERROR);
     expect($report['configuration']['incompatible_families'])->toContain('settings', 'csv')
-        ->and($report['configuration']['resources'])->toBe([]);
+        ->and($report['configuration']['resources'])->toBe([
+            'activity.events' => [
+                'family' => 'activity',
+                'mode' => 'tenant',
+                'model' => ActivityLog::class,
+                'table' => 'activity_log',
+                'connection' => 'sqlite',
+            ],
+        ]);
 });
 
 it('declares dependency closure through the ownership configuration public entry point', function (): void {

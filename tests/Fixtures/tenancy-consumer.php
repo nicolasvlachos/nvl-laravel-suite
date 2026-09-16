@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 use Composer\Autoload\ClassLoader;
 use Composer\InstalledVersions;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Contracts\Foundation\MaintenanceMode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
+use Nvl\Activity\Models\ActivityLog;
+use Nvl\Activity\Providers\ActivityServiceProvider;
+use Nvl\Activity\Services\ActivityReadService;
+use Nvl\Activity\Services\ActivityRecorder;
+use Nvl\Activity\Support\ActivitySubjectReference;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
 use Nvl\Data\Tests\Fixtures\OwnershipProjectionData;
 use Nvl\Filterable\Data\FilterCriterion;
@@ -20,8 +27,16 @@ use Nvl\Filterable\Services\EloquentFilterApplier;
 use Nvl\Filterable\Tests\Fixtures\PredicateGroup;
 use Nvl\Filterable\Tests\Fixtures\PredicateRecord;
 use Nvl\Filterable\Tests\Fixtures\RelatedPredicateRecord;
+use Nvl\Tenancy\Contracts\PlatformAccess;
 use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Contracts\TenantDirectory;
+use Nvl\Tenancy\Enums\TenantStatus;
 use Nvl\Tenancy\Providers\TenancyServiceProvider;
+use Nvl\Tenancy\Services\TenantAdoptionCoordinator;
+use Nvl\Tenancy\Services\TenantRunner;
+use Nvl\Tenancy\ValueObjects\PlatformOperation;
+use Nvl\Tenancy\ValueObjects\TenantDescriptor;
+use Nvl\Tenancy\ValueObjects\TenantId;
 
 $loader = require __DIR__.'/vendor/autoload.php';
 $app = require __DIR__.'/bootstrap/app.php';
@@ -85,5 +100,103 @@ if (($argv[1] ?? '') === 'filterable') {
     $schema = new FilterSchema([new FilterDefinition('group', 'group.name', handler: static fn (Builder $query, FilterCriterion $criterion): Builder => $query->orWhereHas('group', static fn (Builder $related): Builder => $related->where('name', $criterion->value)))], []);
     $result['relation_ids'] = $applier->apply(RelatedPredicateRecord::query()->where('owner', 'tenant-a'), new FilterSet([new FilterCriterion('group', FilterOperator::Equals, 'shared')]), $schema)->pluck('id')->all();
     $result['expected_relation_ids'] = [$related->id];
+}
+if (($argv[1] ?? '') === 'activity') {
+    $tenantA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    $tenantB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    $app->make(Repository::class)->set([
+        'tenancy.enabled' => true,
+        'tenancy.profile' => 'application',
+        'tenancy.resources' => ['activity' => 'tenant'],
+    ]);
+    $app->instance(TenantDirectory::class, new class($tenantA, $tenantB) implements TenantDirectory
+    {
+        public function __construct(
+            private readonly string $tenantA,
+            private readonly string $tenantB,
+        ) {}
+
+        public function find(TenantId $id): TenantDescriptor
+        {
+            if (! in_array($id->value, [$this->tenantA, $this->tenantB], true)) {
+                throw new RuntimeException('Unknown archive-consumer tenant.');
+            }
+
+            return new TenantDescriptor($id, TenantStatus::Active);
+        }
+    });
+    $app->instance(PlatformAccess::class, new class implements PlatformAccess
+    {
+        public function authorize(PlatformOperation $operation): void {}
+    });
+    $app->instance(MaintenanceMode::class, new class implements MaintenanceMode
+    {
+        private bool $enabled = true;
+
+        public function activate(array $payload): void
+        {
+            $this->enabled = true;
+        }
+
+        public function deactivate(): void
+        {
+            $this->enabled = false;
+        }
+
+        public function active(): bool
+        {
+            return $this->enabled;
+        }
+
+        public function data(): array
+        {
+            return [];
+        }
+    });
+    Artisan::call('migrate', [
+        '--path' => __DIR__.'/vendor/nvl/tenancy/database/migrations/tenancy',
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+    Artisan::call('migrate', [
+        '--path' => __DIR__.'/vendor/nvl/activity/database/migrations',
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+    $coordinator = $app->make(TenantAdoptionCoordinator::class);
+    $operation = new PlatformOperation('archive-consumer-adoption', 'test', 'standalone');
+    $plan = $coordinator->prepare(['activity'], [], $operation);
+    $done = false;
+    for ($batch = 0; $batch < 100 && ! $done; $batch++) {
+        $done = $coordinator->backfill($plan, 100, $operation);
+    }
+    if (! $done || ! $coordinator->verify($plan)->passed()) {
+        throw new RuntimeException('Activity archive adoption did not verify.');
+    }
+    $coordinator->activate($plan, $operation);
+    $runner = $app->make(TenantRunner::class);
+    $subject = new ActivitySubjectReference('archive_subject', 'same-id');
+    $record = static fn (): ActivityLog => app(ActivityRecorder::class)
+        ->recordForSubjectReference($subject, 'updated');
+    $a = $runner->run(new TenantId($tenantA), $record);
+    $b = $runner->run(new TenantId($tenantB), $record);
+    $rows = $runner->run(
+        new TenantId($tenantA),
+        static fn () => app(ActivityReadService::class)
+            ->forSubjectKey('archive_subject', 'same-id'),
+    );
+    $sources[ActivityServiceProvider::class] = str_starts_with(
+        (new ReflectionClass(ActivityServiceProvider::class))->getFileName(),
+        __DIR__.'/vendor/nvl/',
+    );
+    $result['source_paths'] = $sources;
+    $result['activity_provider_loaded'] = $app->providerIsLoaded(ActivityServiceProvider::class);
+    $result['tenancy_provider_loaded'] = $app->providerIsLoaded(TenancyServiceProvider::class);
+    $result['activity_ids'] = $rows->modelKeys();
+    $result['expected_activity_ids'] = [$a->getKey()];
+    $result['foreign_activity_id'] = $b->getKey();
+    $result['ownership_keys'] = $rows->pluck('ownership_key')->unique()->values()->all();
+    $result['ownership_schema'] = Schema::hasColumns('activity_log', ['tenant_id', 'ownership_key'])
+        && Schema::hasIndex('activity_log', 'activity_ownership_created_idx');
 }
 echo json_encode($result, JSON_THROW_ON_ERROR);
