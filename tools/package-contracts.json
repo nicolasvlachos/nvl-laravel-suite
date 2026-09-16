@@ -33402,6 +33402,10 @@
                     "public abstract function types(): array",
                     "@return array<string, class-string<Model>>"
                 ],
+                "Nvl\\Tenancy\\Contracts\\TenantQueuedJob": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantQueuedJob",
+                    "public abstract function tenantJobEnvelope(): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope"
+                ],
                 "Nvl\\Tenancy\\Contracts\\TenantSiteResolver": [
                     "interface Nvl\\Tenancy\\Contracts\\TenantSiteResolver",
                     "public abstract function resolve(Illuminate\\Http\\Request $request): Nvl\\Tenancy\\ValueObjects\\TenantSiteContext"
@@ -33536,6 +33540,22 @@
                     "public function register(): void",
                     "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
+                "Nvl\\Tenancy\\Queue\\TenantCallQueuedHandler": [
+                    "class Nvl\\Tenancy\\Queue\\TenantCallQueuedHandler extends Illuminate\\Queue\\CallQueuedHandler",
+                    "public static function compatible(mixed $handler): bool",
+                    "public function call(Illuminate\\Contracts\\Queue\\Job $job, array $data): void",
+                    "public function failed(array $data, mixed $e, string $uuid, ?Illuminate\\Contracts\\Queue\\Job $job=null): void",
+                    "protected function getCommand(array $data): mixed",
+                    "@param array<string, mixed> $data"
+                ],
+                "Nvl\\Tenancy\\Queue\\TenantDatabaseBatchRepository": [
+                    "class Nvl\\Tenancy\\Queue\\TenantDatabaseBatchRepository extends Illuminate\\Bus\\DatabaseBatchRepository",
+                    "public static function fromNative(Illuminate\\Bus\\DatabaseBatchRepository $repository): self",
+                    "public static function compatible(mixed $repository): bool",
+                    "public function store(Illuminate\\Bus\\PendingBatch $batch): Illuminate\\Bus\\Batch",
+                    "protected function unserialize(mixed $serialized): mixed",
+                    "@param mixed $serialized"
+                ],
                 "Nvl\\Tenancy\\Services\\DenyPlatformAccess": [
                     "final class Nvl\\Tenancy\\Services\\DenyPlatformAccess implements Nvl\\Tenancy\\Contracts\\PlatformAccess",
                     "public function authorize(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void"
@@ -33660,6 +33680,11 @@
                     "public function all(): array",
                     "@return list<class-string<TenantContextParticipant>>"
                 ],
+                "Nvl\\Tenancy\\Services\\TenantGlobalJobRegistry": [
+                    "final class Nvl\\Tenancy\\Services\\TenantGlobalJobRegistry",
+                    "public function register(string $jobClass): void",
+                    "public function allows(string $jobClass): bool"
+                ],
                 "Nvl\\Tenancy\\Services\\TenantInstallationState": [
                     "final class Nvl\\Tenancy\\Services\\TenantInstallationState",
                     "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration, Nvl\\Tenancy\\Services\\TenantResourceRegistry $registry, Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration $ownership, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
@@ -33679,7 +33704,8 @@
                 "Nvl\\Tenancy\\Services\\TenantMaintenanceQueueGuard": [
                     "abstract class Nvl\\Tenancy\\Services\\TenantMaintenanceQueueGuard extends Illuminate\\Queue\\Queue",
                     "public static function register(): void",
-                    "public static function payload(): array",
+                    "public static function payload(?string $connection=null, ?string $queue=null, array $payload=[]): array",
+                    "@param array<string, mixed> $payload",
                     "@return array<string, mixed>"
                 ],
                 "Nvl\\Tenancy\\Services\\TenantMaintenanceRunner": [
@@ -33712,6 +33738,33 @@
                     "public function hash(array $resources): string",
                     "@param list<string> $resources"
                 ],
+                "Nvl\\Tenancy\\Services\\TenantQueueCarrier": [
+                    "final class Nvl\\Tenancy\\Services\\TenantQueueCarrier",
+                    "public function envelope(object $command): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope",
+                    "public function nativeWrapper(string $class): bool"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantQueueCommand": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantQueueCommand",
+                    "public function __construct(Illuminate\\Container\\Container $container): mixed",
+                    "public function validate(array $data, Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope $envelope): void",
+                    "@param array<string, mixed> $data",
+                    "public function validateRestored(mixed $command): void",
+                    "public function batchEnvelope(string $serialized): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantQueueContext": [
+                    "final class Nvl\\Tenancy\\Services\\TenantQueueContext",
+                    "public function __construct(Illuminate\\Container\\Container $container): mixed",
+                    "public function captureBatch(Illuminate\\Bus\\PendingBatch $batch): Illuminate\\Bus\\PendingBatch",
+                    "public function run(Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope $envelope, Closure $operation): mixed",
+                    "@template T",
+                    "@param Closure(): T $operation",
+                    "@return T"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantQueuePayload": [
+                    "final class Nvl\\Tenancy\\Services\\TenantQueuePayload",
+                    "public function encode(Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope $envelope): array",
+                    "public function decode(array $data): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope"
+                ],
                 "Nvl\\Tenancy\\Services\\TenantResourceRegistry": [
                     "final class Nvl\\Tenancy\\Services\\TenantResourceRegistry",
                     "public function registerParentResolver(string $resource, string $resolver): void",
@@ -33737,6 +33790,10 @@
                     "public function platform(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation, Closure $callback): mixed",
                     "@template T",
                     "@param Closure(): T $callback",
+                    "@return T",
+                    "public function withoutTenant(Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot $snapshot, Closure $operation): mixed",
+                    "@template T",
+                    "@param Closure(): T $operation",
                     "@return T"
                 ],
                 "Nvl\\Tenancy\\Services\\TenantSynchronousCallbacks": [
@@ -33792,6 +33849,13 @@
                     "public readonly string $value",
                     "public function __construct(string $value): mixed",
                     "@throws InvalidArgumentException When the identifier is not a UUID"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope",
+                    "public readonly Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot $context",
+                    "public readonly int $version",
+                    "public function __construct(Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot $context, int $version=1): mixed",
+                    "public static function capture(Nvl\\Tenancy\\Contracts\\TenantContext $context): self"
                 ],
                 "Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition": [
                     "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition",

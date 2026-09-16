@@ -487,9 +487,17 @@ final readonly class TenantJobEnvelope
     public static function capture(TenantContext $context): self;
 }
 
+// Contracts/TenantQueuedJob.php — F7 approved additive producer carrier
+interface TenantQueuedJob
+{
+    public function tenantJobEnvelope(): TenantJobEnvelope;
+}
+
 // Services/TenantQueueContext.php
 final class TenantQueueContext
 {
+    /** F7 additive producer boundary; native database batches require one captured owner. */
+    public function captureBatch(\Illuminate\Bus\PendingBatch $batch): \Illuminate\Bus\PendingBatch;
     /** @template T @param Closure(): T $operation @return T */
     public function run(TenantJobEnvelope $envelope, Closure $operation): mixed;
 }
@@ -501,6 +509,26 @@ final class TenantGlobalJobRegistry
     public function register(string $jobClass): void;
 }
 ```
+
+F7 requires enabled tenant commands to implement `TenantQueuedJob` and capture
+`TenantJobEnvelope::capture(TenantContext)` before native scheduling or producer
+lock acquisition. Payload-time ambient fallback is forbidden: native afterResponse
+and sync-afterCommit can serialize in a later scope. This additive explicit producer
+contract preserves the host dispatcher and frozen envelope/run APIs. Disabled legacy
+and explicitly registered scalar global-identity jobs use separate admission paths.
+The handler validates scalar payload metadata, the actual native serialized root,
+carried envelope equality, and supported model identifiers before native execution
+or failure deserialization. Encrypted commands retain native encryption semantics.
+Host models require canonical registered ownership, no serialized relations, and no
+custom collections; package jobs carry scalar IDs. Chains require one captured
+tenant. Custom handlers require explicit adapters. Exact native queued mail,
+notification and listener wrappers extract capture from their mailable, notification
+or event-argument `TenantQueuedJob` carriers; mismatched/uncaptured wrappers fail
+before user deserialization. `captureBatch` binds all jobs/callbacks to one tenant;
+the compatible native database repository validates inert persisted options before
+callback deserialization, including native signed closure payloads. Mixed batches,
+uncaptured batch IDs, incompatible repositories, and later unrelated-scope batch
+publication fail closed. PostgreSQL base64 options retain native representation. No platform or maintenance grant is serializable.
 
 Root/inherited columns use the fixed `tenant_id` name; supported mixed platform
 catalog roots additionally use `ownership_key`. Existing package table and
