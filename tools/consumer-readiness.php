@@ -119,6 +119,12 @@ use Nvl\Templates\Actions\ListTemplatesAction;
 use Nvl\Templates\Actions\RenderTemplateAction;
 use Nvl\Templates\Console\TemplatesDoctorCommand;
 use Nvl\Templates\Definitions\Tables\TemplatesTables;
+use Nvl\Tenancy\Console\Commands\TenancyDoctorCommand;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Services\TenantAdoptionCoordinator;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantInstallationState;
+use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Translatable\Console\Commands\TranslatableDoctorCommand;
 use Nvl\Translatable\Services\TranslationWriter;
 use Nvl\Translatable\Translatable;
@@ -262,6 +268,38 @@ return [
                 'doctor' => null,
                 'adoption' => 'not_applicable',
                 'documentation' => 'packages/nvl/data/UPGRADING.md#upgrading-to-10',
+            ],
+        ],
+        'tenancy' => [
+            'stateful' => true,
+            'application_api' => [
+                'symbols' => [TenantContext::class, TenantRunner::class, TenantBoundary::class, TenantAdoptionCoordinator::class],
+                'direct_model_access' => 'not_applicable',
+                'rationale' => null,
+                'documentation' => 'packages/nvl/tenancy/README.md#registered-resource-ownership',
+            ],
+            'performance' => [
+                ...$pass(['packages/nvl/tenancy/README.md#internal-integration-and-adoption-seams']),
+                'query_tests' => ['packages/nvl/tenancy/tests/Feature/TenantInstallationGuardTest.php', 'packages/nvl/tenancy/tests/Feature/TenantConfigurationTest.php'],
+                'cache' => [
+                    'mode' => 'cached',
+                    'owner' => TenantInstallationState::class,
+                    'dimensions' => ['actual connection object', 'scoped worker generation', 'resource installation markers'],
+                    'ttl' => 'One application or worker scope; tenant lifecycle status remains uncached.',
+                    'invalidation' => ['coordinator schema/marker transitions', 'scope replacement', 'deployment worker restart'],
+                    'isolation' => 'Connection-object identity and resource fingerprints keep persisted ownership distinct.',
+                    'stampede' => 'Process-local scoped probes have no shared cache stampede or distributed mutex.',
+                ],
+            ],
+            'media_lifecycle' => $notApplicable('Tenancy owns no media assets; each resource package owns its integration.'),
+            'locale_fallback' => $notApplicable('Tenancy context and ownership have no localized-content fallback.'),
+            'boundaries' => $notApplicable('Tenancy supplies ownership enforcement but does not persist Content, Metafields or translation data.'),
+            'presets' => $notApplicable('Tenant identities and membership vocabulary remain explicit host policy.'),
+            'operations' => [
+                ...$pass(['packages/nvl/tenancy/README.md#runtime-compatibility-and-readiness', 'packages/nvl/tenancy/README.md#choose-one-migration-owner']),
+                'doctor' => ['symbol' => TenancyDoctorCommand::class, 'command' => 'nvl:tenancy:doctor'],
+                'adoption' => 'command',
+                'documentation' => 'packages/nvl/tenancy/README.md#explicit-resumable-adoption',
             ],
         ],
         'auth' => [

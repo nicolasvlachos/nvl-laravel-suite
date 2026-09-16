@@ -47,6 +47,7 @@ Action or explicit service, not a separate policy class.
 | `support` | Pass | N/A | N/A | N/A | N/A | N/A | N/A |
 | `taxonomy` | Pass | Pass | N/A | Pass | Pass | N/A | Pass |
 | `templates` | Pass | Pass | Pass | Pass | Pass | N/A | Pass |
+| `tenancy` | Pass | Pass | N/A | N/A | N/A | N/A | Pass |
 | `translatable` | Pass | Pass | N/A | Pass | Pass | N/A | Pass |
 | `translations` | Pass | Pass | N/A | N/A | Pass | N/A | Pass |
 
@@ -77,6 +78,7 @@ canonical application boundary and fail the Suite consumer audit in 2.0.
 | `support` | `BusinessException` and `ResponseCode` | N/A: Support exposes no package model. |
 | `taxonomy` | Taxonomy Actions, tree/resolver services, and owner traits | Prohibited in 2.0: direct Term queries and relation aggregates fail the audit; owner-trait relationships remain allowed. |
 | `templates` | Render/list/mutation Actions and renderer/asset contracts | Prohibited in 2.0: consumer Template-model queries fail the audit; use render/list/mutation Actions. |
+| `tenancy` | `TenantContext`, `TenantRunner`, `TenantBoundary`, and `TenantAdoptionCoordinator` | N/A: Tenancy exposes no package model; use authorized context, directory, and adoption APIs. |
 | `translatable` | Typed definitions, traits, query scopes, resolver, and writer | Explicit exception: opted-in domain models may use the documented Translatable scopes and helpers. |
 | `translations` | Scan/import/export/update Actions and services | Prohibited in 2.0: consumer catalog-model queries fail the audit; use package Actions and services. |
 
@@ -258,3 +260,19 @@ focused package tests named in the catalog. The root integration suite proves
 cross-package registry composition, strict Doctor execution, and constant-query
 owner reads. Distribution changes additionally require the archive and clean
 consumer rehearsals described in `docs/releasing.md`.
+
+## Tenancy deployment readiness
+
+Tenancy is inert by default, including its optional migrations. Inspect selected
+and loaded providers separately from `tenancy.enabled`, registered ownership,
+effective connections, and persisted adoption state. Suite configuration is a
+metadata-only view (`schema: not-probed`); Tenancy Doctor explicitly probes
+storage and reports incompatible runtime providers and interrupted adoption.
+
+Enabled tenant entry and activation require real integrations for all loaded
+stateful providers. Boot and Unresolved platform diagnostics remain available;
+they do not authorize tenant reads of legacy Settings or any other package.
+CSV may register a zero-resource adoption adapter. Translatable delegates schema
+and declarations to domain owners; neutral libraries are not resource families.
+Exclude incompatible runtime providers until their integration ships. See the
+[Tenancy configuration and migration ownership guide](../packages/nvl/tenancy/README.md#runtime-compatibility-and-readiness).

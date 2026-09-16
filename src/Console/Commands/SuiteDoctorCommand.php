@@ -49,6 +49,14 @@ final class SuiteDoctorCommand extends Command
         $configuration = $inspector->inspect();
         $checks = [];
         $doctors = [];
+        $checks[] = $this->check(
+            key: 'tenancy.integration',
+            passed: $configuration['tenancy']['compatible'] === true,
+            severity: 'error',
+            message: $configuration['tenancy']['compatible'] === true
+                ? 'Tenancy feature state and runtime provider integration are compatible.'
+                : 'Enabled tenancy has incompatible runtime providers; run nvl:tenancy:doctor.',
+        );
 
         foreach ($configuration['modules'] as $module => $definition) {
             $checks[] = $this->check(

@@ -11,6 +11,7 @@ declare(strict_types=1);
  *     typescript_sources: list<string>,
  *     database_tested: list<string>,
  *     stateful: list<string>,
+ *     optional_migrations: array<string, array{configuration: string, path: string}>,
  *     quality: array{
  *         released_migrations_contract: string,
  *         packages: array<string, array{analysis_paths: list<string>, migration_tests: list<string>}>
@@ -86,6 +87,7 @@ return [
         'translations',
     ],
     'database_tested' => [
+        'tenancy',
         'activity',
         'auth',
         'comments',
@@ -104,6 +106,7 @@ return [
         'translations',
     ],
     'stateful' => [
+        'tenancy',
         'activity',
         'auth',
         'comments',
@@ -118,6 +121,9 @@ return [
         'taxonomy',
         'templates',
         'translations',
+    ],
+    'optional_migrations' => [
+        'tenancy' => ['configuration' => 'tenancy', 'path' => 'database/migrations/tenancy'],
     ],
     'quality' => [
         'released_migrations_contract' => 'tools/package-contracts.json',
@@ -291,8 +297,9 @@ return [
                     'tests/Fixtures',
                 ],
                 'migration_tests' => [
-                    'tests/TenancyTestCase.php',
-                    'tests/Feature/DisabledCompatibilityTest.php',
+                    'tests/TenancySupportedDatabaseTestCase.php',
+                    'tests/Feature/TenantCoreSchemaTest.php',
+                    'tests/Feature/TenantSupportedDatabaseTest.php',
                 ],
             ],
             'taxonomy' => [

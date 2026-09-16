@@ -31,7 +31,7 @@ extension contracts, operational behavior, and verification where applicable.
 | `nvl/seo` | Localized metadata, canonical/social/structured output, robots, and sitemaps | [Documentation](packages/nvl/seo/README.md) |
 | `nvl/settings` | Typed database-backed application-wide settings | [Documentation](packages/nvl/settings/README.md) |
 | `nvl/support` | Transport-neutral business exceptions and stable response codes | [Documentation](packages/nvl/support/README.md) |
-| `nvl/tenancy` | Inert tenant context, deployment configuration, and isolation extension contracts | [Documentation](packages/nvl/tenancy/README.md) |
+| `nvl/tenancy` | Inert tenant context, explicit adoption, and runtime composition diagnostics | [Documentation](packages/nvl/tenancy/README.md) |
 | `nvl/taxonomy` | Hierarchical attachable vocabularies and localized terms | [Documentation](packages/nvl/taxonomy/README.md) |
 | `nvl/templates` | Versioned Content compositions, validated payloads, PDF/HTML rendering, assignments, and queues | [Documentation](packages/nvl/templates/README.md) |
 | `nvl/translatable` | Shared locale validation, request-scoped content locale, fallback, queries, and writes | [Documentation](packages/nvl/translatable/README.md) |
@@ -442,3 +442,13 @@ The suite is released under the [MIT License](LICENSE).
 
 See the project-wide [changelog](CHANGELOG.md), [contributing guide](CONTRIBUTING.md),
 and [security policy](SECURITY.md) for maintenance and disclosure guidance.
+
+### Tenancy activation
+
+Tenancy provider selection does not enable its feature or migrations. Suite
+configuration reports ownership and effective connections separately from schema
+readiness; `nvl:tenancy:doctor --json` checks actual storage. Enabled tenant entry
+and adoption activation reject loaded runtime packages whose real tenancy
+integrations have not shipped. An incomplete composition can still boot for
+Unresolved diagnostics and explicitly admitted platform bootstrap. See
+[Tenancy readiness and migration ownership](packages/nvl/tenancy/README.md#runtime-compatibility-and-readiness).

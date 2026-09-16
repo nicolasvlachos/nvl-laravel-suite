@@ -169,7 +169,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates translatable translations; do
+          for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates tenancy translatable translations; do
             database="nvl_${package//-/_}_test_ci"
             DATABASE_NAME="$database" php -r '
               $database = getenv("DATABASE_NAME");
@@ -254,7 +254,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates translatable translations; do
+          for package in activity auth comments content filterable forms mail-notifications media metafields pages seo settings taxonomy templates tenancy translatable translations; do
             database="nvl_${package//-/_}_test_ci"
             DATABASE_NAME="$database" php -r '
               $database = getenv("DATABASE_NAME");

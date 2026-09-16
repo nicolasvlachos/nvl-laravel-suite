@@ -622,12 +622,14 @@ final readonly class SuitePackageConfigurationInspector
 
     private function kindsAreCompatible(string $default, string $published): bool
     {
-        return $default === $published || $default === 'array' || $published === 'array';
+        return $default === $published
+            || ($default === 'array' && in_array($published, ['list', 'map'], true))
+            || ($published === 'array' && in_array($default, ['list', 'map'], true));
     }
 
     private function fullPath(string $key, string $path): string
     {
-        return $path === '' ? $key : $key.'.'.$path;
+        return mb_strimwidth($path === '' ? $key : $key.'.'.$path, 0, 160, '...');
     }
 
     /**

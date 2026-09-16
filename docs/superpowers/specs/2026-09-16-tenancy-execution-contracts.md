@@ -101,6 +101,29 @@ within the boot/worker generation; activation requires maintenance and worker
 restart. Measure this bounded bootstrap cost separately from query budgets;
 do not promise zero additional schema queries in disabled mode.
 
+### Reviewed F6 readiness split
+
+`TenantOwnershipConfiguration::requireCompatible(string $family, string $dependency): void`
+is the package integration entry point for code-owned dependency rules. Structural
+configuration, unknown families and contradictory parent/dependency modes fail
+after provider registration. `TenantOwnershipConfiguration::assertReady(): void`
+is the metadata-only admission guard for actual tenant execution and activation;
+`incompatibleFamilies(): array` lists loaded runtime packages lacking integration,
+and `inspect(): array` reports configuration without probing schema.
+
+Incomplete loaded stateful integrations remain bootable in Unresolved context so
+Doctor and narrowly admitted platform bootstrap can run. They are readiness errors
+with enabled Tenancy and deny TenantRunner, TenantMaintenanceRunner, TenantBoundary
+(including supported host contexts), and adoption activation. This does not grant
+legacy Settings tenant access. No configuration bypass list is supported.
+
+Known stateful runtime providers require family and adoption registrations. CSV
+requires an adoption-only registration and may expose zero resources. Translatable
+is owner-driven without its own schema/adopter; owning domains supply declarations
+and guards. Support/Data/Filterable/Primitives remain neutral. Composer presence
+without a loaded runtime provider is not activation. Registration compatibility
+and actual prepared/active installation markers remain separate checks.
+
 ## 3. Shared PHP interfaces
 
 Paths below are **planned new files**, not existing APIs. Each named class is

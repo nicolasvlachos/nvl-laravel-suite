@@ -342,7 +342,7 @@ it('limits explicit model query exceptions and built-in presets to reviewed capa
         'templates',
         'translations',
     ])->and($directModelPackages)->toBe(['filterable', 'translatable'])
-        ->and($notApplicablePackages)->toBe(['csv', 'data', 'primitives', 'support'])
+        ->and($notApplicablePackages)->toBe(['csv', 'data', 'primitives', 'support', 'tenancy'])
         ->and($presetPackages)->toBe(['content', 'media']);
 });
 

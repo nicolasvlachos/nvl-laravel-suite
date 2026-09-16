@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Str;
 use Nvl\Suite\Support\SuiteModuleCatalog;
+use Nvl\Tenancy\Services\TenantOwnershipConfiguration;
 use Throwable;
 
 /**
@@ -51,6 +52,7 @@ use Throwable;
  *     profiles: array<string, ProfileDefinition>,
  *     modules: array<string, EffectiveModule>,
  *     morph_aliases: list<string>,
+ *     tenancy: array<string, mixed>,
  *     package_configuration: PackageConfigurationReport
  * }
  */
@@ -106,6 +108,7 @@ final readonly class SuiteConfigurationInspector
         $packageFindings = $this->packageConfiguration?->inspect($effectiveModules) ?? [];
 
         return [
+            'tenancy' => $this->application->make(TenantOwnershipConfiguration::class)->inspect(),
             'selection' => [
                 'source' => $selection->source,
                 'profile' => $selection->profile,

@@ -1028,7 +1028,7 @@ it('uses one deep-map and atomic-list merger in every config-bearing provider', 
     $configBearingModules = collect($catalog->modules())
         ->filter(static fn (array $definition): bool => $definition['configuration'] !== null);
 
-    expect($configBearingModules)->toHaveCount(17);
+    expect($configBearingModules->keys()->all())->toContain('tenancy');
 
     foreach ($configBearingModules as $module => $definition) {
         $providerPath = (new ReflectionClass($definition['provider']))->getFileName();

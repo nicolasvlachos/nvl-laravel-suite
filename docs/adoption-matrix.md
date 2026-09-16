@@ -47,7 +47,7 @@ explicit root enables it through dependency closure.
 |---|---|---|---|---|---|---|---|
 | `support` | None | None | None | None | None | No | N/A |
 | `data` | None | None | None | None | None | Yes | N/A |
-| `tenancy` | Opt-in core schema via `tenancy.migrations.enabled`; explicit package adoption required | `nvl:tenancy:adopt` prepare/backfill/verify/activate | None | `TenantContext` plus host directory, membership, platform, HTTP, and public-site adapter contracts | None | No | `nvl:tenancy:doctor` |
+| `tenancy` | Opt-in core schema via `tenancy.migrations.enabled`; explicit `nvl:tenancy:adopt` prepare/backfill/verify/activate | None | None | `TenantContext` plus host directory, membership, platform, HTTP, and public-site adapter contracts | None | No | `nvl:tenancy:doctor` |
 | `filterable` | None | None | None | Caller-owned query definitions | None | Yes | N/A |
 | `translatable` | Domain-owned translation tables | None | None | Typed definitions and locale policy | Translation resource keys | Yes | `nvl:translatable:doctor` |
 | `activity` | Package/application via `activity.migrations.enabled` | `maintenance` for retention jobs | Package-registers `nvl:activity:purge-system` when retention scheduling is enabled | Gate abilities and policies | Activity mappings | Yes | `nvl:activity:doctor` |
@@ -82,3 +82,18 @@ metadata:
 
 It never dumps the configuration repository, callback values, credentials,
 tokens, encryption keys, webhook secrets, mail payloads, or stored metadata.
+
+### Tenancy readiness
+
+Tenancy's stateful/database-tested classification does not enable migrations by
+default. Package-owned opt-in migrations and published application-owned copies
+are mutually exclusive. The core schema/adoption proof runs on PostgreSQL 17,
+MySQL 8.4 and MariaDB 12.3 with the selected engine, plus SQLite.
+
+Selected/loaded providers, enabled feature, resource ownership and adoption state
+are reported separately. Loaded stateful packages without their real family and
+adoption integration are incompatible with enabled tenant operation. CSV supports
+an adoption-only integration with zero resources; Translatable remains owner-driven.
+An incomplete composition may boot Unresolved for platform bootstrap and Doctor,
+but tenant entry and adoption activation fail closed. No downstream integration
+is implied by adding its provider or Composer library.

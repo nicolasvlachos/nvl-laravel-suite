@@ -28,6 +28,7 @@ $internalDependencies = $catalog['internal_dependencies'];
 $typeScriptSources = $catalog['typescript_sources'];
 $databaseTested = $catalog['database_tested'];
 $stateful = $catalog['stateful'];
+$optionalMigrations = $catalog['optional_migrations'];
 $managementConfiguration = [
     'activity' => ['activity.php', "'enabled' => false"],
     'auth' => ['nvl-auth.php', "'enabled' => false"],
@@ -138,6 +139,13 @@ if ($discoveredPackages !== $expectedPackages) {
         'canonical catalog does not match package directories; discovered ['.
         implode(', ', $discoveredPackages).'], expected ['.implode(', ', $expectedPackages).']',
     );
+}
+
+foreach ($optionalMigrations as $package => $optional) {
+    if (! in_array($package, $stateful, true) || ! in_array($package, $databaseTested, true)
+        || $optional['path'] === 'database/migrations') {
+        $fail($package, 'optional migration metadata requires a database-tested stateful package and a distinct path');
+    }
 }
 
 $contractBaselinePath = "{$root}/tools/package-contracts.json";
@@ -685,8 +693,13 @@ foreach ($packages as $package) {
             static fn (string $file): string => (string) file_get_contents($file),
             $configFiles,
         ));
-        if (! str_contains($config, "'migrations'") || ! str_contains($config, "'enabled' => true")) {
-            $fail($package, 'stateful package must expose migrations.enabled=true');
+        $optional = $optionalMigrations[$package] ?? null;
+        $expectedDefault = $optional === null ? 'true' : 'false';
+        if (preg_match("/'migrations'\\s*=>\\s*\\[\\s*'enabled'\\s*=>\\s*{$expectedDefault}\\b/s", $config) !== 1) {
+            $fail($package, "stateful package must expose migrations.enabled={$expectedDefault}");
+        }
+        if ($optional !== null && (! is_dir($path.'/'.$optional['path']) || ! is_file($path.'/config/'.$optional['configuration'].'.php'))) {
+            $fail($package, 'optional migrations must name an existing configuration and distinct migration path');
         }
         if (! is_dir("{$path}/database/migrations")) {
             $fail($package, 'stateful package has no migrations directory');
