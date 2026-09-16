@@ -34391,6 +34391,17 @@
                     "public function applyScopes(): self",
                     "@return self<TModel>"
                 ],
+                "Nvl\\Translatable\\Relations\\TranslationResourceBuilder": [
+                    "final class Nvl\\Translatable\\Relations\\TranslationResourceBuilder extends Illuminate\\Database\\Eloquent\\Builder",
+                    "@template TModel of Model",
+                    "@extends Builder<TModel>",
+                    "public static function guarded(Illuminate\\Database\\Eloquent\\Builder $query, string $resourceKey, Illuminate\\Database\\Eloquent\\Model $canonicalModel, Nvl\\Translatable\\TranslationDefinition $definition, Nvl\\Translatable\\Services\\TranslationOwnership $ownership): self",
+                    "@template TGuarded of Model",
+                    "@param Builder<TGuarded> $query",
+                    "@return self<TGuarded>",
+                    "public function applyScopes(): self",
+                    "@return self<TModel>"
+                ],
                 "Nvl\\Translatable\\Rules\\SupportedLocaleMapRule": [
                     "final readonly class Nvl\\Translatable\\Rules\\SupportedLocaleMapRule implements Illuminate\\Contracts\\Validation\\ValidationRule",
                     "public function __construct(?array $supportedLocales=null): mixed",
@@ -34630,13 +34641,14 @@
                 ],
                 "Nvl\\Translatable\\Services\\TranslationResourceLocator": [
                     "final readonly class Nvl\\Translatable\\Services\\TranslationResourceLocator",
-                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership): mixed",
+                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership, Nvl\\Translatable\\Services\\RelatedTranslationStore $relatedTranslations): mixed",
                     "public function query(Nvl\\Translatable\\TranslationResourceDefinition $resource): Illuminate\\Database\\Eloquent\\Builder",
                     "@return Builder<Model>",
                     "public function find(Nvl\\Translatable\\TranslationResourceDefinition $resource, string|int $id): Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel",
                     "public function lock(Nvl\\Translatable\\TranslationResourceDefinition $resource, string|int $id): Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel",
                     "public function loadTranslations(Illuminate\\Database\\Eloquent\\Collection $records): void",
                     "@param Collection<int, covariant Model> $records",
+                    "public function resolvedPartitionKey(Illuminate\\Database\\Eloquent\\Model $model, Nvl\\Translatable\\TranslationDefinition $definition): ?string",
                     "public function rows(Nvl\\Translatable\\TranslationResourceDefinition $resource): Illuminate\\Database\\Eloquent\\Builder",
                     "@return Builder<Model>"
                 ],
@@ -34659,7 +34671,7 @@
                 ],
                 "Nvl\\Translatable\\Services\\TranslationResourceVersioner": [
                     "final class Nvl\\Translatable\\Services\\TranslationResourceVersioner",
-                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership): mixed",
+                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership, Nvl\\Translatable\\Services\\TranslationResourceLocator $locator): mixed",
                     "public function version(Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel $owner): string"
                 ],
                 "Nvl\\Translatable\\Services\\TranslationWriter": [
