@@ -33338,6 +33338,11 @@
                     "public abstract function snapshot(): Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot",
                     "public abstract function requireTenant(): Nvl\\Tenancy\\ValueObjects\\TenantId"
                 ],
+                "Nvl\\Tenancy\\Contracts\\TenantContextParticipant": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantContextParticipant",
+                    "public abstract function enter(Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot $next): Closure",
+                    "@return Closure(): void"
+                ],
                 "Nvl\\Tenancy\\Contracts\\TenantDirectory": [
                     "interface Nvl\\Tenancy\\Contracts\\TenantDirectory",
                     "public abstract function find(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): Nvl\\Tenancy\\ValueObjects\\TenantDescriptor",
@@ -33419,24 +33424,110 @@
                     "final class Nvl\\Tenancy\\Exceptions\\TenantSchemaNotReady extends Nvl\\Tenancy\\Exceptions\\TenancyException",
                     "public function __construct(string $message=\"Tenant schema is not ready.\"): mixed"
                 ],
+                "Nvl\\Tenancy\\Http\\Middleware\\RequireTenantMembership": [
+                    "final readonly class Nvl\\Tenancy\\Http\\Middleware\\RequireTenantMembership",
+                    "public function __construct(Illuminate\\Container\\Container $container, Nvl\\Tenancy\\Services\\TenantRunner $runner, Illuminate\\Contracts\\Auth\\Factory $auth): mixed",
+                    "public function handle(Illuminate\\Http\\Request $request, Closure $next): Symfony\\Component\\HttpFoundation\\Response",
+                    "@param Closure(Request): Response $next"
+                ],
+                "Nvl\\Tenancy\\Http\\Middleware\\ResolvePublicTenant": [
+                    "final readonly class Nvl\\Tenancy\\Http\\Middleware\\ResolvePublicTenant",
+                    "public function __construct(Illuminate\\Container\\Container $container, Nvl\\Tenancy\\Services\\TenantRunner $runner): mixed",
+                    "public function handle(Illuminate\\Http\\Request $request, Closure $next): Symfony\\Component\\HttpFoundation\\Response",
+                    "@param Closure(Request): Response $next"
+                ],
                 "Nvl\\Tenancy\\Providers\\TenancyServiceProvider": [
                     "final class Nvl\\Tenancy\\Providers\\TenancyServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function boot(): void",
                     "public function register(): void",
                     "protected function mergePackageConfiguration(string $path, string $key): void"
                 ],
+                "Nvl\\Tenancy\\Services\\DenyPlatformAccess": [
+                    "final class Nvl\\Tenancy\\Services\\DenyPlatformAccess implements Nvl\\Tenancy\\Contracts\\PlatformAccess",
+                    "public function authorize(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void"
+                ],
+                "Nvl\\Tenancy\\Services\\DenyTenantMembershipAccess": [
+                    "final class Nvl\\Tenancy\\Services\\DenyTenantMembershipAccess implements Nvl\\Tenancy\\Contracts\\TenantMembershipAccess",
+                    "public function assertMember(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): void"
+                ],
+                "Nvl\\Tenancy\\Services\\EffectiveTenantConnection": [
+                    "final readonly class Nvl\\Tenancy\\Services\\EffectiveTenantConnection",
+                    "public function __construct(Illuminate\\Database\\DatabaseManager $database, Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function name(?string $connection): string",
+                    "public function assertCompatible(array $connections): void",
+                    "@param list<string|null> $connections",
+                    "public function core(): Illuminate\\Database\\Connection",
+                    "public function participating(): array",
+                    "@return array<int, Connection>"
+                ],
+                "Nvl\\Tenancy\\Services\\PackageTenantDirectory": [
+                    "final readonly class Nvl\\Tenancy\\Services\\PackageTenantDirectory implements Nvl\\Tenancy\\Contracts\\TenantDirectory",
+                    "public function __construct(Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function find(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): Nvl\\Tenancy\\ValueObjects\\TenantDescriptor"
+                ],
                 "Nvl\\Tenancy\\Services\\ScopedTenantContext": [
                     "final class Nvl\\Tenancy\\Services\\ScopedTenantContext implements Nvl\\Tenancy\\Contracts\\TenantContext",
                     "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
                     "public function snapshot(): Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot",
                     "public function requireTenant(): Nvl\\Tenancy\\ValueObjects\\TenantId",
-                    "@throws TenantContextMissing When no tenant is active"
+                    "@throws TenantContextMissing When no tenant is active",
+                    "public function replace(Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot $next): void",
+                    "public function invalidate(): void",
+                    "public function invalid(): bool"
                 ],
                 "Nvl\\Tenancy\\Services\\TenancyConfiguration": [
                     "final readonly class Nvl\\Tenancy\\Services\\TenancyConfiguration",
                     "public function __construct(Illuminate\\Config\\Repository $configuration, Illuminate\\Container\\Container $container): mixed",
                     "public function validate(): void",
                     "@throws TenantConfigurationInvalid When any configured value is unsupported"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantContextParticipants": [
+                    "final class Nvl\\Tenancy\\Services\\TenantContextParticipants",
+                    "public function register(string $participant): void",
+                    "@param class-string<TenantContextParticipant> $participant",
+                    "public function all(): array",
+                    "@return list<class-string<TenantContextParticipant>>"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantMaintenanceLease": [
+                    "final class Nvl\\Tenancy\\Services\\TenantMaintenanceLease",
+                    "public function active(): bool",
+                    "public function admits(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): bool",
+                    "public function during(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant, Closure $callback): mixed",
+                    "@template T",
+                    "@param Closure(): T $callback",
+                    "@return T",
+                    "public function assertQueueAllowed(): void"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantMaintenanceQueueGuard": [
+                    "abstract class Nvl\\Tenancy\\Services\\TenantMaintenanceQueueGuard extends Illuminate\\Queue\\Queue",
+                    "public static function register(): void",
+                    "public static function payload(): array",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantMaintenanceRunner": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantMaintenanceRunner",
+                    "public function __construct(Illuminate\\Container\\Container $container): mixed",
+                    "public function run(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant, Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation, Closure $callback): mixed",
+                    "@template T",
+                    "@param Closure(): T $callback",
+                    "@return T"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantOperationRecorder": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantOperationRecorder",
+                    "public function __construct(Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function record(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantRunner": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantRunner",
+                    "public function __construct(Illuminate\\Container\\Container $container): mixed",
+                    "public function run(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant, Closure $operation): mixed",
+                    "@template T",
+                    "@param Closure(): T $operation",
+                    "@return T",
+                    "public function platform(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation, Closure $callback): mixed",
+                    "@template T",
+                    "@param Closure(): T $callback",
+                    "@return T"
                 ],
                 "Nvl\\Tenancy\\ValueObjects\\PlatformOperation": [
                     "final readonly class Nvl\\Tenancy\\ValueObjects\\PlatformOperation",
