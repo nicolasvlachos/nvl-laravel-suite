@@ -33623,11 +33623,15 @@
                     "@template T",
                     "@param class-string<TenantAdoptionAdapter> $adapter",
                     "@param Closure(): T $callback",
+                    "@return T",
+                    "public function preparation(string $run, Closure $callback): mixed",
+                    "@template T",
+                    "@param Closure(): T $callback",
                     "@return T"
                 ],
                 "Nvl\\Tenancy\\Services\\TenantAdoptionStore": [
                     "final readonly class Nvl\\Tenancy\\Services\\TenantAdoptionStore",
-                    "public function __construct(Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Container\\Container $container): mixed",
+                    "public function __construct(Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Container\\Container $container, Nvl\\Tenancy\\Services\\TenantAdoptionScope $scope): mixed",
                     "public function load(string $id): array",
                     "public function ingest(string $runId, iterable $assignments, array $graph): string",
                     "@param iterable<TenantAssignment> $assignments",
