@@ -24,3 +24,11 @@ The finalized 1.0 contract includes these changes from early previews:
 - Declare a sort alias and `tieBreakerSort` for deterministic pagination.
 
 Boolean, integer, decimal, date, date-time, list, range, and empty-string parsing is now strict. Review clients that sent values such as `off`, scientific decimals, relative dates, rollover dates, timezone-less timestamps, empty strings, or dummy null-check values.
+
+## Custom handlers are predicate-only
+
+Custom handlers now run inside a nested `where` group. This keeps a handler's ordinary `orWhere` predicates inside the filter alias and preserves constraints already applied by the caller.
+
+Review every custom handler before upgrading. Move joins, selected columns, grouping, and other query setup to the caller before applying the `FilterSet`, and express ordering with declared `SortDefinition` aliases. Handler return values remain compatible, but the handler must mutate only the nested predicate builder it receives.
+
+Handlers are trusted application code, not an authorization sandbox. Raw SQL or other arbitrary callback behavior can still bypass application authorization, so authorize independently and keep handlers bounded and parameterized.

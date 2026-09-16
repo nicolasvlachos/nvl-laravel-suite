@@ -22,6 +22,9 @@ Treat filtering as an explicit allowlisted query contract, not a general search 
 - Reject malformed query objects, booleans, ranges, sets, dates, arrays, duplicate sorts, unsupported operators, and excess filter/sort/value/string complexity.
 - Treat `contains` and `not_contains` values as literal substrings by escaping SQL wildcard characters.
 - Expect custom handlers to receive already-normalized criteria.
+- Keep custom handlers predicate-only. They run inside a nested `where` group so ordinary `orWhere` clauses preserve caller predicates.
+- Prepare joins and selected columns before applying filters, and express ordering through declared sort definitions.
+- Treat handlers as trusted callbacks rather than an authorization sandbox; raw SQL can still bypass application rules, so authorize independently.
 - Choose an explicit driver strategy where string or date behavior differs by database.
 
 ## Verify

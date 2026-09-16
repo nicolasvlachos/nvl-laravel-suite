@@ -86,7 +86,9 @@ final readonly class EloquentFilterApplier
         FilterDefinition $definition,
     ): void {
         if ($definition->handler !== null) {
-            ($definition->handler)($query, $criterion);
+            $query->where(function (Builder $nested) use ($definition, $criterion): void {
+                ($definition->handler)($nested, $criterion);
+            });
 
             return;
         }
