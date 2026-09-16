@@ -57,6 +57,8 @@ final readonly class TranslationOwnership
         private TenantBoundary $boundary,
         private TenantContext $context,
         private TenantResourceRegistry $resources,
+        private TenantInstallationState $installation,
+        private TenantOwnershipConfiguration $configuration,
     ) {}
 
     public function query(Builder $query, TranslationDefinition $definition): Builder;
@@ -70,7 +72,9 @@ final readonly class TranslationOwnership
 }
 ```
 
-`partitionColumns()` returns `[]` only for disabled, unadopted legacy resources, and `['ownership_key']` for mixed platform/tenant schemas or `['tenant_id']` for tenant-only schemas. Resolve `TenantResourceRegistry::get($definition->ownershipResource)`; follow inherited parent declarations to the root, with canonical polymorphic-parent resolution where necessary. The root's validated `allowsPlatformCatalog`/`allowsPlatformRows` descriptor and adopted configuration select the schema; never inspect whether an arbitrary model attribute happens to be null. Carry the selected partition through SQL and relation matching. `partitionKey()` encodes the connection, table, ownership partition, and logical resource key with JSON plus SHA-256; it never joins unescaped strings with a delimiter.
+`partitionColumns()` describes metadata; it does not admit undeclared storage. It may return `[]` for a disabled, undeclared definition without proving that storage is unadopted. Every row or SQL entry point must first establish admission through `assertOwner()` or `query()` on the actual owner/query connection. Disabled undeclared access uses the injected `TenantInstallationState::assertUnadopted()` on that exact `Connection`; it must not substitute the default/core connection or reuse another owner's admission. Declared metadata resolves the registered canonical storage and calls `assertUsable()` before returning `[]` for disabled, unadopted resources.
+
+For enabled declarations, `partitionColumns()` returns `['ownership_key']` for mixed platform/tenant schemas or `['tenant_id']` for tenant-only schemas. Resolve `TenantResourceRegistry::get($definition->ownershipResource)` and follow inherited parent declarations to their roots, using the injected `TenantOwnershipConfiguration` for validated polymorphic parent allowlists and structural configuration. All allowed roots must select one deterministic partition schema; reject heterogeneous schemas with `TenantConfigurationInvalid`. The roots' validated `allowsPlatformCatalog`/`allowsPlatformRows` descriptors and adopted configuration select the schema; never infer it from a nullable model attribute. Owner-bearing `childAttributes()` and `partitionKey()` resolve persisted canonical parent identity under the registered allowlist. Carry the selected partition through SQL and relation matching. `partitionKey()` encodes the connection, table, ownership partition, and logical resource key with JSON plus SHA-256; it never joins unescaped strings with a delimiter.
 
 `lockOwner()` reloads through `query()` and the model's persisted primary key using `lockForUpdate()`. Require an open transaction on that effective connection for enabled writes. It rejects dirty ownership attributes and verifies the persisted owner, including self-row group identity; it never uses a forged in-memory `tenant_id` as authority. Only locale-varying fields enter translation payloads. `tenant_id` and `ownership_key` are always structural and cannot be translated or copied as arbitrary `sharedFields`.
 
