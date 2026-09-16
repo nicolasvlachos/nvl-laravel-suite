@@ -34641,14 +34641,14 @@
                 ],
                 "Nvl\\Translatable\\Services\\TranslationResourceLocator": [
                     "final readonly class Nvl\\Translatable\\Services\\TranslationResourceLocator",
-                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership, Nvl\\Translatable\\Services\\RelatedTranslationStore $relatedTranslations): mixed",
+                    "public function __construct(Nvl\\Translatable\\Services\\TranslationOwnership $ownership, Nvl\\Translatable\\Services\\RelatedTranslationStore $relatedTranslations, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Tenancy\\Services\\TenantResourceRegistry $tenantResources): mixed",
                     "public function query(Nvl\\Translatable\\TranslationResourceDefinition $resource): Illuminate\\Database\\Eloquent\\Builder",
                     "@return Builder<Model>",
                     "public function find(Nvl\\Translatable\\TranslationResourceDefinition $resource, string|int $id): Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel",
                     "public function lock(Nvl\\Translatable\\TranslationResourceDefinition $resource, string|int $id): Illuminate\\Database\\Eloquent\\Model&Nvl\\Translatable\\Contracts\\TranslatableResourceModel",
                     "public function loadTranslations(Illuminate\\Database\\Eloquent\\Collection $records): void",
                     "@param Collection<int, covariant Model> $records",
-                    "public function resolvedPartitionKey(Illuminate\\Database\\Eloquent\\Model $model, Nvl\\Translatable\\TranslationDefinition $definition): ?string",
+                    "public function consumeResolvedPartitionKey(Illuminate\\Database\\Eloquent\\Model $model, Nvl\\Translatable\\TranslationDefinition $definition): ?string",
                     "public function rows(Nvl\\Translatable\\TranslationResourceDefinition $resource): Illuminate\\Database\\Eloquent\\Builder",
                     "@return Builder<Model>"
                 ],
