@@ -20,7 +20,7 @@ it('keeps one adoption matrix aligned with the runtime module catalog', function
         $rows[$match[1]] = $match[0];
     }
 
-    expect(array_keys($rows))->toHaveCount(20);
+    expect(array_keys($rows))->toHaveCount(21);
 
     foreach ($catalog->modules() as $module => $definition) {
         expect($rows)->toHaveKey($module);

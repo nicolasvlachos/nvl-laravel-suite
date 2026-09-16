@@ -33370,6 +33370,11 @@
                     "interface Nvl\\Tenancy\\Contracts\\TenantMembershipAccess",
                     "public abstract function assertMember(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): void"
                 ],
+                "Nvl\\Tenancy\\Contracts\\TenantParentResolver": [
+                    "interface Nvl\\Tenancy\\Contracts\\TenantParentResolver",
+                    "public abstract function types(): array",
+                    "@return array<string, class-string<Model>>"
+                ],
                 "Nvl\\Tenancy\\Contracts\\TenantSiteResolver": [
                     "interface Nvl\\Tenancy\\Contracts\\TenantSiteResolver",
                     "public abstract function resolve(Illuminate\\Http\\Request $request): Nvl\\Tenancy\\ValueObjects\\TenantSiteContext"
@@ -33394,6 +33399,17 @@
                     "public const mixed Unresolved=Nvl\\Tenancy\\Enums\\TenantContextMode::Unresolved=unresolved",
                     "public const mixed Tenant=Nvl\\Tenancy\\Enums\\TenantContextMode::Tenant=tenant",
                     "public const mixed Platform=Nvl\\Tenancy\\Enums\\TenantContextMode::Platform=platform",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Tenancy\\Enums\\TenantResourceKind": [
+                    "enum Nvl\\Tenancy\\Enums\\TenantResourceKind implements BackedEnum, UnitEnum: string",
+                    "public const mixed Root=Nvl\\Tenancy\\Enums\\TenantResourceKind::Root=root",
+                    "public const mixed Inherited=Nvl\\Tenancy\\Enums\\TenantResourceKind::Inherited=inherited",
+                    "public const mixed Platform=Nvl\\Tenancy\\Enums\\TenantResourceKind::Platform=platform",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -33532,12 +33548,30 @@
                     "public function validate(): void",
                     "@throws TenantConfigurationInvalid When any configured value is unsupported"
                 ],
+                "Nvl\\Tenancy\\Services\\TenantBoundary": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantBoundary",
+                    "public function __construct(Illuminate\\Container\\Container $container): mixed",
+                    "public function query(Illuminate\\Database\\Eloquent\\Builder $query, string $resource): Illuminate\\Database\\Eloquent\\Builder",
+                    "@template T of Model",
+                    "@param Builder<T> $query",
+                    "@return Builder<T>",
+                    "public function assertRecord(Illuminate\\Database\\Eloquent\\Model $record, string $resource): void",
+                    "public function attributes(string $resource): array",
+                    "@return array{tenant_id?: string|null, ownership_key?: string}",
+                    "public function key(string $resource, string $identity): string"
+                ],
                 "Nvl\\Tenancy\\Services\\TenantContextParticipants": [
                     "final class Nvl\\Tenancy\\Services\\TenantContextParticipants",
                     "public function register(string $participant): void",
                     "@param class-string<TenantContextParticipant> $participant",
                     "public function all(): array",
                     "@return list<class-string<TenantContextParticipant>>"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantInstallationState": [
+                    "final class Nvl\\Tenancy\\Services\\TenantInstallationState",
+                    "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration, Nvl\\Tenancy\\Services\\TenantResourceRegistry $registry, Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration $ownership, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function assertUsable(string $resource): void",
+                    "public function invalidate(): void"
                 ],
                 "Nvl\\Tenancy\\Services\\TenantMaintenanceLease": [
                     "final class Nvl\\Tenancy\\Services\\TenantMaintenanceLease",
@@ -33567,6 +33601,32 @@
                     "final readonly class Nvl\\Tenancy\\Services\\TenantOperationRecorder",
                     "public function __construct(Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
                     "public function record(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration": [
+                    "final readonly class Nvl\\Tenancy\\Services\\TenantOwnershipConfiguration",
+                    "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration, Nvl\\Tenancy\\Services\\TenantResourceRegistry $registry, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Container\\Container $container): mixed",
+                    "public function validate(): void",
+                    "public function mode(Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition $resource): string",
+                    "public function parentTypes(string $resource): array",
+                    "@return array<string, class-string<Model>>",
+                    "public function fingerprint(string $resource): string",
+                    "public function hash(array $resources): string",
+                    "@param list<string> $resources"
+                ],
+                "Nvl\\Tenancy\\Services\\TenantResourceRegistry": [
+                    "final class Nvl\\Tenancy\\Services\\TenantResourceRegistry",
+                    "public function registerParentResolver(string $resource, string $resolver): void",
+                    "@param class-string<TenantParentResolver> $resolver",
+                    "public function parentResolver(string $resource): string",
+                    "@return class-string<TenantParentResolver>",
+                    "public function requireCompatible(string $family, string $dependency): void",
+                    "public function dependencies(): array",
+                    "@return array<string, list<string>>",
+                    "public function register(Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition $resource): void",
+                    "public function get(string $key): Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition",
+                    "public function forModel(Illuminate\\Database\\Eloquent\\Model $model): Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition",
+                    "public function all(): array",
+                    "@return array<string, TenantResourceDefinition>"
                 ],
                 "Nvl\\Tenancy\\Services\\TenantRunner": [
                     "final readonly class Nvl\\Tenancy\\Services\\TenantRunner",
@@ -33604,6 +33664,19 @@
                     "public readonly string $value",
                     "public function __construct(string $value): mixed",
                     "@throws InvalidArgumentException When the identifier is not a UUID"
+                ],
+                "Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition": [
+                    "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantResourceDefinition",
+                    "public readonly string $key",
+                    "public readonly string $family",
+                    "public readonly string $model",
+                    "public readonly Nvl\\Tenancy\\Enums\\TenantResourceKind $kind",
+                    "public readonly ?string $parentResource",
+                    "public readonly ?string $parentRelation",
+                    "public readonly bool $allowsPlatformCatalog",
+                    "public readonly bool $allowsPlatformRows",
+                    "public function __construct(string $key, string $family, string $model, Nvl\\Tenancy\\Enums\\TenantResourceKind $kind=Nvl\\Tenancy\\Enums\\TenantResourceKind::Root, ?string $parentResource=null, ?string $parentRelation=null, bool $allowsPlatformCatalog=false, bool $allowsPlatformRows=false): mixed",
+                    "@param class-string<Model> $model"
                 ],
                 "Nvl\\Tenancy\\ValueObjects\\TenantSiteContext": [
                     "final readonly class Nvl\\Tenancy\\ValueObjects\\TenantSiteContext",
