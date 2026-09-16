@@ -212,3 +212,74 @@ php tools/check-package-contracts.php
 - W1 supports empty-store adoption only. Nonempty Activity history is explicitly denied until a separate reviewed historical ownership workflow exists.
 - Tenant retention dispatch remains fail-closed until W6 supplies its explicit bounded dispatcher.
 - The Settings test proves only the package-local value-free protocol and native queued-listener serialization; U3 owns the real Settings repository integration.
+
+## Fix round 1 — native relation admission and canonical causers
+
+Review source: `task-1-review.md`, findings I1 and I2. The inherited W1 evidence above remains unchanged.
+
+Focused RED command:
+
+```sh
+vendor/bin/pest --test-directory=packages/nvl/activity/tests --configuration=packages/nvl/activity/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/activity/tests/Tenancy/ActivityTenantTest.php --filter='native subject relations|configured global causer uses|registered causer association|global causer association|canonical hydration keeps'
+```
+
+RED after adding the loaded-relation and query-budget assertions: 6 tests, 1 passed, 12 assertions, 5 failed. Native lazy/explicit/eager subject hydration returned a tenant B model under tenant A, an unknown stored type reached its model query, native global causers exposed secret columns, and dirty registered/global causer identities were accepted. The existing dedicated-loader batch budget passed.
+
+Focused GREEN: 6 tests, 6 passed, 32 assertions, 834 ms.
+
+Complete tenancy-file command:
+
+```sh
+vendor/bin/pest --test-directory=packages/nvl/activity/tests --configuration=packages/nvl/activity/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/activity/tests/Tenancy/ActivityTenantTest.php
+```
+
+Result: 24 tests, 24 passed, 85 assertions, 2021 ms.
+
+Covering feature command:
+
+```sh
+vendor/bin/pest --test-directory=packages/nvl/activity/tests --configuration=packages/nvl/activity/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/activity/tests/Feature/ActivityRecorderTest.php packages/nvl/activity/tests/Feature/ActivityModelCaptureTest.php packages/nvl/activity/tests/Feature/ActivityTimelineReadTest.php packages/nvl/activity/tests/Feature/ActivityCauserSuggestionTest.php packages/nvl/activity/tests/Feature/ActivitySafetyTest.php packages/nvl/activity/tests/Feature/ActivityApiTest.php
+```
+
+Result: 91 tests, 91 passed, 311 assertions, 4199 ms.
+
+After the final typed MorphTo construction refactor, the required native subset passed again: 5 tests, 5 passed, 25 assertions, 710 ms. The complete tenancy file passed again with 24 tests, 85 assertions, 2074 ms; the six affected feature files passed again with 91 tests, 311 assertions, 2979 ms.
+
+Static command:
+
+```sh
+vendor/bin/phpstan analyse --configuration=storage/framework/cache/package-quality/activity/phpstan.neon --no-progress --error-format=table --memory-limit=3G packages/nvl/activity/src packages/nvl/activity/database/factories packages/nvl/activity/database/seeders packages/nvl/activity/database/tenancy-migrations packages/nvl/activity/tests/Stubs/TestActivitySubjectWithHasModelActivity.php packages/nvl/activity/tests/Stubs/TestActivityTimelineHost.php
+```
+
+Result: passed with 0 errors. The first fix-round static run reported 14 errors in the new relation typing; each was resolved without suppression or baseline entries.
+
+Contract check:
+
+```sh
+php tools/check-package-contracts.php
+```
+
+Initial result: failed because the new named `Nvl\\Activity\\Tenancy\\ActivityMorphTo` implementation is discovered as an added public symbol. The architecture ruling kept the focused named implementation, marked it `@internal`, and approved updating only Activity's contract snapshot because the scanner does not exclude internal symbols. `composer contracts:update` updated the snapshot; inspection confirmed the delta is limited to Activity's new relation/guard surface. The final contract check passed: public contracts for all 21 NVL packages match the acknowledged baseline.
+
+Final fix-round verification after formatting and baseline reconciliation:
+
+```sh
+vendor/bin/pint --dirty --format agent
+# passed
+
+vendor/bin/phpstan analyse --configuration=storage/framework/cache/package-quality/activity/phpstan.neon --no-progress --error-format=table --memory-limit=3G packages/nvl/activity/src packages/nvl/activity/database/factories packages/nvl/activity/database/seeders packages/nvl/activity/database/tenancy-migrations packages/nvl/activity/tests/Stubs/TestActivitySubjectWithHasModelActivity.php packages/nvl/activity/tests/Stubs/TestActivityTimelineHost.php
+# passed, 0 errors
+
+vendor/bin/pest --test-directory=packages/nvl/activity/tests --configuration=packages/nvl/activity/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/activity/tests/Tenancy/ActivityTenantTest.php
+# 24 tests, 24 passed, 85 assertions, 5171 ms
+
+php tools/check-package-contracts.php
+# Public contracts for 21 NVL packages are unchanged.
+```
+
+Changes in this fix:
+
+- Route enabled native `subject()` and `causer()` lazy, explicit-query, and eager loading through an Activity-owned `MorphTo` implementation that admits canonical Activity rows, resolves only registered relation types, scopes tenant models, and projects global causers to fixed safe columns.
+- Invalidate caller-preloaded subject/causer relations and trust only relations loaded through the guarded native or dedicated batch paths. The batch loader still uses one Activity reload and one type-grouped related query for the 12-row timeline.
+- Canonically validate registered and global causer class, table, actual Connection, existence, and unchanged key; reload the permitted identity and persist exactly its admitted morph type and key.
+- Preserve Spatie association and model-free reference behavior before INSERT, while an unknown stored type fails closed before native model construction or query.
