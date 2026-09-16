@@ -66,6 +66,7 @@ return [
         'translations' => ['data', 'filterable', 'support'],
     ],
     'typescript_sources' => [
+        'tenancy',
         'activity',
         'auth',
         'comments',

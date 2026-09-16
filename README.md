@@ -5,7 +5,22 @@
 [![Package quality](https://github.com/nicolasvlachos/nvl-laravel-suite/actions/workflows/package-quality.yml/badge.svg?branch=main)](https://github.com/nicolasvlachos/nvl-laravel-suite/actions/workflows/package-quality.yml)
 [![License](https://img.shields.io/packagist/l/nvl/laravel-suite)](LICENSE)
 
-The NVL Laravel Suite is one installable Composer package containing 21 focused Laravel modules and an integration workbench. The modules remain isolated under `packages/nvl`, retain their namespaces, providers, migrations, tests, documentation, and Laravel Boost skills, and ship together under one version.
+The NVL Laravel Suite bundles 21 focused Laravel modules and an integration workbench in one Composer package. The modules remain isolated under `packages/nvl`, retain their namespaces, providers, migrations, tests, documentation, and Laravel Boost skills, and ship together under one version.
+
+## Standalone Tenancy foundation
+
+```bash
+composer require nvl/tenancy:^2.0
+php artisan vendor:publish --tag=tenancy-config
+php artisan config:cache
+php artisan nvl:tenancy:doctor --json
+```
+
+The foundation requires Support and Data, with no NVL Auth dependency. It keeps
+tenancy and core migrations disabled until explicitly configured. The archive
+consumer gate verifies this minimal profile; a separate explicitly provisioned
+Filterable profile proves query composition. Domain adoption is delivered by
+subsequent integrations. See the [Tenancy distribution contract](packages/nvl/tenancy/README.md#foundation-distribution-contract).
 
 ## Packages and API documentation
 

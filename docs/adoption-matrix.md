@@ -47,7 +47,7 @@ explicit root enables it through dependency closure.
 |---|---|---|---|---|---|---|---|
 | `support` | None | None | None | None | None | No | N/A |
 | `data` | None | None | None | None | None | Yes | N/A |
-| `tenancy` | Opt-in core schema via `tenancy.migrations.enabled`; explicit `nvl:tenancy:adopt` prepare/backfill/verify/activate | None | None | `TenantContext` plus host directory, membership, platform, HTTP, and public-site adapter contracts | None | No | `nvl:tenancy:doctor` |
+| `tenancy` | Opt-in core schema via `tenancy.migrations.enabled`; explicit `nvl:tenancy:adopt` prepare/backfill/verify/activate | None | None | `TenantContext` plus host directory, membership, platform, HTTP, and public-site adapter contracts | None | Yes (source registration) | `nvl:tenancy:doctor` |
 | `filterable` | None | None | None | Caller-owned query definitions | None | Yes | N/A |
 | `translatable` | Domain-owned translation tables | None | None | Typed definitions and locale policy | Translation resource keys | Yes | `nvl:translatable:doctor` |
 | `activity` | Package/application via `activity.migrations.enabled` | `maintenance` for retention jobs | Package-registers `nvl:activity:purge-system` when retention scheduling is enabled | Gate abilities and policies | Activity mappings | Yes | `nvl:activity:doctor` |
@@ -97,3 +97,10 @@ an adoption-only integration with zero resources; Translatable remains owner-dri
 An incomplete composition may boot Unresolved for platform bootstrap and Doctor,
 but tenant entry and adoption activation fail closed. No downstream integration
 is implied by adding its provider or Composer library.
+
+F8 verifies a minimal archived Tenancy consumer with only Support/Data and its
+declared external runtime dependencies: package discovery, cached configuration,
+read-only Doctor and disabled/no-schema compatibility. A separate consumer
+explicitly requires Filterable and verifies caller-owned query isolation.
+TypeScript source registration participates in discovery; it does not promise
+client mutation DTOs for tenant ownership. Domain adoption remains separate.

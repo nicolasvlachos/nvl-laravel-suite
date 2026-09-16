@@ -20,5 +20,6 @@
 /// <reference path="./generated/spatie.d.ts" />
 /// <reference path="./generated/taxonomy.d.ts" />
 /// <reference path="./generated/templates.d.ts" />
+/// <reference path="./generated/tenancy.d.ts" />
 /// <reference path="./generated/translatable.d.ts" />
 /// <reference path="./generated/translations.d.ts" />

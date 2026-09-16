@@ -1,0 +1,249 @@
+===== f8-package-quality.log =====
+
+Package nvl/tenancy
+{"tool":"pint","result":"passed"}format: passed (13422 ms)
+analysis: failed (1631 ms)
+{"tool":"pest","result":"passed","tests":309,"passed":309,"assertions":1162,"duration_ms":12855}
+tests: passed (13265 ms)
+nvl/tenancy: failed (28327 ms)
+
+Package nvl/filterable
+{"tool":"pint","result":"passed"}format: passed (600 ms)
+{"tool":"phpstan","result":"passed","errors":0}
+analysis: passed (1139 ms)
+{"tool":"pest","result":"passed","tests":99,"passed":99,"assertions":218,"duration_ms":1197}
+tests: passed (1448 ms)
+nvl/filterable: passed (3197 ms)
+
+Package nvl/data
+{"tool":"pint","result":"passed"}format: passed (301 ms)
+{"tool":"phpstan","result":"passed","errors":0}
+analysis: passed (1080 ms)
+{"tool":"pest","result":"passed","tests":60,"passed":60,"assertions":349,"duration_ms":2969}
+tests: passed (3142 ms)
+nvl/data: passed (4531 ms)
+
+
+===== f8-analysis-debug.log =====
+{"tool":"phpstan","result":"failed","errors":2,"error_details":{"/Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/packages/nvl/tenancy/src/Services/TenantBoundary.php":[{"line":219,"message":"Parameter #1 $column of method Illuminate\\Database\\Eloquent\\Builder<T of Illuminate\\Database\\Eloquent\\Model>::qualifyColumn() expects Illuminate\\Contracts\\Database\\Query\\Expression|model property of T of Illuminate\\Database\\Eloquent\\Model, string given.","identifier":"argument.type","tip":"Type #2 from the union: The given string should be a property of T of Illuminate\\Database\\Eloquent\\Model, tenant_id given."},{"line":221,"message":"Parameter #1 $column of method Illuminate\\Database\\Eloquent\\Builder<T of Illuminate\\Database\\Eloquent\\Model>::qualifyColumn() expects Illuminate\\Contracts\\Database\\Query\\Expression|model property of T of Illuminate\\Database\\Eloquent\\Model, string given.","identifier":"argument.type","tip":"Type #2 from the union: The given string should be a property of T of Illuminate\\Database\\Eloquent\\Model, ownership_key given."}]},"instructions":"Each error has an associated identifier, like `argument.type` or `return.missing`. Each error identifier has documentation at URL https://phpstan.org/error-identifiers/<identifier>, which contains a code example, explanation why it is an error, and instructions on how to fix it. Before fixing the error, fetch the documentation page for its identifier. The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the error go away. Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error. Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type. Do not add type casts just to silence errors. Do not widen parameter or return types just to make the error go away."}
+
+
+===== f8-analysis-process.json =====
+{
+    "name": "analysis",
+    "command": [
+        "\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/vendor\/bin\/phpstan",
+        "analyse",
+        "--configuration=\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/storage\/framework\/cache\/package-quality\/tenancy\/phpstan.neon",
+        "--no-progress",
+        "--error-format=table",
+        "--memory-limit=3G",
+        "\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/packages\/nvl\/tenancy\/src",
+        "\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/packages\/nvl\/tenancy\/tests\/Fixtures"
+    ]
+}
+{
+    "exit": 1,
+    "signaled": false,
+    "signal": 0,
+    "stdout": "{\"tool\":\"phpstan\",\"result\":\"failed\",\"errors\":2,\"error_details\":{\"\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/packages\/nvl\/tenancy\/src\/Services\/TenantBoundary.php\":[{\"line\":219,\"message\":\"Parameter #1 $column of method Illuminate\\\\Database\\\\Eloquent\\\\Builder<T of Illuminate\\\\Database\\\\Eloquent\\\\Model>::qualifyColumn() expects Illuminate\\\\Contracts\\\\Database\\\\Query\\\\Expression|model property of T of Illuminate\\\\Database\\\\Eloquent\\\\Model, string given.\",\"identifier\":\"argument.type\",\"tip\":\"Type #2 from the union: The given string should be a property of T of Illuminate\\\\Database\\\\Eloquent\\\\Model, tenant_id given.\"},{\"line\":221,\"message\":\"Parameter #1 $column of method Illuminate\\\\Database\\\\Eloquent\\\\Builder<T of Illuminate\\\\Database\\\\Eloquent\\\\Model>::qualifyColumn() expects Illuminate\\\\Contracts\\\\Database\\\\Query\\\\Expression|model property of T of Illuminate\\\\Database\\\\Eloquent\\\\Model, string given.\",\"identifier\":\"argument.type\",\"tip\":\"Type #2 from the union: The given string should be a property of T of Illuminate\\\\Database\\\\Eloquent\\\\Model, ownership_key given.\"}]},\"instructions\":\"Each error has an associated identifier, like `argument.type` or `return.missing`. Each error identifier has documentation at URL https:\/\/phpstan.org\/error-identifiers\/<identifier>, which contains a code example, explanation why it is an error, and instructions on how to fix it. Before fixing the error, fetch the documentation page for its identifier. The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the error go away. Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error. Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type. Do not add type casts just to silence errors. Do not widen parameter or return types just to make the error go away.\"}\n",
+    "stderr": ""
+}
+
+
+===== f8-analysis-debug-after.log =====
+{"tool":"phpstan","result":"passed","errors":0}
+
+
+===== canonical sandbox replay after correction (f8-analysis-final.json) =====
+{
+    "name": "analysis",
+    "command": [
+        "\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/vendor\/bin\/phpstan",
+        "analyse",
+        "--configuration=\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/storage\/framework\/cache\/package-quality\/tenancy\/phpstan.neon",
+        "--no-progress",
+        "--error-format=table",
+        "--memory-limit=3G",
+        "\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/packages\/nvl\/tenancy\/src",
+        "\/Users\/nicolasvlachos\/Herd\/nvl-laravel-suite\/.worktrees\/tenancy\/packages\/nvl\/tenancy\/tests\/Fixtures"
+    ]
+}
+{
+    "exit": 1,
+    "signaled": false,
+    "signal": 0,
+    "stdout": "",
+    "stderr": ""
+}
+
+
+===== f8-quality-final.log =====
+
+Package nvl/tenancy
+{"tool":"pint","result":"passed"}format: passed (665 ms)
+{"tool":"phpstan","result":"passed","errors":0}
+analysis: passed (982 ms)
+{"tool":"pest","result":"passed","tests":309,"passed":309,"assertions":1162,"duration_ms":8323}
+tests: passed (8536 ms)
+nvl/tenancy: passed (10190 ms)
+
+
+===== f8-root-contracts.log =====
+{"tool":"pest","result":"failed","tests":78,"passed":76,"assertions":8958,"duration_ms":10786,"failed":2,"failures":[{"test":"P\\Tests\\Contract\\PackageArchiveToolsTest::__pest_evaluable_it_ships_a_complete_staged_adoption_module_configuration","file":"/Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/tests/Contract/PackageArchiveToolsTest.php","line":331,"message":"Failed asserting that two arrays are identical.\n--- Expected\n+++ Actual\n@@ @@\n     'settings' => Array &15 [\n         0 => 'data',\n         1 => 'support',\n-        2 => 'tenancy',\n     ],\n     'support' => Array &16 [],\n     'taxonomy' => Array &17 ["},{"test":"P\\Tests\\Contract\\PackageMigrationQualityTest::__pest_evaluable_it_release_reviews_the_forward_only_Comments_document_migration_without_changing_it","file":"/Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/tests/Contract/PackageMigrationQualityTest.php","line":119,"message":"NVL package-family validation failed:\n\n - nvl/tenancy: suite runtime requirements are missing [ext-pdo]\n - nvl/tenancy: suite constraint [symfony/http-foundation: ^7.2 || ^8.0] permits versions outside module constraint [^7.4 || ^8.0]\n - nvl/tenancy: suite constraint [symfony/http-kernel: ^7.2 || ^8.0] permits versions outside module constraint [^7.4 || ^8.0]\n - nvl/tenancy: README quick reference must match the package manifest\n\n4 violation(s) found.\n\nFailed asserting that false is true."}]}
+
+
+===== f8-root-final.log =====
+{"tool":"pest","result":"passed","tests":100,"passed":100,"assertions":9168,"duration_ms":11119}
+
+
+===== f8-dependencies-final.log =====
+Checking nvl/activity
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 105 files in 0.027 s)
+
+Checking nvl/auth
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 414 files in 0.075 s)
+
+Checking nvl/comments
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 188 files in 0.06 s)
+
+Checking nvl/content
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 199 files in 0.048 s)
+
+Checking nvl/csv
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 58 files in 0.025 s)
+
+Checking nvl/data
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 40 files in 0.011 s)
+
+Checking nvl/filterable
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 26 files in 0.007 s)
+
+Checking nvl/forms
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 240 files in 0.042 s)
+
+Checking nvl/mail-notifications
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 226 files in 0.058 s)
+
+Checking nvl/media
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 273 files in 0.087 s)
+
+Checking nvl/metafields
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 102 files in 0.02 s)
+
+Checking nvl/pages
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 93 files in 0.018 s)
+
+Checking nvl/primitives
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 49 files in 0.011 s)
+
+Checking nvl/seo
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 126 files in 0.023 s)
+
+Checking nvl/settings
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 81 files in 0.017 s)
+
+Checking nvl/support
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 13 files in 0.002 s)
+
+Checking nvl/taxonomy
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 63 files in 0.013 s)
+
+Checking nvl/templates
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 142 files in 0.03 s)
+
+Checking nvl/tenancy
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 127 files in 0.029 s)
+
+Checking nvl/translatable
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 81 files in 0.019 s)
+
+Checking nvl/translations
+Using config /Users/nicolasvlachos/Herd/nvl-laravel-suite/.worktrees/tenancy/composer-dependency-analyser.php
+
+No composer issues found
+(scanned 73 files in 0.016 s)
+
+
+
+===== f8-types-generate.log =====
+All done!
+
+ INFO Generated TypeScript declarations and integrity manifest published.
+
+
+
+===== Exact escalated process replay (transcribed tool response) =====
+Command: DB_CONNECTION=sqlite DB_DATABASE=:memory: DB_URL= CACHE_STORE=array QUEUE_CONNECTION=sync APP_ENV=testing php /tmp/f8-analysis-replay.php
+Same PackageQualityRunner-generated argv/config as the recorded sandbox process above.
+{
+    "exit": 0,
+    "signaled": false,
+    "signal": 0,
+    "stdout": "{\"tool\":\"phpstan\",\"result\":\"passed\",\"errors\":0}\n",
+    "stderr": ""
+}
+
+===== Final strengthened archive-only test (transcribed tool response) =====
+php vendor/bin/pest --compact tests/Contract/TenancyConsumerWorkflowTest.php
+{"tool":"pest","result":"passed","tests":3,"passed":3,"assertions":65,"duration_ms":5126}

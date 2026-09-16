@@ -356,8 +356,10 @@ foreach ($expectedPackages as $package) {
         $fail($package, 'README must be a linked API and usage documentation page');
     }
 
+    $installation = $package === 'tenancy' ? 'nvl/tenancy' : 'nvl/laravel-suite';
+
     if (! is_string($namespace) || ! is_string($provider)
-        || ! str_contains($packageReadme, '| Installed through | `composer require nvl/laravel-suite:^2.0` |')
+        || ! str_contains($packageReadme, "| Installed through | `composer require {$installation}:^2.0` |")
         || ! str_contains($packageReadme, "| Module identifier | `nvl/{$package}` |")
         || ! str_contains($packageReadme, '| PHP namespace | `'.rtrim($namespace, '\\').'` |')
         || ! str_contains($packageReadme, "| Service provider | `{$provider}` |")

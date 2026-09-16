@@ -276,3 +276,15 @@ CSV may register a zero-resource adoption adapter. Translatable delegates schema
 and declarations to domain owners; neutral libraries are not resource families.
 Exclude incompatible runtime providers until their integration ships. See the
 [Tenancy configuration and migration ownership guide](../packages/nvl/tenancy/README.md#runtime-compatibility-and-readiness).
+
+### Standalone Tenancy foundation evidence
+
+The [archive consumer contract](../tests/Contract/TenancyConsumerWorkflowTest.php)
+installs only archived Tenancy/Support/Data in its minimal NVL profile, using a
+fresh Composer loader and process. It proves config cache, Doctor, source paths,
+absent Auth/Suite/Filterable packages and disabled/no-schema behavior. The separate
+explicit Filterable profile reuses neutral host fixtures with colliding business
+keys, preserved OR/relation ownership predicates and safe Data mutation projection.
+The [package consumer contract](../packages/nvl/tenancy/tests/Feature/TenantConsumerContractTest.php)
+also verifies source registration. These gates certify foundation distribution;
+downstream tenant-owned domain integrations have separate adoption requirements.

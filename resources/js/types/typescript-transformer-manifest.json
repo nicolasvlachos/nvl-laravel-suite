@@ -1,5 +1,5 @@
 {
-    "generated.d.ts": "dc3e2017dedd67fe8e64095e2ec0bdfe",
+    "generated.d.ts": "a9b7be46686ce4962e3b61babde20d57",
     "generated\/activity.d.ts": "770e4bbaace76c9f0bbaac36c91ecba9",
     "generated\/auth.d.ts": "1f7fb052878a885080e7ffd0f3b1715c",
     "generated\/comments.d.ts": "a1ac3c153effb61963d157611a7000ea",
@@ -19,6 +19,7 @@
     "generated\/spatie.d.ts": "dbc9df489e1ecbee0a6d2dcabb6ff7c2",
     "generated\/taxonomy.d.ts": "1a77f506ac7f3301c1839621887abd40",
     "generated\/templates.d.ts": "3522e512732c229e69b12975248e1028",
+    "generated\/tenancy.d.ts": "747e05c2f756a18a800381994e85f324",
     "generated\/translatable.d.ts": "056838f00410328026d28853a0397b93",
     "generated\/translations.d.ts": "7a37296e1afd279df2d393a72a5ececc"
 }

@@ -208,7 +208,7 @@ final readonly class SuiteModuleCatalog
             'aliases' => [],
             'queues' => [],
             'schedules' => [],
-            'typescript' => false,
+            'typescript' => true,
         ],
         'filterable' => [
             'provider' => FilterableServiceProvider::class,
@@ -380,7 +380,7 @@ final readonly class SuiteModuleCatalog
         ],
         'settings' => [
             'provider' => SettingsServiceProvider::class,
-            'dependencies' => ['data', 'support'],
+            'dependencies' => ['data', 'support', 'tenancy'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'settings.migrations.enabled'],
             'doctor' => 'nvl:settings:doctor',

@@ -200,7 +200,7 @@ PHP);
     'package notes' => ['packages/nvl/auth/CHANGELOG.md', 'auth'],
 ]);
 
-it('declares the repository root as the only installable package', function (): void {
+it('declares the repository root as the installable Suite package', function (): void {
     $manifest = suiteArchiveManifest();
 
     expect($manifest['name'] ?? null)->toBe('nvl/laravel-suite')

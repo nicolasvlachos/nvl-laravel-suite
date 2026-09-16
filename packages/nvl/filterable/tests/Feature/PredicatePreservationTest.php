@@ -58,9 +58,9 @@ afterEach(function (): void {
     Schema::dropIfExists('predicate_groups');
 });
 
-test('custom OR filter preserves the caller ownership predicate', function (): void {
+test('custom OR filter preserves the caller ownership predicate', function (string $owner): void {
     $a = PredicateRecord::query()->create(['owner' => 'a', 'name' => 'match']);
-    PredicateRecord::query()->create(['owner' => 'b', 'name' => 'match']);
+    $b = PredicateRecord::query()->create(['owner' => 'b', 'name' => 'match']);
 
     $schema = new FilterSchema([
         new FilterDefinition(
@@ -73,15 +73,15 @@ test('custom OR filter preserves the caller ownership predicate', function (): v
     $set = new FilterSet([
         new FilterCriterion('search', FilterOperator::Equals, 'match'),
     ]);
-    $query = PredicateRecord::query()->where('owner', 'a');
+    $query = PredicateRecord::query()->where('owner', $owner);
 
     $ids = app(EloquentFilterApplier::class)
         ->apply($query, $set, $schema)
         ->pluck('id')
         ->all();
 
-    expect($ids)->toBe([$a->id]);
-});
+    expect($ids)->toBe([$owner === 'a' ? $a->id : $b->id]);
+})->with(['a', 'b']);
 
 test('negative and null custom predicates preserve the caller ownership predicate', function (): void {
     $kept = PredicateRecord::query()->create(['owner' => 'a', 'name' => 'keep']);

@@ -9,6 +9,10 @@ Module-level implementation history remains available in each
 
 ## [Unreleased]
 
+- Prove standalone Tenancy archives with only Support/Data, cached configuration,
+  Doctor and disabled compatibility; explicitly provision Filterable composition,
+  register Tenancy type sources, and correct existing dependency/test autoload metadata.
+
 ### Added
 
 - Added the inert-by-default `nvl/tenancy` foundation with deployment
