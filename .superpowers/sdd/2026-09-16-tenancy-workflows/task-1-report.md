@@ -283,3 +283,37 @@ Changes in this fix:
 - Invalidate caller-preloaded subject/causer relations and trust only relations loaded through the guarded native or dedicated batch paths. The batch loader still uses one Activity reload and one type-grouped related query for the 12-row timeline.
 - Canonically validate registered and global causer class, table, actual Connection, existence, and unchanged key; reload the permitted identity and persist exactly its admitted morph type and key.
 - Preserve Spatie association and model-free reference behavior before INSERT, while an unknown stored type fails closed before native model construction or query.
+
+## Fix round 2 — context-bound relation admission and combined eager loading
+
+Review source: `task-1-fix-1-review.md`, findings I1/R1 and R2. All earlier W1 and fix-round-1 evidence remains unchanged.
+
+Focused RED/GREEN command:
+
+```sh
+vendor/bin/pest --test-directory=packages/nvl/activity/tests --configuration=packages/nvl/activity/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/activity/tests/Tenancy/ActivityTenantTest.php --filter='trusted native|combined native'
+```
+
+RED: 2 tests, 0 passed, 6 assertions. After sequential tenant A then tenant B callbacks in the same application scope, retained native and dedicated-loader relations still returned tenant A's subject or registered causer. Combined native eager loading discarded the first requested relation.
+
+GREEN: 2 tests, 2 passed, 22 assertions, 475 ms. Relation trust is now bound to the admitted ownership context and exact Activity class, table, actual Connection, key definition, existence, original identifier, and current identifier. Canonical synchronization preserves only loaded sibling relations whose admission token still matches that context and identity. Both eager orders retain and serialize subject and causer without a subsequent lazy query.
+
+Named covering command:
+
+```sh
+vendor/bin/pest --test-directory=packages/nvl/activity/tests --configuration=packages/nvl/activity/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/activity/tests/Tenancy/ActivityTenantTest.php packages/nvl/activity/tests/Feature/ActivityTimelineReadTest.php packages/nvl/activity/tests/Feature/ActivityRecorderTest.php packages/nvl/activity/tests/Feature/ActivityApiTest.php
+```
+
+Result: 71 tests, 71 passed, 268 assertions, 3769 ms. This includes the retained native/dedicated A-to-B denial cases, both combined eager-load orders, and the existing 12-row batch query-budget regression.
+
+Final quality commands:
+
+```sh
+vendor/bin/pint --dirty --format agent
+vendor/bin/phpstan analyse --configuration=storage/framework/cache/package-quality/activity/phpstan.neon --no-progress --error-format=table --memory-limit=3G packages/nvl/activity/src packages/nvl/activity/database/factories packages/nvl/activity/database/seeders packages/nvl/activity/database/tenancy-migrations packages/nvl/activity/tests/Stubs/TestActivitySubjectWithHasModelActivity.php packages/nvl/activity/tests/Stubs/TestActivityTimelineHost.php
+php tools/check-package-contracts.php
+```
+
+Results: Pint passed; Activity's maximum static analysis passed with 0 errors; the public contracts for all 21 NVL packages match the acknowledged baseline. The fix changes only private guard state and helpers, so no contract snapshot update was needed.
+
+Self-review confirmed that an A-context trust token cannot match the B context, that changed Activity storage/key identity invalidates trust, and that sibling preservation happens only after both the current context and Activity identity match. The preservation pass is in-memory and canonical Activity reload remains one partitioned batch query; no per-row query was added.
