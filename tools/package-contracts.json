@@ -33325,10 +33325,24 @@
             "autoload_files": [],
             "publish_tags": [
                 "tenancy-config",
+                "tenancy-migrations",
                 "tenancy-skills"
             ],
             "commands": [],
             "symbols": {
+                "Nvl\\Tenancy\\Actions\\ChangeTenantStatusAction": [
+                    "final readonly class Nvl\\Tenancy\\Actions\\ChangeTenantStatusAction",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantRunner $runner, Nvl\\Tenancy\\Contracts\\TenantDirectory $directory, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function execute(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant, Nvl\\Tenancy\\Enums\\TenantStatus $status, Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void",
+                    "@throws TenantConfigurationInvalid When the effective directory is not package-owned",
+                    "@throws TenantNotFound When the tenant identifier is unknown"
+                ],
+                "Nvl\\Tenancy\\Actions\\ProvisionTenantAction": [
+                    "final readonly class Nvl\\Tenancy\\Actions\\ProvisionTenantAction",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantRunner $runner, Nvl\\Tenancy\\Contracts\\TenantDirectory $directory, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function execute(string $name, Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): Nvl\\Tenancy\\ValueObjects\\TenantDescriptor",
+                    "@throws TenantConfigurationInvalid When the name or effective directory is incompatible"
+                ],
                 "Nvl\\Tenancy\\Contracts\\PlatformAccess": [
                     "interface Nvl\\Tenancy\\Contracts\\PlatformAccess",
                     "public abstract function authorize(Nvl\\Tenancy\\ValueObjects\\PlatformOperation $operation): void"
@@ -33435,6 +33449,43 @@
                     "public function __construct(Illuminate\\Container\\Container $container, Nvl\\Tenancy\\Services\\TenantRunner $runner): mixed",
                     "public function handle(Illuminate\\Http\\Request $request, Closure $next): Symfony\\Component\\HttpFoundation\\Response",
                     "@param Closure(Request): Response $next"
+                ],
+                "Nvl\\Tenancy\\Models\\Tenant": [
+                    "final class Nvl\\Tenancy\\Models\\Tenant extends Illuminate\\Database\\Eloquent\\Model",
+                    "@property string $id Canonical tenant UUID.",
+                    "@property string $name Operator-managed tenant name.",
+                    "@property TenantStatus $status Current tenant lifecycle state.",
+                    "@property Carbon|null $created_at Creation time.",
+                    "@property Carbon|null $updated_at Last update time.",
+                    "public const string TABLE=\"nvl_tenancy_tenants\"",
+                    "protected mixed $fillable=[\"name\",\"status\"]",
+                    "protected mixed $table=\"nvl_tenancy_tenants\"",
+                    "public function getConnectionName(): ?string",
+                    "protected function casts(): array",
+                    "public function getKeyType(): mixed",
+                    "@return string",
+                    "public function getIncrementing(): mixed",
+                    "@return bool",
+                    "public function resolveRouteBindingQuery(mixed $query, mixed $value, mixed $field=null): mixed",
+                    "@param \\Illuminate\\Database\\Eloquent\\Model|\\Illuminate\\Database\\Eloquent\\Relations\\Relation<*, *, *> $query",
+                    "@param mixed $value",
+                    "@param string|null $field",
+                    "@return \\Illuminate\\Contracts\\Database\\Eloquent\\Builder",
+                    "@throws \\Illuminate\\Database\\Eloquent\\ModelNotFoundException",
+                    "public function newUniqueId(): mixed",
+                    "@return string",
+                    "public function uniqueIds(): mixed",
+                    "@return array",
+                    "protected function isValidUniqueId(mixed $value): bool",
+                    "@param mixed $value",
+                    "@return bool",
+                    "public function initializeHasUniqueStringIds(): mixed",
+                    "@return void",
+                    "protected function handleInvalidUniqueId(mixed $value, mixed $field): mixed",
+                    "@param mixed $value",
+                    "@param string|null $field",
+                    "@return never",
+                    "@throws \\Illuminate\\Database\\Eloquent\\ModelNotFoundException"
                 ],
                 "Nvl\\Tenancy\\Providers\\TenancyServiceProvider": [
                     "final class Nvl\\Tenancy\\Providers\\TenancyServiceProvider extends Illuminate\\Support\\ServiceProvider",
@@ -33566,7 +33617,9 @@
                 "config/tenancy.php": "6b2531a87253d4f6dae707017b052e3fb28be7e461044c28588c02f85bddb9de"
             },
             "routes": [],
-            "migrations": []
+            "migrations": {
+                "database/migrations/tenancy/2026_09_16_000001_create_tenancy_core_tables.php": "dc850418d443835ae0926dd26656d00dac6cd918aa09c66f6d5d4be6b67eb78c"
+            }
         },
         "translatable": {
             "providers": [
