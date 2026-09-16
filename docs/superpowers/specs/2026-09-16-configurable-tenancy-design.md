@@ -1,6 +1,10 @@
 # Configurable Tenancy: Design and Rollout Plan
 
-**Status:** Proposed architecture for review; tenancy is not implemented.
+**Status:** Second architecture review complete; execution plans prepared. Tenancy is not implemented.
+
+**Read next:** [Execution program](../plans/2026-09-16-tenancy-program.md) and
+[frozen implementation contracts](2026-09-16-tenancy-execution-contracts.md).
+The contracts document resolves the public interfaces used by every package plan.
 
 **Baseline:** `e98690f` — the package hardening checkpoint committed on
 2026-09-16. The suite currently contains 20 packages.
@@ -10,11 +14,12 @@ preserving the existing behavior of applications that do not use tenancy.
 
 **Recommended first release:** A shared database, global user identities with
 multiple tenant memberships, and tenant-owned application data. These are
-recommendations pending the product decisions below, not approved requirements.
+explicit planning assumptions, not recorded product approvals. The plans use these
+assumptions consistently; a different storage or identity model requires replanning.
 
 This document is the suite-level design and delivery roadmap. Each workstream
-gets a bounded implementation plan after its contracts are reviewed; this is
-not an instruction to implement every package in one change.
+has a bounded implementation plan with test gates and dependencies. Execute one
+reviewable task at a time; this document does not itself enable tenancy.
 
 ## 1. Product decisions
 
@@ -36,8 +41,9 @@ Additional recommended boundaries:
 - Tenant-specific identities, nested tenant hierarchies, billing, quotas,
   cross-tenant transfers, and database-per-tenant provisioning are separate
   follow-up projects.
-- Sharing is explicit and read-only for supported platform catalogs. Public
-  visibility does not grant another tenant management or reuse rights.
+- Sharing grants permit inspection and copy-on-import for supported platform
+  catalogs. Imported records become independently tenant-owned. Public visibility
+  does not grant another tenant management or reuse rights.
 - A platform operator has a separate, audited operating path. A tenant role
   named `admin` never means platform-wide access.
 
@@ -58,35 +64,34 @@ contracts instead of creating a second source of tenant identity.
 
 ```mermaid
 flowchart TD
-    Support["nvl/support: small ownership/context/access contracts"]
+    Support["nvl/support: neutral infrastructure"]
     Data["nvl/data: DTO infrastructure"]
-    Tenancy["new nvl/tenancy: directory, context, lifecycle, diagnostics"]
+    Tenancy["new nvl/tenancy: contracts, directory, context, lifecycle"]
     Auth["nvl/auth: memberships, roles, invitations, tokens"]
     Domain["Media, Metafields, Taxonomy, other domain packages"]
     Host["Host: tenant selection and business authorization"]
     Tenancy --> Support
     Tenancy --> Data
     Data --> Support
-    Auth --> Support
-    Domain --> Support
+    Auth --> Tenancy
+    Domain --> Tenancy
     Host --> Tenancy
     Host --> Auth
 ```
 
-- **Support:** Only the small typed context, ownership, and access contracts
-  needed by independently installed packages, plus the disabled implementation.
-  No tenant tables, membership queries, or authorization decisions. The access
-  contract lets the Auth adapter and Tenancy communicate without importing each
-  other's runtime or creating a Composer dependency cycle.
-- **Tenancy:** Tenant directory, status, trusted context establishment, context
-  lifetime, owned-resource declarations, migration/adoption diagnostics, and
-  a bounded tenant runner. Depends on Support/Data, not Auth or domain packages.
-- **Auth:** Owns membership persistence and account-to-tenant access, along with
-  its existing roles, invitations, tokens, and audit records. It supplies the
-  membership adapter; Tenancy does not query Auth tables directly.
-- **Each domain package:** Owns its schema changes, tenant predicates, canonical
-  record resolution, relationships, and lifecycle. It uses Support contracts,
-  so Media or Taxonomy can still be installed without NVL Auth or Tenancy.
+- **Support:** Existing neutral infrastructure only; no tenancy contracts,
+  disabled context, membership policy, or adoption logic.
+- **Tenancy:** All tenant contracts, directory/status, scoped context, bounded
+  runner, resource declarations, adoption coordination and diagnostics. Depends
+  on Support/Data, never Auth or another domain package. Its provider can be
+  installed while the feature is disabled.
+- **Auth:** Owns memberships, tenant roles, invitations, tokens and audit facts;
+  implements Tenancy's membership contract. Global identities remain separate.
+- **Each integrating package:** Requires the inert Tenancy library and owns its
+  schema, resource predicates, canonical resolution, grants and lifecycle.
+  Standalone Media/Taxonomy do not require NVL Auth; host adapters can supply
+  admission. CSV requires Tenancy for queued-work integration. Data, Filterable,
+  Primitives and Support keep their existing dependency direction.
 - **Host:** Selects tenants at its HTTP/CLI boundary and supplies business
   authorization or an alternative membership implementation when Auth is absent.
 
@@ -96,17 +101,20 @@ the existing documented owner-trait/Translatable/Filterable exceptions.
 ## 3. Configuration contract
 
 Configuration is deployment-level, validated, and compatible with `config:cache`.
-The proposed public choices are:
+The frozen public choices are:
 
-| Setting | Default | Meaning when enabled |
+| Setting | Default | Meaning |
 |---|---|---|
-| `tenancy.enabled` | `false` | Enable strict tenant context and ownership enforcement |
-| `tenancy.strategy` | `shared-database` | Only supported strategy in the first release; other values fail validation |
-| `tenancy.directory` | Package directory adapter | Resolve stable tenant UUIDs and status; host storage can implement the contract |
-| `tenancy.resolver` | Unconfigured | Host class selecting a tenant from a trusted route/domain/request contract |
-| `tenancy.resources` | No tenant resource decisions | Explicit ownership mode for each enabled stateful resource family |
-| Auth membership integration | Disabled | NVL Auth adapter or an explicitly configured host adapter |
-| Shared catalogs | None | Allowlisted platform catalogs readable from tenant operations |
+| `tenancy.enabled` | `false` | Enable strict context and resource enforcement |
+| `tenancy.strategy` | `shared-database` | Only first-release storage strategy |
+| `tenancy.connection` | `null` | Resolve the default connection; participating writes must be compatible |
+| `tenancy.profile` | `application` | Derive ownership from installed integrated families |
+| `tenancy.directory.driver` / `.adapter` | `package` / `null` | Package directory or explicit host implementation |
+| `tenancy.resolvers.http` / `.public_site` | `null` | Trusted request and public-site resolver classes |
+| `tenancy.access.membership` / `.platform` | `null` | Auth or host adapters; unconfigured authorization denies |
+| `tenancy.resources` | `[]` | Family overrides to `tenant` or `platform`, subject to compatibility checks |
+| `tenancy.sharing.media` / `.metafields` / `.templates` | `none` | `none` or `copy`; grants control source inspection/import |
+| `tenancy.migrations.enabled` | `false` | Explicitly register the separate migration path |
 
 Use a single resource declaration rather than independent switches for a parent,
 its translations, and its attachments. Registration supplies the dependency
@@ -121,8 +129,10 @@ Supported resource modes:
   and similar records derive ownership from the canonical owner.
 - **Platform-owned:** Explicit platform operations only. This is not a fallback
   for a missing tenant and does not automatically expose records to tenants.
-- **Shared catalog:** Explicitly registered platform definitions available for
-  tenant reads, with no tenant write access and no implicit overrides.
+- **Platform catalog:** Code-owned classification allowing a dedicated grant
+  reader/importer; general tenant queries never acquire `OR tenant_id IS NULL`.
+  Operational mixed tables such as Activity and Auth tokens are a separate
+  `allowsPlatformRows` capability and never become shared catalogs.
 
 There is no `strict=false`, `missing_tenant=all`, or automatic `OR tenant_id IS
 NULL` escape hatch. Owner-inherited resources must declare how every supported
@@ -131,15 +141,20 @@ owner is classified; an unknown owner fails closed.
 With tenancy disabled and no adopted tenant data, the existing schema, APIs,
 cache keys, authorization behavior, and module selection remain valid. Selecting
 the new module must not enable isolation or publish/run tenant migrations by
-accident. Adding the module to the catalog must preserve today's default
-effective module behavior and legacy configuration rules.
+accident. The new inert provider may enter the dependency closure and changes the
+effective provider count; feature behavior and legacy omitted-module rules stay
+compatible. Provider registration and feature activation are separate diagnostics.
 
 After adoption, a persisted installation marker records active resource modes.
 Changing `enabled` to false or changing ownership modes is rejected until an
 explicit migration reverses adoption. A configuration toggle cannot make a
 multi-tenant database globally readable. Integrated resource providers validate
 their adoption state even when the Tenancy module is omitted or disabled; the
-disabled Support implementation cannot silently override an adopted resource.
+disabled Tenancy implementation cannot silently override an adopted resource.
+A bounded lazy schema/state probe per participating connection and boot/worker
+generation detects adoption even in disabled mode. No marker/table is required
+for an untouched disabled installation. Database failures never mean "unadopted";
+activation requires maintenance, queue drain and process restart.
 
 ## 4. Context and access rules
 
@@ -198,7 +213,9 @@ bootstrap lookup to establish its stored tenant before any membership/role write
 Keep principals, credentials, MFA/passkeys, recovery, and social identities
 global under the recommended shared-account model. Do not add a required
 `tenant_id` to users. Add Auth-owned memberships with tenant ID, principal
-reference, status, timestamps, revision, and a unique tenant/principal tuple.
+reference using Auth's existing SubjectReference type/string ID, status, explicit
+`is_owner`, timestamps, revision, and a unique tenant/principal tuple. Custom
+principal key compatibility with existing RBAC storage is validated separately.
 
 A user may be an administrator in tenant A and a reader in tenant B. Removing
 membership in A does not delete their account, credentials, or B membership.
@@ -207,7 +224,8 @@ principal deactivation, global credentials, or account deletion.
 
 Membership changes and role assignments share a transaction and recheck tenant
 and principal status. Serialize last-owner removal/transfer so two simultaneous
-requests cannot leave a tenant without an active owner. Recheck membership on
+requests cannot leave a tenant without an active owner. Use Auth-owned tenant
+lock rows and explicit membership `is_owner`, independently of editable role names. Recheck membership on
 each access; a loaded role relationship is not evidence of current membership.
 
 ### RBAC
@@ -228,6 +246,9 @@ Use the installed Spatie teams mechanism as the RBAC adapter:
   `roles`/`permissions` when it changes and restore state afterward. Audit the
   registrar's cached permission/role map under the chosen model scopes; it must
   neither cache one tenant as the global map nor expose another tenant's roles.
+- Null-team roles are excluded from tenant resolution and relationships; the
+  vendor's null-team fallback is not an acceptable tenant policy. Split platform
+  permission-vocabulary seeding from tenant role seeding.
 - Platform role templates may seed tenant-owned copies. They do not act as
   implicit platform administrator assignments.
 
@@ -239,8 +260,10 @@ switching teams. See [the v8 teams documentation](https://spatie.be/docs/laravel
 Invitation issuance, active-key uniqueness, resend, preview, acceptance, and
 revocation include the stored tenant. Acceptance validates the target identity,
 tenant status, inviter authority where required, and role ownership, then creates
-or activates membership atomically. Existing global invitation flows remain
-explicit platform workflows.
+or activates membership atomically. Existing-account acceptance requires proof
+from the authenticated recipient; email equality alone must not authenticate an
+existing global account. Central identity flows use narrow Auth-owned authority,
+without receiving platform access to other packages.
 
 Tenant API tokens carry an immutable tenant binding; requests must match it and
 an active membership. First-party session requests still require membership and
@@ -261,24 +284,24 @@ projection must avoid exposing global account facts through a tenant timeline.
 |---|---|---|
 | Auth | Memberships, roles, assignments, tenant tokens/invitations/audits | Global identity and platform administration remain separate |
 | Media | Tenant owns the asset independently of uploader and attached models | Original/variation files, multipart sessions, deduplication, slots, replacement, downloads, search, cleanup |
-| Metafields | Definitions are tenant-owned or explicitly shared; values inherit owner | Definition assignments, active handles, references/default references, bulk sync, locale rows |
+| Metafields | Definitions are tenant-owned or platform import sources; values inherit owner | Definition assignments, active handles, references/default references, bulk sync, locale rows |
 | Taxonomy | Vocabulary definitions can be platform configuration; terms and trees belong to tenant | Parent/move/merge/attach validation, slug uniqueness, locks, translations, pruning |
 | Translatable | Both storage strategies inherit the owning resource's tenant | Related rows, self-row groups, fallback, central search, coverage, resource writes |
-| Content | Blocks, placements, revisions, and snapshots use tenant plus existing content scope | Definitions may be explicit shared catalogs; prevent foreign blocks, owners, media, and references |
+| Content | Blocks, placements, revisions, and snapshots use tenant plus existing content scope | Code-backed definition catalog remains platform-owned; prevent foreign blocks, owners, media, and references |
 | Pages | Pages and trees use tenant plus existing site | Tenant-aware keys, paths, parentage, navigation, resource handlers, publication |
 | SEO | Profiles, redirects, and artifacts use tenant plus existing scope/site | Hosts, canonical URLs, image references, graph locks, sitemap cache and artifacts |
 | Forms | Forms own tenant; entries, receipts, security records, and exports inherit it | Public resolver, signed tokens, handles, submissions, callbacks, throttles, downloads |
-| Templates | Templates are tenant-owned or explicit shared definitions; renders inherit effective tenant | Assignments, versions, idempotency, PDF resources, output files, queued rendering |
+| Templates | Templates are tenant-owned or platform import sources; renders inherit tenant | Assignments, versions, idempotency, PDF resources, output files, queued rendering |
 | Comments | Comment, parent/reply, reaction, and mention projections inherit target tenant | Latest selectors, moderation, aggregates, mention searches, anonymization and deletion |
 | Activity | Persist event tenant at recording time; platform events use a separate view | Subject/causer hydration, merged timelines, retention and export |
-| Mail Notifications | Persist tenant when scheduling/recording; global Auth mail uses explicit platform context | Recipient factories, delivery events, provider callbacks, tracking links, retries, administrative reads |
+| Mail Notifications | Persist tenant when scheduling/recording; global Auth mail uses a narrowly declared identity workflow | Recipient factories, delivery events, provider callbacks, tracking links, retries, administrative reads |
 | Settings | Tenant values over allowlisted shared defaults | Identity keys, caches, definitions, invalidation, typed resolution; no tenant mutation of process-wide configuration |
 | Translations | Source-code catalog remains platform-owned; optional tenant copy overrides are separate | Tenant exports must not overwrite shared `lang` files or another tenant's catalog |
 | Filterable | Preserve the caller's tenant predicate through filters, OR groups, joins, and relations | Tenant identity is not an ordinary client filter; relationship filters must constrain related ownership |
 | CSV | No tenant database model; imports/exports execute inside a declared context | Source query, target Actions, queued batches, idempotency, output path and download authorization |
 | Data | No tenant persistence | Protect mutation DTOs from client-selected ownership; expose tenant fields only in approved display contracts |
 | Primitives | No tenant persistence | No tenancy-specific value-object behavior needed |
-| Support | Shared neutral contracts only | Disabled behavior and dependency-cycle tests |
+| Support | Existing neutral infrastructure; no tenancy types | Dependency-cycle and unchanged-behavior tests |
 
 ### Media rules
 
@@ -318,7 +341,9 @@ tenant's attachments.
 Language fallback is limited to the same tenant and logical resource. Central
 translation coverage and search cannot scan the platform catalog as a side
 effect of tenant access. Self-translation group uniqueness, locks, copies, and
-restore checks include the tenant; all rows in a group share immutable ownership.
+restore checks include the tenant; all rows in a group share immutable ownership. Rewrite self-translation
+preference subqueries that currently remove all scopes except SoftDeletes; every
+subquery, central group lookup and loaded-relation shortcut must retain ownership.
 
 Setting cache identities include tenant and definition version where applicable.
 After-commit callbacks capture the resolved cache identity at registration time,
@@ -382,8 +407,10 @@ deserialization also precedes job middleware. Therefore:
 
 - Prefer scalar record IDs plus tenant references in package jobs and delivery
   work items, with canonical reload after context establishment.
-- Install queue lifecycle context handling before deserialization where needed.
-  Ordinary job middleware alone is not the complete integration.
+- Wrap both Laravel CallQueuedHandler::call and ::failed before command
+  deserialization; retain payload metadata through chains/batches/retries. Queue
+  events or ordinary job middleware alone are not the complete integration.
+  Incompatible host handlers fail diagnostics until explicitly adapted.
 - Reject or explicitly adapt tenant-owned model serialization in supported
   consumer jobs; prove the exact ordering with a real worker test.
 - Preserve after-commit dispatch. Capture the original tenant in callbacks rather
@@ -440,55 +467,41 @@ mapping; ordinary deployment never adopts production data automatically.
 
 ## 10. Delivery sequence and acceptance gates
 
-Each row is a separate reviewable workstream. Implementation requires a focused
-specification of its public interfaces and a test-first plan. No row below is
-marked complete merely because this design exists.
+The [execution program](../plans/2026-09-16-tenancy-program.md) is the executable
+index. It names task-level dependencies, the first vertical proof, and the
+final adoption/distribution gate. Detailed plans now exist:
 
-| ID | Deliverable | Depends on | Acceptance gate |
-|---|---|---|---|
-| T0 | Confirm product decisions and complete ownership inventory | Design review | Every enabled resource/entry point classified; initial host and migration model selected |
-| T1 | Support contracts and Tenancy directory/context/runner/configuration | T0 | Disabled compatibility; missing-context denial; nested and worker cleanup; no Auth dependency |
-| T2 | Schema/adoption framework, Translatable ownership, and suite diagnostics | T1 | Fresh install plus existing-data rehearsal; tenant-local locale fallback; feature enable after old migrations; activation marker prevents unsafe disabling |
-| T3 | Auth memberships, team RBAC, tokens, invitations | T1–T2 | One user/two tenants with different roles; membership revocation; cross-tenant IDs; invitation replay; concurrent last-owner protection |
-| T4 | Media ownership, binaries, deduplication, queued work | T1–T3 | Same digest in two tenants stays isolated; attachment/reuse denied across tenants; multipart and worker restore tested |
-| T5 | Metafields and Taxonomy | T1–T4 | Reference/definition isolation; same slugs/handles in two tenants; tree and translated-value writes remain local |
-| T6 | Content, Pages, SEO composition | T4–T5 | Complete tenant page publication with media/metafields/taxonomy; tenant-specific paths, redirects, navigation, and sitemap artifacts |
-| T7 | Forms, Templates, Comments, Activity, Mail Notifications | T3–T6 | Tenant public submissions and documents; isolated timelines/mentions; captured tenant on deferred deliveries and provider callbacks |
-| T8 | Settings/Translations overlays and Filterable/CSV/Data integration | T1–T7 | Cache/worker separation; no tenant writes to shared config/lang files; tenant-safe exports and relation filters |
-| T9 | Full adoption, operations, distribution, and release proof | T2–T8 | Clean and upgraded consumers, real database/cache/storage/worker tests, docs/skills/types/contracts, rollback rehearsal |
+| Plan | Main deliverable | Prerequisite |
+|---|---|---|
+| [Foundation](../plans/2026-09-16-tenancy-foundation.md) | Inert package, contracts, admission, marker/adoption protocol, queue boundary, diagnostics | This design and frozen contracts |
+| [Settings and tools](../plans/2026-09-16-tenancy-settings-tools.md) | Early bootstrap safety, filters/DTO proof; then Settings/Translations overlays and CSV | Foundation; early tasks precede tenant consumers |
+| [Workflows](../plans/2026-09-16-tenancy-workflows.md) | Early Activity partition; then Forms/Templates/Comments/Mail | Foundation; later tasks follow their resource dependencies |
+| [Translatable](../plans/2026-09-16-tenancy-translatable.md) | Related/self ownership, central operations and locale isolation | Foundation |
+| [Auth](../plans/2026-09-16-tenancy-auth.md) | Membership, Spatie context, roles, invitations, tokens and identity intent | Foundation + early Activity/Settings safety |
+| [Resources](../plans/2026-09-16-tenancy-resources.md) | Media, Metafields, Taxonomy and concrete import grants | Foundation + Translatable; Auth for full membership journey |
+| [Content and sites](../plans/2026-09-16-tenancy-content-sites.md) | Content graph, Pages, verified site resolution and SEO | Resources + Translatable |
 
-T7 subprojects can be reviewed independently once their actual dependencies are
-ready. T8's safety requirements are applied as prerequisites wherever earlier
-workstreams use Settings or these utilities; until then those resources remain
-explicit platform-only and are not exposed to tenant routes. Do not activate a
-partially integrated package graph in a production tenant application.
+The first complete proof uses two tenants, one shared account, different roles,
+and separate Media libraries. Include worker restoration, same-digest uploads,
+foreign preloaded models and a reviewed legacy adoption before expanding the
+release surface. Partial package integration is a development milestone; do not
+activate an incompatible installed graph in production.
 
-Generic Filterable predicate-preservation and Data ownership-input tests belong
-in T1's integration harness and are rerun by each early adopter. T2 covers the
-translation primitives required by Media, so the first Media proof does not
-depend on a later workstream for locale isolation.
+### Findings resolved by the second review
 
-The first end-to-end proof is deliberately small: two tenants, one shared user,
-different roles, and separate Media libraries. Prove foundation, Auth, storage,
-and queue isolation before expanding into the entire content platform.
-
-### Existing files that anchor the work
-
-| Workstream | Current integration points |
+| Current integration point | Required architectural correction |
 |---|---|
-| Suite and contracts | `src/Support/SuiteModuleCatalog.php`, `src/Services/SuiteModuleSelection.php`, `src/Services/SuiteConfigurationInspector.php`, `src/Console/Commands/SuiteDoctorCommand.php`, `tools/package-contracts.json` |
-| Foundation | `packages/nvl/support/src/Providers/SupportServiceProvider.php`; proposed new `packages/nvl/tenancy/` package after design approval |
-| Auth | `AuthServiceProvider`, `RbacEntityLocator`, `RbacAssignmentService`, `RbacManager`, `EloquentRbacPrincipalAccess`, invitation Actions, API token adapters, Auth-owned migrations |
-| Media | `UploadMediaAction`, `AttachMediaAction`, `MediaQueryService`, `MediaPathResolver`, `MediaDeduplicationLock`, multipart/slot services, Media jobs and asset-delivery routes |
-| Metafields | `MetafieldOwnerRegistry`, `MetafieldReferenceModelRegistry`, `MetafieldOwnerModelResolver`, definition catalog/writer, value Actions |
-| Taxonomy | `TaxonomyDefinition`, `TaxonomyOwnerRegistry`, term models, tree Actions, slug generator and maintenance locks |
-| Translatable | `ContentLocale`, `SelfTranslationStore`, `RelatedTranslationStore`, `TranslationResourceLocator`, `TranslationResourceGatherer` |
-| Content / Pages / SEO | Owner registries, `ContentScopeRegistry`, `ContentSnapshotService`, `PageRequestContextResolver`, tree locks, `SeoRedirectLookup`, `SeoRedirectChain`, sitemap sources/registry |
-| Settings / Translations | `SettingCache`, `SettingManager`, `ConfigOverrideApplier`, translation identity and file import/export services |
-| Async and documents | `ScheduledMailProcessor`, `RenderTemplateJob`, `PdfAssetFetcher`, Media jobs, `EntryCallbackRegistry`, activity recording/purge services |
-
-These are discovery anchors, not permission to rewrite whole services. Detailed
-plans name exact files and interfaces and keep changes inside package ownership.
+| Support is neutral infrastructure | Put all tenancy interfaces/runtime in Tenancy and explicitly require its inert library |
+| Suite dependency closure can enable providers | Separate provider registration from opt-in feature/migration activation |
+| Spatie role lookup accepts null-team roles | Exclude null-team fallback; seed tenant roles from a global permission vocabulary |
+| Auth accepts host SubjectReference principals | Membership supports typed string IDs; no hardcoded package User foreign key |
+| SelfTranslatable removes most global scopes | Partition locale/group preference subqueries explicitly |
+| Shared Templates resolve Content/Media dependencies | Copy the entire approved graph into tenant ownership |
+| Settings bootstrap mutates global Config | Make bootstrap platform-only before tenant features; use scoped overlays later |
+| Activity timeline OR branches and model-free events | Persist and apply event ownership before subject/causer grouping |
+| Laravel restores queued models before middleware | Wrap call and failure deserialization, with scalar package payloads |
+| Existing create migrations skip already-existing tables | Forward opt-in migrations and resumable package-owned adoption adapters |
+| Legacy assets/roles can serve multiple future tenants | Reviewed mappings and immutable package split ledgers; never implicit reassignment |
 
 ## 11. Required evidence
 
@@ -532,11 +545,10 @@ activating tenancy in the default full-suite profile.
 
 ## 12. Completion boundary
 
-The planning deliverable is this proposed architecture and ordered roadmap.
-No tenant columns, runtime flags, memberships, or new dependencies were added
-as part of this planning turn. Review the shared-database/shared-identity choices
-and the ownership model before writing the first detailed implementation plan.
+This second-review deliverable consists of the revised design, frozen interfaces,
+and seven focused plans coordinated by the execution program. No tenant columns,
+runtime feature, membership data, external dependency or configuration change
+has been implemented by this documentation work. The first executable task is
+Foundation F1; rollout remains gated by the complete program's evidence.
 
-The previously proposed CommonMark security update is a separate pending
-dependency decision. It was not part of the hardening commit and is not resolved
-by this tenancy proposal.
+The separate CommonMark dependency update remains outside the tenancy program.
