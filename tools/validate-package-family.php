@@ -95,7 +95,7 @@ $serviceLocatorAllowlist = [
         'src/Concerns/BelongsToTaxonomy.php',
         'src/Concerns/HasTaxonomies.php',
     ],
-    'translatable' => ['src/SelfTranslatable.php'],
+    'translatable' => ['src/SelfTranslatable.php', 'src/Translatable.php'],
 ];
 $errors = [];
 $familySource = '';

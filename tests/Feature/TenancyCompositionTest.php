@@ -27,6 +27,7 @@ use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantContextSnapshot;
 use Nvl\Tenancy\ValueObjects\TenantId;
 use Nvl\Tenancy\ValueObjects\TenantResourceDefinition;
+use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 it('separates selected tenancy provider from inert feature and deferred schema readiness', function (): void {
@@ -133,4 +134,14 @@ it('allows code-backed catalog dependencies without reclassifying their fixed vo
     $ownership->requireCompatible('pages', 'content');
     $ownership->validate();
     expect($ownership->mode($registry->get('content.catalog')))->toBe('platform');
+});
+
+it('loads inert tenancy before a standalone translatable dependency closure', function (): void {
+    config()->set('nvl-suite.modules', ['translatable' => true]);
+    $catalog = app(SuiteModuleCatalog::class);
+    $providers = $catalog->effectiveProviders();
+    expect($providers)->toContain(TenancyServiceProvider::class)
+        ->and(array_search(TenancyServiceProvider::class, $providers, true))
+        ->toBeLessThan(array_search(TranslatableServiceProvider::class, $providers, true))
+        ->and(config('tenancy.enabled'))->toBeFalse();
 });

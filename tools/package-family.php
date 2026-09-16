@@ -62,7 +62,7 @@ return [
         'support' => [],
         'taxonomy' => ['data', 'support', 'translatable'],
         'templates' => ['content', 'data', 'filterable', 'media', 'support', 'translatable'],
-        'translatable' => ['data', 'support'],
+        'translatable' => ['data', 'support', 'tenancy'],
         'translations' => ['data', 'filterable', 'support'],
     ],
     'typescript_sources' => [
@@ -328,6 +328,11 @@ return [
             'translatable' => [
                 'analysis_paths' => [
                     'src',
+                    'tests/Support/TenantArticle.php',
+                    'tests/Support/TenantArticleTranslation.php',
+                    'tests/Support/TenantSelfEntry.php',
+                    'tests/Support/TenantMixedTranslationOwner.php',
+                    'tests/Support/TenantPolymorphicTranslationChild.php',
                     'tests/Support/TestTranslatableModel.php',
                     'tests/Support/TestSelfTranslatableModel.php',
                     'tests/Support/TestDomainManagedTranslatableModel.php',

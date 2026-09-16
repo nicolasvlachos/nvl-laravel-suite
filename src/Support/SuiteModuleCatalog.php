@@ -224,7 +224,7 @@ final readonly class SuiteModuleCatalog
         ],
         'translatable' => [
             'provider' => TranslatableServiceProvider::class,
-            'dependencies' => ['data', 'support'],
+            'dependencies' => ['data', 'support', 'tenancy'],
             'stateful' => false,
             'migration' => ['mode' => 'domain-owned', 'config' => null],
             'doctor' => 'nvl:translatable:doctor',
