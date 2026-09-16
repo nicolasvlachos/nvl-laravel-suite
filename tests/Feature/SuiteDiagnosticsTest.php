@@ -484,6 +484,50 @@ PHP,
     }
 });
 
+it('accepts a minimal Tenancy overlay with an open resource map', function (): void {
+    [$directory, $inspector] = suitePackageConfigurationInspector([
+        'tenancy.php' => <<<'PHP'
+<?php
+
+return [
+    'enabled' => true,
+    'directory' => ['driver' => 'host'],
+    'resources' => [
+        'media' => ['ownership' => 'tenant'],
+    ],
+];
+PHP,
+    ]);
+
+    try {
+        expect($inspector->inspect(['tenancy']))->toBe([]);
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
+it('reports a misspelled Tenancy configuration key', function (): void {
+    [$directory, $inspector] = suitePackageConfigurationInspector([
+        'tenancy.php' => <<<'PHP'
+<?php
+
+return [
+    'stratgey' => 'shared-database',
+];
+PHP,
+    ]);
+
+    try {
+        $findings = collect($inspector->inspect(['tenancy']));
+
+        expect($findings)->toHaveCount(1)
+            ->and($findings->first()['code'] ?? null)->toBe('configuration.unknown_key')
+            ->and($findings->first()['path'] ?? null)->toBe('tenancy.stratgey');
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
 it('warns for expanded snapshots and reports only their missing current branch roots', function (): void {
     [$directory, $inspector] = suitePackageConfigurationInspector([
         'pages.php' => <<<'PHP'
