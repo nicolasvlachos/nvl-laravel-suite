@@ -52,7 +52,7 @@ return [
         'tenancy' => ['data', 'support'],
         'filterable' => ['data'],
         'forms' => ['data', 'filterable', 'support', 'translatable'],
-        'media' => ['data', 'filterable', 'support', 'translatable'],
+        'media' => ['data', 'filterable', 'support', 'tenancy', 'translatable'],
         'mail-notifications' => ['support'],
         'metafields' => ['data', 'support', 'translatable'],
         'pages' => ['content', 'data', 'filterable', 'metafields', 'seo', 'support', 'translatable'],
