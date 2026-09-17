@@ -297,7 +297,7 @@ final readonly class SuiteModuleCatalog
         ],
         'media' => [
             'provider' => MediaServiceProvider::class,
-            'dependencies' => ['data', 'filterable', 'support', 'translatable'],
+            'dependencies' => ['data', 'filterable', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'media.migrations.enabled'],
             'doctor' => 'nvl:media:doctor',
