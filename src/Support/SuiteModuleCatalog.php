@@ -337,7 +337,7 @@ final readonly class SuiteModuleCatalog
         ],
         'metafields' => [
             'provider' => MetafieldsServiceProvider::class,
-            'dependencies' => ['data', 'support', 'translatable'],
+            'dependencies' => ['data', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'metafields.migrations.enabled'],
             'doctor' => 'nvl:metafields:doctor',
