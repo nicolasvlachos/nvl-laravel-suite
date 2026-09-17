@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 
 /**
  * Localized field values for one content block.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $content_block_id
  * @property string $locale
  * @property array<string, mixed> $values
@@ -20,7 +22,10 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final class ContentBlockTranslation extends Model
 {
+    use GuardsTenantOwnership;
     use HasUuids;
+
+    public const string TENANT_RESOURCE = 'content.translations';
 
     /** @var list<string> */
     protected $fillable = ['content_block_id', 'locale', 'values'];

@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Enums\ContentRevisionEvent;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 
 /**
  * Immutable audit snapshot created by public block mutations.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $content_block_id
  * @property int $revision
  * @property ContentRevisionEvent $event
@@ -24,7 +26,10 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final class ContentRevision extends Model
 {
+    use GuardsTenantOwnership;
     use HasUuids;
+
+    public const string TENANT_RESOURCE = 'content.revisions';
 
     /** @var list<string> */
     protected $fillable = [

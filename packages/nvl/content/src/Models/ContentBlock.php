@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Nvl\Content\Casts\ContentSchemaCast;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
+use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Filterable\Definitions\FilterDefinition;
@@ -31,6 +32,7 @@ use Nvl\Translatable\Translatable;
  * Reusable localized content values for one definition and scope.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $definition_id
  * @property string $key
  * @property string $scope
@@ -58,9 +60,12 @@ use Nvl\Translatable\Translatable;
  */
 final class ContentBlock extends Model implements TranslatableModel
 {
+    use GuardsTenantOwnership;
     use HasUuids;
     use SoftDeletes;
     use Translatable;
+
+    public const string TENANT_RESOURCE = 'content.blocks';
 
     /** @var list<string> */
     protected $fillable = [

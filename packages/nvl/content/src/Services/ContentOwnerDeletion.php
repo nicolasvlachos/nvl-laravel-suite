@@ -40,13 +40,7 @@ final readonly class ContentOwnerDeletion
 
             throw $exception;
         }
-        $identifier = $owner->getKey();
-
-        if (! is_string($identifier) && ! is_int($identifier)) {
-            throw new InvalidArgumentException('A Content owner identifier must be a string or integer.');
-        }
-
-        $ownerId = (string) $identifier;
+        $ownerId = $this->owners->id($owner);
         $this->identities->owner($ownerType, $ownerId);
         $groups = $this->owners->groups($owner);
 

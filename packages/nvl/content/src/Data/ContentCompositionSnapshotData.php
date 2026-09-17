@@ -27,5 +27,7 @@ final class ContentCompositionSnapshotData extends Data
         #[DataCollectionOf(ContentCompositionSnapshotBlockData::class)]
         public readonly array $blocks,
         public readonly string $version,
+        public readonly ?string $tenantId = null,
+        public readonly int $formatVersion = 1,
     ) {}
 }

@@ -9,13 +9,14 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
 use InvalidArgumentException;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Serializes placement tree mutations on a stable owner-group lock key.
  */
 final readonly class ContentPlacementOwnerLock
 {
-    public function __construct(private Repository $cache) {}
+    public function __construct(private Repository $cache, private TenantBoundary $tenancy) {}
 
     /**
      * Run one placement tree mutation under its owner-group atomic lock.
@@ -47,10 +48,10 @@ final readonly class ContentPlacementOwnerLock
             'content.placements.lock_wait_seconds',
             10,
         );
-        $key = 'nvl:content:placement-owner:'.hash(
+        $key = $this->tenancy->key('content.placements', 'nvl:content:placement-owner:'.hash(
             'sha256',
             "{$ownerType}\0{$ownerId}\0{$group}",
-        );
+        ));
 
         return $store->lock($key, $seconds)->block($wait, $callback);
     }

@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace Nvl\Content\Services;
 
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentReferenceResolver;
+use Nvl\Content\Contracts\TenantSafeContentReferenceResolver;
 use Nvl\Content\Validation\ContentValidationContext;
+use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Allowlist for schema-declared references.
@@ -20,6 +26,9 @@ final class ContentReferenceRegistry
     public function __construct(
         private readonly Container $container,
         private readonly ContentPayloadGuard $guard,
+        private readonly Repository $configuration,
+        private readonly TenantBoundary $tenancy,
+        private readonly TenantResourceRegistry $tenantResources,
     ) {}
 
     public function register(string $alias, string $resolver): void
@@ -62,6 +71,7 @@ final class ContentReferenceRegistry
         ContentValidationContext $context,
     ): void {
         $resolver = $this->resolver($alias);
+        $this->assertTenantRecord($resolver, $identifier, $context);
 
         if (! $resolver->exists($identifier, $context)) {
             throw new InvalidArgumentException(
@@ -78,7 +88,9 @@ final class ContentReferenceRegistry
         string $identifier,
         ContentValidationContext $context,
     ): ?array {
-        $display = $this->resolver($alias)->display($identifier, $context);
+        $resolver = $this->resolver($alias);
+        $this->assertTenantRecord($resolver, $identifier, $context);
+        $display = $resolver->display($identifier, $context);
 
         if ($display !== null) {
             $this->guard->referenceDisplay($display);
@@ -107,5 +119,25 @@ final class ContentReferenceRegistry
         }
 
         return $resolver;
+    }
+
+    /** Deny legacy or foreign dynamic resolvers before existence/display output is consumed. */
+    private function assertTenantRecord(
+        ContentReferenceResolver $resolver,
+        string $identifier,
+        ContentValidationContext $context,
+    ): void {
+        if ($this->configuration->get('tenancy.enabled') !== true) {
+            return;
+        }
+        if (! $resolver instanceof TenantSafeContentReferenceResolver) {
+            throw new TenantBoundaryViolation('A tenant Content reference resolver must expose its canonical record.');
+        }
+        $record = $resolver->tenantRecord($identifier, $context);
+        if (! $record instanceof Model) {
+            throw new TenantBoundaryViolation('A Content reference is unavailable in the active tenant.');
+        }
+        $resource = $this->tenantResources->forModel($record);
+        $this->tenancy->assertRecord($record, $resource->key);
     }
 }

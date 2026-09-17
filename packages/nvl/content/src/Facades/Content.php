@@ -57,6 +57,7 @@ use Nvl\Filterable\Data\FilterSet;
  * @method static RenderedContentCompositionData render(Model&ContentOwner $owner, string $group, string $locale, ContentActorData $actor, bool $publicOnly = true)
  * @method static ContentCompositionSnapshotData capture(Model&ContentOwner $owner, string $group, ContentActorData $actor, bool $publishing = false)
  * @method static RenderedContentCompositionData renderSnapshot(ContentCompositionSnapshotData $snapshot, string $locale, ContentActorData $actor)
+ * @method static ContentCompositionSnapshotData adoptSnapshot(ContentCompositionSnapshotData $snapshot)
  *
  * @see ContentEngine
  */

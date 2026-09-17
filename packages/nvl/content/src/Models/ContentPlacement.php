@@ -11,11 +11,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 
 /**
  * Ordered placement of a reusable block within an allowlisted owner.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $content_block_id
  * @property string $owner_type
  * @property string $owner_id
@@ -34,7 +36,10 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final class ContentPlacement extends Model
 {
+    use GuardsTenantOwnership;
     use HasUuids;
+
+    public const string TENANT_RESOURCE = 'content.placements';
 
     public const string DEFAULT_GROUP = 'default';
 

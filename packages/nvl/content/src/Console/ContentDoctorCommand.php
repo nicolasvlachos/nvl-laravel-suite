@@ -210,6 +210,14 @@ final class ContentDoctorCommand extends Command
             $checks['schema.columns'] = $this->requiredColumnsExist($schema);
             $checks['schema.indexes'] = $this->requiredIndexesExist($schema);
             $checks['schema.foreign_keys'] = $this->requiredForeignKeysExist($schema);
+            if (config('tenancy.enabled') === true) {
+                foreach (['blocks', 'blocks_i18n', 'placements', 'revisions'] as $key) {
+                    $checks["tenancy.column.{$key}.tenant_id"] = $schema->hasColumn(
+                        ContentConfiguration::table($key),
+                        'tenant_id',
+                    );
+                }
+            }
             $checks['definitions.synchronized'] = $this->definitionsSynchronized(
                 $definitionList,
                 $json,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Content\Services;
 
 use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -21,6 +22,8 @@ use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /**
  * Captures and re-renders immutable compositions for Templates and other versioned consumers.
@@ -41,6 +44,8 @@ final readonly class ContentSnapshotService
         private ContentIdentityGuard $identities,
         private ContentLocalizedValues $localizedValues,
         private ContentPlacementOwnerLock $ownerLocks,
+        private Repository $configuration,
+        private TenantContext $tenantContext,
     ) {}
 
     /**
@@ -93,6 +98,13 @@ final readonly class ContentSnapshotService
         string $locale,
         ContentActorData $actor,
     ): RenderedContentCompositionData {
+        $tenantId = $this->snapshotTenantId();
+        if ($tenantId !== null && ($snapshot->formatVersion !== 2 || $snapshot->tenantId !== $tenantId)) {
+            throw new TenantBoundaryViolation('Content snapshot ownership differs from the active tenant.');
+        }
+        if ($tenantId === null && $snapshot->formatVersion > 1 && $snapshot->tenantId !== null) {
+            throw new TenantBoundaryViolation('A tenant Content snapshot requires an admitted tenant context.');
+        }
         $this->identities->group($snapshot->group);
         $this->assertSize(
             $snapshot->ownerType,
@@ -108,6 +120,8 @@ final readonly class ContentSnapshotService
                 $snapshot->ownerId,
                 $snapshot->group,
                 $snapshot->blocks,
+                $snapshot->tenantId,
+                $snapshot->formatVersion,
             ),
         )) {
             throw new InvalidArgumentException('Content composition snapshot integrity check failed.');
@@ -194,6 +208,45 @@ final readonly class ContentSnapshotService
         );
     }
 
+    /** Convert one verified legacy snapshot under its canonical active tenant owner. */
+    public function adoptLegacy(ContentCompositionSnapshotData $snapshot): ContentCompositionSnapshotData
+    {
+        $tenantId = $this->snapshotTenantId();
+        if ($tenantId === null || $snapshot->formatVersion !== 1 || $snapshot->tenantId !== null) {
+            throw new TenantBoundaryViolation('Only an unadopted legacy snapshot may be converted in tenant context.');
+        }
+
+        $this->assertSize($snapshot->ownerType, $snapshot->ownerId, $snapshot->group, $snapshot->blocks);
+        if (! hash_equals($snapshot->version, $this->version(
+            $snapshot->ownerType,
+            $snapshot->ownerId,
+            $snapshot->group,
+            $snapshot->blocks,
+        ))) {
+            throw new InvalidArgumentException('Legacy Content snapshot integrity check failed.');
+        }
+
+        $owner = $this->owners->resolve($snapshot->ownerType, $snapshot->ownerId);
+        $this->owners->assertGroup($owner, $snapshot->group);
+
+        return new ContentCompositionSnapshotData(
+            ownerType: $snapshot->ownerType,
+            ownerId: $snapshot->ownerId,
+            group: $snapshot->group,
+            blocks: $snapshot->blocks,
+            version: $this->version(
+                $snapshot->ownerType,
+                $snapshot->ownerId,
+                $snapshot->group,
+                $snapshot->blocks,
+                $tenantId,
+                2,
+            ),
+            tenantId: $tenantId,
+            formatVersion: 2,
+        );
+    }
+
     /**
      * Capture one composition while its placement and block rows remain locked.
      */
@@ -277,12 +330,16 @@ final readonly class ContentSnapshotService
 
         $this->assertSize($ownerType, $ownerId, $group, $blocks);
 
+        $tenantId = $this->snapshotTenantId();
+
         return new ContentCompositionSnapshotData(
             ownerType: $ownerType,
             ownerId: $ownerId,
             group: $group,
             blocks: $blocks,
-            version: $this->version($ownerType, $ownerId, $group, $blocks),
+            version: $this->version($ownerType, $ownerId, $group, $blocks, $tenantId, $tenantId === null ? 1 : 2),
+            tenantId: $tenantId,
+            formatVersion: $tenantId === null ? 1 : 2,
         );
     }
 
@@ -440,13 +497,30 @@ final readonly class ContentSnapshotService
         string $ownerId,
         string $group,
         array $blocks,
+        ?string $tenantId = null,
+        int $formatVersion = 1,
     ): string {
-        return $this->json->hash([
+        $payload = [
             'owner_type' => $ownerType,
             'owner_id' => $ownerId,
             'group' => $group,
             'blocks' => $this->serializeBlocks($blocks),
-        ]);
+        ];
+        if ($formatVersion >= 2) {
+            $payload = ['format_version' => $formatVersion, 'tenant_id' => $tenantId, ...$payload];
+        }
+
+        return $this->json->hash($payload);
+    }
+
+    /** Resolve the current tenant UUID while preserving legacy disabled snapshots. */
+    private function snapshotTenantId(): ?string
+    {
+        if ($this->configuration->get('tenancy.enabled') !== true) {
+            return null;
+        }
+
+        return $this->tenantContext->requireTenant()->value;
     }
 
     /**

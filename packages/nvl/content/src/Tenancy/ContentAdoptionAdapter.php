@@ -1,0 +1,165 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Nvl\Content\Tenancy;
+
+use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Migrations\Migrator;
+use Nvl\Content\Models\ContentBlock;
+use Nvl\Content\Models\ContentBlockTranslation;
+use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Models\ContentRevision;
+use Nvl\Content\Services\ContentOwnerRegistry;
+use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
+use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Tenancy\Services\TenantAdoptionMappings;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
+use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
+use Nvl\Tenancy\ValueObjects\TenantVerification;
+
+/** Owns bounded Content ownership expansion, derivation, verification, and activation. */
+final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
+{
+    /** Create the package adoption boundary. */
+    public function __construct(
+        private Migrator $migrator,
+        private TenantAdoptionMappings $mappings,
+        private ContentOwnerRegistry $owners,
+        private TenantResourceRegistry $resources,
+    ) {}
+
+    /** @return list<string> */
+    public function resources(): array
+    {
+        return ['content.definitions', 'content.blocks', 'content.translations', 'content.revisions', 'content.placements'];
+    }
+
+    /** Apply the nullable ownership expansion before any historical mapping. */
+    public function prepare(TenantAdoptionPlan $plan): void
+    {
+        $this->connection($plan);
+        $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([dirname(__DIR__, 2).'/database/tenancy-migrations'], ['force' => true]));
+    }
+
+    /** Backfill reviewed blocks in bounded order, then derive every child and placement owner. */
+    public function backfill(TenantAdoptionPlan $plan, ?string $cursor, int $limit): TenantBackfillResult
+    {
+        $connection = $this->connection($plan);
+        $placementPhase = is_string($cursor) && str_starts_with($cursor, 'placements:');
+        $batch = $placementPhase ? [] : $this->mappings->assignments($plan, 'content.blocks', $cursor, $limit);
+        $connection->transaction(function () use ($connection, $batch): void {
+            foreach ($batch as $assignment) {
+                $connection->table((new ContentBlock)->getTable())->where('id', $assignment->recordId)->update(['tenant_id' => $assignment->tenantId->value]);
+                $connection->table((new ContentBlockTranslation)->getTable())->where('content_block_id', $assignment->recordId)->update(['tenant_id' => $assignment->tenantId->value]);
+                $connection->table((new ContentRevision)->getTable())->where('content_block_id', $assignment->recordId)->update(['tenant_id' => $assignment->tenantId->value]);
+            }
+        });
+        if ($batch !== []) {
+            $last = $batch[array_key_last($batch)];
+
+            return new TenantBackfillResult($last->recordId, count($batch));
+        }
+
+        $placementCursor = $placementPhase ? substr((string) $cursor, strlen('placements:')) : null;
+        $placements = $connection->table((new ContentPlacement)->getTable())
+            ->whereNull('tenant_id')
+            ->when($placementCursor !== null && $placementCursor !== '', fn ($query) => $query->where('id', '>', $placementCursor))
+            ->orderBy('id')->limit($limit)->get();
+        $connection->transaction(function () use ($connection, $placements): void {
+            foreach ($placements as $row) {
+                if (! is_string($row->owner_type) || ! is_string($row->owner_id)) {
+                    throw new TenantBoundaryViolation('A Content placement has invalid canonical owner identity.');
+                }
+                $class = $this->owners->model($row->owner_type);
+                $owner = (new $class)->newQueryWithoutScopes()->find($row->owner_id);
+                if (! $owner instanceof Model) {
+                    throw new TenantBoundaryViolation('A Content placement owner cannot be resolved.');
+                }
+                $this->resources->forModel($owner);
+                $tenantId = $owner->getAttribute('tenant_id');
+                if (! is_string($tenantId)) {
+                    throw new TenantBoundaryViolation('A Content placement owner has no reviewed tenant identity.');
+                }
+                $connection->table((new ContentPlacement)->getTable())->where('id', $row->id)->update(['tenant_id' => $tenantId]);
+            }
+        });
+
+        if ($placements->isNotEmpty()) {
+            $last = $placements->last();
+
+            return new TenantBackfillResult('placements:'.(string) $last->id, $placements->count());
+        }
+
+        return new TenantBackfillResult(null, 0);
+    }
+
+    /** Verify roots, inherited rows, canonical owners, and cross-graph equality. */
+    public function verify(TenantAdoptionPlan $plan): TenantVerification
+    {
+        $connection = $this->connection($plan);
+        $errors = [];
+        foreach ([new ContentBlock, new ContentBlockTranslation, new ContentRevision, new ContentPlacement] as $model) {
+            if (! $connection->getSchemaBuilder()->hasColumn($model->getTable(), 'tenant_id') || $connection->table($model->getTable())->whereNull('tenant_id')->exists()) {
+                $errors[] = $model->getTable().'.tenant_id';
+            }
+        }
+        foreach ([(new ContentBlockTranslation)->getTable(), (new ContentRevision)->getTable()] as $child) {
+            if ($connection->table($child.' as child')->join((new ContentBlock)->getTable().' as block', 'block.id', '=', 'child.content_block_id')->whereColumn('child.tenant_id', '!=', 'block.tenant_id')->exists()) {
+                $errors[] = $child.'.ownership';
+            }
+        }
+        if ($connection->table((new ContentPlacement)->getTable().' as placement')->join((new ContentBlock)->getTable().' as block', 'block.id', '=', 'placement.content_block_id')->whereColumn('placement.tenant_id', '!=', 'block.tenant_id')->exists()) {
+            $errors[] = 'content.placements.block_ownership';
+        }
+        foreach ($connection->table((new ContentPlacement)->getTable())->orderBy('id')->get() as $row) {
+            if (! is_string($row->owner_type) || ! is_string($row->owner_id)) {
+                $errors[] = 'content.placements.owner_identity';
+
+                continue;
+            }
+            try {
+                $class = $this->owners->model($row->owner_type);
+                $owner = (new $class)->newQueryWithoutScopes()->find($row->owner_id);
+                $resource = $owner instanceof Model ? $this->resources->forModel($owner) : null;
+                if (! $owner instanceof Model || $resource === null
+                    || $owner->getAttribute('tenant_id') !== $row->tenant_id) {
+                    $errors[] = 'content.placements.owner_ownership:'.$row->id;
+                }
+            } catch (\Throwable) {
+                $errors[] = 'content.placements.owner_ownership:'.$row->id;
+            }
+            if (count($errors) >= 100) {
+                break;
+            }
+        }
+
+        return new TenantVerification(array_slice(array_unique($errors), 0, 100));
+    }
+
+    /** Refuse activation until the complete graph has verified. */
+    public function activate(TenantAdoptionPlan $plan): void
+    {
+        if (! $this->verify($plan)->passed()) {
+            throw new TenantBoundaryViolation('Content tenant ownership did not verify.');
+        }
+        $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170011_constrain_content_ownership.php';
+        $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([$path], ['force' => true]));
+        if (! $this->verify($plan)->passed()) {
+            throw new TenantBoundaryViolation('Content tenant ownership failed after constraint activation.');
+        }
+    }
+
+    /** Resolve the exact configured Content connection selected by the coordinator. */
+    private function connection(TenantAdoptionPlan $plan): Connection
+    {
+        $connection = (new ContentBlock)->setConnection($plan->connection)->getConnection();
+        if ($connection->getName() !== $plan->connection) {
+            throw new TenantBoundaryViolation('Content adoption requires its canonical connection.');
+        }
+
+        return $connection;
+    }
+}

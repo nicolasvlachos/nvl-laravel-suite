@@ -18,6 +18,7 @@ use Nvl\Content\Services\CanonicalJson;
 use Nvl\Content\Services\ContentDefinitionMigrationRegistry;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentDefinitionSyncLock;
+use Nvl\Content\Services\ContentPlatformCatalogGuard;
 
 /**
  * Synchronizes the queryable definition mirror without deleting application data.
@@ -30,12 +31,14 @@ final readonly class SyncContentDefinitionsAction
         private ContentDefinitionMigrationRegistry $migrations,
         private ContentDefinitionSyncLock $syncLock,
         private CanonicalJson $json,
+        private ContentPlatformCatalogGuard $platformCatalog,
     ) {}
 
     public function execute(
         ContentActorData $actor,
         bool $dryRun = false,
     ): ContentDefinitionSyncPlanData {
+        $this->platformCatalog->authorize();
         $this->authorization->authorize(ContentAbility::SyncDefinitions, $actor);
         $registered = [];
 

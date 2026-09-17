@@ -357,4 +357,10 @@ final readonly class Content
     ): RenderedContentCompositionData {
         return $this->snapshots->render($snapshot, $locale, $actor);
     }
+
+    /** Adopt one hash-valid format-1 snapshot under its canonical active tenant owner. */
+    public function adoptSnapshot(ContentCompositionSnapshotData $snapshot): ContentCompositionSnapshotData
+    {
+        return $this->snapshots->adoptLegacy($snapshot);
+    }
 }

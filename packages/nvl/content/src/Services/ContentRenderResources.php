@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Nvl\Content\Services;
 
 use Closure;
+use Illuminate\Container\Container;
 use Illuminate\Support\Collection;
 use Nvl\Media\Models\Media;
+use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /**
  * Per-composition model and resolver cache; never shared across requests or jobs.
@@ -47,6 +49,13 @@ final class ContentRenderResources
             ->each(function (Media $media): void {
                 $this->media[$media->id] = $media;
             });
+
+        if (Container::getInstance()->make('config')->get('tenancy.enabled') === true) {
+            $unresolved = array_diff($missing, array_keys($this->media));
+            if ($unresolved !== []) {
+                throw new TenantBoundaryViolation('A Content media reference is outside the active tenant.');
+            }
+        }
     }
 
     /**

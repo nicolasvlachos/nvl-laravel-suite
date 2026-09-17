@@ -56,9 +56,13 @@ use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Support\ContentOwnerDeletionBridge;
 use Nvl\Content\Support\ContentUriSchemePolicy;
+use Nvl\Content\Tenancy\ContentResourceRegistrar;
 use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
+use Nvl\Tenancy\Services\TenantAdoptionRegistry;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Opis\JsonSchema\Validator;
 
@@ -72,7 +76,12 @@ final class ContentServiceProvider extends ServiceProvider
     public function register(): void
     {
         ContentOwnerDeletionBridge::clear();
+        $this->app->register(TenancyServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/content.php', 'content');
+        (new ContentResourceRegistrar)->register(
+            $this->app->make(TenantResourceRegistry::class),
+            $this->app->make(TenantAdoptionRegistry::class),
+        );
         $this->validateUriSchemeConfiguration();
         $authorization = config(
             'content.authorization.class',

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Allowlist and morph map for model-backed Content owners.
@@ -19,7 +22,12 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     /** @var array<string, class-string<Model&ContentOwner>> */
     private array $models = [];
 
-    public function __construct(private readonly ContentIdentityGuard $identities) {}
+    public function __construct(
+        private readonly ContentIdentityGuard $identities,
+        private readonly Repository $configuration,
+        private readonly TenantBoundary $tenancy,
+        private readonly TenantResourceRegistry $tenantResources,
+    ) {}
 
     /**
      * Register one stable owner alias and its Content-capable Eloquent model.
@@ -123,6 +131,12 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             throw new InvalidArgumentException(
                 'The supplied Content owner no longer exists.',
             );
+        }
+
+        if ($this->configuration->get('tenancy.enabled') === true) {
+            $canonical = $owner->newQuery()->findOrFail($identifier);
+            $resource = $this->tenantResources->forModel($canonical);
+            $this->tenancy->assertRecord($canonical, $resource->key);
         }
 
         return $id;
@@ -237,6 +251,11 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             throw new InvalidArgumentException(
                 "Resolved content owner [{$alias}] does not match identifier [{$identifier}].",
             );
+        }
+
+        if ($this->configuration->get('tenancy.enabled') === true) {
+            $resource = $this->tenantResources->forModel($owner);
+            $this->tenancy->assertRecord($owner, $resource->key);
         }
 
         return $owner;

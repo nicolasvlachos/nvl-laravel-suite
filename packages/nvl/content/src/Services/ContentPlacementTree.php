@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
@@ -22,6 +23,7 @@ final readonly class ContentPlacementTree
     public function __construct(
         private ContentIdentityGuard $identities,
         private ContentOwnerRegistry $owners,
+        private Repository $configuration,
     ) {}
 
     /**
@@ -126,6 +128,14 @@ final readonly class ContentPlacementTree
         }
 
         foreach ($placements as $placement) {
+            $block = $placement->block;
+            if ($this->configuration->get('tenancy.enabled') === true
+                && (! is_string($placement->tenant_id)
+                || ! is_string($block->tenant_id)
+                || $placement->tenant_id !== $block->tenant_id)) {
+                throw new InvalidArgumentException('Content placement and block ownership must match.');
+            }
+
             if ($placement->owner_type !== $ownerType
                 || $placement->owner_id !== $ownerId
                 || $placement->group !== $group) {
@@ -156,6 +166,11 @@ final readonly class ContentPlacementTree
                     throw new InvalidArgumentException(
                         'Nested content placements must remain in their parent region.',
                     );
+                }
+
+                if ($this->configuration->get('tenancy.enabled') === true
+                    && $parent->tenant_id !== $placement->tenant_id) {
+                    throw new InvalidArgumentException('Nested content placements must share tenant ownership.');
                 }
 
                 if (isset($visited[$parent->id])) {
