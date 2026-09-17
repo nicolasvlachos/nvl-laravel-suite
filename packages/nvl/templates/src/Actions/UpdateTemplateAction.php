@@ -16,6 +16,7 @@ use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Support\TemplatesConfiguration;
 use Nvl\Translatable\Enums\TranslationSyncMode;
 use Nvl\Translatable\Services\TranslationWriter;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Updates editable state and labels without mutating source-authoritative structure.
@@ -26,6 +27,7 @@ final readonly class UpdateTemplateAction
         private TemplateAuthorization $authorization,
         private TemplateContentGuard $guard,
         private TranslationWriter $translations,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -52,7 +54,9 @@ final readonly class UpdateTemplateAction
                 $templateId,
                 $translationMode,
             ): Template {
-                $template = Template::query()->lockForUpdate()->findOrFail($templateId);
+                $template = $this->boundary->query(Template::query(), 'templates.templates')
+                    ->lockForUpdate()
+                    ->findOrFail($templateId);
 
                 if ($template->revision !== $data->expectedRevision) {
                     throw StaleTemplateException::forResource('template', $template->id);

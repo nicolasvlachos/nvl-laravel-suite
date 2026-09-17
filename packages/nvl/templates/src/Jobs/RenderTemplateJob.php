@@ -15,13 +15,17 @@ use Nvl\Templates\Actions\ProcessTemplateRenderAction;
 use Nvl\Templates\Enums\TemplateRenderStatus;
 use Nvl\Templates\Models\TemplateRender;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Contracts\TenantQueuedJob;
+use Nvl\Tenancy\Enums\TenantContextMode;
+use Nvl\Tenancy\ValueObjects\TenantContextSnapshot;
+use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 use Throwable;
 
 /**
  * Idempotent queue boundary for persisted template renders.
  */
 #[FailOnTimeout]
-final class RenderTemplateJob implements ShouldBeUniqueUntilProcessing, ShouldQueue
+final class RenderTemplateJob implements ShouldBeUniqueUntilProcessing, ShouldQueue, TenantQueuedJob
 {
     use Queueable;
 
@@ -39,7 +43,11 @@ final class RenderTemplateJob implements ShouldBeUniqueUntilProcessing, ShouldQu
     public function __construct(
         public readonly string $renderId,
         public readonly int $dispatchGeneration = 0,
+        ?TenantJobEnvelope $envelope = null,
     ) {
+        $this->envelope = $envelope ?? new TenantJobEnvelope(
+            new TenantContextSnapshot(TenantContextMode::Disabled),
+        );
         $this->processingToken = (string) Str::uuid();
         $this->tries = TemplatesConfiguration::positiveInteger(
             'templates.rendering.tries',
@@ -55,12 +63,24 @@ final class RenderTemplateJob implements ShouldBeUniqueUntilProcessing, ShouldQu
         );
     }
 
+    private readonly TenantJobEnvelope $envelope;
+
     /**
      * Return the persisted render identifier used by Laravel's dispatch lock.
      */
     public function uniqueId(): string
     {
-        return $this->renderId;
+        $identity = $this->renderId.':'.$this->dispatchGeneration;
+
+        return $this->envelope->context->mode === TenantContextMode::Disabled
+            ? $identity
+            : hash('sha256', serialize($this->envelope->context)).':'.$identity;
+    }
+
+    /** Return the producer context captured before native queue dispatch. */
+    public function tenantJobEnvelope(): TenantJobEnvelope
+    {
+        return $this->envelope;
     }
 
     /**
@@ -137,10 +157,18 @@ final class RenderTemplateJob implements ShouldBeUniqueUntilProcessing, ShouldQu
             $updates['settings'] = null;
         }
 
-        TemplateRender::query()
+        $query = TemplateRender::query()
             ->whereKey($this->renderId)
             ->where('dispatch_generation', $this->dispatchGeneration)
-            ->where('status', '!=', TemplateRenderStatus::Completed->value)
+            ->where('status', '!=', TemplateRenderStatus::Completed->value);
+
+        if ($this->envelope->context->mode === TenantContextMode::Tenant) {
+            $query->where('tenant_id', $this->envelope->context->tenantId?->value);
+        } elseif ($this->envelope->context->mode === TenantContextMode::Platform) {
+            $query->whereNull('tenant_id');
+        }
+
+        $query
             ->where(function (Builder $query): void {
                 $query->where('processing_token', $this->processingToken)
                     ->orWhereIn('status', [

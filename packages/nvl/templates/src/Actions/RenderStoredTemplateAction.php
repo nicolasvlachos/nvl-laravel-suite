@@ -12,6 +12,7 @@ use Nvl\Templates\Data\TemplateActorData;
 use Nvl\Templates\Enums\TemplateAbility;
 use Nvl\Templates\Models\Template as StoredTemplate;
 use Nvl\Templates\Services\StoredTemplateRenderResolver;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Adapts the database implementation into the core Template rendering action.
@@ -25,6 +26,7 @@ final readonly class RenderStoredTemplateAction
         private TemplateAuthorization $authorization,
         private StoredTemplateRenderResolver $resolver,
         private RenderTemplateAction $renderTemplate,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -36,8 +38,8 @@ final readonly class RenderStoredTemplateAction
         TemplateActorData $actor,
     ): RenderedTemplateData {
         $model = $template instanceof StoredTemplate
-            ? StoredTemplate::query()->findOrFail($template->id)
-            : StoredTemplate::query()
+            ? $this->boundary->query(StoredTemplate::query(), 'templates.templates')->findOrFail($template->id)
+            : $this->boundary->query(StoredTemplate::query(), 'templates.templates')
                 ->when(
                     Str::isUuid($template),
                     static fn ($query) => $query

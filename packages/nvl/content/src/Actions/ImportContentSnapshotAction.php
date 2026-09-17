@@ -50,7 +50,7 @@ final readonly class ImportContentSnapshotAction
         foreach ($source->mediaIds as $sourceId) {
             $destinationId = $mediaMap[$sourceId]
                 ?? throw new TenantBoundaryViolation("Missing copied Media mapping for [{$sourceId}].");
-            $this->boundary->query(Media::query(), 'media.media')->whereKey($destinationId)->firstOrFail();
+            $this->boundary->query(Media::query(), 'media.assets')->whereKey($destinationId)->firstOrFail();
         }
         $placementIds = [];
         $blockIds = [];

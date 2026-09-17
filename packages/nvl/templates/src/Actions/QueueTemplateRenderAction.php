@@ -20,6 +20,9 @@ use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\StoredTemplateRenderResolver;
 use Nvl\Templates\Services\TemplateRenderDispatcher;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 
 /**
  * Persists and dispatches one idempotent asynchronous render request.
@@ -31,6 +34,8 @@ final readonly class QueueTemplateRenderAction
         private StoredTemplateRenderResolver $resolver,
         private CanonicalJson $canonicalJson,
         private TemplateRenderDispatcher $dispatcher,
+        private TenantBoundary $boundary,
+        private TenantContext $context,
     ) {}
 
     public function execute(
@@ -39,8 +44,8 @@ final readonly class QueueTemplateRenderAction
         TemplateActorData $actor,
     ): TemplateRender {
         $model = $template instanceof Template
-            ? Template::query()->findOrFail($template->id)
-            : Template::query()
+            ? $this->boundary->query(Template::query(), 'templates.templates')->findOrFail($template->id)
+            : $this->boundary->query(Template::query(), 'templates.templates')
                 ->when(
                     Str::isUuid($template),
                     static fn ($query) => $query
@@ -73,6 +78,7 @@ final readonly class QueueTemplateRenderAction
             'actor_type' => $actor->type,
             'actor_id' => $actor->id,
         ]);
+        $envelope = TenantJobEnvelope::capture($this->context);
 
         try {
             return DB::connection(TemplatesConfiguration::connection())
@@ -82,9 +88,10 @@ final readonly class QueueTemplateRenderAction
                     $model,
                     $resolved,
                     $requestDigest,
+                    $envelope,
                 ): TemplateRender {
                     if ($data->idempotencyKey !== null) {
-                        $existing = TemplateRender::query()
+                        $existing = $this->boundary->query(TemplateRender::query(), 'templates.renders')
                             ->where('idempotency_key', $data->idempotencyKey)
                             ->lockForUpdate()
                             ->first();
@@ -103,6 +110,7 @@ final readonly class QueueTemplateRenderAction
                     }
 
                     $render = TemplateRender::query()->create([
+                        'tenant_id' => $model->tenant_id,
                         'template_id' => $model->id,
                         'template_version_id' => $resolved->version->id,
                         'template_assignment_id' => $resolved->assignment?->id,
@@ -118,8 +126,8 @@ final readonly class QueueTemplateRenderAction
                     ]);
 
                     DB::connection(TemplatesConfiguration::connection())
-                        ->afterCommit(function () use ($render): void {
-                            $this->dispatcher->dispatch($render->id);
+                        ->afterCommit(function () use ($envelope, $render): void {
+                            $this->dispatcher->dispatch($render->id, $envelope);
                         });
 
                     return $render;
@@ -129,7 +137,7 @@ final readonly class QueueTemplateRenderAction
                 throw $exception;
             }
 
-            $existing = TemplateRender::query()
+            $existing = $this->boundary->query(TemplateRender::query(), 'templates.renders')
                 ->where('idempotency_key', $data->idempotencyKey)
                 ->first();
 

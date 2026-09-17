@@ -14,6 +14,7 @@ use Nvl\Templates\Models\TemplateRender;
 use Nvl\Templates\Services\StoredTemplateRenderResolver;
 use Nvl\Templates\Services\TemplateOutputGuard;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Throwable;
 
 /**
@@ -28,6 +29,7 @@ final readonly class ProcessTemplateRenderAction
         private StoredTemplateRenderResolver $resolver,
         private RenderTemplateAction $renderTemplate,
         private TemplateOutputGuard $outputGuard,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -74,7 +76,9 @@ final readonly class ProcessTemplateRenderAction
                 $renderId,
                 $processingToken,
             ): TemplateRender {
-                $render = TemplateRender::query()->lockForUpdate()->findOrFail($renderId);
+                $render = $this->boundary->query(TemplateRender::query(), 'templates.renders')
+                    ->lockForUpdate()
+                    ->findOrFail($renderId);
 
                 if (($dispatchGeneration !== null
                     && $render->dispatch_generation !== $dispatchGeneration)
@@ -114,7 +118,9 @@ final readonly class ProcessTemplateRenderAction
                 $renderId,
                 $result,
             ): TemplateRender {
-                $render = TemplateRender::query()->lockForUpdate()->findOrFail($renderId);
+                $render = $this->boundary->query(TemplateRender::query(), 'templates.renders')
+                    ->lockForUpdate()
+                    ->findOrFail($renderId);
                 $this->assertLeaseOwner($render, $processingToken);
                 $extension = match (true) {
                     str_starts_with($result->mimeType, 'application/pdf') => 'pdf',
@@ -176,7 +182,9 @@ final readonly class ProcessTemplateRenderAction
     ): void {
         DB::connection(TemplatesConfiguration::connection())
             ->transaction(function () use ($exception, $processingToken, $renderId): void {
-                $render = TemplateRender::query()->lockForUpdate()->findOrFail($renderId);
+                $render = $this->boundary->query(TemplateRender::query(), 'templates.renders')
+                    ->lockForUpdate()
+                    ->findOrFail($renderId);
 
                 if ($render->status !== TemplateRenderStatus::Processing
                     || $render->processing_token !== $processingToken) {

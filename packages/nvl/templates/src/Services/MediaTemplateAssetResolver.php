@@ -9,6 +9,7 @@ use Nvl\Media\Models\Media;
 use Nvl\Templates\Contracts\TemplateAssetResolver;
 use Nvl\Templates\Data\MediaTemplateAssetData;
 use Nvl\Templates\Exceptions\TemplateResolutionException;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Resolves opt-in template aliases through revision-aware NVL Media delivery.
@@ -18,6 +19,7 @@ final readonly class MediaTemplateAssetResolver implements TemplateAssetResolver
     public function __construct(
         private MediaTemplateAssetRegistry $assets,
         private TemplateAssetGuard $guard,
+        private TenantBoundary $boundary,
     ) {}
 
     public function resolve(string $key): ?string
@@ -29,7 +31,7 @@ final readonly class MediaTemplateAssetResolver implements TemplateAssetResolver
             return null;
         }
 
-        $media = Media::query()
+        $media = $this->boundary->query(Media::query(), 'media.assets')
             ->with('imageVariations')
             ->available()
             ->find($asset->mediaId);

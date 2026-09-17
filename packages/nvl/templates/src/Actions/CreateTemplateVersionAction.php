@@ -14,6 +14,7 @@ use Nvl\Templates\Models\Template;
 use Nvl\Templates\Models\TemplateVersion;
 use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Creates the next immutable numbered draft under a template lock.
@@ -23,6 +24,7 @@ final readonly class CreateTemplateVersionAction
     public function __construct(
         private TemplateAuthorization $authorization,
         private TemplateContentGuard $guard,
+        private TenantBoundary $boundary,
     ) {}
 
     public function execute(
@@ -41,10 +43,13 @@ final readonly class CreateTemplateVersionAction
 
         return DB::connection(TemplatesConfiguration::connection())
             ->transaction(function () use ($actor, $data, $templateId): TemplateVersion {
-                $template = Template::query()->lockForUpdate()->findOrFail($templateId);
+                $template = $this->boundary->query(Template::query(), 'templates.templates')
+                    ->lockForUpdate()
+                    ->findOrFail($templateId);
                 $currentVersion = $template->versions()->max('version');
                 $nextVersion = is_numeric($currentVersion) ? ((int) $currentVersion) + 1 : 1;
                 $version = $template->versions()->create([
+                    'tenant_id' => $template->tenant_id,
                     'version' => $nextVersion,
                     'metadata' => $data->metadata,
                 ]);

@@ -14,6 +14,7 @@ use Nvl\Templates\Enums\TemplateAbility;
 use Nvl\Templates\Models\TemplateRender;
 use Nvl\Templates\Services\TemplateRenderFilterSchema;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Lists authorized durable render history through a fixed query allowlist.
@@ -24,6 +25,7 @@ final readonly class ListTemplateRendersAction
         private TemplateAuthorization $authorization,
         private EloquentFilterApplier $filters,
         private TemplateRenderFilterSchema $filterSchema,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -41,7 +43,8 @@ final readonly class ListTemplateRendersAction
             $actor,
             ['resource' => 'template_render_history'],
         );
-        $query = TemplateRender::query()->with('media');
+        $query = $this->boundary->query(TemplateRender::query(), 'templates.renders')
+            ->with('media');
 
         if (! $actor->system) {
             if ($actor->type === null || $actor->id === null) {

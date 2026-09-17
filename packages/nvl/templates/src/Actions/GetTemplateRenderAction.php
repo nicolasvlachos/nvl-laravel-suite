@@ -9,13 +9,17 @@ use Nvl\Templates\Contracts\TemplateAuthorization;
 use Nvl\Templates\Data\TemplateActorData;
 use Nvl\Templates\Enums\TemplateAbility;
 use Nvl\Templates\Models\TemplateRender;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Returns one authorized durable render with its private Media reference loaded.
  */
 final readonly class GetTemplateRenderAction
 {
-    public function __construct(private TemplateAuthorization $authorization) {}
+    public function __construct(
+        private TemplateAuthorization $authorization,
+        private TenantBoundary $boundary,
+    ) {}
 
     /**
      * Resolve and authorize one durable render record.
@@ -25,7 +29,8 @@ final readonly class GetTemplateRenderAction
         TemplateActorData $actor,
     ): TemplateRender {
         $renderId = $render instanceof TemplateRender ? $render->id : $render;
-        $model = TemplateRender::query()->findOrFail($renderId);
+        $model = $this->boundary->query(TemplateRender::query(), 'templates.renders')
+            ->findOrFail($renderId);
         $this->authorization->authorize(
             TemplateAbility::View,
             $actor,

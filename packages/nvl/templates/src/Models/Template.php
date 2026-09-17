@@ -20,6 +20,8 @@ use Nvl\Translatable\Translatable as HasTranslations;
  * Structural, renderer-bound template aggregate.
  *
  * @property string $id
+ * @property string|null $tenant_id
+ * @property string $ownership_key
  * @property string $key
  * @property string $renderer
  * @property TemplateStatus $status
@@ -38,6 +40,8 @@ final class Template extends Model implements TranslatableModel
     /** @var list<string> */
     protected $fillable = [
         'key',
+        'tenant_id',
+        'ownership_key',
         'renderer',
         'status',
         'schema',
@@ -57,6 +61,7 @@ final class Template extends Model implements TranslatableModel
             foreignKey: 'template_id',
             fields: ['title', 'description'],
             mutationPolicy: TranslationMutationPolicy::DomainActionOnly,
+            ownershipResource: 'templates.templates',
         );
     }
 

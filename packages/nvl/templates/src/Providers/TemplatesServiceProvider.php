@@ -7,6 +7,7 @@ namespace Nvl\Templates\Providers;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
+use Nvl\Content\Services\ContentCatalogCopyRegistry;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Templates\Console\AdoptTemplatesCommand;
@@ -30,9 +31,14 @@ use Nvl\Templates\Services\ConfiguredTemplatePayloadValidator;
 use Nvl\Templates\Services\MediaTemplateAssetRegistry;
 use Nvl\Templates\Services\MediaTemplateAssetResolver;
 use Nvl\Templates\Services\NullTemplateAssetResolver;
+use Nvl\Templates\Services\TemplateContentCopyAccess;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
 use Nvl\Templates\Services\TemplateRendererRegistry;
+use Nvl\Templates\Tenancy\TemplatesResourceRegistrar;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
+use Nvl\Tenancy\Services\TenantAdoptionRegistry;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -47,7 +53,12 @@ final class TemplatesServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->register(TenancyServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/templates.php', 'templates');
+        (new TemplatesResourceRegistrar)->register(
+            $this->app->make(TenantResourceRegistry::class),
+            $this->app->make(TenantAdoptionRegistry::class),
+        );
         $authorization = config(
             'templates.authorization.class',
             ConfiguredTemplateAuthorization::class,
@@ -94,6 +105,7 @@ final class TemplatesServiceProvider extends ServiceProvider
         TemplateRendererRegistry $renderers,
         TemplateOwnerRegistry $owners,
         ContentOwnerRegistrar $contentOwners,
+        ContentCatalogCopyRegistry $catalogCopies,
     ): void {
         $assets = $this->app->make(MediaTemplateAssetRegistry::class);
         $typeScriptSources->register(__DIR__.'/..', 'nvl/templates');
@@ -105,6 +117,10 @@ final class TemplatesServiceProvider extends ServiceProvider
         $this->registerDefinitions($definitions);
         $this->registerOwners($owners);
         $this->registerMediaAssets($assets);
+        $catalogCopies->register(
+            TemplateVersion::CONTENT_OWNER_TYPE,
+            TemplateContentCopyAccess::class,
+        );
         $registeredContentOwner = $contentOwners->registered(
             TemplateVersion::CONTENT_OWNER_TYPE,
         );

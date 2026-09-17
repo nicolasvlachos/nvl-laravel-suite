@@ -16,6 +16,7 @@ use Nvl\Templates\Exceptions\StaleTemplateException;
 use Nvl\Templates\Models\TemplateVersion;
 use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Replaces draft content while published and retired versions stay immutable.
@@ -25,6 +26,7 @@ final readonly class UpdateTemplateVersionAction
     public function __construct(
         private TemplateAuthorization $authorization,
         private TemplateContentGuard $guard,
+        private TenantBoundary $boundary,
     ) {}
 
     public function execute(
@@ -42,7 +44,9 @@ final readonly class UpdateTemplateVersionAction
 
         return DB::connection(TemplatesConfiguration::connection())
             ->transaction(function () use ($actor, $data, $versionId): TemplateVersion {
-                $version = TemplateVersion::query()->lockForUpdate()->findOrFail($versionId);
+                $version = $this->boundary->query(TemplateVersion::query(), 'templates.versions')
+                    ->lockForUpdate()
+                    ->findOrFail($versionId);
 
                 if ($version->revision !== $data->expectedRevision) {
                     throw StaleTemplateException::forResource('template version', $version->id);

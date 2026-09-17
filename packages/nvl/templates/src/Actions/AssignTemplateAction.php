@@ -22,6 +22,7 @@ use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Services\TemplateOwnerRegistry;
 use Nvl\Templates\Services\TemplateVersionResolver;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Creates or updates a unique owner/profile template assignment.
@@ -34,6 +35,7 @@ final readonly class AssignTemplateAction
         private TemplateDefinitionRegistry $definitions,
         private TemplateContentGuard $guard,
         private TemplateVersionResolver $versions,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -62,7 +64,7 @@ final readonly class AssignTemplateAction
         try {
             return DB::connection(TemplatesConfiguration::connection())
                 ->transaction(function () use ($actor, $data, $templateId): TemplateAssignment {
-                    $template = Template::query()->lockForUpdate()->findOrFail($templateId);
+                    $template = $this->boundary->query(Template::query(), 'templates.templates')->lockForUpdate()->findOrFail($templateId);
                     $definition = $this->definitions->get($template->key);
                     $canonicalJson = new CanonicalJson;
 
@@ -85,7 +87,7 @@ final readonly class AssignTemplateAction
                         $this->versions->forAssignment($template, $data->versionId);
                     }
 
-                    $assignment = TemplateAssignment::query()
+                    $assignment = $this->boundary->query(TemplateAssignment::query(), 'templates.assignments')
                         ->where('owner_type', $data->ownerType)
                         ->where('owner_id', $data->ownerId)
                         ->where('profile', $data->profile)
@@ -104,6 +106,7 @@ final readonly class AssignTemplateAction
                     $assignment ??= new TemplateAssignment;
                     $assignment->fill([
                         'template_id' => $template->id,
+                        'tenant_id' => $template->tenant_id,
                         'template_version_id' => $data->versionId,
                         'owner_type' => $data->ownerType,
                         'owner_id' => $data->ownerId,
@@ -115,7 +118,7 @@ final readonly class AssignTemplateAction
                     return $assignment->refresh();
                 });
         } catch (UniqueConstraintViolationException $exception) {
-            $assignment = TemplateAssignment::query()
+            $assignment = $this->boundary->query(TemplateAssignment::query(), 'templates.assignments')
                 ->where('owner_type', $data->ownerType)
                 ->where('owner_id', $data->ownerId)
                 ->where('profile', $data->profile)

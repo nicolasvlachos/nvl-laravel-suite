@@ -17,6 +17,7 @@
         "nvl/filterable": "^2.0",
         "nvl/media": "^2.0",
         "nvl/support": "^2.0",
+        "nvl/tenancy": "^2.0",
         "nvl/translatable": "^2.0",
         "spatie/laravel-data": "^4.23",
         "spatie/typescript-transformer": "^3.3",

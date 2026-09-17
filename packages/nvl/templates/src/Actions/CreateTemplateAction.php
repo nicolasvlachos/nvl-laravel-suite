@@ -15,6 +15,7 @@ use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Support\TemplatesConfiguration;
 use Nvl\Translatable\Services\TranslationWriter;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Creates a translated stored template from its source-authoritative definition.
@@ -26,6 +27,7 @@ final readonly class CreateTemplateAction
         private TemplateDefinitionRegistry $definitions,
         private TemplateContentGuard $guard,
         private TranslationWriter $translations,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -40,6 +42,7 @@ final readonly class CreateTemplateAction
         return DB::connection(TemplatesConfiguration::connection())
             ->transaction(function () use ($actor, $data, $definition): Template {
                 $template = Template::query()->create([
+                    ...$this->boundary->attributes('templates.templates'),
                     'key' => $data->key,
                     'renderer' => $definition->renderer,
                     'status' => $data->status,

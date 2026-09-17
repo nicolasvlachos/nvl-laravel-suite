@@ -25,7 +25,7 @@ final class TemplateTranslation extends Model
     use HasUuids;
 
     /** @var list<string> */
-    protected $fillable = ['template_id', 'locale', 'title', 'description'];
+    protected $fillable = ['template_id', 'tenant_id', 'ownership_key', 'locale', 'title', 'description'];
 
     public function getTable(): string
     {

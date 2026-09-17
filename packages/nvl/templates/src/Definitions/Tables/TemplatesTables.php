@@ -19,6 +19,10 @@ final class TemplatesTables
 
     public const string Renders = 'template_renders';
 
+    public const string TenantGrants = 'template_tenant_grants';
+
+    public const string TenantGrantLocks = 'template_tenant_grant_locks';
+
     public const string TEMPLATES = self::Templates;
 
     public const string TEMPLATES_I18N = self::I18n;

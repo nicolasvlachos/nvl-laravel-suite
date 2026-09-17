@@ -8,18 +8,22 @@ use Nvl\Templates\Contracts\TemplateAuthorization;
 use Nvl\Templates\Data\TemplateActorData;
 use Nvl\Templates\Enums\TemplateAbility;
 use Nvl\Templates\Models\Template;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Loads a complete management aggregate after Action authorization.
  */
 final readonly class GetTemplateAction
 {
-    public function __construct(private TemplateAuthorization $authorization) {}
+    public function __construct(
+        private TemplateAuthorization $authorization,
+        private TenantBoundary $boundary,
+    ) {}
 
     public function execute(Template|string $template, TemplateActorData $actor): Template
     {
         $templateId = $template instanceof Template ? $template->id : $template;
-        $model = Template::query()
+        $model = $this->boundary->query(Template::query(), 'templates.templates')
             ->with([
                 'translations',
                 'versions',

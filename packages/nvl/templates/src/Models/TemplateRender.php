@@ -65,6 +65,7 @@ final class TemplateRender extends Model implements HasMedia
     /** @var list<string> */
     protected $fillable = [
         'template_id',
+        'tenant_id',
         'template_version_id',
         'template_assignment_id',
         'locale',

@@ -18,6 +18,7 @@ use Nvl\Templates\Models\TemplateRender;
 use Nvl\Templates\Models\TemplateVersion;
 use Nvl\Templates\Rendering\ResolvedStoredTemplateRender;
 use Nvl\Templates\Template as RenderableTemplate;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Resolves every stored-template invariant into one immutable render plan.
@@ -32,6 +33,7 @@ final readonly class StoredTemplateRenderResolver
         private TemplateVersionResolver $versions,
         private Content $content,
         private StoredTemplateOptionsFactory $optionsFactory,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -42,6 +44,7 @@ final readonly class StoredTemplateRenderResolver
         RenderTemplateData $data,
         TemplateActorData $actor,
     ): ResolvedStoredTemplateRender {
+        $this->boundary->assertRecord($template, 'templates.templates');
         $payload = $this->guard->payload($data->payload);
         $locale = $this->locales->resolve($data->locale);
         $definition = $this->definition($template);
@@ -81,6 +84,7 @@ final readonly class StoredTemplateRenderResolver
      */
     public function resolveDurable(TemplateRender $render): ResolvedStoredTemplateRender
     {
+        $this->boundary->assertRecord($render, 'templates.renders');
         $template = $render->template;
         $version = $render->version;
         $payload = $this->guard->payload(is_array($render->payload) ? $render->payload : []);
@@ -212,7 +216,7 @@ final readonly class StoredTemplateRenderResolver
             return null;
         }
 
-        return TemplateAssignment::query()
+        return $this->boundary->query(TemplateAssignment::query(), 'templates.assignments')
             ->where('template_id', $template->id)
             ->where('owner_type', $data->ownerType)
             ->where('owner_id', $data->ownerId)

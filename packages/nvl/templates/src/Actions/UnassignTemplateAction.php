@@ -12,13 +12,17 @@ use Nvl\Templates\Events\TemplateChanged;
 use Nvl\Templates\Exceptions\StaleTemplateException;
 use Nvl\Templates\Models\TemplateAssignment;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Deletes one assignment with exact optimistic concurrency.
  */
 final readonly class UnassignTemplateAction
 {
-    public function __construct(private TemplateAuthorization $authorization) {}
+    public function __construct(
+        private TemplateAuthorization $authorization,
+        private TenantBoundary $boundary,
+    ) {}
 
     public function execute(
         TemplateAssignment|string $assignment,
@@ -35,7 +39,7 @@ final readonly class UnassignTemplateAction
                 $assignmentId,
                 $expectedRevision,
             ): bool {
-                $assignment = TemplateAssignment::query()
+                $assignment = $this->boundary->query(TemplateAssignment::query(), 'templates.assignments')
                     ->lockForUpdate()
                     ->findOrFail($assignmentId);
                 $this->authorization->authorize(

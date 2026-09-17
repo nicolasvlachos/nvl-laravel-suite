@@ -11,6 +11,9 @@ use Nvl\Templates\Enums\TemplateRenderStatus;
 use Nvl\Templates\Models\TemplateRender;
 use Nvl\Templates\Services\TemplateRenderDispatcher;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 
 /**
  * Requeues durable renders stalled before or during processing.
@@ -20,7 +23,11 @@ final readonly class RecoverStaleTemplateRendersAction
     /**
      * Create the bounded render-recovery action.
      */
-    public function __construct(private TemplateRenderDispatcher $dispatcher) {}
+    public function __construct(
+        private TemplateRenderDispatcher $dispatcher,
+        private TenantBoundary $boundary,
+        private TenantContext $context,
+    ) {}
 
     /**
      * Recover one bounded batch of stale pending or expired processing renders.
@@ -31,6 +38,7 @@ final readonly class RecoverStaleTemplateRendersAction
     {
         return DB::connection(TemplatesConfiguration::connection())
             ->transaction(function (): Collection {
+                $envelope = TenantJobEnvelope::capture($this->context);
                 $limit = TemplatesConfiguration::positiveInteger(
                     'templates.rendering.recovery_batch_size',
                     100,
@@ -41,7 +49,7 @@ final readonly class RecoverStaleTemplateRendersAction
                         660,
                     ),
                 );
-                $renders = TemplateRender::query()
+                $renders = $this->boundary->query(TemplateRender::query(), 'templates.renders')
                     ->where(function (Builder $query) use ($pendingCutoff): void {
                         $query->where(function (Builder $processing): void {
                             $processing
@@ -72,9 +80,9 @@ final readonly class RecoverStaleTemplateRendersAction
 
                 $renderIds = $renders->modelKeys();
                 DB::connection(TemplatesConfiguration::connection())
-                    ->afterCommit(function () use ($renderIds): void {
+                    ->afterCommit(function () use ($envelope, $renderIds): void {
                         foreach ($renderIds as $renderId) {
-                            $this->dispatcher->dispatch((string) $renderId);
+                            $this->dispatcher->dispatch((string) $renderId, $envelope);
                         }
                     });
 

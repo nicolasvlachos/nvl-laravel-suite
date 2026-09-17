@@ -21,6 +21,7 @@ use Nvl\Templates\Support\TemplatesConfiguration;
  * Numbered publication snapshot of a template.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $template_id
  * @property int $version
  * @property TemplateVersionStatus $status
@@ -45,6 +46,7 @@ final class TemplateVersion extends Model implements ContentOwner
     /** @var list<string> */
     protected $fillable = [
         'template_id',
+        'tenant_id',
         'version',
         'status',
         'metadata',
@@ -53,6 +55,11 @@ final class TemplateVersion extends Model implements ContentOwner
         'published_by_type',
         'published_by',
         'published_at',
+        'catalog_grant_id',
+        'catalog_source_version_id',
+        'catalog_source_revision',
+        'catalog_source_hash',
+        'catalog_import_key',
     ];
 
     /** @var array<string, mixed> */

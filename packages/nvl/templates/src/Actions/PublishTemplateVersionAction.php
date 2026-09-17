@@ -21,6 +21,7 @@ use Nvl\Templates\Models\TemplateVersion;
 use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Publishes a complete version and retires its previously published sibling.
@@ -31,6 +32,7 @@ final readonly class PublishTemplateVersionAction
         private TemplateAuthorization $authorization,
         private TemplateDefinitionRegistry $definitions,
         private Content $content,
+        private TenantBoundary $boundary,
     ) {}
 
     /**
@@ -50,10 +52,10 @@ final readonly class PublishTemplateVersionAction
 
         return DB::connection(TemplatesConfiguration::connection())
             ->transaction(function () use ($actor, $expectedRevision, $versionId): TemplateVersion {
-                $version = TemplateVersion::query()
+                $version = $this->boundary->query(TemplateVersion::query(), 'templates.versions')
                     ->lockForUpdate()
                     ->findOrFail($versionId);
-                $template = Template::query()
+                $template = $this->boundary->query(Template::query(), 'templates.templates')
                     ->lockForUpdate()
                     ->findOrFail($version->template_id);
                 $version->setRelation('template', $template);
@@ -88,7 +90,7 @@ final readonly class PublishTemplateVersionAction
                 );
                 $this->assertComposition($snapshot->blocks, $definition);
 
-                $publishedVersions = TemplateVersion::query()
+                $publishedVersions = $this->boundary->query(TemplateVersion::query(), 'templates.versions')
                     ->where('template_id', $version->template_id)
                     ->where('id', '!=', $version->id)
                     ->where('status', TemplateVersionStatus::Published->value)
