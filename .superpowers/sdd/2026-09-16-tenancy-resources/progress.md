@@ -75,3 +75,10 @@ During F6 implementation, controller appended exact global/shared interface/test
 - Deduplication, mutation, multipart, and owner-slot operation identities include the foundation tenant key. Multipart roots and completed assets carry derived tenant ownership and persisted object paths.
 - The exact dedup isolation proof passes: repeated bytes deduplicate inside A, while B receives a distinct row and physical path. Existing multipart/slot/transaction/path/storage-health coverage remains green.
 - Evidence: 143 focused existing/new tests, 574 assertions, plus the dedicated storage proof (1 test, 9 assertions).
+
+## R4 — Media catalog grants and copy imports
+
+- Added concrete platform grant/revoke Actions, a scalar-only authorized reader, immutable snapshot/staged DTOs, and the public `MediaCatalogImport` transaction port.
+- Stage copies and verifies exact bytes into the active tenant partition. Persist requires the caller's canonical open transaction, locks grant then source, rechecks recipient/revisions/digest/status, enforces tenant-local idempotency provenance, and registers rollback cleanup.
+- Revocation blocks every new/replayed import authorization while committed tenant copies remain independent. Caller-substituted tuples and out-of-transaction persistence fail before writes.
+- Evidence: catalog revocation/import and graph rollback tests — 2 tests, 15 assertions.
