@@ -48,6 +48,7 @@ use Nvl\Content\Services\ContentFieldPresetRegistry;
 use Nvl\Content\Services\ContentFieldTypeRegistry;
 use Nvl\Content\Services\ContentJsonSchemaBuilder;
 use Nvl\Content\Services\ContentLocalizedValues;
+use Nvl\Content\Services\ContentCatalogCopyRegistry;
 use Nvl\Content\Services\ContentOwnerDeletion;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentReferenceRegistry;
@@ -97,6 +98,7 @@ final class ContentServiceProvider extends ServiceProvider
 
         $this->app->bindIf(ContentAuthorization::class, $authorization);
         $this->app->singleton(ContentDefinitionRegistry::class);
+        $this->app->singleton(ContentCatalogCopyRegistry::class);
         $this->app->singleton(ContentDefinitionMigrationRegistry::class);
         $this->app->singleton(ContentFieldPresetRegistry::class);
         $this->app->singleton(ContentFieldTypeRegistry::class);
