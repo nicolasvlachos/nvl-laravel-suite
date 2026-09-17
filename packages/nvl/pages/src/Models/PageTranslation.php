@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Pages\Definitions\Tables\PagesTables;
+use Nvl\Pages\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Pages\Support\PagesConfiguration;
 
 /**
  * Localized editorial copy for one page.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $page_id
  * @property string $locale
  * @property string $title
@@ -26,7 +28,10 @@ use Nvl\Pages\Support\PagesConfiguration;
  */
 final class PageTranslation extends Model
 {
+    use GuardsTenantOwnership;
     use HasUuids;
+
+    public const string TENANT_RESOURCE = 'pages.translations';
 
     /** @var list<string> */
     protected $fillable = [

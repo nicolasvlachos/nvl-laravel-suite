@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Nvl\Pages\Services;
 
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Pages\Contracts\PageResourceHandler;
+use Nvl\Pages\Contracts\TenantSafePageResourceHandler;
 use Nvl\Pages\Support\PagesConfiguration;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Deterministic allowlist of dynamic page-resource handlers.
@@ -21,7 +24,11 @@ final class PageResourceRegistry
     /**
      * Create the resource registry with its handler container.
      */
-    public function __construct(private readonly Container $container) {}
+    public function __construct(
+        private readonly Container $container,
+        private readonly Repository $configuration,
+        private readonly TenantResourceRegistry $tenantResources,
+    ) {}
 
     /**
      * Register one stable resource alias and handler class.
@@ -103,6 +110,19 @@ final class PageResourceRegistry
      */
     private function validate(PageResourceHandler $handler, string $alias): void
     {
+        if ($this->configuration->get('tenancy.enabled') === true) {
+            if (! $handler instanceof TenantSafePageResourceHandler) {
+                throw new InvalidArgumentException(
+                    "Page resource [{$alias}] must declare a tenant-safe model capability.",
+                );
+            }
+            $model = $handler->tenantResourceModel();
+            if (! is_a($model, Model::class, true)) {
+                throw new InvalidArgumentException("Page resource [{$alias}] declares an invalid tenant model.");
+            }
+            $this->tenantResources->forModel(new $model);
+        }
+
         if ($handler->alias() !== $alias) {
             throw new InvalidArgumentException(
                 'Page resource handler ['.$handler::class

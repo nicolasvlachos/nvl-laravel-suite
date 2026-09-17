@@ -11,6 +11,7 @@ use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Services\PageResourceRegistry;
 use Nvl\Seo\Contracts\SitemapSource;
+use Nvl\Seo\Contracts\TenantSafeSitemapSource;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
@@ -19,7 +20,7 @@ use Nvl\Seo\Services\EloquentSeoSitemapSource;
 /**
  * Owns Page sitemap eligibility and composes SEO metadata or dynamic handler entries.
  */
-final readonly class PageSitemapSource implements SitemapSource
+final readonly class PageSitemapSource implements TenantSafeSitemapSource
 {
     /**
      * Create the static and dynamic page sitemap source.
@@ -84,6 +85,12 @@ final readonly class PageSitemapSource implements SitemapSource
                 yield $entry;
             }
         }
+    }
+
+    /** @return list<string> */
+    public function tenantResources(): array
+    {
+        return ['pages.pages', 'pages.translations', 'seo.profiles', 'seo.translations'];
     }
 
     /**

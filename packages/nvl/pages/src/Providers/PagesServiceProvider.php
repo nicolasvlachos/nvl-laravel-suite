@@ -10,6 +10,7 @@ use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Metafields\Support\MetafieldOwnerRegistry;
 use Nvl\Pages\Console\PagesDoctorCommand;
 use Nvl\Pages\Contracts\PageAuthorization;
 use Nvl\Pages\Contracts\PageRequestContextResolver;
@@ -25,8 +26,13 @@ use Nvl\Pages\Services\ConfiguredPageUrlGenerator;
 use Nvl\Pages\Services\PageResourceRegistry;
 use Nvl\Pages\Support\PagesConfiguration;
 use Nvl\Pages\Support\PagesMigrationRollbackGuard;
+use Nvl\Pages\Tenancy\PagesResourceRegistrar;
+use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
+use Nvl\Tenancy\Services\TenantAdoptionRegistry;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -42,7 +48,11 @@ final class PagesServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergePackageConfiguration(__DIR__.'/../../config/pages.php', 'pages');
-        $this->registerOwnerConfigurations();
+        $this->app->register(TenancyServiceProvider::class);
+        (new PagesResourceRegistrar)->register(
+            $this->app->make(TenantResourceRegistry::class),
+            $this->app->make(TenantAdoptionRegistry::class),
+        );
         $authorization = config(
             'pages.authorization.class',
             ConfiguredPageAuthorization::class,
@@ -93,10 +103,20 @@ final class PagesServiceProvider extends ServiceProvider
         ContentOwnerRegistrar $contentOwners,
         SitemapRegistry $sitemaps,
         PageResourceRegistry $resources,
+        SeoOwnerRegistry $seoOwners,
+        MetafieldOwnerRegistry $metafieldOwners,
     ): void {
         $migrationRollbackGuard = $this->app->make(PagesMigrationRollbackGuard::class);
         $typeScriptSources->register(__DIR__.'/..', 'nvl/pages');
         $this->registerResources($resources);
+        $seoOwners->register(PagesConfiguration::alias('seo_owner_alias', 'page'), Page::class);
+        $sections = config('pages.integrations.metafield_sections', ['general']);
+        $metafieldOwners->register(
+            PagesConfiguration::alias('metafield_owner_alias', 'page'),
+            Page::class,
+            'Pages',
+            is_array($sections) ? array_values(array_filter($sections, 'is_string')) : ['general'],
+        );
         $contentAlias = Page::CONTENT_OWNER_TYPE;
 
         $registeredContentOwner = $contentOwners->registered($contentAlias);
@@ -117,11 +137,7 @@ final class PagesServiceProvider extends ServiceProvider
             displayColumns: ['key', 'site', 'path', 'kind', 'status', 'revision'],
             orderColumn: 'path',
         );
-        $sitemaps->register(
-            $this->app->make(PageSitemapSource::class),
-            'nvl/pages',
-            [Page::class],
-        );
+        $sitemaps->registerType(PageSitemapSource::class, 'nvl/pages', [Page::class]);
         Event::listen(PageChanged::class, InvalidatePageSitemap::class);
         Event::listen(MigrationStarted::class, $migrationRollbackGuard->before(...));
 
@@ -144,53 +160,6 @@ final class PagesServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../resources/boost/skills' => base_path('.agents/skills'),
         ], 'pages-skills');
-    }
-
-    private function registerOwnerConfigurations(): void
-    {
-        $seoAlias = PagesConfiguration::alias('seo_owner_alias', 'page');
-        $seoOwners = config('seo.owners', []);
-
-        if (! is_array($seoOwners)) {
-            throw new InvalidArgumentException('seo.owners must be an array.');
-        }
-
-        if (isset($seoOwners[$seoAlias]) && $seoOwners[$seoAlias] !== Page::class) {
-            throw new InvalidArgumentException(
-                "SEO owner alias [{$seoAlias}] is already assigned to another model.",
-            );
-        }
-
-        $seoOwners[$seoAlias] = Page::class;
-        config()->set('seo.owners', $seoOwners);
-        $metafieldAlias = PagesConfiguration::alias('metafield_owner_alias', 'page');
-        $metafieldOwners = config('metafields.owners', []);
-
-        if (! is_array($metafieldOwners)) {
-            throw new InvalidArgumentException('metafields.owners must be an array.');
-        }
-
-        if (isset($metafieldOwners[$metafieldAlias])) {
-            $model = is_array($metafieldOwners[$metafieldAlias])
-                ? ($metafieldOwners[$metafieldAlias]['model'] ?? null)
-                : null;
-
-            if ($model !== Page::class) {
-                throw new InvalidArgumentException(
-                    "Metafield owner alias [{$metafieldAlias}] is already assigned to another model.",
-                );
-            }
-        } else {
-            $sections = config('pages.integrations.metafield_sections', ['general']);
-            $metafieldOwners[$metafieldAlias] = [
-                'model' => Page::class,
-                'label' => 'Pages',
-                'sections' => is_array($sections) ? $sections : ['general'],
-                'runtime_status' => 'live',
-            ];
-        }
-
-        config()->set('metafields.owners', $metafieldOwners);
     }
 
     private function registerResources(PageResourceRegistry $registry): void

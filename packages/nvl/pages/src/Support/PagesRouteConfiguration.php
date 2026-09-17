@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Pages\Support;
 
 use InvalidArgumentException;
+use Nvl\Tenancy\Http\Middleware\ResolvePublicTenant;
 
 /**
  * Validates independently configurable public and management route groups.
@@ -85,6 +86,11 @@ final class PagesRouteConfiguration
             throw new InvalidArgumentException(
                 "pages.routes.{$group}.middleware must contain at least one middleware.",
             );
+        }
+
+        if ($group === 'public' && config('tenancy.enabled') === true
+            && ! in_array(ResolvePublicTenant::class, $middleware, true)) {
+            array_unshift($middleware, ResolvePublicTenant::class);
         }
 
         return array_values($middleware);

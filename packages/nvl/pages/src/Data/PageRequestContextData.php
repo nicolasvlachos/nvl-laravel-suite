@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Pages\Data;
 
+use Nvl\Tenancy\ValueObjects\TenantSiteContext;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\Hidden;
 
@@ -19,5 +20,6 @@ final class PageRequestContextData extends Data
     public function __construct(
         public readonly string $site,
         public readonly string $locale,
+        public readonly ?TenantSiteContext $tenantSite = null,
     ) {}
 }

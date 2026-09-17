@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Nvl\Pages\Services;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Factory;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Nvl\Pages\Data\PageResourceRequestData;
+use Nvl\Pages\Contracts\TenantSafePageResourceHandler;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Support\PagePath;
 use Nvl\Pages\Support\PagesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -26,6 +30,9 @@ final readonly class PageMatcher
     public function __construct(
         private PageResourceRegistry $resources,
         private Factory $validation,
+        private Repository $configuration,
+        private TenantBoundary $tenancy,
+        private TenantResourceRegistry $tenantResources,
     ) {}
 
     /**
@@ -103,10 +110,23 @@ final readonly class PageMatcher
                 locale: $locale,
                 parameters: $parameters,
             );
-            $resource = $handler->fetch($handler->query($request), $request);
+            $handlerQuery = $handler->query($request);
+            $tenantResource = null;
+            if ($this->configuration->get('tenancy.enabled') === true) {
+                if (! $handler instanceof TenantSafePageResourceHandler
+                    || $handlerQuery->getModel()::class !== $handler->tenantResourceModel()) {
+                    throw new InvalidArgumentException('The Page resource query differs from its tenant capability.');
+                }
+                $tenantResource = $this->tenantResources->forModel($handlerQuery->getModel());
+                $this->tenancy->query($handlerQuery, $tenantResource->key);
+            }
+            $resource = $handler->fetch($handlerQuery, $request);
 
             if (! $resource instanceof Model) {
                 throw new NotFoundHttpException('The dynamic page resource was not found.');
+            }
+            if ($tenantResource !== null) {
+                $this->tenancy->assertRecord($resource, $tenantResource->key);
             }
 
             return new ResolvedPageMatch(

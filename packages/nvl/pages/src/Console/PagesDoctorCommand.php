@@ -82,6 +82,9 @@ final class PagesDoctorCommand extends Command
             foreach ($required as $column) {
                 $checks["column.pages.{$column}"] = $schema->hasColumn($pages, $column);
             }
+            if (config('tenancy.enabled') === true) {
+                $checks['column.pages.tenant_id'] = $schema->hasColumn($pages, 'tenant_id');
+            }
 
             $pageRows = Page::query()
                 ->withTrashed()
@@ -160,6 +163,9 @@ final class PagesDoctorCommand extends Command
             foreach (['id', 'page_id', 'locale', 'title'] as $column) {
                 $checks["column.pages_i18n.{$column}"] = $schema->hasColumn($i18n, $column);
             }
+            if (config('tenancy.enabled') === true) {
+                $checks['column.pages_i18n.tenant_id'] = $schema->hasColumn($i18n, 'tenant_id');
+            }
         }
 
         if ($schema->hasTable($treeLocks)) {
@@ -167,6 +173,9 @@ final class PagesDoctorCommand extends Command
                 $treeLocks,
                 'site',
             );
+            if (config('tenancy.enabled') === true) {
+                $checks['column.page_tree_locks.tenant_id'] = $schema->hasColumn($treeLocks, 'tenant_id');
+            }
         }
 
         $healthy = collect($checks)->every(

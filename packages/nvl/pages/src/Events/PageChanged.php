@@ -8,6 +8,8 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Nvl\Pages\Data\PageActorData;
 use Nvl\Pages\Enums\PageChangeOperation;
+use Nvl\Seo\Data\SitemapCacheIdentity;
+use Nvl\Seo\Services\SitemapCache;
 
 /**
  * Signals a committed page structure or lifecycle mutation.
@@ -15,6 +17,8 @@ use Nvl\Pages\Enums\PageChangeOperation;
 final readonly class PageChanged implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
+
+    public SitemapCacheIdentity $sitemapIdentity;
 
     /**
      * Create a committed page-change event.
@@ -28,5 +32,8 @@ final readonly class PageChanged implements ShouldDispatchAfterCommit
         public int $revision,
         public PageActorData $actor,
         public array $affectedPageIds = [],
-    ) {}
+        ?SitemapCacheIdentity $sitemapIdentity = null,
+    ) {
+        $this->sitemapIdentity = $sitemapIdentity ?? app(SitemapCache::class)->capture($site);
+    }
 }

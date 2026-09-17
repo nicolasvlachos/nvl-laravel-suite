@@ -22,6 +22,6 @@ final readonly class InvalidatePageSitemap
      */
     public function handle(PageChanged $event): void
     {
-        $this->cache->forget($event->site);
+        $this->cache->forgetCaptured($event->sitemapIdentity);
     }
 }

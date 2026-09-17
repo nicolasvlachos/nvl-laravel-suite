@@ -19,6 +19,7 @@ use Nvl\Metafields\Traits\HasMetafields;
 use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Enums\PageStatus;
+use Nvl\Pages\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Pages\Support\PagePath;
 use Nvl\Pages\Support\PagesConfiguration;
 use Nvl\Seo\Enums\SitemapChangeFrequency;
@@ -32,6 +33,7 @@ use Nvl\Translatable\Translatable;
  * Structural page node whose editable copy is stored in dedicated locale rows.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string|null $parent_id
  * @property string $parent_key
  * @property string $key
@@ -62,6 +64,7 @@ use Nvl\Translatable\Translatable;
  */
 final class Page extends Model implements ContentOwner, TranslatableModel
 {
+    use GuardsTenantOwnership;
     use HasContent;
     use HasMetafields;
     use HasSeo;
@@ -70,6 +73,8 @@ final class Page extends Model implements ContentOwner, TranslatableModel
     use Translatable;
 
     public const string CONTENT_OWNER_TYPE = 'page';
+
+    public const string TENANT_RESOURCE = 'pages.pages';
 
     public const string CONTENT_GROUP = 'content';
 
