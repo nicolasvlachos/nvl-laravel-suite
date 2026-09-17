@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use Illuminate\Database\QueryException;
+use Illuminate\Container\Container;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
@@ -20,6 +21,8 @@ use Nvl\Seo\Support\SeoRedirectTarget;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Translatable\Services\LocaleRegistry;
 use Spatie\LaravelData\Optional;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Creates or updates a redirect with loop detection and chain flattening.
@@ -127,6 +130,7 @@ final readonly class SyncSeoRedirectAction
         } catch (QueryException $exception) {
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_redirects_source_hash_unique',
+                'seo_redirects_tenant_source_hash_unique',
                 'seo_redirects.source_hash',
             ])) {
                 throw StaleSeoRedirectException::forRedirect(
@@ -144,7 +148,21 @@ final readonly class SyncSeoRedirectAction
      */
     private function lockGraph(): void
     {
-        DB::table(SeoTables::RedirectLocks)->insertOrIgnore(['name' => 'graph']);
-        DB::table(SeoTables::RedirectLocks)->where('name', 'graph')->lockForUpdate()->first();
+        $container = Container::getInstance();
+        if ($container->make('config')->get('tenancy.enabled') !== true) {
+            DB::table(SeoTables::RedirectLocks)->insertOrIgnore(['name' => 'graph']);
+            DB::table(SeoTables::RedirectLocks)->where('name', 'graph')->lockForUpdate()->first();
+
+            return;
+        }
+
+        $tenantId = $container->make(TenantContext::class)->requireTenant()->value;
+        $name = substr(hash('sha256', $container->make(TenantBoundary::class)->key('seo.redirects', 'graph')), 0, 32);
+        DB::table(SeoTables::RedirectLocks)->insertOrIgnore(['tenant_id' => $tenantId, 'name' => $name]);
+        DB::table(SeoTables::RedirectLocks)
+            ->where('tenant_id', $tenantId)
+            ->where('name', $name)
+            ->lockForUpdate()
+            ->first();
     }
 }

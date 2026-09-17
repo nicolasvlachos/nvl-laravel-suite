@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Data\ResolvedSeoData;
@@ -15,6 +16,8 @@ use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoImageContext;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Translatable\Services\ContentLocale;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Resolves persisted SEO, deterministic locale fallbacks, and site defaults.
@@ -26,6 +29,9 @@ final readonly class SeoMetadataResolver
         private SeoImageResolver $images,
         private AbsoluteUrl $urls,
         private StructuredDataResolver $structuredData,
+        private Repository $configuration,
+        private TenantBoundary $tenancy,
+        private TenantResourceRegistry $tenantResources,
     ) {}
 
     public function resolve(
@@ -33,6 +39,7 @@ final readonly class SeoMetadataResolver
         ?string $locale = null,
         ?string $scope = null,
     ): ResolvedSeoData {
+        $owner = $this->canonicalOwner($owner);
         $locale ??= $this->contentLocale->get();
         $profile = $owner instanceof SeoProfile
             ? $owner
@@ -174,6 +181,20 @@ final readonly class SeoMetadataResolver
                 persisted: $this->translatedArray($profile, 'structured_data', $locale),
             ),
         );
+    }
+
+    /** Canonically reload supplied models before any metadata, image, or provider work. */
+    private function canonicalOwner(Model|SeoProfile $owner): Model|SeoProfile
+    {
+        if ($this->configuration->get('tenancy.enabled') !== true) {
+            return $owner;
+        }
+
+        $resource = $this->tenantResources->forModel($owner);
+        $canonical = $owner->newQuery()->findOrFail($owner->getKey());
+        $this->tenancy->assertRecord($canonical, $resource->key);
+
+        return $canonical;
     }
 
     private function defaults(string $locale, ?string $robots = null): ResolvedSeoData

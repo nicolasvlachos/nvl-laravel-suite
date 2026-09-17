@@ -113,6 +113,26 @@ final readonly class SeoDoctor
                 'indexes' => [],
             ],
         ];
+        if (config('tenancy.enabled') === true) {
+            $tables[SeoTables::Profiles]['columns'][] = 'tenant_id';
+            $tables[SeoTables::Profiles]['indexes'] = [
+                'seo_profiles_tenant_scope_owner_unique' => true,
+                'seo_profiles_owner_index' => false,
+                'seo_profiles_tenant_sitemap_scan_idx' => false,
+            ];
+            $tables[SeoTables::I18n]['columns'][] = 'tenant_id';
+            $tables[SeoTables::I18n]['indexes'] = [
+                'seo_profiles_i18n_owner_locale_unique' => true,
+                'seo_i18n_tenant_route_unique' => true,
+                'seo_i18n_tenant_profile_idx' => false,
+            ];
+            $tables[SeoTables::Redirects]['columns'][] = 'tenant_id';
+            $tables[SeoTables::Redirects]['indexes'] = [
+                'seo_redirects_tenant_source_hash_unique' => true,
+                'seo_redirects_tenant_lookup_idx' => false,
+            ];
+            $tables[SeoTables::RedirectLocks]['columns'][] = 'tenant_id';
+        }
         $checks = [];
 
         foreach ($tables as $table => $requirements) {

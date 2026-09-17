@@ -15,6 +15,7 @@ use Nvl\Seo\Exceptions\SeoPathConflictException;
 use Nvl\Seo\Exceptions\StaleSeoProfileException;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SeoMutationValidator;
+use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SeoPathConflictResolver;
 use Nvl\Seo\Services\SeoTranslationNormalizer;
 use Nvl\Seo\Services\SitemapCache;
@@ -39,6 +40,7 @@ final readonly class SyncSeoProfileAction
         private SeoPathConflictResolver $pathConflicts,
         private SeoMutationValidator $validator,
         private SitemapCache $sitemapCache,
+        private SeoOwnerRegistry $owners,
     ) {}
 
     public function execute(
@@ -50,6 +52,11 @@ final readonly class SyncSeoProfileAction
         if (! $owner->exists || $owner->getKey() === null) {
             throw new InvalidArgumentException('SEO can only be attached to a persisted model.');
         }
+
+        $owner = $this->owners->resolve(
+            $this->owners->aliasFor($owner),
+            SeoModelIdentifier::required($owner),
+        );
 
         $this->validator->profile($data);
         $scope = SeoScope::normalize($scope);
@@ -112,8 +119,9 @@ final readonly class SyncSeoProfileAction
                 }
 
                 $profile->refresh()->load('translations');
-                DB::afterCommit(function () use ($profile): void {
-                    $this->sitemapCache->forget($profile->scope);
+                $identity = $this->sitemapCache->capture($profile->scope);
+                DB::afterCommit(function () use ($identity): void {
+                    $this->sitemapCache->forgetCaptured($identity);
                 });
                 SeoProfileChanged::dispatch($profile->id, $profile->scope, 'synced');
 
@@ -122,6 +130,7 @@ final readonly class SyncSeoProfileAction
         } catch (QueryException $exception) {
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_profiles_i18n_route_unique',
+                'seo_i18n_tenant_route_unique',
                 'seo_profiles_i18n.scope, seo_profiles_i18n.locale, seo_profiles_i18n.path_hash',
             ])) {
                 throw SeoPathConflictException::concurrent($scope, $exception);
@@ -129,6 +138,7 @@ final readonly class SyncSeoProfileAction
 
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_profiles_scope_owner_unique',
+                'seo_profiles_tenant_scope_owner_unique',
                 'seo_profiles.scope, seo_profiles.seoable_type, seo_profiles.seoable_id',
             ])) {
                 throw StaleSeoProfileException::forProfile('new', $exception);

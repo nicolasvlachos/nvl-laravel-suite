@@ -9,14 +9,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Nvl\Seo\Definitions\Tables\SeoTables;
+use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Translatable\Support\LocaleCode;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Enums\TenantContextMode;
+use Nvl\Tenancy\Exceptions\TenantContextMissing;
+use Illuminate\Container\Container;
 
 /**
  * One scoped, optionally localized HTTP redirect.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $scope
  * @property string|null $locale
  * @property string $source_path
@@ -33,7 +39,10 @@ use Nvl\Translatable\Support\LocaleCode;
 final class SeoRedirect extends Model
 {
     use HasUuids;
+    use GuardsTenantOwnership;
     use SoftDeletes;
+
+    public const string TENANT_RESOURCE = 'seo.redirects';
 
     protected $table = SeoTables::Redirects;
 
@@ -104,8 +113,31 @@ final class SeoRedirect extends Model
     {
         $locale = $locale === null ? '*' : (new LocaleCode($locale))->value;
 
+        $tenant = '*';
+        $container = Container::getInstance();
+        if ($container->bound('config') && $container->make('config')->get('tenancy.enabled') === true) {
+            $snapshot = $container->make(TenantContext::class)->snapshot();
+            if ($snapshot->mode !== TenantContextMode::Tenant || $snapshot->tenantId === null) {
+                throw new TenantContextMissing;
+            }
+            $tenant = $snapshot->tenantId->value;
+        }
+
+        return self::sourceHashForTenant($tenant, $scope, $locale, $source);
+    }
+
+    public static function sourceHashForTenant(string $tenantId, string $scope, ?string $locale, string $source): string
+    {
+        $locale = $locale === null ? '*' : (new LocaleCode($locale))->value;
+        $scope = mb_strtolower(trim($scope));
+        if ($scope === '' || mb_strlen($scope) > 100
+            || preg_match('/^[a-z0-9][a-z0-9._-]*$/', $scope) !== 1) {
+            throw new \InvalidArgumentException('An SEO scope must use its canonical stored form.');
+        }
+
         return hash('sha256', implode('|', [
-            SeoScope::normalize($scope),
+            $tenantId,
+            $scope,
             $locale,
             SeoPath::normalize($source) ?? '/',
         ]));

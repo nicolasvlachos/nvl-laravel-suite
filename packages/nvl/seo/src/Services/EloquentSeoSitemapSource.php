@@ -6,6 +6,7 @@ namespace Nvl\Seo\Services;
 
 use LogicException;
 use Nvl\Seo\Contracts\SitemapSource;
+use Nvl\Seo\Contracts\TenantSafeSitemapSource;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Support\SeoRouteConfiguration;
@@ -13,7 +14,7 @@ use Nvl\Seo\Support\SeoRouteConfiguration;
 /**
  * Streams all indexable profile translations from bounded Eloquent chunks.
  */
-final readonly class EloquentSeoSitemapSource implements SitemapSource
+final readonly class EloquentSeoSitemapSource implements TenantSafeSitemapSource
 {
     public function __construct(
         private AbsoluteUrl $urls,
@@ -48,6 +49,12 @@ final readonly class EloquentSeoSitemapSource implements SitemapSource
                 yield $entry;
             }
         }
+    }
+
+    /** @return list<string> */
+    public function tenantResources(): array
+    {
+        return ['seo.profiles', 'seo.translations'];
     }
 
     /**

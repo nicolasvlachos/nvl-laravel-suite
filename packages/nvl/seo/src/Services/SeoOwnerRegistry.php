@@ -4,16 +4,28 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Support\SeoModelIdentifier;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Resolves explicitly registered owner aliases for HTTP and import boundaries.
  */
 final class SeoOwnerRegistry
 {
+    public function __construct(
+        private readonly Repository $configuration,
+        private readonly TenantBoundary $tenancy,
+        private readonly TenantResourceRegistry $resources,
+    ) {}
+
+    /** @var array<string, class-string<Model>> */
+    private array $registered = [];
+
     /**
      * @var array<string, class-string<Model>>|null
      */
@@ -23,6 +35,20 @@ final class SeoOwnerRegistry
      * @var array<string, string>|null
      */
     private ?array $morphAliases = null;
+
+    /** Register one code-owned owner declaration without mutating cached configuration. */
+    public function register(string $alias, string $model): void
+    {
+        if (isset($this->registered[$alias]) && $this->registered[$alias] !== $model) {
+            throw new InvalidArgumentException("SEO owner alias [{$alias}] is already registered.");
+        }
+        if (! is_a($model, Model::class, true)) {
+            throw new InvalidArgumentException('SEO owner registrations require an Eloquent model.');
+        }
+        $this->registered[$alias] = $model;
+        $this->owners = null;
+        $this->morphAliases = null;
+    }
 
     /**
      * Resolve one registered alias and model identifier.
@@ -34,6 +60,10 @@ final class SeoOwnerRegistry
 
         /** @var Model $model */
         $model = $modelClass::query()->findOrFail($id);
+        if ($this->configuration->get('tenancy.enabled') === true) {
+            $resource = $this->resources->forModel($model);
+            $this->tenancy->assertRecord($model, $resource->key);
+        }
 
         return $model;
     }
@@ -110,6 +140,7 @@ final class SeoOwnerRegistry
             throw new InvalidArgumentException('seo.owners must be an alias-to-model map.');
         }
 
+        $configured = [...$configured, ...$this->registered];
         $owners = [];
         $morphAliases = [];
 

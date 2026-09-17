@@ -15,6 +15,7 @@ use LogicException;
 use Nvl\Seo\Database\Factories\SeoProfileFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\SitemapChangeFrequency;
+use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Translatable\Contracts\TranslatableModel;
@@ -26,6 +27,7 @@ use Nvl\Translatable\Translatable;
  * SEO settings attached to one model in one site scope.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $scope
  * @property string $seoable_type
  * @property string $seoable_id
@@ -54,7 +56,10 @@ final class SeoProfile extends Model implements TranslatableModel
     use HasFactory;
 
     use HasUuids;
+    use GuardsTenantOwnership;
     use Translatable;
+
+    public const string TENANT_RESOURCE = 'seo.profiles';
 
     protected $table = SeoTables::Profiles;
 

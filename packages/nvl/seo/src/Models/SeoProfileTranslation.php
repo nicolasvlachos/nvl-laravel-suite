@@ -10,12 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\TwitterCard;
+use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
 
 /**
  * Locale-specific SEO metadata for one profile.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $seo_profile_id
  * @property string $scope
  * @property string $locale
@@ -41,6 +43,9 @@ use Nvl\Seo\Support\SeoPath;
 final class SeoProfileTranslation extends Model
 {
     use HasUuids;
+    use GuardsTenantOwnership;
+
+    public const string TENANT_RESOURCE = 'seo.translations';
 
     protected $table = SeoTables::I18n;
 

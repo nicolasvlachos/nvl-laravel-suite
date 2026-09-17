@@ -10,6 +10,7 @@ use Illuminate\Contracts\Cache\Repository;
 use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Data\SitemapEntry;
+use Nvl\Seo\Data\SitemapCacheIdentity;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Support\SeoScope;
@@ -124,16 +125,17 @@ final readonly class SitemapGenerator
     /**
      * Ensure a complete artifact set is visible under the current cache version.
      *
-     * @return array{chunks:int,namespace:string}
+     * @return array{chunks:int,namespace:string,identity:SitemapCacheIdentity}
      */
     private function ensureCachedArtifacts(string $scope): array
     {
-        $key = $this->cacheKeys->key($scope);
-        $namespace = hash('sha256', $key);
+        $identity = $this->cacheKeys->capture($scope);
+        $key = $identity->key;
+        $namespace = $identity->namespace;
         $manifest = $this->cachedManifest($key);
 
         if ($manifest !== null) {
-            return [...$manifest, 'namespace' => $namespace];
+            return [...$manifest, 'namespace' => $namespace, 'identity' => $identity];
         }
 
         $build = function () use ($key, $namespace, $scope): array {
@@ -200,6 +202,7 @@ final readonly class SitemapGenerator
         return [
             'chunks' => $manifest['chunks'],
             'namespace' => $namespace,
+            'identity' => $identity,
         ];
     }
 
@@ -402,7 +405,7 @@ final readonly class SitemapGenerator
                 return $artifact;
             }
 
-            if ($attempt === 0 && $this->cacheKeys->forget($scope)) {
+            if ($attempt === 0 && $this->cacheKeys->forgetCaptured($manifest['identity'])) {
                 continue;
             }
 
@@ -433,7 +436,7 @@ final readonly class SitemapGenerator
                 return $artifact;
             }
 
-            if ($attempt === 0 && $this->cacheKeys->forget($scope)) {
+            if ($attempt === 0 && $this->cacheKeys->forgetCaptured($manifest['identity'])) {
                 continue;
             }
 

@@ -37,8 +37,9 @@ final readonly class ArchiveSeoProfileAction
             $profile->archived_at = $archived ? now() : null;
             $profile->save();
             $profile->refresh()->load('translations');
-            DB::afterCommit(function () use ($profile): void {
-                $this->sitemapCache->forget($profile->scope);
+            $identity = $this->sitemapCache->capture($profile->scope);
+            DB::afterCommit(function () use ($identity): void {
+                $this->sitemapCache->forgetCaptured($identity);
             });
             SeoProfileChanged::dispatch(
                 $profile->id,

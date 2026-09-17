@@ -38,8 +38,9 @@ final readonly class DeleteSeoProfileAction
             $deleted = (bool) $profile->delete();
 
             if ($deleted) {
-                DB::afterCommit(function () use ($scope): void {
-                    $this->sitemapCache->forget($scope);
+                $identity = $this->sitemapCache->capture($scope);
+                DB::afterCommit(function () use ($identity): void {
+                    $this->sitemapCache->forgetCaptured($identity);
                 });
                 SeoProfileChanged::dispatch($id, $scope, 'deleted');
             }

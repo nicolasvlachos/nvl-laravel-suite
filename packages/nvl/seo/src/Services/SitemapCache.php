@@ -7,8 +7,12 @@ namespace Nvl\Seo\Services;
 use Illuminate\Contracts\Cache\Repository;
 use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
+use Nvl\Seo\Data\SitemapCacheIdentity;
+use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoScope;
+use Nvl\Tenancy\ValueObjects\TenantSiteContext;
+use Illuminate\Container\Container;
 use Throwable;
 
 /**
@@ -29,10 +33,7 @@ final readonly class SitemapCache
      */
     public function key(string $scope): string
     {
-        $base = $this->baseKey($scope);
-        $version = $this->version($base.':version');
-
-        return $base.':v'.$version;
+        return $this->capture($scope)->key;
     }
 
     /**
@@ -40,7 +41,28 @@ final readonly class SitemapCache
      */
     public function namespace(string $scope): string
     {
-        return hash('sha256', $this->key($scope));
+        return $this->capture($scope)->namespace;
+    }
+
+    /** Capture tenant/site/origin/version facts for safe deferred work. */
+    public function capture(string $scope): SitemapCacheIdentity
+    {
+        $scope = SeoScope::normalize($scope);
+        $facts = $this->facts($scope);
+        $base = $this->baseKey($facts);
+        $version = $this->version($base.':version');
+        $key = $base.':v'.$version;
+
+        return new SitemapCacheIdentity(
+            connection: $facts['connection'],
+            tenantId: $facts['tenant'],
+            site: $facts['site'],
+            origin: $facts['origin'],
+            scope: $scope,
+            version: $version,
+            key: $key,
+            namespace: hash('sha256', $key),
+        );
     }
 
     /**
@@ -51,10 +73,21 @@ final readonly class SitemapCache
      */
     public function forget(string $scope): bool
     {
+        return $this->forgetCaptured($this->capture($scope));
+    }
+
+    /** Invalidate exactly the identity captured with the committed mutation. */
+    public function forgetCaptured(SitemapCacheIdentity $identity): bool
+    {
         try {
-            $base = $this->baseKey($scope);
+            $base = $this->baseKey([
+                'connection' => $identity->connection,
+                'tenant' => $identity->tenantId,
+                'site' => $identity->site,
+                'origin' => $identity->origin,
+                'scope' => $identity->scope,
+            ]);
             $versionKey = $base.':version';
-            $namespace = $this->namespace($scope);
             $this->cache->add($versionKey, 1);
             $version = $this->cache->increment($versionKey);
 
@@ -70,7 +103,7 @@ final readonly class SitemapCache
         }
 
         try {
-            $this->artifacts->deleteNamespace($namespace);
+            $this->artifacts->deleteNamespace($identity->namespace);
         } catch (Throwable $exception) {
             report($exception);
         }
@@ -78,17 +111,41 @@ final readonly class SitemapCache
         return true;
     }
 
-    private function baseKey(string $scope): string
+    /** @param array{connection:string,tenant:string,site:string,origin:string,scope:string} $facts */
+    private function baseKey(array $facts): string
     {
-        $applicationUrl = config('app.url', 'http://localhost');
-        $siteUrl = SeoConfiguration::string(
-            'seo.site.base_url',
-            is_string($applicationUrl) ? $applicationUrl : 'http://localhost',
-        );
-
         return SeoConfiguration::string('seo.sitemap.cache_key', 'nvl-seo:sitemap')
-            .':'.hash('sha256', rtrim($siteUrl, '/'))
-            .':'.SeoScope::normalize($scope);
+            .':'.hash('sha256', json_encode($facts, JSON_THROW_ON_ERROR));
+    }
+
+    /** @return array{connection:string,tenant:string,site:string,origin:string,scope:string} */
+    private function facts(string $scope): array
+    {
+        $container = Container::getInstance();
+        $connection = (new SeoProfile)->getConnection()->getName() ?? 'default';
+
+        if ($container->bound('config') && $container->make('config')->get('tenancy.enabled') === true) {
+            $site = $container->make(TenantSiteContext::class);
+
+            return [
+                'connection' => $connection,
+                'tenant' => $site->tenantId->value,
+                'site' => $site->site,
+                'origin' => rtrim($site->canonicalOrigin, '/'),
+                'scope' => $scope,
+            ];
+        }
+
+        $applicationUrl = config('app.url', 'http://localhost');
+        $origin = SeoConfiguration::string('seo.site.base_url', is_string($applicationUrl) ? $applicationUrl : 'http://localhost');
+
+        return [
+            'connection' => $connection,
+            'tenant' => '*',
+            'site' => SeoScope::normalize($scope),
+            'origin' => rtrim($origin, '/'),
+            'scope' => $scope,
+        ];
     }
 
     private function version(string $key): int

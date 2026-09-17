@@ -28,9 +28,15 @@ use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\EloquentSeoSitemapSource;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
 use Nvl\Seo\Services\SitemapRegistry;
+use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoRouteConfiguration;
+use Nvl\Seo\Tenancy\SeoResourceRegistrar;
 use Nvl\Support\Traits\MergesPackageConfiguration;
+use Nvl\Tenancy\Http\Middleware\ResolvePublicTenant;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
+use Nvl\Tenancy\Services\TenantAdoptionRegistry;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -45,7 +51,12 @@ final class SeoServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->register(TenancyServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/seo.php', 'seo');
+        (new SeoResourceRegistrar)->register(
+            $this->app->make(TenantResourceRegistry::class),
+            $this->app->make(TenantAdoptionRegistry::class),
+        );
 
         $imageResolver = config('seo.image_resolver', DirectSeoImageResolver::class);
 
@@ -73,6 +84,7 @@ final class SeoServiceProvider extends ServiceProvider
 
         $this->app->bind(SitemapArtifactStore::class, $artifactStore);
         $this->app->bindIf(SeoAuthorization::class, ConfiguredSeoAuthorization::class);
+        $this->app->singleton(SeoOwnerRegistry::class);
         $this->app->singleton(SitemapRegistry::class);
         $this->app->singleton(StructuredDataRegistry::class);
     }
@@ -100,7 +112,7 @@ final class SeoServiceProvider extends ServiceProvider
             displayColumns: ['seoable_type', 'seoable_id', 'scope', 'is_indexable'],
             orderColumn: 'updated_at',
         );
-        $sitemaps->register($this->app->make(EloquentSeoSitemapSource::class));
+        $sitemaps->registerType(EloquentSeoSitemapSource::class, 'nvl/seo');
         $this->registerConfiguredSitemapSources($sitemaps);
         $this->registerConfiguredStructuredDataProviders($structuredData);
         Blade::directive(
@@ -151,15 +163,7 @@ final class SeoServiceProvider extends ServiceProvider
                 );
             }
 
-            $resolved = $this->app->make($source);
-
-            if (! $resolved instanceof SitemapSource) {
-                throw new InvalidArgumentException(
-                    "Configured sitemap source [{$source}] must implement SitemapSource.",
-                );
-            }
-
-            $sitemaps->register($resolved);
+            $sitemaps->registerType($source);
         }
     }
 
@@ -224,6 +228,10 @@ final class SeoServiceProvider extends ServiceProvider
 
         $middleware = config('seo.routes.middleware', ['web']);
         $middleware = is_array($middleware) ? $middleware : ['web'];
+        if (config('tenancy.enabled') === true) {
+            array_unshift($middleware, ResolvePublicTenant::class);
+        }
+        $middleware = array_values(array_unique($middleware));
 
         Route::middleware($middleware)
             ->name(SeoRouteConfiguration::publicName())

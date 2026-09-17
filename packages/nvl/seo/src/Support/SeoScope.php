@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Support;
 
+use Illuminate\Container\Container;
 use LogicException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
+use Nvl\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
  * Normalizes a stable site/storefront SEO identity.
@@ -21,6 +23,11 @@ final class SeoScope
      */
     public static function publicSitemapScopes(): array
     {
+        $tenantSite = self::tenantSite();
+        if ($tenantSite instanceof TenantSiteContext) {
+            return [self::normalize($tenantSite->site)];
+        }
+
         $configured = config('seo.routes.sitemap_scopes', []);
 
         if (! is_array($configured)) {
@@ -49,6 +56,14 @@ final class SeoScope
 
     public static function normalize(?string $scope = null): string
     {
+        $tenantSite = self::tenantSite();
+        if ($tenantSite instanceof TenantSiteContext) {
+            if ($scope !== null && mb_strtolower(trim($scope)) !== mb_strtolower(trim($tenantSite->site))) {
+                throw InvalidSeoMutationException::forField('scope', 'The SEO scope differs from the verified tenant site.');
+            }
+            $scope = $tenantSite->site;
+        }
+
         $configuredScope = config('seo.site.scope');
         $scope ??= is_string($configuredScope)
             ? $configuredScope
@@ -67,5 +82,16 @@ final class SeoScope
         }
 
         return $scope;
+    }
+
+    /** Resolve public site identity only in adopted mode. */
+    private static function tenantSite(): ?TenantSiteContext
+    {
+        $container = Container::getInstance();
+        if (! $container->bound('config') || $container->make('config')->get('tenancy.enabled') !== true) {
+            return null;
+        }
+
+        return $container->make(TenantSiteContext::class);
     }
 }
