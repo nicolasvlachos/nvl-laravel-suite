@@ -4,6 +4,11 @@ All notable changes to `nvl/csv` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Added scalar tenant work manifests, class-resolved handlers, captured queue
+  envelopes, exact cleanup, and adoption readiness checks.
+
 ### Fixed
 
 - Use empty proprietary escape defaults and presets so embedded quotes and trailing backslashes survive standard CSV round trips; analyzer reads use the same convention. Explicit legacy escape settings remain available.

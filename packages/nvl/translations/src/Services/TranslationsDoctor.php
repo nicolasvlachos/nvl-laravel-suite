@@ -35,6 +35,7 @@ final readonly class TranslationsDoctor
     {
         return [
             ...$this->schemaChecks(),
+            ...$this->tenantOverrideChecks(),
             $this->scopeCheck(),
             $this->exportTargetsCheck(),
             $this->backupCheck(),
@@ -43,6 +44,50 @@ final readonly class TranslationsDoctor
             $this->authorizationCheck(),
             $this->routeCheck(),
         ];
+    }
+
+    /** @return list<TranslationsDoctorCheckData> */
+    private function tenantOverrideChecks(): array
+    {
+        if (config('tenancy.enabled') !== true) {
+            return [];
+        }
+        $table = TranslationsTables::TenantOverrides;
+        $exists = Schema::hasTable($table);
+        $checks = [new TranslationsDoctorCheckData(
+            key: 'tenancy.overrides.table',
+            severity: 'error',
+            passed: $exists,
+            message: $exists ? "Table [{$table}] exists." : "Table [{$table}] is missing.",
+        )];
+        if ($exists) {
+            $missing = array_values(array_filter(
+                ['id', 'tenant_id', 'key', 'locale', 'value', 'revision', 'created_at', 'updated_at'],
+                static fn (string $column): bool => ! Schema::hasColumn($table, $column),
+            ));
+            $identity = collect(Schema::getIndexes($table))->contains(
+                static fn (array $index): bool => ($index['unique'] ?? false) === true
+                    && ($index['columns'] ?? []) === ['tenant_id', 'key', 'locale'],
+            );
+            $checks[] = new TranslationsDoctorCheckData(
+                key: 'tenancy.overrides.schema', severity: 'error',
+                passed: $missing === [] && $identity,
+                message: $missing === [] && $identity
+                    ? 'Tenant copy overrides have canonical columns and identity uniqueness.'
+                    : 'Tenant copy override schema or identity index is incomplete.',
+            );
+        }
+        $keys = config('translations.tenant_overrides.keys', []);
+        $validKeys = is_array($keys) && array_is_list($keys)
+            && ! array_any($keys, static fn (mixed $key): bool => ! is_string($key) || trim($key) === '' || str_contains($key, '/') || str_contains($key, '\\'));
+        $checks[] = new TranslationsDoctorCheckData(
+            key: 'tenancy.overrides.allowlist', severity: 'error', passed: $validKeys,
+            message: $validKeys
+                ? 'Tenant copy override keys form a literal source-key allowlist.'
+                : 'Tenant copy override keys must be a literal list without source paths.',
+        );
+
+        return $checks;
     }
 
     /**

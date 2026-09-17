@@ -1,5 +1,11 @@
 # Upgrading NVL CSV
 
+## Tenant queue adoption
+
+Drain legacy `csv-processing` manifests before tenancy activation. Register
+stable handler aliases/classes, use `usingHandler()`, and keep handlers routed
+through domain Actions. Disabled consumers retain the existing closure API.
+
 ## Standard CSV escaping
 
 Defaults, format presets, and analyzer reads now disable PHP's proprietary

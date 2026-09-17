@@ -274,6 +274,13 @@ The analyzer samples data and the import result retains failed-row payloads, so 
 
 ## Development and verification
 
+## Tenant queued imports
+
+Tenant async imports require a class-resolved `CSVRowHandler`; callback-backed
+row, progress, batch, completion, and field transformations are rejected before
+staging. Jobs carry scalar work references plus a captured tenant envelope and
+verify the private manifest and chunk checksums after context restoration.
+
 Run the isolated package tests:
 
 ```bash

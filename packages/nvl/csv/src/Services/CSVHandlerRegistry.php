@@ -31,7 +31,7 @@ final class CSVHandlerRegistry
     public function resolve(string $alias): CSVRowHandler
     {
         $class = $this->handlers[$alias] ?? throw new InvalidArgumentException("CSV handler [{$alias}] is not registered.");
-        $handler = $this->container->make($class);
+        $handler = $this->container->build($class);
         if (! $handler instanceof CSVRowHandler) {
             throw new InvalidArgumentException("CSV handler [{$alias}] resolved incorrectly.");
         }

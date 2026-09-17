@@ -383,6 +383,13 @@ php artisan nvl:translations:doctor --strict --format=json
 
 ## TypeScript, skill, and quality
 
+## Tenant copy overrides
+
+Source scans, imports, updates, and exports are platform-only. Tenant copy uses
+the separate allowlisted override repository and exports private artifacts to
+`tenants/<tenant>/translations/<artifact>.json`; it never rewrites source files
+or mutates Laravel's global translator.
+
 DTOs and enums register with `nvl/data`; configured type generation includes them automatically. Publishing `translations-skills` installs package-specific agent guidance.
 
 ```bash

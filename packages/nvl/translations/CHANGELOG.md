@@ -4,6 +4,11 @@ All notable changes to `nvl/translations` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Added platform-only source tooling, tenant copy overrides, isolated private
+  export artifacts, adoption, and tenancy diagnostics.
+
 ### Fixed
 
 - Preserve top-level numeric PHP translation keys during import and exact file round trips instead of failing the typed key boundary.

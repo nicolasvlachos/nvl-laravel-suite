@@ -1,5 +1,11 @@
 # Upgrading NVL Translations
 
+## Tenant adoption
+
+Adopt source catalogs as fixed platform resources and install the separate
+tenant override schema. Configure a literal key allowlist; source paths are
+never valid override keys. Existing source rows are not assigned to a tenant.
+
 ## Upgrading to 1.0
 
 Version 1.0 treats files as authoritative and the database as an editable workspace.
