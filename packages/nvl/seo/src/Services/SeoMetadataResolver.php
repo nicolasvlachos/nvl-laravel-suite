@@ -7,6 +7,7 @@ namespace Nvl\Seo\Services;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Contracts\SeoImageResolver;
+use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Data\ResolvedSeoData;
 use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Enums\TwitterCard;
@@ -69,14 +70,21 @@ final readonly class SeoMetadataResolver
         $description = $description === null
             ? $this->stringConfig('seo.defaults.description')
             : ($description !== '' ? $description : null);
-        $image = $this->images->resolve(new SeoImageContext(
+        $imageContext = new SeoImageContext(
             profile: $profile,
             translation: $translation,
             locale: $locale,
             url: $this->translatedString($profile, 'image_url', $locale),
             reference: $this->translatedString($profile, 'image_reference', $locale),
             alt: $this->translatedString($profile, 'image_alt', $locale),
-        ));
+        );
+        if ($this->configuration->get('tenancy.enabled') === true) {
+            if (! $this->images instanceof TenantSafeSeoImageResolver) {
+                throw new \LogicException('The adopted SEO image resolver has no tenant safety boundary.');
+            }
+            $this->images->assertTenantSafe($imageContext);
+        }
+        $image = $this->images->resolve($imageContext);
         $alternates = [];
         $translations = $profile->translations->sortBy('locale', SORT_STRING);
 

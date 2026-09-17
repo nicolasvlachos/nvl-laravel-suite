@@ -26,6 +26,26 @@ Pages owns URL structure, hierarchy, lifecycle, navigation state, resource-handl
 
 The package is intended for Laravel applications that need a stable front-end content entry point without adopting an admin UI or a monolithic CMS. It supports PHP 8.4+ and Laravel 13.
 
+## Optional tenant sites
+
+When tenancy is enabled, adopt the `media`, `content`, `metafields`, `seo`, and
+`pages` families as one compatible graph. Pages become tenant roots; locale
+rows and parent paths inherit the root tenant. Key, site/path, tree locks, and
+parent constraints are tenant-leading. The normal DTOs remain tenant-agnostic.
+
+Public routes prepend `ResolvePublicTenant`. The host `TenantSiteResolver` must
+return one verified `TenantSiteContext` containing tenant, site, and canonical
+origin before model binding, cache lookup, or error-producing Page work. The
+default request-context and URL services use only that context when adopted.
+Outside HTTP, enter `TenantRunner` and install a host-verified site context for
+the duration of the operation; caller-selected site/origin strings are not
+authority.
+
+Dynamic handlers in an adopted deployment implement
+`TenantSafePageResourceHandler`, declare their exact registered model, and
+return a query that Pages scopes before count, pagination, or fetch. Returned
+models are canonically checked again before projection.
+
 ## Requirements and installation
 
 Install the package in a clean Laravel application:

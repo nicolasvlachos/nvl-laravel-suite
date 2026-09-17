@@ -5,6 +5,22 @@ description: Implement, integrate, test, or review nvl/seo in Laravel 13. Use fo
 
 # NVL SEO
 
+## Tenant/site identity
+
+- In adopted mode, require the active tenant and verified `TenantSiteContext`.
+  Scope must equal the verified site; canonical, alternate, sitemap, and robots
+  URLs use its canonical origin rather than mutable configuration.
+- Register canonical owners/resources and reload supplied models before profile,
+  image, structured-data, redirect, or sitemap work. Unknown types fail closed.
+- Register sitemap sources by class with `registerType()`. They implement
+  `TenantSafeSitemapSource`, declare all queried resources, and are resolved
+  freshly inside the active tenant scope.
+- Media-backed social-image adapters implement `TenantSafeSeoImageResolver` and
+  validate the canonical tenant reference before resolving the image.
+- Capture connection/tenant/site/origin/scope/version identity with the
+  mutation and invalidate only that namespace after commit. Adopt and rehash
+  existing redirects under maintenance before final constraints.
+
 Treat SEO as a resolved discoverability contract, not a collection of arbitrary meta-tag columns. Keep storage, locale fallback, URL identity, rendering, and crawl discovery consistent.
 
 ## Attach a profile

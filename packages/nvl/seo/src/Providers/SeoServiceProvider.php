@@ -16,6 +16,7 @@ use Nvl\Seo\Console\SeoDoctorCommand;
 use Nvl\Seo\Console\WarmSeoSitemapCommand;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
+use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
@@ -66,6 +67,12 @@ final class SeoServiceProvider extends ServiceProvider
         ) {
             throw new InvalidArgumentException(
                 'seo.image_resolver must implement SeoImageResolver.',
+            );
+        }
+        if (config('tenancy.enabled') === true
+            && ! is_a($imageResolver, TenantSafeSeoImageResolver::class, true)) {
+            throw new InvalidArgumentException(
+                'An adopted SEO image resolver must implement TenantSafeSeoImageResolver.',
             );
         }
 

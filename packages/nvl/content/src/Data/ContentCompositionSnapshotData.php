@@ -7,6 +7,7 @@ namespace Nvl\Content\Data;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
+use Spatie\TypeScriptTransformer\Attributes\Hidden as TypeScriptHidden;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
@@ -27,6 +28,7 @@ final class ContentCompositionSnapshotData extends Data
         #[DataCollectionOf(ContentCompositionSnapshotBlockData::class)]
         public readonly array $blocks,
         public readonly string $version,
+        #[TypeScriptHidden]
         public readonly ?string $tenantId = null,
         public readonly int $formatVersion = 1,
     ) {}

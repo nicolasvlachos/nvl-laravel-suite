@@ -4,6 +4,15 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Added opt-in tenant ownership for profiles, translations, redirects, graph
+  locks, sitemap artifacts, and cache versions with bounded adoption.
+- Bound SEO scope and absolute URL identity to the verified public site and
+  captured connection/tenant/site/origin/version facts before invalidation.
+- Required fresh tenant-safe sitemap source classes and canonical owner reloads
+  before metadata, image, or provider work.
+
 ### Fixed
 
 - Support exclusive owner-package sitemap eligibility while retaining shared

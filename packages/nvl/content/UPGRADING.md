@@ -1,5 +1,19 @@
 # Upgrading
 
+## Optional tenancy adoption
+
+Deploy the nullable Content ownership expansion before enabling tenancy. Under
+maintenance, record reviewed `content.blocks` mappings, run bounded backfill
+until its placement phase completes, verify row counts/checksums and canonical
+owner equality, convert stored format-1 publication snapshots through
+`Content::adoptSnapshot()`, then activate final constraints. Drain old jobs and
+restart workers before opening writes. Do not disable the tenancy flag after
+activation or treat missing owner/Media/reference registrations as global data.
+
+Definitions are platform code vocabulary and are synchronized only inside an
+authorized `TenantRunner::platform()` operation. They are not tenant-owned
+catalog rows and must not be copied or edited per tenant.
+
 ## 1.0
 
 This is the first stable contract. There are no compatibility aliases for

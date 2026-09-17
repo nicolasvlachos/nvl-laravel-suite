@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Nvl\Pages\Tests\TenancyTestCase as PagesTenancyTestCase;
 use Tests\Fixtures\TenantResourceCompositionTestCase;
 use Tests\TestCase;
 
@@ -33,6 +34,10 @@ pest()->extend(TestCase::class)
 pest()->extend(TenantResourceCompositionTestCase::class)->in(
     __DIR__.'/Feature/Integration/TenantResourceCompositionTest.php',
     __DIR__.'/Feature/Integration/TenantResourceAdoptionTest.php',
+);
+
+pest()->extend(PagesTenancyTestCase::class)->in(
+    __DIR__.'/Feature/Integration/TenantPagePublicationTest.php',
 );
 
 /*

@@ -1,5 +1,20 @@
 # Upgrading NVL Pages
 
+## Optional tenancy adoption
+
+Install the nullable Page expansion and adopt dependencies before Pages. Map
+existing Page roots to reviewed tenants in bounded batches; translations derive
+from Page identity. Verify every parent/child and site/path invariant before
+activating non-null ownership and composite constraints. Hold maintenance,
+drain old publication jobs, invalidate old global sitemap artifacts, restart
+workers, and only then admit tenant traffic. Never re-disable tenancy after the
+final constraints have activated.
+
+Replace public-site configuration fallbacks with a real `TenantSiteResolver`.
+Route middleware must resolve it before bindings. Update dynamic resource
+handlers to `TenantSafePageResourceHandler` and register their model with the
+tenancy resource registry.
+
 ## To 1.0
 
 This is the first stable contract.

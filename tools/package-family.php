@@ -46,7 +46,7 @@ return [
         'activity' => ['data', 'support', 'tenancy'],
         'auth' => ['data', 'support', 'tenancy'],
         'comments' => ['data', 'filterable', 'media', 'support'],
-        'content' => ['data', 'filterable', 'media', 'support', 'translatable'],
+        'content' => ['data', 'filterable', 'media', 'support', 'tenancy', 'translatable'],
         'csv' => ['data'],
         'data' => ['support'],
         'tenancy' => ['data', 'support'],
@@ -55,9 +55,9 @@ return [
         'media' => ['data', 'filterable', 'support', 'tenancy', 'translatable'],
         'mail-notifications' => ['support'],
         'metafields' => ['data', 'support', 'tenancy', 'translatable'],
-        'pages' => ['content', 'data', 'filterable', 'metafields', 'seo', 'support', 'translatable'],
+        'pages' => ['content', 'data', 'filterable', 'metafields', 'seo', 'support', 'tenancy', 'translatable'],
         'primitives' => ['data', 'support'],
-        'seo' => ['data', 'support', 'translatable'],
+        'seo' => ['data', 'support', 'tenancy', 'translatable'],
         'settings' => ['data', 'support', 'tenancy'],
         'support' => [],
         'taxonomy' => ['data', 'support', 'tenancy', 'translatable'],
@@ -171,12 +171,17 @@ return [
             'content' => [
                 'analysis_paths' => [
                     'src',
+                    'database/tenancy-migrations',
+                    'database/tenancy',
                     'tests/Fixtures',
                 ],
                 'migration_tests' => [
                     'tests/TestCase.php',
                     'tests/Feature/ContentPackageTest.php',
                     'tests/Feature/ContentContractRegressionTest.php',
+                    'tests/Tenancy/TenantContentTest.php',
+                    'tests/Tenancy/TenantContentCompositionTest.php',
+                    'tests/Tenancy/TenantAdoptionTest.php',
                 ],
             ],
             'csv' => [
@@ -250,11 +255,16 @@ return [
             'pages' => [
                 'analysis_paths' => [
                     'src',
+                    'database/tenancy-migrations',
+                    'database/tenancy',
                     'tests/Fixtures',
                 ],
                 'migration_tests' => [
                     'tests/TestCase.php',
                     'tests/Feature/PagesPackageTest.php',
+                    'tests/Tenancy/TenantPagesTest.php',
+                    'tests/Tenancy/TenantPageContextTest.php',
+                    'tests/Tenancy/TenantAdoptionTest.php',
                 ],
             ],
             'primitives' => [
@@ -266,6 +276,8 @@ return [
             'seo' => [
                 'analysis_paths' => [
                     'src',
+                    'database/tenancy-migrations',
+                    'database/tenancy',
                     'database/factories',
                     'tests/Fixtures/TestIntegerSeoOwner.php',
                     'tests/Fixtures/TestSeoOwner.php',
@@ -274,6 +286,9 @@ return [
                 'migration_tests' => [
                     'tests/TestCase.php',
                     'tests/Feature/SeoHardeningTest.php',
+                    'tests/Tenancy/TenantSiteIdentityTest.php',
+                    'tests/Tenancy/TenantSeoTest.php',
+                    'tests/Tenancy/TenantAdoptionTest.php',
                 ],
             ],
             'settings' => [

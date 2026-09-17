@@ -5,6 +5,21 @@ description: Implement, integrate, test, or review nvl/content in Laravel 13. Us
 
 # NVL Content
 
+## Tenant ownership
+
+- Keep definitions as immutable platform code vocabulary. Synchronize them only
+  through an authorized platform operation; never accept tenant identity in a
+  client DTO.
+- In adopted mode, enter `TenantRunner` before Content APIs. Canonically reload
+  every owner, block, placement, Media asset, and reference result and require
+  one registered tenant resource/connection graph before authorization or
+  rendering.
+- Capture tenant-bound format-2 snapshots. Convert reviewed format-1 snapshots
+  explicitly with `Content::adoptSnapshot()`; never add a runtime fallback.
+- Adopt Media and owner families before Content, backfill in bounded batches,
+  verify inherited rows and owner equality, then activate final constraints
+  under maintenance. Activation is not safely flag-reversible.
+
 Keep block schemas and Blade views source-controlled. Persist only bounded,
 validated values, locale rows, placement facts, lifecycle state, and immutable
 composition snapshots.

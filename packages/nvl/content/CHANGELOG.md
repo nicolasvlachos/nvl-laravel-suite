@@ -6,6 +6,13 @@ All notable changes to `nvl/content` are documented here.
 
 ### Changed
 
+- Added opt-in tenant ownership for blocks, translations, revisions, and
+  placements while keeping synchronized definitions platform-owned.
+- Added canonical owner/Media/reference composition checks and tenant-bound
+  format-2 snapshot capture, rendering, and explicit legacy conversion.
+- Added bounded adoption, schema diagnostics, final constraints, and local
+  two-tenant fixtures without changing disabled behavior.
+
 - Revalidate final block and placement override values during block updates,
   publication, and definition migration, including retained placements on
   soft-deleted owners.

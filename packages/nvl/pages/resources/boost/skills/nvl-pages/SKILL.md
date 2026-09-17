@@ -5,6 +5,20 @@ description: Implement and review hierarchical pages, Content composition, dynam
 
 # NVL Pages
 
+## Tenant sites
+
+- Resolve public hosts with `ResolvePublicTenant` before bindings, cache work,
+  and Page/SEO errors. Use only the resulting `TenantSiteContext` for tenant,
+  site, and canonical origin.
+- Outside HTTP, enter `TenantRunner` and install the same host-verified site
+  context for the operation. Never mutate Config or retain site state in a
+  singleton.
+- In adopted mode, implement `TenantSafePageResourceHandler`, declare the exact
+  registered model, and let Pages tenant-scope the query before count,
+  pagination, or fetch. Return only `PageResourceData`.
+- Adopt Media, Content, Metafields, and SEO before Pages; verify every parent,
+  translation, site, and path edge before final constraints.
+
 Use this skill when application work creates, resolves, translates, composes, or extends Pages.
 
 ## Required approach

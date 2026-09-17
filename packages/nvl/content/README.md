@@ -23,6 +23,28 @@ It is intended for page builders, reusable site sections, email/document
 content, CMS-like application content, and any workflow that needs an
 ACF-style field system without coupling content to an administration UI.
 
+## Optional tenant ownership
+
+Content is tenant-aware only when `nvl/tenancy` is explicitly enabled and the
+`content` family is adopted. Code definitions remain immutable platform
+vocabulary; blocks are tenant roots and translations, revisions, placements,
+Media references, and registered reference results inherit the canonical
+tenant. Consumer payloads never select `tenant_id`.
+
+Adopt `media` and every registered Content-owner family before `content`.
+Run prepare/backfill/verify/activate under maintenance, supply reviewed block
+mappings for existing rows, and let the adopter derive child and placement
+ownership from canonical parents. Activation replaces natural uniqueness with
+tenant-leading keys and makes ownership non-null. Format-1 snapshots require an
+explicit `Content::adoptSnapshot()` conversion under their verified owner;
+runtime rendering accepts only tenant-bound format-2 snapshots after adoption.
+
+Public HTTP must resolve the host to `TenantSiteContext` before Page binding or
+Content rendering. Workers and publishing commands must enter `TenantRunner`
+and install the same verified site context through the host adapter. Never
+mutate configuration or retain owner, resolver, Media, or reference models in
+worker singletons.
+
 ## Purpose
 
 Content provides one reusable contract for defining, validating, localizing,

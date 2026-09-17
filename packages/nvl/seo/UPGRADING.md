@@ -1,5 +1,19 @@
 # Upgrading NVL SEO
 
+## Optional tenancy adoption
+
+Deploy nullable tenant columns before the tenancy flag is enabled. Under
+maintenance, provide reviewed redirect/profile mappings, backfill and recompute
+tenant-inclusive source hashes, verify canonical owner and translation
+equality, then activate tenant-leading uniqueness and non-null constraints.
+Delete old global sitemap namespaces only after the captured version cutover.
+Drain old jobs and restart workers so no retained source or cache object can
+write with pre-adoption identity. The flag is not reversible after activation.
+
+Outside HTTP, install a host-verified `TenantSiteContext` while inside
+`TenantRunner`. Configured sitemap sources must implement
+`TenantSafeSitemapSource`; object instances are rejected in adopted mode.
+
 ## Unreleased hardening
 
 Run the new `create_seo_redirect_locks_table` migration before redirect writes.

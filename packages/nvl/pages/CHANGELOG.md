@@ -4,6 +4,15 @@ All notable changes to `nvl/pages` are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Added opt-in tenant Page trees, translation ownership, tenant-leading key and
+  path identity, canonical parent constraints, and bounded adoption.
+- Required one verified tenant/site/origin context for adopted public Pages and
+  tenant-safe dynamic resource handler query boundaries.
+- Captured sitemap invalidation identity at Page mutation time and registered
+  integrations without mutating global configuration.
+
 ### Fixed
 
 - Apply Page publication, site, and sitemap eligibility to every Page SEO entry,

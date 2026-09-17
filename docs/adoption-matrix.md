@@ -56,16 +56,16 @@ explicit root enables it through dependency closure.
 | `mail-notifications` | Package/application via `mail-notifications.migrations.enabled` | Mail delivery queue | Required host `nvl:mail-notifications:process-scheduled` and `nvl:mail-notifications:recover-scheduled` entries when scheduling is enabled | `MailNotificationReadAuthorization`, `ScheduledMailReadAuthorization`, tracking/storage/provider contracts | Provider, notifiable, scheduled-factory, and webhook aliases | Yes | `nvl:mail-notifications:doctor` |
 | `media` | Package/application via `media.migrations.enabled` | Media conversions | Required host `nvl:media:multipart:prune` entry when multipart is enabled | `MediaAuthorization`, `MediaContentScanner`, `MultipartUploadGateway` | Media owner/collection integration aliases | Yes | `nvl:media:doctor` |
 | `comments` | Package/application via `comments.migrations.enabled` | None required | None | `CommentAuthorization`, query scope, actor and author presentation | Target aliases | Yes | `nvl:comments:doctor` |
-| `content` | Package/application via `content.migrations.enabled` | None required | None | `ContentAuthorization`, owner/reference contracts | Owner, reference, field type, and preset aliases | Yes | `nvl:content:doctor` |
+| `content` | Package/application via `content.migrations.enabled`; optional tenant expansion/adoption/final constraints | None required | None | `ContentAuthorization`, owner/reference contracts, canonical tenant resources | Owner, reference, field type, and preset aliases | Yes; tenant identity remains server-only | `nvl:content:doctor` |
 | `metafields` | Package/application via `metafields.migrations.enabled` | None required | None | `MetafieldAuthorization`, `MetafieldReferenceAuthorization` | Owner and reference aliases | Yes | `nvl:metafields:doctor` |
 | `primitives` | None | None | None | Exchange-rate provider when conversion is used | None | Yes | N/A |
-| `seo` | Package/application via `seo.migrations.enabled` | None required | Optional host `nvl:seo:sitemap:warm` and `nvl:seo:redirects:prune` entries | `SeoAuthorization`, `SeoImageResolver`, `SitemapArtifactStore` | Owner, sitemap, and structured-data aliases | Yes | `nvl:seo:doctor` |
+| `seo` | Package/application via `seo.migrations.enabled`; optional tenant expansion/adoption/final constraints | None required | Optional host `nvl:seo:sitemap:warm` and `nvl:seo:redirects:prune` entries | `SeoAuthorization`, `SeoImageResolver`, `SitemapArtifactStore`, verified tenant site context | Owner, tenant-safe sitemap, and structured-data aliases | Yes; captured cache identity is internal | `nvl:seo:doctor` |
 | `settings` | Package/application via `settings.migrations.enabled` | None required | None | `SettingsAuthorization`, `SettingsAuditContextProvider`, repository | Definition namespaces | Yes | `nvl:settings:doctor` |
 | `taxonomy` | Package/application via `taxonomy.migrations.enabled` | None required | None | Explicit owner/vocabulary definitions | Owner and taxonomy aliases | Yes | `nvl:taxonomy:doctor` |
 | `templates` | Package/application via `templates.migrations.enabled` | Template rendering | Optional host `nvl:templates:renders:recover` | `TemplateAuthorization`, renderer and owner contracts | Owner, renderer, definition, and asset aliases | Yes | `nvl:templates:doctor` |
 | `translations` | Package/application via `translations.migrations.enabled` | None required | None | `TranslationsAuthorization`, source/export profiles | Source scopes and translation resources | Yes | `nvl:translations:doctor` |
 | `forms` | Package/application via `forms.migrations.enabled` | Host-selected submission callbacks | None | Rate limiter, spam detector, deletion and privacy policies | Handler, callback, render-data, and error-mapper aliases | Yes | `nvl:forms:doctor` |
-| `pages` | Package/application via `pages.migrations.enabled` | None required | None | `PageAuthorization`, `PageRequestContextResolver`, `PageUrlGenerator` | Page resource and shared owner aliases | Yes | `nvl:pages:doctor` |
+| `pages` | Package/application via `pages.migrations.enabled`; optional tenant expansion/adoption/final constraints | None required | None | `PageAuthorization`, `PageRequestContextResolver`, `PageUrlGenerator`, `TenantSiteResolver` | Tenant-safe Page resource and shared owner aliases | Yes; request context is server-only | `nvl:pages:doctor` |
 
 ## Reading the effective report
 
@@ -104,3 +104,17 @@ read-only Doctor and disabled/no-schema compatibility. A separate consumer
 explicitly requires Filterable and verifies caller-owned query isolation.
 TypeScript source registration participates in discovery; it does not promise
 client mutation DTOs for tenant ownership. Domain adoption remains separate.
+
+Content/Sites adoption is a dependency-closed operation: adopt `media`,
+`content`, `metafields`, `seo`, then `pages`, plus every consumer owner/resource
+family. Content definitions remain platform code vocabulary. Public HTTP must
+run `ResolvePublicTenant` before route binding. Non-HTTP publication must enter
+`TenantRunner` with a host-verified `TenantSiteContext`. Prepare nullable
+schema, backfill reviewed mappings in bounded batches, verify counts/checksums
+and canonical parent equality, activate final constraints, cut over sitemap
+artifacts, drain old jobs, and restart workers. The tenant flag is not a
+rollback mechanism after activation.
+
+The implementation and proof surfaces are present, but no Content/Sites tenant
+readiness claim is made until the deferred package suites, database matrices,
+real Redis/concurrency, archive, and sealed-consumer commands have run green.

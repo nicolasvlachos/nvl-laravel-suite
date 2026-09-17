@@ -87,6 +87,21 @@ queries. The exact 1.x-to-2.0 return and behavior changes are therefore recorded
 durably in `tools/consumer-api-deprecations.php` and `UPGRADING.md`; the release
 evidence must not claim those warnings were externally published.
 
+### Content and Sites tenancy evidence
+
+Content, Pages, and SEO now declare opt-in tenancy dependencies, nullable
+expansion/final-constraint migrations, bounded adopters, tenant-aware Doctors,
+and local two-tenant fixtures. The integration surface publishes a Page with
+Content, Media, Metafields, SEO redirects, and sitemap identity, while the
+sealed no-dev consumer exercises cached boots and two identical tenant graphs.
+
+This records implemented evidence surfaces, not a tenant-readiness promotion.
+The claim remains withheld until the package suites, PostgreSQL/MySQL/MariaDB
+matrices, real Redis and concurrency cases, archive inspection, and independent
+consumer workflow are executed. Tenant identity stays out of client mutation
+DTOs; public identity comes only from `TenantSiteResolver` and non-HTTP work
+uses a verified `TenantSiteContext` inside `TenantRunner`.
+
 ## Performance and cache policy
 
 Every collection surface must impose its own `perPage`, row, scope, chunk, or

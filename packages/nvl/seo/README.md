@@ -32,6 +32,30 @@ SEO owns discoverability metadata from persistence through rendering and crawl d
 
 It does not own an admin UI, application roles/policies, content routing, analytics, Search Console submission, CDN configuration, or a hard dependency on `nvl/media`. It provides an optional headless redirect subsystem.
 
+## Optional tenant/site identity
+
+When `nvl/tenancy` is enabled and `seo` is adopted, profiles, translations,
+redirects, redirect graph locks, sitemap manifests, and invalidation are
+tenant-local. Every operation requires the active tenant plus a verified
+`TenantSiteContext`; scope must equal the verified site and absolute URLs use
+its canonical origin. No configuration value is mutated to emulate request
+state.
+
+Register owners through `SeoOwnerRegistry` and tenant resources through
+`TenantResourceRegistry`. Sitemap sources use class registrations, implement
+`TenantSafeSitemapSource`, declare every queried resource, and are constructed
+fresh inside the active scope. Cached artifacts are keyed by effective
+connection, tenant, site, origin, scope, and version. Mutations capture that
+identity before commit so deferred invalidation cannot delete another tenant's
+new namespace. A Media-backed adapter implements `TenantSafeSeoImageResolver`
+and validates its reference before reading or projecting the asset; the direct
+resolver rejects model-backed references.
+
+Adoption rehashes redirects with reviewed tenant identity and derives profile
+and translation ownership from canonical registered owners. Run bounded
+prepare/backfill/verify/activate under maintenance, remove obsolete global
+artifacts, drain jobs, and restart workers before admitting traffic.
+
 ## Requirements and installation
 
 - PHP 8.4+

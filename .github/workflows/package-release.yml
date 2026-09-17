@@ -340,6 +340,16 @@ jobs:
           done < "$expected_doctors"
           bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" audit --locked --no-interaction
 
+      - name: Exercise sealed tenant Content and Sites consumer
+        shell: bash
+        env:
+          NVL_CANDIDATE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          archive="$(find "$GITHUB_WORKSPACE/build/archives" -maxdepth 1 -name 'nvl-laravel-suite-*.zip' -print -quit)"
+          test -n "$archive"
+          NVL_CANDIDATE_ARCHIVE="$archive" bash tools/run-tenant-content-sites-consumer.sh
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: nvl-laravel-suite-v${{ inputs.version }}
