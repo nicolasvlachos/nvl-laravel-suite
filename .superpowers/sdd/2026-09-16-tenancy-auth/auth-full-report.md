@@ -229,3 +229,26 @@ The final I-2 re-review correctly identified that rewinding `Challenge::consumed
 - Pint on every changed Auth PHP path: passed.
 - Package-family validator: Auth has zero violations. The command remains non-zero only for four concurrently owned Media findings (dependency inventory plus service-locator rules in `AppliesTenantBoundary.php`, `Media.php`, and `MediaPathResolver.php`).
 - The generated package-contract baseline was intentionally left untouched for the parent-requested combined Auth/Media deterministic refresh after both code commits land. No consumer fixture changed and no broad consumer run was repeated.
+
+## Concurrent retry and configured-guard closure
+
+The last I-2 integration review identified two valid gaps in the post-authentication retry seam. Both are closed without changing Media, the sealed consumer fixture, or the shared generated-contract baseline.
+
+- `LaravelBrowserSession` now stores a maximum of eight pending intent references in a server-owned map keyed by a hash of the opaque session binding and nonce. Entries retain the exact subject, tenant, purpose, provider, subject-bound flag, and expiry; expired entries are pruned and capacity eviction is deterministic by expiry and opaque key.
+- Completion selects only an unambiguous entry matching the trusted server tenant selector and authenticated subject. Client intent state is rejected, only the selected entry is removed after successful consumption, and concurrent tenant-A/tenant-B flows retry and replay independently. Multiple pending entries for the same trusted tenant and subject fail closed as ambiguous.
+- The magic-link/security-code challenge payload carries the server-owned target and expiry into the common session-establishment seam; explicit passwordless-code and passkey transports preserve those fields when rebuilding their typed request context.
+- `tenant-intents/complete` now uses `nvl-auth.guard`, which delegates Laravel authentication to the validated non-empty `nvl-auth.guard` setting instead of the application's default guard. A real HTTP test proves the retry succeeds through a configured `admin` guard while `web` remains unauthenticated.
+- The disabled tenant HTTP resolver moved from the service layer to the Laravel adapter layer, restoring the package's HTTP-transport boundary. The feature-admission invariant now narrowly records the three RBAC mixed-context Actions whose binding requirement intentionally rejects enabled-tenancy mixed operations before ordinary feature admission.
+
+### Final localized evidence
+
+- Focused tenant-intent HTTP/store suite: 11 passed, 82 assertions.
+- Challenge, passkey lifecycle, genuine WebAuthn ceremony, and HTTP compatibility: 20 passed, 122 assertions.
+- Route admission, consumer configuration, feature manifest, and OpenAPI contracts: 23 passed, 1,401 assertions.
+- Definitive combined affected Auth suite: 54 passed, 1,605 assertions.
+- Post-static-fix intent/route recheck: 14 passed, 93 assertions.
+- Auth PHPStan: 0 errors (`--debug --error-format=table`). A preceding parallel invocation exited 1 without diagnostics; the isolated authoritative run completed successfully.
+- Pint on every changed Auth PHP path: passed.
+- Package-family validator: `Validated 21 NVL package distributions.`
+- `git diff --check -- packages/nvl/auth`: passed.
+- No sealed consumer rerun was performed because the fixture did not change. `tools/package-contracts.json` remains untouched for the parent-coordinated combined Auth/Media refresh.
