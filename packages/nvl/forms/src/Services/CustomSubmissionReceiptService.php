@@ -11,6 +11,7 @@ use Nvl\Forms\Exceptions\FormSubmissionRejectionException;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormSubmissionReceipt;
 use Nvl\Forms\Support\CustomSubmissionClaim;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Throwable;
 
 /**
@@ -20,6 +21,7 @@ final class CustomSubmissionReceiptService
 {
     public function __construct(
         private readonly FormRegistrationFingerprint $registrationFingerprint,
+        private readonly TenantBoundary $boundary,
     ) {}
 
     /**
@@ -33,6 +35,7 @@ final class CustomSubmissionReceiptService
         ?string $sessionId,
         ?string $idempotencyKey,
     ): ?CustomSubmissionClaim {
+        $this->boundary->assertRecord($form, 'forms.forms');
         $email = $payload['email'] ?? null;
         $fingerprint = $this->registrationFingerprint->resolve(
             $form,
@@ -49,7 +52,7 @@ final class CustomSubmissionReceiptService
         try {
             return DB::transaction(function () use ($form, $idempotencyKey, $fingerprint, $payloadDigest): CustomSubmissionClaim {
                 if ($idempotencyKey !== null) {
-                    $existing = FormSubmissionReceipt::query()
+                    $existing = $this->boundary->query(FormSubmissionReceipt::query(), 'forms.receipts')
                         ->where('form_id', $form->getKey())
                         ->where('idempotency_key', $idempotencyKey)
                         ->lockForUpdate()
@@ -61,7 +64,7 @@ final class CustomSubmissionReceiptService
                 }
 
                 if ($fingerprint !== null) {
-                    $duplicate = FormSubmissionReceipt::query()
+                    $duplicate = $this->boundary->query(FormSubmissionReceipt::query(), 'forms.receipts')
                         ->where('form_id', $form->getKey())
                         ->where('registration_fingerprint', $fingerprint)
                         ->lockForUpdate()
@@ -74,6 +77,7 @@ final class CustomSubmissionReceiptService
 
                 $receipt = FormSubmissionReceipt::query()->create([
                     'form_id' => $form->getKey(),
+                    ...$this->childOwnership($form),
                     'idempotency_key' => $idempotencyKey,
                     'payload_digest' => $payloadDigest,
                     'registration_fingerprint' => $fingerprint,
@@ -135,7 +139,7 @@ final class CustomSubmissionReceiptService
         string $payloadDigest,
     ): CustomSubmissionClaim {
         if ($idempotencyKey !== null) {
-            $existing = FormSubmissionReceipt::query()
+            $existing = $this->boundary->query(FormSubmissionReceipt::query(), 'forms.receipts')
                 ->where('form_id', $form->getKey())
                 ->where('idempotency_key', $idempotencyKey)
                 ->first();
@@ -145,7 +149,7 @@ final class CustomSubmissionReceiptService
             }
         }
 
-        if ($fingerprint !== null && FormSubmissionReceipt::query()
+        if ($fingerprint !== null && $this->boundary->query(FormSubmissionReceipt::query(), 'forms.receipts')
             ->where('form_id', $form->getKey())
             ->where('registration_fingerprint', $fingerprint)
             ->exists()) {
@@ -207,5 +211,13 @@ final class CustomSubmissionReceiptService
             message: (string) trans('forms::forms/messages.error.registration_already_exists'),
             statusCode: 409,
         );
+    }
+
+    /** @return array{tenant_id?:mixed} */
+    private function childOwnership(Form $form): array
+    {
+        return array_key_exists('tenant_id', $form->getAttributes())
+            ? ['tenant_id' => $form->getRawOriginal('tenant_id')]
+            : [];
     }
 }

@@ -7,7 +7,8 @@ use Nvl\Forms\Services\RequestOriginResolver;
 use Nvl\Forms\Support\FormSubmissionContext;
 use Nvl\Forms\Tests\FormsTestCase;
 
-uses(FormsTestCase::class)->in(__DIR__);
+uses(FormsTestCase::class)->in('Feature');
+uses(\Nvl\Forms\Tests\TenancyTestCase::class)->in('Tenancy');
 
 function formSubmissionContext(Request $request): FormSubmissionContext
 {

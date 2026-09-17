@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Nvl\Forms\Services\PublicFormTokenService;
 use Nvl\Forms\Services\RequestOriginResolver;
+use Nvl\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
  * FormSubmissionContext carries request-derived submission metadata for action calls.
@@ -41,6 +42,7 @@ final readonly class FormSubmissionContext
         public ?string $originHost = null,
         public ?string $originHeader = null,
         public ?string $requestHost = null,
+        public ?string $publicSite = null,
         public ?Authenticatable $actor = null,
         public ?Request $request = null,
     ) {}
@@ -63,6 +65,7 @@ final readonly class FormSubmissionContext
         $csrfToken = self::resolveCsrfToken($request);
         $publicToken = self::resolvePublicToken($request);
         $actor = $request->user();
+        $tenantSite = $request->attributes->get(TenantSiteContext::class);
 
         return new self(
             ipAddress: $request->ip(),
@@ -75,6 +78,7 @@ final readonly class FormSubmissionContext
             originHost: $originResolver->originHost($request),
             originHeader: $originResolver->originHeader($request),
             requestHost: $request->getHost(),
+            publicSite: $tenantSite instanceof TenantSiteContext ? $tenantSite->site : null,
             actor: $actor instanceof Authenticatable ? $actor : null,
             request: $request,
         );

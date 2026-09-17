@@ -13,6 +13,7 @@ use Nvl\Forms\Enums\FormAnalyticEventType;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormRateLimit;
 use Nvl\Forms\Results\FormRateLimitAttemptResult;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Handles form rate limiting: per-IP submission tracking, blocking, and unblocking.
@@ -36,6 +37,7 @@ final class FormRateLimitService implements FormRateLimiter
     public function __construct(
         private readonly RecordFormAnalyticAction $recordFormAnalytic,
         private readonly FormRateLimitStatisticsService $statistics,
+        private readonly TenantBoundary $boundary,
     ) {}
 
     /**
@@ -50,11 +52,12 @@ final class FormRateLimitService implements FormRateLimiter
      */
     public function isRateLimited(Form $form, string $ipAddress): bool
     {
+        $this->boundary->assertRecord($form, 'forms.forms');
         if (! $form->enable_rate_limiting) {
             return false;
         }
 
-        $rateLimit = FormRateLimit::query()
+        $rateLimit = $this->boundary->query(FormRateLimit::query(), 'forms.rates')
             ->where('form_id', $form->id)
             ->where('ip_address', $ipAddress)
             ->first();
@@ -91,6 +94,7 @@ final class FormRateLimitService implements FormRateLimiter
         ?string $userAgent = null,
         ?string $sessionId = null,
     ): FormRateLimitAttemptResult {
+        $this->boundary->assertRecord($form, 'forms.forms');
         if (! $form->enable_rate_limiting) {
             return FormRateLimitAttemptResult::allowed(null);
         }
@@ -199,7 +203,9 @@ final class FormRateLimitService implements FormRateLimiter
      */
     public function unblockIpAddress(Form $form, string $ipAddress): void
     {
-        $rateLimit = FormRateLimit::where('form_id', $form->id)
+        $this->boundary->assertRecord($form, 'forms.forms');
+        $rateLimit = $this->boundary->query(FormRateLimit::query(), 'forms.rates')
+            ->where('form_id', $form->id)
             ->where('ip_address', $ipAddress)
             ->first();
 
@@ -221,6 +227,7 @@ final class FormRateLimitService implements FormRateLimiter
      */
     public function getRateLimitStatus(Form $form, string $ipAddress): array
     {
+        $this->boundary->assertRecord($form, 'forms.forms');
         if (! $form->enable_rate_limiting) {
             return [
                 'enabled' => false,
@@ -233,7 +240,7 @@ final class FormRateLimitService implements FormRateLimiter
             ];
         }
 
-        $rateLimit = FormRateLimit::query()
+        $rateLimit = $this->boundary->query(FormRateLimit::query(), 'forms.rates')
             ->where('form_id', $form->id)
             ->where('ip_address', $ipAddress)
             ->first();
@@ -281,7 +288,9 @@ final class FormRateLimitService implements FormRateLimiter
      */
     public function whitelistIpAddress(Form $form, string $ipAddress): void
     {
-        FormRateLimit::where('form_id', $form->id)
+        $this->boundary->assertRecord($form, 'forms.forms');
+        $this->boundary->query(FormRateLimit::query(), 'forms.rates')
+            ->where('form_id', $form->id)
             ->where('ip_address', $ipAddress)
             ->delete();
     }
@@ -300,6 +309,7 @@ final class FormRateLimitService implements FormRateLimiter
         FormRateLimit::query()->insertOrIgnore([
             'id' => (string) Str::uuid(),
             'form_id' => $form->id,
+            ...$this->childOwnership($form),
             'ip_address' => $ipAddress,
             'submission_count' => 0,
             'window_start' => $now->format('Y-m-d H:i:sP'),
@@ -311,13 +321,21 @@ final class FormRateLimitService implements FormRateLimiter
             'updated_at' => $now->format('Y-m-d H:i:sP'),
         ]);
 
-        $rateLimit = FormRateLimit::query()
+        $rateLimit = $this->boundary->query(FormRateLimit::query(), 'forms.rates')
             ->where('form_id', $form->id)
             ->where('ip_address', $ipAddress)
             ->lockForUpdate()
             ->firstOrFail();
 
         return $rateLimit;
+    }
+
+    /** @return array{tenant_id?:mixed} */
+    private function childOwnership(Form $form): array
+    {
+        return array_key_exists('tenant_id', $form->getAttributes())
+            ? ['tenant_id' => $form->getRawOriginal('tenant_id')]
+            : [];
     }
 
     /**

@@ -7,12 +7,16 @@ namespace Nvl\Forms\Services;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormRateLimit;
 use Nvl\Forms\Support\FormsConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Read-only service for rate-limit statistics and maintenance operations.
  */
 final class FormRateLimitStatisticsService
 {
+    /** Create the ownership-scoped statistics service. */
+    public function __construct(private readonly TenantBoundary $boundary) {}
+
     /**
      * Clean up expired rate limit records.
      *
@@ -23,7 +27,8 @@ final class FormRateLimitStatisticsService
         $cutoff = now()->subDays($this->cleanupAfterDays());
 
         /** @var int $deleted */
-        $deleted = FormRateLimit::where('window_start', '<', $cutoff)
+        $deleted = $this->boundary->query(FormRateLimit::query(), 'forms.rates')
+            ->where('window_start', '<', $cutoff)
             ->where('is_blocked', false)
             ->delete();
 
@@ -37,16 +42,16 @@ final class FormRateLimitStatisticsService
      */
     public function getGlobalStatistics(): array
     {
-        $totalBlocked = FormRateLimit::where('is_blocked', true)->count();
-        $totalViolationsValue = FormRateLimit::sum('violation_count');
+        $totalBlocked = $this->boundary->query(FormRateLimit::query(), 'forms.rates')->where('is_blocked', true)->count();
+        $totalViolationsValue = $this->boundary->query(FormRateLimit::query(), 'forms.rates')->sum('violation_count');
         $totalViolations = (int) $totalViolationsValue;
-        $activeWindows = FormRateLimit::where('window_start', '>', now()->subHour())->count();
+        $activeWindows = $this->boundary->query(FormRateLimit::query(), 'forms.rates')->where('window_start', '>', now()->subHour())->count();
 
         return [
             'total_blocked_ips' => $totalBlocked,
             'total_violations' => $totalViolations,
             'active_rate_limit_windows' => $activeWindows,
-            'cleanup_needed' => FormRateLimit::where('window_start', '<', now()->subDays($this->cleanupAfterDays()))->count(),
+            'cleanup_needed' => $this->boundary->query(FormRateLimit::query(), 'forms.rates')->where('window_start', '<', now()->subDays($this->cleanupAfterDays()))->count(),
         ];
     }
 
@@ -59,6 +64,7 @@ final class FormRateLimitStatisticsService
      */
     public function getFormStatistics(Form $form, int $days = 30): array
     {
+        $this->boundary->assertRecord($form, 'forms.forms');
         $startDate = now()->subDays($days)->toDateString();
 
         $baseQuery = $form->rateLimits()

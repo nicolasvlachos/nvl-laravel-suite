@@ -7,12 +7,16 @@ namespace Nvl\Forms\Actions\Form;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use Nvl\Forms\Models\Form;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Resolves a public form by model, UUID, or handle with render relations loaded.
  */
 final class GetFormForRenderAction
 {
+    /** Create the canonical tenant-aware public form resolver. */
+    public function __construct(private readonly TenantBoundary $boundary) {}
+
     /**
      * Execute the form retrieval for rendering.
      *
@@ -26,23 +30,23 @@ final class GetFormForRenderAction
      */
     public function execute(Form|string $formIdentifier): Form
     {
-        if ($formIdentifier instanceof Form) {
-            $formIdentifier->loadMissing(['allowedOrigins', 'translations']);
+        $identifier = $formIdentifier instanceof Form
+            ? (string) $formIdentifier->getKey()
+            : $formIdentifier;
 
-            return $formIdentifier;
-        }
-
-        $query = Form::query()
+        $query = $this->boundary->query(Form::query(), 'forms.forms')
             ->withResolvedTranslations()
-            ->where('handle', $formIdentifier);
-
-        if (Str::isUuid($formIdentifier)) {
-            $query->orWhere('id', $formIdentifier);
-        }
+            ->where(function ($identity) use ($identifier): void {
+                $identity->where('handle', $identifier);
+                if (Str::isUuid($identifier)) {
+                    $identity->orWhere('id', $identifier);
+                }
+            });
 
         $form = $query->firstOrFail();
 
         $form->loadMissing(['allowedOrigins', 'translations']);
+        $this->boundary->assertRecord($form, 'forms.forms');
 
         return $form;
     }

@@ -17,6 +17,7 @@ use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormEntry;
 use Nvl\Forms\Services\FormRegistrationFingerprint;
 use Nvl\Forms\Services\FormSpamRejectionRecorder;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Spatie\LaravelData\Optional;
 use Throwable;
 
@@ -50,6 +51,7 @@ final class CreateFormEntryAction implements CreateFormEntryContract
         private readonly FormSpamDetector $spamDetection,
         private readonly FormSpamRejectionRecorder $spamRejectionRecorder,
         private readonly FormRegistrationFingerprint $registrationFingerprint,
+        private readonly TenantBoundary $boundary,
     ) {}
 
     /**
@@ -90,13 +92,13 @@ final class CreateFormEntryAction implements CreateFormEntryContract
                     ]));
                 }
 
-                $form = Form::query()
+                $form = $this->boundary->query(Form::query(), 'forms.forms')
                     ->with('allowedOrigins')
                     ->whereKey($formId)
                     ->firstOrFail();
 
                 if ($idempotencyKey !== null) {
-                    $existing = FormEntry::query()
+                    $existing = $this->boundary->query(FormEntry::query(), 'forms.entries')
                         ->where('form_id', $form->getKey())
                         ->where('idempotency_key', $idempotencyKey)
                         ->first();
@@ -121,7 +123,7 @@ final class CreateFormEntryAction implements CreateFormEntryContract
                     $sessionId,
                 );
 
-                if ($registrationFingerprint !== null && FormEntry::query()
+                if ($registrationFingerprint !== null && $this->boundary->query(FormEntry::query(), 'forms.entries')
                     ->where('form_id', $form->getKey())
                     ->where('registration_fingerprint', $registrationFingerprint)
                     ->exists()) {
@@ -189,7 +191,7 @@ final class CreateFormEntryAction implements CreateFormEntryContract
             });
         } catch (UniqueConstraintViolationException $exception) {
             if ($idempotencyKey !== null) {
-                $existing = FormEntry::query()
+                $existing = $this->boundary->query(FormEntry::query(), 'forms.entries')
                     ->with('form')
                     ->where('form_id', $data->formId)
                     ->where('idempotency_key', $idempotencyKey)
@@ -202,7 +204,7 @@ final class CreateFormEntryAction implements CreateFormEntryContract
                 }
             }
 
-            $form = Form::query()
+            $form = $this->boundary->query(Form::query(), 'forms.forms')
                 ->whereKey($data->formId)
                 ->firstOrFail();
             $email = $data->email instanceof Optional ? null : $data->email;
@@ -212,7 +214,7 @@ final class CreateFormEntryAction implements CreateFormEntryContract
                 $sessionId,
             );
 
-            if ($registrationFingerprint !== null && FormEntry::query()
+            if ($registrationFingerprint !== null && $this->boundary->query(FormEntry::query(), 'forms.entries')
                 ->where('form_id', $form->getKey())
                 ->where('registration_fingerprint', $registrationFingerprint)
                 ->exists()) {

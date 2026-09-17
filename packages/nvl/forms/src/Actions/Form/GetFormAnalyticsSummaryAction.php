@@ -7,12 +7,16 @@ namespace Nvl\Forms\Actions\Form;
 use Illuminate\Support\Collection;
 use Nvl\Forms\Enums\FormAnalyticEventType;
 use Nvl\Forms\Models\Form;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Provides aggregated analytics metrics for a form.
  */
 final class GetFormAnalyticsSummaryAction
 {
+    /** Create the tenant-scoped aggregator. */
+    public function __construct(private readonly TenantBoundary $boundary) {}
+
     /**
      * Build an analytics summary for the provided form.
      *
@@ -22,7 +26,8 @@ final class GetFormAnalyticsSummaryAction
      */
     public function execute(Form|string $form, int $days = 30): array
     {
-        $formModel = $form instanceof Form ? $form : Form::findOrFail($form);
+        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
         $startDate = now()->subDays($days);
 
         $totalViews = $formModel->analytics()

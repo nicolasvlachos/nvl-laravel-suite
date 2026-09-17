@@ -8,7 +8,6 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Nvl\Data\Traits\DataTransform;
 use Nvl\Forms\Data\FormCorsSettings;
-use Nvl\Forms\Definitions\Tables\FormsTables;
 use Nvl\Forms\Enums\CorsPolicy;
 use Nvl\Forms\Enums\FormStatus;
 use Nvl\Forms\Enums\FormType;
@@ -230,7 +229,7 @@ class MutateFormPayload extends Data
         $presenceRule = $updating ? 'sometimes' : 'required';
 
         return [
-            'handle' => ['nullable', 'string', 'max:255', Rule::unique(FormsTables::Forms, 'handle')->ignore($formId)],
+            'handle' => ['nullable', 'string', 'max:255'],
             'translations' => [$presenceRule, 'array', new SupportedLocaleMapRule],
             'translations.*' => ['nullable', 'array'],
             'translations.*.name' => ['nullable', 'string', 'max:255'],

@@ -21,6 +21,7 @@ use Nvl\Forms\Traits\FormAnalyticFilters;
  * high-volume operational telemetry, not operator-facing history.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $form_id
  * @property FormAnalyticEventType $event_type
  * @property string|null $origin
@@ -46,6 +47,7 @@ class FormAnalytic extends Model
      */
     protected $fillable = [
         'form_id',
+        'tenant_id',
         'event_type',
         'origin',
         'ip_address',

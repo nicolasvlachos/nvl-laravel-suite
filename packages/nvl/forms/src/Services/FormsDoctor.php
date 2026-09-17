@@ -13,6 +13,8 @@ use Nvl\Forms\Contracts\FormRateLimiter;
 use Nvl\Forms\Contracts\FormSpamDetector;
 use Nvl\Forms\Data\FormsDoctorCheckData;
 use Nvl\Forms\Definitions\Tables\FormsTables;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Enums\TenantContextMode;
 use Throwable;
 
 /**
@@ -23,6 +25,8 @@ final readonly class FormsDoctor
     public function __construct(
         private Container $container,
         private PublicFormTokenService $publicTokens,
+        private EntryCallbackRegistry $entryCallbacks,
+        private TenantContext $tenantContext,
     ) {}
 
     /**
@@ -242,6 +246,8 @@ final readonly class FormsDoctor
     private function securityChecks(): array
     {
         $hasApplicationKey = $this->publicTokens->hasSigningKey();
+        $legacyCallbacksAllowed = $this->tenantContext->snapshot()->mode === TenantContextMode::Disabled
+            || ! $this->entryCallbacks->hasLegacyCallbacks();
 
         return [
             $this->check(
@@ -250,6 +256,13 @@ final readonly class FormsDoctor
                 $hasApplicationKey
                     ? 'Application key is available for signing public form tokens.'
                     : 'A nonempty, correctly encoded APP_KEY is required to sign public form tokens.',
+            ),
+            $this->check(
+                'security.tenant_callbacks',
+                $legacyCallbacksAllowed,
+                $legacyCallbacksAllowed
+                    ? 'Tenant callback registrations are context-independent.'
+                    : 'Tenant mode rejects legacy Request-dependent entry callbacks.',
             ),
         ];
     }

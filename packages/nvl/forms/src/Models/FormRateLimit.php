@@ -18,6 +18,7 @@ use Nvl\Forms\Traits\FormRateLimitFilters;
  * Audit events are intentionally omitted because counters update on every request.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $form_id
  * @property string $ip_address
  * @property int $submission_count
@@ -44,6 +45,7 @@ class FormRateLimit extends Model
      */
     protected $fillable = [
         'form_id',
+        'tenant_id',
         'ip_address',
         'submission_count',
         'window_start',

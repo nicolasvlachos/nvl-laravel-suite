@@ -34,7 +34,11 @@ use Nvl\Forms\Services\FormSpamDetectionService;
 use Nvl\Forms\Support\FormErrorMapperRegistry;
 use Nvl\Forms\Support\FormHandlerRegistry;
 use Nvl\Forms\Support\FormRenderDataRegistry;
+use Nvl\Forms\Tenancy\FormsResourceRegistrar;
 use Nvl\Support\Traits\MergesPackageConfiguration;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
+use Nvl\Tenancy\Services\TenantAdoptionRegistry;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -94,16 +98,21 @@ final class FormsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->register(TenancyServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/forms.php', 'forms');
+        (new FormsResourceRegistrar)->register(
+            $this->app->make(TenantResourceRegistry::class),
+            $this->app->make(TenantAdoptionRegistry::class),
+        );
 
         $this->app->singletonIf(FormHandlerRegistry::class, fn (): FormHandlerRegistry => new FormHandlerRegistry);
         $this->app->singletonIf(EntryCallbackRegistry::class, fn (Container $app): EntryCallbackRegistry => new EntryCallbackRegistry($app));
         $this->app->singletonIf(FormRenderDataRegistry::class, fn (Container $app): FormRenderDataRegistry => new FormRenderDataRegistry($app));
         $this->app->singletonIf(FormErrorMapperRegistry::class, fn (Container $app): FormErrorMapperRegistry => new FormErrorMapperRegistry($app));
-        $this->app->singleton(FormRateLimiter::class, FormRateLimitService::class);
+        $this->app->scoped(FormRateLimiter::class, FormRateLimitService::class);
         $this->app->singletonIf(FormEntryDeletionPolicy::class, AllowFormEntryDeletion::class);
         $this->app->singletonIf(FormEntryPrivacyPolicy::class, AllowFormEntryPrivacyOperations::class);
-        $this->app->singleton(FormSpamDetector::class, FormSpamDetectionService::class);
+        $this->app->scoped(FormSpamDetector::class, FormSpamDetectionService::class);
         $this->app->bind(CreateFormContract::class, CreateFormAction::class);
         $this->app->bind(CreateFormEntryContract::class, CreateFormEntryAction::class);
         $this->app->register(RouteServiceProvider::class);

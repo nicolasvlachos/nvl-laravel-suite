@@ -17,6 +17,7 @@ use Nvl\Forms\Enums\FormSubmissionReceiptState;
  * Durable idempotency and registration claim for custom form handlers.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $form_id
  * @property string|null $idempotency_key
  * @property string $payload_digest
@@ -41,6 +42,7 @@ final class FormSubmissionReceipt extends Model
      */
     protected $fillable = [
         'form_id',
+        'tenant_id',
         'idempotency_key',
         'payload_digest',
         'registration_fingerprint',

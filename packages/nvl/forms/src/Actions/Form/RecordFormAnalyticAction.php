@@ -8,12 +8,16 @@ use Illuminate\Support\Facades\DB;
 use Nvl\Forms\Enums\FormAnalyticEventType;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormAnalytic;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Records a forms analytics event.
  */
 final class RecordFormAnalyticAction
 {
+    /** Create the ownership-aware recorder. */
+    public function __construct(private readonly TenantBoundary $boundary) {}
+
     /**
      * Create a forms analytics event.
      *
@@ -29,13 +33,15 @@ final class RecordFormAnalyticAction
         ?string $sessionId = null,
         ?array $metadata = null,
     ): FormAnalytic {
-        $formId = $form instanceof Form ? $form->id : (string) $form;
+        $formId = $form instanceof Form ? (string) $form->getKey() : (string) $form;
+        $canonical = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
         $event = $eventType instanceof FormAnalyticEventType
             ? $eventType
             : FormAnalyticEventType::from((string) $eventType);
 
         return DB::transaction(fn (): FormAnalytic => FormAnalytic::create([
-            'form_id' => $formId,
+            'form_id' => $canonical->getKey(),
+            ...$this->childOwnership($canonical),
             'event_type' => $event,
             'origin' => $origin,
             'ip_address' => $ipAddress,
@@ -43,5 +49,13 @@ final class RecordFormAnalyticAction
             'session_id' => $sessionId,
             'metadata' => $metadata,
         ]));
+    }
+
+    /** @return array{tenant_id?:mixed} */
+    private function childOwnership(Form $form): array
+    {
+        return array_key_exists('tenant_id', $form->getAttributes())
+            ? ['tenant_id' => $form->getRawOriginal('tenant_id')]
+            : [];
     }
 }

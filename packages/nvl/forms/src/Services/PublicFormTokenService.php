@@ -9,6 +9,9 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 use Nvl\Forms\Exceptions\FormException;
 use Nvl\Forms\Models\Form;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Enums\TenantContextMode;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Throwable;
 
 /**
@@ -20,6 +23,12 @@ final class PublicFormTokenService
 {
     public const string HEADER = 'X-Forms-Public-Token';
 
+    /** Create the versioned tenant-bound public token service. */
+    public function __construct(
+        private readonly TenantContext $context,
+        private readonly TenantBoundary $boundary,
+    ) {}
+
     /**
      * Issue a signed token for a specific form.
      *
@@ -27,14 +36,19 @@ final class PublicFormTokenService
      * @param  CarbonInterface  $expiresAt  Expiration timestamp
      * @return string Signed token
      */
-    public function issue(Form $form, CarbonInterface $expiresAt): string
+    public function issue(Form $form, CarbonInterface $expiresAt, string $site = 'default'): string
     {
         $key = $this->keyBytes();
         if ($key === null) {
             throw new FormException('A valid APP_KEY is required to sign public form tokens.');
         }
 
+        $this->boundary->assertRecord($form, 'forms.forms');
+        $snapshot = $this->context->snapshot();
         $payload = [
+            'v' => 2,
+            'tenant_id' => $snapshot->tenantId?->value,
+            'site' => $site,
             'form_id' => (string) $form->id,
             'iat' => CarbonImmutable::now()->getTimestamp(),
             'exp' => $expiresAt->getTimestamp(),
@@ -54,7 +68,7 @@ final class PublicFormTokenService
      * @param  Form  $form  Target form
      * @return bool Whether token is valid and not expired
      */
-    public function validate(?string $token, Form $form): bool
+    public function validate(?string $token, Form $form, string $site = 'default'): bool
     {
         $payload = $this->validatedPayload($token);
         if ($payload === null) {
@@ -63,16 +77,18 @@ final class PublicFormTokenService
 
         $formId = $payload['form_id'] ?? '';
 
-        return $formId !== '' && $formId === $form->id;
+        return $formId !== ''
+            && $formId === $form->id
+            && $this->matchesOwnership($payload, $site);
     }
 
     /**
      * Return the trusted server-issued load timestamp for spam timing.
      */
-    public function issuedAt(?string $token, Form $form): ?float
+    public function issuedAt(?string $token, Form $form, string $site = 'default'): ?float
     {
         $payload = $this->validatedPayload($token);
-        if ($payload === null || ($payload['form_id'] ?? '') !== $form->id) {
+        if ($payload === null || ($payload['form_id'] ?? '') !== $form->id || ! $this->matchesOwnership($payload, $site)) {
             return null;
         }
 
@@ -100,7 +116,7 @@ final class PublicFormTokenService
             return false;
         }
 
-        return Form::query()
+        return $this->boundary->query(Form::query(), 'forms.forms')
             ->whereKey($formId)
             ->where('handle', $handle)
             ->exists();
@@ -135,7 +151,7 @@ final class PublicFormTokenService
     }
 
     /**
-     * @return array{form_id?:string,iat?:int,exp?:int,nonce?:string}|null
+     * @return array{v?:int,tenant_id?:string|null,site?:string,form_id?:string,iat?:int,exp?:int,nonce?:string}|null
      */
     private function validatedPayload(?string $token): ?array
     {
@@ -183,6 +199,9 @@ final class PublicFormTokenService
         $issuedAt = $decoded['iat'] ?? null;
         $expiresAt = $decoded['exp'] ?? null;
         $nonce = $decoded['nonce'] ?? null;
+        $version = $decoded['v'] ?? null;
+        $tenantId = $decoded['tenant_id'] ?? null;
+        $site = $decoded['site'] ?? null;
 
         if (! is_string($formId)
             || ! is_int($issuedAt)
@@ -191,7 +210,27 @@ final class PublicFormTokenService
             return null;
         }
 
+        $mode = $this->context->snapshot()->mode;
+        if ($version !== 2) {
+            if ($expiresAt <= 0 || CarbonImmutable::now()->getTimestamp() > $expiresAt) {
+                return null;
+            }
+
+            return $mode === TenantContextMode::Disabled ? [
+                'form_id' => $formId,
+                'iat' => $issuedAt,
+                'exp' => $expiresAt,
+                'nonce' => $nonce,
+            ] : null;
+        }
+        if (($tenantId !== null && ! is_string($tenantId)) || ! is_string($site) || $site === '') {
+            return null;
+        }
+
         $payload = [
+            'v' => 2,
+            'tenant_id' => $tenantId,
+            'site' => $site,
             'form_id' => $formId,
             'iat' => $issuedAt,
             'exp' => $expiresAt,
@@ -203,6 +242,19 @@ final class PublicFormTokenService
         }
 
         return $payload;
+    }
+
+    /** Confirm token tenancy and site against the currently admitted request. */
+    private function matchesOwnership(array $payload, string $site): bool
+    {
+        $snapshot = $this->context->snapshot();
+        if ($snapshot->mode === TenantContextMode::Disabled) {
+            return ! isset($payload['v']) || $payload['v'] === 2;
+        }
+
+        return $snapshot->mode === TenantContextMode::Tenant
+            && ($payload['tenant_id'] ?? null) === $snapshot->tenantId?->value
+            && ($payload['site'] ?? null) === $site;
     }
 
     private function base64UrlEncode(string $raw): string

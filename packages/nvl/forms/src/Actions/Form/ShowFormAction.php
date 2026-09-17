@@ -7,6 +7,7 @@ namespace Nvl\Forms\Actions\Form;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Nvl\Forms\Models\Form;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Orchestrates form retrieval, optional view recording, and display loading.
@@ -23,6 +24,7 @@ final class ShowFormAction
      */
     public function __construct(
         private readonly RecordFormViewAction $recordFormView,
+        private readonly TenantBoundary $boundary,
     ) {}
 
     /**
@@ -46,7 +48,8 @@ final class ShowFormAction
         ?string $sessionId = null,
         ?Authenticatable $actor = null,
     ): Form {
-        $formModel = $form instanceof Form ? $form : Form::findOrFail($form);
+        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
 
         if ($recordView) {
             $formModel = $this->recordFormView->execute(

@@ -18,6 +18,7 @@ use Nvl\Forms\Traits\AllowedOriginFilters;
  * AllowedOrigin model representing CORS-allowed origins for forms.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $form_id
  * @property string $origin
  * @property bool $is_active
@@ -47,6 +48,7 @@ class AllowedOrigin extends Model
      */
     protected $fillable = [
         'form_id',
+        'tenant_id',
         'origin',
         'is_active',
         'description',

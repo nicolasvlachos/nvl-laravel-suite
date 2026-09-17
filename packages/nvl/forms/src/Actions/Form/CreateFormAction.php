@@ -15,6 +15,7 @@ use Nvl\Forms\Services\FormAllowedOriginService;
 use Nvl\Forms\Services\FormHandleService;
 use Nvl\Forms\Services\FormTranslationPayloadMapper;
 use Nvl\Translatable\Services\TranslationWriter;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Spatie\LaravelData\Optional;
 use Throwable;
 
@@ -38,6 +39,7 @@ final class CreateFormAction implements CreateFormContract
         private readonly FormAllowedOriginService $originService,
         private readonly FormTranslationPayloadMapper $translationPayloadMapper,
         private readonly TranslationWriter $translationWriter,
+        private readonly TenantBoundary $boundary,
     ) {}
 
     /**
@@ -80,7 +82,7 @@ final class CreateFormAction implements CreateFormContract
             $this->handleService->validateUniqueness($handle);
 
             $form = new Form;
-            $form->fill($formData);
+            $form->fill([...$formData, ...$this->boundary->attributes('forms.forms')]);
             $form->save();
 
             if (is_array($data->allowedOrigins)) {

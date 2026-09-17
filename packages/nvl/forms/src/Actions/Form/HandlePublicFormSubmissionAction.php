@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Support\Facades\DB;
 use Nvl\Forms\Actions\FormEntry\CreateFormEntryAction;
 use Nvl\Forms\Data\Mutations\SubmitFormPayload;
+use Nvl\Forms\Data\FormSubmissionCallbackContext;
 use Nvl\Forms\Enums\FormAnalyticEventType;
 use Nvl\Forms\Enums\Resolvement;
 use Nvl\Forms\Exceptions\FormSubmissionRejectionException;
@@ -16,9 +17,14 @@ use Nvl\Forms\Results\FormSubmissionResult;
 use Nvl\Forms\Services\CustomFormRegistry;
 use Nvl\Forms\Services\CustomSubmissionReceiptService;
 use Nvl\Forms\Services\EntryCallbackRegistry;
+use Nvl\Forms\Services\FormEntryLocator;
 use Nvl\Forms\Services\PublicFormTokenService;
 use Nvl\Forms\Support\CustomFormGuardResult;
 use Nvl\Forms\Support\FormSubmissionContext;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Enums\TenantContextMode;
+use Nvl\Tenancy\Services\TenantQueueContext;
+use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 use Throwable;
 
 /**
@@ -57,6 +63,9 @@ final class HandlePublicFormSubmissionAction
         private readonly EntryCallbackRegistry $entryCallbacks,
         private readonly CustomSubmissionReceiptService $customReceipts,
         private readonly PublicFormTokenService $tokenService,
+        private readonly TenantContext $tenantContext,
+        private readonly TenantQueueContext $queueContext,
+        private readonly FormEntryLocator $entryLocator,
     ) {}
 
     /**
@@ -185,12 +194,31 @@ final class HandlePublicFormSubmissionAction
             $context->sessionId,
             $context->actor,
             $context->idempotencyKey,
-            $this->tokenService->issuedAt($context->publicToken, $form),
+            $this->tokenService->issuedAt($context->publicToken, $form, $context->publicSite ?? 'default'),
         );
         if (! $entry->isIdempotentReplay()) {
-            DB::afterCommit(function () use ($form, $entry, $request): void {
-                $this->entryCallbacks->dispatch($form, $entry, $request);
-            });
+            if ($this->tenantContext->snapshot()->mode === TenantContextMode::Tenant) {
+                $envelope = TenantJobEnvelope::capture($this->tenantContext);
+                $callbackContext = new FormSubmissionCallbackContext(
+                    tenantId: $this->tenantContext->requireTenant()->value,
+                    origin: $context->originHost,
+                    locale: $request->getLocale(),
+                    correlationId: $context->idempotencyKey,
+                );
+                $formId = (string) $form->getKey();
+                $entryId = (string) $entry->getKey();
+                $form->getConnection()->afterCommit(function () use ($envelope, $callbackContext, $formId, $entryId): void {
+                    $this->queueContext->run($envelope, function () use ($callbackContext, $formId, $entryId): void {
+                        $form = $this->getForm->execute($formId);
+                        $entry = $this->entryLocator->forForm($form, $entryId);
+                        $this->entryCallbacks->dispatchTenant($form, $entry, $callbackContext);
+                    });
+                });
+            } else {
+                DB::afterCommit(function () use ($form, $entry, $request): void {
+                    $this->entryCallbacks->dispatch($form, $entry, $request);
+                });
+            }
         }
 
         return new FormSubmissionResult(

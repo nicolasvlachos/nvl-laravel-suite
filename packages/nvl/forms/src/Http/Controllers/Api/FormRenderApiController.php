@@ -24,6 +24,7 @@ use Nvl\Forms\Services\PublicFormTokenService;
 use Nvl\Forms\Services\RequestOriginResolver;
 use Nvl\Forms\Support\FormRenderDataRegistry;
 use Nvl\Forms\Support\FormsConfiguration;
+use Nvl\Tenancy\ValueObjects\TenantSiteContext;
 use Nvl\Forms\Support\FormSubmissionContext;
 use Nvl\Support\Exceptions\BusinessException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
@@ -74,6 +75,9 @@ final class FormRenderApiController extends Controller
                         'forms.public.token_ttl_minutes',
                         15,
                     )),
+                    ($request->attributes->get(TenantSiteContext::class) instanceof TenantSiteContext)
+                        ? $request->attributes->get(TenantSiteContext::class)->site
+                        : 'default',
                 ),
                 'extension_translations' => $additionalTranslations !== [] ? $additionalTranslations : null,
             ], $additionalData));

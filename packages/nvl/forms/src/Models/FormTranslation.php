@@ -13,6 +13,7 @@ use Nvl\Forms\Definitions\Tables\FormsTables;
  * Stores locale-specific public copy and arbitrary form content.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $form_id
  * @property string $locale
  * @property string|null $name
@@ -33,6 +34,7 @@ final class FormTranslation extends Model
     /** @var list<string> */
     protected $fillable = [
         'form_id',
+        'tenant_id',
         'locale',
         'name',
         'description',

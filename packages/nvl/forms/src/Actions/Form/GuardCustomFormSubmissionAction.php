@@ -112,7 +112,7 @@ final class GuardCustomFormSubmissionAction
             $entryData,
             $ipAddress,
             $userAgent,
-            $this->tokenService->issuedAt($context->publicToken, $form),
+            $this->tokenService->issuedAt($context->publicToken, $form, $context->publicSite ?? 'default'),
         );
         if ($spamDetection['is_spam']) {
             $this->recordSpamRejection(

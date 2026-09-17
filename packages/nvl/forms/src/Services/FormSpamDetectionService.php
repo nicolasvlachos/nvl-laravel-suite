@@ -7,6 +7,7 @@ namespace Nvl\Forms\Services;
 use Nvl\Forms\Contracts\FormSpamDetector;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormRateLimit;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Stateless service for evaluating spam signals in form submissions.
@@ -20,6 +21,9 @@ use Nvl\Forms\Models\FormRateLimit;
  */
 final class FormSpamDetectionService implements FormSpamDetector
 {
+    /** Create the tenant-aware detector. */
+    public function __construct(private readonly TenantBoundary $boundary) {}
+
     /** @var array<int, string> Spam keywords to detect in text fields */
     private const SPAM_KEYWORDS = [
         'viagra', 'casino', 'loan', 'mortgage', 'bitcoin',
@@ -186,7 +190,7 @@ final class FormSpamDetectionService implements FormSpamDetector
             $flags['suspicious_user_agent'] = $userAgent ?? 'empty';
         }
 
-        $record = $rateLimit ?? FormRateLimit::where('form_id', $form->id)
+        $record = $rateLimit ?? $this->boundary->query(FormRateLimit::query(), 'forms.rates')->where('form_id', $form->id)
             ->where('ip_address', $ipAddress)
             ->first();
 
@@ -194,7 +198,7 @@ final class FormSpamDetectionService implements FormSpamDetector
             $flags['ip_reputation'] = (int) $record->violation_count;
         }
 
-        $recentSubmissions = (int) FormRateLimit::where('ip_address', $ipAddress)
+        $recentSubmissions = (int) $this->boundary->query(FormRateLimit::query(), 'forms.rates')->where('ip_address', $ipAddress)
             ->where('window_start', '>=', now()->subHour())
             ->sum('submission_count');
 
@@ -369,7 +373,7 @@ final class FormSpamDetectionService implements FormSpamDetector
     ): int {
         $score = 0;
 
-        $record = $rateLimit ?? FormRateLimit::where('form_id', $form->id)
+        $record = $rateLimit ?? $this->boundary->query(FormRateLimit::query(), 'forms.rates')->where('form_id', $form->id)
             ->where('ip_address', $ipAddress)
             ->first();
 
@@ -380,7 +384,7 @@ final class FormSpamDetectionService implements FormSpamDetector
         }
 
         // Rapid submissions across all forms from this IP
-        $recentSubmissions = (int) FormRateLimit::where('ip_address', $ipAddress)
+        $recentSubmissions = (int) $this->boundary->query(FormRateLimit::query(), 'forms.rates')->where('ip_address', $ipAddress)
             ->where('window_start', '>=', now()->subHour())
             ->sum('submission_count');
 

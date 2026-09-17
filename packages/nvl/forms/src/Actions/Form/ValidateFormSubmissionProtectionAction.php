@@ -42,7 +42,7 @@ final class ValidateFormSubmissionProtectionAction
         }
 
         $publicToken = $context->publicToken;
-        if ($this->tokenService->validate($publicToken, $form)) {
+        if ($this->tokenService->validate($publicToken, $form, $context->publicSite ?? 'default')) {
             return;
         }
 

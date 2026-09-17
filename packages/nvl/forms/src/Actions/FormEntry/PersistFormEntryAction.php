@@ -10,6 +10,7 @@ use Nvl\Forms\Data\FormEntryPayload;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormEntry;
 use Nvl\Forms\Services\FormSpamRejectionRecorder;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Spatie\LaravelData\Optional;
 use Throwable;
 
@@ -30,6 +31,7 @@ final class PersistFormEntryAction
     public function __construct(
         private readonly RecordFormSubmissionAction $recordFormSubmission,
         private readonly FormSpamRejectionRecorder $spamRejectionRecorder,
+        private readonly TenantBoundary $boundary,
     ) {}
 
     /**
@@ -58,7 +60,8 @@ final class PersistFormEntryAction
     ): array {
         return DB::transaction(function () use ($form, $data, $spamDetection, $ipAddress, $userAgent, $sessionId, $idempotencyKey, $payloadDigest, $registrationFingerprint) {
             $submittedFrom = $data->submittedFrom instanceof Optional ? null : $data->submittedFrom;
-            $form = $form instanceof Form ? $form : Form::findOrFail($form);
+            $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+            $form = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
 
             $entryPayload = $data->except('id', 'createdAt')->toModelFiltered();
             $entryPayload['ip_address'] = $ipAddress;
@@ -70,6 +73,9 @@ final class PersistFormEntryAction
             $entryPayload['idempotency_key'] = $idempotencyKey;
             $entryPayload['payload_digest'] = $payloadDigest;
             $entryPayload['registration_fingerprint'] = $registrationFingerprint;
+            if (array_key_exists('tenant_id', $form->getAttributes())) {
+                $entryPayload['tenant_id'] = $form->getAttribute('tenant_id');
+            }
 
             $entry = new FormEntry;
             $entry->fill($entryPayload);

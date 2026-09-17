@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Nvl\Forms\Http\Controllers\Api\FormRenderApiController;
 use Nvl\Forms\Http\Controllers\Api\FormsApiController;
 use Nvl\Forms\Models\Form;
+use Nvl\Tenancy\Http\Middleware\ResolvePublicTenant;
 
 $managementMiddleware = array_values(array_filter(
     (array) config('forms.routes.management.middleware', ['auth']),
@@ -58,9 +59,12 @@ if ((bool) config('forms.routes.management.enabled', false)) {
 
 // Public API routes for iframe rendering and form submission
 if ((bool) config('forms.routes.public.enabled', false)) {
+    $tenantAdmissionMiddleware = (bool) config('tenancy.enabled', false)
+        ? [ResolvePublicTenant::class]
+        : [];
     Route::prefix('forms')
         ->name('nvl.forms.public.')
-        ->middleware(array_values(array_unique([...$publicMiddleware, 'forms-locale'])))
+        ->middleware(array_values(array_unique([...$tenantAdmissionMiddleware, ...$publicMiddleware, 'forms-locale'])))
         ->group(function () {
             // Form rendering endpoints (with host validation middleware)
             Route::middleware(['validate-form-host'])

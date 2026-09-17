@@ -7,6 +7,8 @@ namespace Nvl\Forms\Services;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\Request;
 use Nvl\Forms\Contracts\EntrySubmissionCallback;
+use Nvl\Forms\Contracts\TenantEntrySubmissionCallback;
+use Nvl\Forms\Data\FormSubmissionCallbackContext;
 use Nvl\Forms\Exceptions\FormException;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormEntry;
@@ -21,6 +23,9 @@ final class EntryCallbackRegistry
      * @var array<string, list<EntrySubmissionCallback|callable|string>>
      */
     private array $callbacks = [];
+
+    /** @var array<string, list<class-string<TenantEntrySubmissionCallback>>> */
+    private array $tenantCallbacks = [];
 
     /**
      * Create the registry with a container dependency.
@@ -82,6 +87,34 @@ final class EntryCallbackRegistry
         }
     }
 
+    /** Register a class-resolved callback without retaining tenant-scoped objects. */
+    public function registerTenant(string $handle, string $callbackClass): void
+    {
+        $handle = trim($handle);
+        if ($handle === '' || ! is_a($callbackClass, TenantEntrySubmissionCallback::class, true)) {
+            throw new FormException('Tenant entry callbacks must be named classes implementing the tenant callback contract.');
+        }
+
+        $callbacks = $this->tenantCallbacks[$handle] ?? [];
+        if (in_array($callbackClass, $callbacks, true)) {
+            throw new FormException("The tenant entry callback is already registered for [{$handle}].");
+        }
+        $callbacks[] = $callbackClass;
+        $this->tenantCallbacks[$handle] = $callbacks;
+    }
+
+    /** Resolve every callback freshly after tenant context is restored. */
+    public function dispatchTenant(Form $form, FormEntry $entry, FormSubmissionCallbackContext $context): void
+    {
+        foreach ($this->tenantCallbacks[$form->handle] ?? [] as $callbackClass) {
+            $callback = $this->container->make($callbackClass);
+            if (! $callback instanceof TenantEntrySubmissionCallback) {
+                throw new FormException('A registered tenant entry callback resolved to an invalid implementation.');
+            }
+            $callback->after($form, $entry, $context);
+        }
+    }
+
     /**
      * Remove callbacks for a form handle.
      *
@@ -103,6 +136,13 @@ final class EntryCallbackRegistry
     public function clear(): void
     {
         $this->callbacks = [];
+        $this->tenantCallbacks = [];
+    }
+
+    /** Report legacy Request-dependent registrations for tenancy diagnostics. */
+    public function hasLegacyCallbacks(): bool
+    {
+        return $this->callbacks !== [];
     }
 
     /**

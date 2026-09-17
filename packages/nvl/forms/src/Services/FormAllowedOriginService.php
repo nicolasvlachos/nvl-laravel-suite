@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Nvl\Forms\Models\AllowedOrigin;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Support\AllowedOriginExpression;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Manages allowed origin normalization, creation, and synchronization for forms.
@@ -18,6 +19,9 @@ use Nvl\Forms\Support\AllowedOriginExpression;
  */
 final class FormAllowedOriginService
 {
+    /** Create the tenant-aware origin service. */
+    public function __construct(private readonly TenantBoundary $boundary) {}
+
     /**
      * Normalize an array of raw origin values into clean, unique strings.
      *
@@ -48,10 +52,12 @@ final class FormAllowedOriginService
      */
     public function createOrigins(Form $form, array $origins): void
     {
+        $this->boundary->assertRecord($form, 'forms.forms');
         $normalized = $this->normalizeOrigins($origins);
 
         foreach ($normalized as $origin) {
             $form->allowedOrigins()->create([
+                ...$this->childOwnership($form),
                 'origin' => $origin,
                 'is_active' => true,
             ]);
@@ -71,6 +77,7 @@ final class FormAllowedOriginService
      */
     public function syncOrigins(Form $form, array $origins): void
     {
+        $this->boundary->assertRecord($form, 'forms.forms');
         $incoming = $this->normalizeOrigins($origins);
 
         $form->loadMissing('allowedOrigins');
@@ -98,6 +105,7 @@ final class FormAllowedOriginService
             }
 
             $form->allowedOrigins()->create([
+                ...$this->childOwnership($form),
                 'origin' => $origin,
                 'is_active' => true,
             ]);
@@ -109,5 +117,13 @@ final class FormAllowedOriginService
                 $existing->update(['is_active' => false]);
             }
         }
+    }
+
+    /** @return array{tenant_id?:mixed} */
+    private function childOwnership(Form $form): array
+    {
+        return array_key_exists('tenant_id', $form->getAttributes())
+            ? ['tenant_id' => $form->getRawOriginal('tenant_id')]
+            : [];
     }
 }

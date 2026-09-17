@@ -6,6 +6,7 @@ namespace Nvl\Forms\Services;
 
 use Nvl\Forms\Models\AllowedOrigin;
 use Nvl\Forms\Models\Form;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Resolves host/origin access checks for restricted public forms.
@@ -17,6 +18,7 @@ final class FormOriginAccessService
      */
     public function __construct(
         private readonly OriginMatchingService $originMatcher,
+        private readonly TenantBoundary $boundary,
     ) {}
 
     /**
@@ -24,7 +26,8 @@ final class FormOriginAccessService
      */
     public function isOriginAllowed(Form|string $form, string $origin): bool
     {
-        $formModel = $form instanceof Form ? $form : Form::findOrFail($form);
+        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
 
         if (! $formModel->restrict_public_access) {
             return true;
@@ -38,7 +41,8 @@ final class FormOriginAccessService
      */
     public function resolveMatchingOrigin(Form|string $form, string $origin): ?AllowedOrigin
     {
-        $formModel = $form instanceof Form ? $form : Form::findOrFail($form);
+        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
         $formModel->loadMissing('allowedOrigins');
 
         /** @var ?AllowedOrigin $matched */

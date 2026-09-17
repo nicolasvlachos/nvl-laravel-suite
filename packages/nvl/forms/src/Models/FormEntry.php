@@ -19,6 +19,7 @@ use Nvl\Forms\Traits\FormEntryFilters;
  * FormEntry model representing a submission to a form.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $form_id
  * @property string|null $subject
  * @property string|null $email
@@ -64,6 +65,7 @@ class FormEntry extends Model
      */
     protected $fillable = [
         'form_id',
+        'tenant_id',
         'subject',
         'email',
         'first_name',

@@ -28,6 +28,7 @@ use Nvl\Translatable\Translatable;
  * Form model representing user-created forms with dynamic fields.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $handle
  * @property int $revision
  * @property FormStatus $status
@@ -81,6 +82,7 @@ class Form extends Model implements TranslatableModel
      */
     protected $fillable = [
         'handle',
+        'tenant_id',
         'revision',
         'status',
         'resolvement',
@@ -174,6 +176,7 @@ class Form extends Model implements TranslatableModel
                 'content',
             ],
             mutationPolicy: TranslationMutationPolicy::DomainActionOnly,
+            ownershipResource: 'forms.forms',
         );
     }
 
