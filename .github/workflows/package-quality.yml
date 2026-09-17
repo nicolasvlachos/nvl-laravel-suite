@@ -282,12 +282,6 @@ jobs:
               --compact \
               "packages/nvl/$package/tests"
           done
-          DB_DATABASE=nvl_translatable_test_ci vendor/bin/pest \
-            --test-directory="packages/nvl/translatable/tests" \
-            --configuration="packages/nvl/translatable/phpunit.xml.dist" \
-            --bootstrap=vendor/autoload.php \
-            --compact \
-            packages/nvl/translatable/tests/Tenancy/Feature/TranslationTenancySchemaTest.php
           DATABASE_NAME=nvl_package_test_integration php -r '
             $database = getenv("DATABASE_NAME");
             if ($database !== "nvl_package_test_integration") {

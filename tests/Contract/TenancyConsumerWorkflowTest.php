@@ -103,8 +103,10 @@ it('keeps worker and race evidence in the existing database quality jobs', funct
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
     $postgres = json_encode($workflow['jobs']['postgresql'] ?? [], JSON_THROW_ON_ERROR);
-    $mysql = json_encode($workflow['jobs']['mysql-family'] ?? [], JSON_THROW_ON_ERROR);
+    $mysqlStateful = collect($workflow['jobs']['mysql-family']['steps'] ?? [])->firstWhere('name', 'Stateful package tests');
+    $mysqlRun = is_array($mysqlStateful) ? ($mysqlStateful['run'] ?? '') : '';
 
     expect($postgres)->toContain('redis:8.0-alpine', 'pdo_pgsql', 'redis', 'REDIS_HOST', 'translatable')
-        ->and($mysql)->toContain('TranslationTenancySchemaTest.php');
+        ->and($mysqlRun)->toMatch('/for package in [^\n]*\btranslatable\b[^\n]*; do/')
+        ->and($mysqlRun)->not->toContain('TranslationTenancySchemaTest.php');
 });
