@@ -61,3 +61,10 @@ During F6 implementation, controller appended exact global/shared interface/test
 - Added a real fixture-owner adoption adapter and coordinator-driven Media tenancy scenario. The focused composite-FK mismatch proof passes on SQLite.
 - Evidence: `MediaTenancySchemaTest.php`, `ProviderConfigurationTest.php`, and `MediaModelTest.php` — 31 tests, 94 assertions. Focused production PHPStan is green except the package's pre-existing standalone `InteractsWithMedia` unused-trait diagnostic when the test stubs are excluded.
 - Concern carried forward: reviewed multi-tenant legacy asset split/copy execution is intentionally still fail-closed and must be completed before the R1-R5 final adoption matrix; it is not silently inferred.
+
+## R2 — Media tenant entry boundaries
+
+- Added composable global ownership scopes to Media roots and concrete children, plus explicit canonical-owner resolution for uploads, associations, owner-slot reads/writes, API associable resolution, and trait loaded-relation reads. Disabled mode preserves the legacy owner surface.
+- Public and private asset routes now establish the trusted public tenant before Laravel route-model binding. Cross-tenant public reuse of an already-passed model is rejected explicitly, and null/privileged library reads remain tenant-scoped.
+- Bulk delete/tag/move now validate the entire identifier set before mutation, preventing partial success when any identifier is unavailable to the active tenant.
+- Evidence: new boundary proof plus Actions/API/InteractsWithMedia focused matrix — 126 tests, 347 assertions.
