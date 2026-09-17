@@ -14,6 +14,7 @@
         "laravel/serializable-closure": "^2.0.10",
         "nesbot/carbon": "^2.72 || ^3.0",
         "nvl/data": "^2.0",
+        "nvl/tenancy": "^2.0",
         "spatie/laravel-data": "^4.23",
         "spatie/typescript-transformer": "^3.3"
     },

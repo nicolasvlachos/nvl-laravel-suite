@@ -17,7 +17,16 @@ use Illuminate\Support\Facades\Storage;
 use JsonException;
 use Laravel\SerializableClosure\SerializableClosure;
 use Nvl\Csv\Data\CSVImportOptionsData;
+use Nvl\Csv\Enums\CSVTypeEnum;
+use Nvl\Csv\Services\CSVHandlerRegistry;
+use Nvl\Csv\Services\CSVWorkStore;
 use Nvl\Csv\ValueObjects\CSVFieldMapping;
+use Nvl\Csv\ValueObjects\CSVWorkReference;
+use Nvl\Tenancy\Contracts\TenantQueuedJob;
+use Nvl\Tenancy\Enums\TenantContextMode;
+use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Tenancy\ValueObjects\TenantContextSnapshot;
+use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 use RuntimeException;
 use Throwable;
 
@@ -28,7 +37,7 @@ use Throwable;
  * validation, and transformation. It's designed to be part
  * of a larger batch processing operation for very large files.
  */
-final class ProcessCSVChunkJob implements ShouldQueue
+final class ProcessCSVChunkJob implements ShouldQueue, TenantQueuedJob
 {
     use Batchable;
     use Dispatchable;
@@ -58,6 +67,10 @@ final class ProcessCSVChunkJob implements ShouldQueue
 
     private ?string $chunkPath = null;
 
+    private ?CSVWorkReference $tenantWork = null;
+
+    private readonly TenantJobEnvelope $envelope;
+
     /**
      * Create a new job instance.
      *
@@ -73,13 +86,29 @@ final class ProcessCSVChunkJob implements ShouldQueue
         public readonly array $chunkData,
         public readonly int $chunkIndex,
         public readonly array $fieldMappings,
-        public readonly CSVImportOptionsData $options,
+        public readonly ?CSVImportOptionsData $options,
         public readonly ?Closure $rowProcessor = null,
         public readonly ?Closure $batchCallback = null,
+        ?TenantJobEnvelope $envelope = null,
     ) {
+        $this->envelope = $envelope ?? new TenantJobEnvelope(new TenantContextSnapshot(TenantContextMode::Disabled));
         $this->serializedRowProcessor = $rowProcessor === null ? null : new SerializableClosure($rowProcessor);
         $this->serializedBatchCallback = $batchCallback === null ? null : new SerializableClosure($batchCallback);
         $this->onQueue('csv-processing');
+    }
+
+    /** Create a scalar-reference tenant job without serializing rows or callbacks. */
+    public static function fromTenantWork(CSVWorkReference $work, int $chunkIndex, TenantJobEnvelope $envelope): self
+    {
+        $job = new self([], $chunkIndex, [], null, null, null, $envelope);
+        $job->tenantWork = $work;
+
+        return $job;
+    }
+
+    public function tenantJobEnvelope(): TenantJobEnvelope
+    {
+        return $this->envelope;
     }
 
     /**
@@ -145,16 +174,24 @@ final class ProcessCSVChunkJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(?CSVWorkStore $workStore = null, ?CSVHandlerRegistry $handlers = null): void
     {
         $batch = $this->batch();
         if ($batch !== null && $batch->cancelled()) {
             $this->deleteStoredChunk();
+            if ($workStore !== null) {
+                $this->deleteTenantChunk($workStore);
+            }
 
             return;
         }
 
-        $chunkData = $this->resolveChunkData();
+        [$chunkData, $options, $fieldMappings] = $this->tenantWork instanceof CSVWorkReference
+            ? $this->resolveTenantChunkData($workStore ?? throw new TenantBoundaryViolation('Tenant CSV work store is unavailable.'))
+            : [$this->resolveChunkData(), $this->options ?? throw new RuntimeException('CSV import options are missing.'), $this->fieldMappings];
+        $handler = $this->tenantWork instanceof CSVWorkReference
+            ? ($handlers ?? throw new TenantBoundaryViolation('Tenant CSV handler registry is unavailable.'))->resolve($this->tenantWork->handlerAlias)
+            : null;
         $startTime = microtime(true);
         $processedRows = 0;
         $failedRows = 0;
@@ -173,16 +210,20 @@ final class ProcessCSVChunkJob implements ShouldQueue
                 }
 
                 try {
-                    $processedRow = $this->processRow($rowInfo);
+                    $processedRow = $this->processRow($rowInfo, $options, $fieldMappings);
 
                     // Call row processor if provided
                     if ($this->rowProcessor !== null) {
                         ($this->rowProcessor)($processedRow, $rowInfo['row_number']);
                     }
+                    $handler?->process($processedRow, $rowInfo['row_number']);
 
                     $processedRows++;
 
                 } catch (Throwable $e) {
+                    if ($handler !== null) {
+                        throw $e;
+                    }
                     $failedRows++;
                     $errors[] = [
                         'row_number' => $rowInfo['row_number'],
@@ -213,6 +254,9 @@ final class ProcessCSVChunkJob implements ShouldQueue
             ]);
 
             $this->deleteStoredChunk();
+            if ($workStore !== null) {
+                $this->deleteTenantChunk($workStore);
+            }
         } catch (Throwable $e) {
             Log::error("Critical error processing CSV chunk {$this->chunkIndex}", [
                 'error' => $e->getMessage(),
@@ -248,22 +292,22 @@ final class ProcessCSVChunkJob implements ShouldQueue
      *
      * @throws Exception If row processing fails
      */
-    private function processRow(array $rowInfo): array
+    private function processRow(array $rowInfo, CSVImportOptionsData $options, array $fieldMappings): array
     {
         /** @var array<string, mixed> $rawData */
         $rawData = $rowInfo['data'];
         $processedData = [];
 
         // If no field mappings defined, return raw data
-        if (empty($this->fieldMappings)) {
+        if (empty($fieldMappings)) {
             return $rawData;
         }
 
         // Apply field mappings
-        foreach ($this->fieldMappings as $csvField => $mapping) {
+        foreach ($fieldMappings as $csvField => $mapping) {
             $value = $rawData[$csvField] ?? $mapping->defaultValue;
 
-            if ($this->options->shouldValidate() && ! $mapping->validate($value)) {
+            if ($options->shouldValidate() && ! $mapping->validate($value)) {
                 $errors = $mapping->getValidationErrors($value);
                 throw new Exception(implode(', ', $errors));
             }
@@ -355,5 +399,99 @@ final class ProcessCSVChunkJob implements ShouldQueue
         if ($this->chunkPath !== null) {
             Storage::disk('local')->delete($this->chunkPath);
         }
+    }
+
+    /** @return array{0:list<array{row_number:int,data:array<string,mixed>}>,1:CSVImportOptionsData,2:array<string,CSVFieldMapping>} */
+    private function resolveTenantChunkData(CSVWorkStore $workStore): array
+    {
+        $work = $this->tenantWork ?? throw new TenantBoundaryViolation('Tenant CSV work reference is missing.');
+        $manifest = $workStore->read($work);
+        $chunks = $manifest['chunks'] ?? null;
+        $options = $manifest['options'] ?? null;
+        $mappings = $manifest['mappings'] ?? null;
+        if (! is_array($chunks) || ! is_array($options) || ! is_array($mappings)) {
+            throw new TenantBoundaryViolation('Tenant CSV manifest shape is invalid.');
+        }
+        $chunk = null;
+        foreach ($chunks as $candidate) {
+            if (is_array($candidate) && ($candidate['index'] ?? null) === $this->chunkIndex) {
+                $chunk = $candidate;
+                break;
+            }
+        }
+        $expectedPath = dirname($work->manifestPath).'/chunks/'.$this->chunkIndex.'.json';
+        if (! is_array($chunk) || ($chunk['path'] ?? null) !== $expectedPath || ! is_string($chunk['sha256'] ?? null)) {
+            throw new TenantBoundaryViolation('Tenant CSV chunk reference is invalid.');
+        }
+        $raw = Storage::disk($work->disk)->get($expectedPath);
+        if (! is_string($raw) || ! hash_equals($chunk['sha256'], hash('sha256', $raw))) {
+            throw new TenantBoundaryViolation('Tenant CSV chunk checksum is invalid.');
+        }
+        $decoded = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
+        if (! is_array($decoded)) {
+            throw new TenantBoundaryViolation('Tenant CSV chunk payload is invalid.');
+        }
+
+        return [
+            $this->normalizeRows($decoded),
+            CSVImportOptionsData::from($options),
+            $this->restoreMappings($mappings),
+        ];
+    }
+
+    /** @param array<int,mixed> $rows @return list<array{row_number:int,data:array<string,mixed>}> */
+    private function normalizeRows(array $rows): array
+    {
+        $normalized = [];
+        foreach ($rows as $row) {
+            if (! is_array($row) || ! is_int($row['row_number'] ?? null) || ! is_array($row['data'] ?? null)) {
+                throw new TenantBoundaryViolation('Tenant CSV row payload is invalid.');
+            }
+            $data = [];
+            foreach ($row['data'] as $key => $value) {
+                if (is_string($key)) {
+                    $data[$key] = $value;
+                }
+            }
+            $normalized[] = ['row_number' => $row['row_number'], 'data' => $data];
+        }
+
+        return $normalized;
+    }
+
+    /** @param array<int|string,mixed> $rows @return array<string,CSVFieldMapping> */
+    private function restoreMappings(array $rows): array
+    {
+        $restored = [];
+        foreach ($rows as $row) {
+            if (! is_array($row) || ! is_string($row['source_field'] ?? null) || ! is_string($row['target_field'] ?? null)
+                || ($row['has_transformer'] ?? false) !== false || ($row['validators_count'] ?? 0) !== 0) {
+                throw new TenantBoundaryViolation('Tenant CSV field mapping is invalid.');
+            }
+            $type = is_string($row['type'] ?? null) ? CSVTypeEnum::tryFrom($row['type']) : null;
+            $mapping = new CSVFieldMapping(
+                sourceField: $row['source_field'],
+                targetField: $row['target_field'],
+                type: $type,
+                required: (bool) ($row['required'] ?? false),
+                defaultValue: $row['default_value'] ?? null,
+                unique: (bool) ($row['unique'] ?? false),
+                nullable: (bool) ($row['nullable'] ?? true),
+                format: is_string($row['format'] ?? null) ? $row['format'] : null,
+                metadata: is_array($row['metadata'] ?? null) ? $row['metadata'] : [],
+            );
+            $restored[$mapping->sourceField] = $mapping;
+        }
+
+        return $restored;
+    }
+
+    private function deleteTenantChunk(CSVWorkStore $workStore): void
+    {
+        if (! $this->tenantWork instanceof CSVWorkReference) {
+            return;
+        }
+        $workStore->read($this->tenantWork);
+        Storage::disk($this->tenantWork->disk)->delete(dirname($this->tenantWork->manifestPath).'/chunks/'.$this->chunkIndex.'.json');
     }
 }

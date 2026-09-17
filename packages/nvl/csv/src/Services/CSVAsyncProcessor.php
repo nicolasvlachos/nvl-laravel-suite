@@ -16,6 +16,12 @@ use JsonException;
 use Nvl\Csv\Data\CSVImportOptionsData;
 use Nvl\Csv\Jobs\ProcessCSVChunkJob;
 use Nvl\Csv\ValueObjects\CSVFieldMapping;
+use Nvl\Csv\ValueObjects\CSVWorkReference;
+use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Enums\TenantContextMode;
+use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Tenancy\Services\TenantQueueContext;
+use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 use RuntimeException;
 use Throwable;
 
@@ -43,14 +49,22 @@ final class CSVAsyncProcessor
 
     private ?Closure $completionCallback = null;
 
+    private ?string $handlerAlias = null;
+
+    private int $handlerVersion = 1;
+
     /** @var array<string, CSVFieldMapping> */
     private array $fieldMappings = [];
 
     /**
      * Create a new async processor instance.
      */
-    public function __construct()
-    {
+    public function __construct(
+        private readonly ?TenantContext $context = null,
+        private readonly ?CSVWorkStore $workStore = null,
+        private readonly ?CSVHandlerRegistry $handlers = null,
+        private readonly ?TenantQueueContext $queueContext = null,
+    ) {
         $this->chunkSize = 1000;
     }
 
@@ -117,7 +131,11 @@ final class CSVAsyncProcessor
      */
     public function mapField(string $csvField, string $targetField, ?CSVFieldMapping $mapping = null): self
     {
-        $this->fieldMappings[$csvField] = $mapping ?? CSVFieldMapping::simple($csvField, $targetField);
+        $candidate = $mapping ?? CSVFieldMapping::simple($csvField, $targetField);
+        if ($this->tenantEnabled() && ($candidate->transformer !== null || $candidate->validators !== [])) {
+            throw new TenantBoundaryViolation('Tenant CSV mappings cannot contain callback-backed transformations.');
+        }
+        $this->fieldMappings[$csvField] = $candidate;
 
         return $this;
     }
@@ -130,6 +148,7 @@ final class CSVAsyncProcessor
      */
     public function processRow(Closure $processor): self
     {
+        $this->rejectTenantClosure();
         $this->rowProcessor = $processor;
 
         return $this;
@@ -143,6 +162,7 @@ final class CSVAsyncProcessor
      */
     public function onProgress(Closure $callback): self
     {
+        $this->rejectTenantClosure();
         $this->progressCallback = $callback;
 
         return $this;
@@ -156,6 +176,7 @@ final class CSVAsyncProcessor
      */
     public function onBatchComplete(Closure $callback): self
     {
+        $this->rejectTenantClosure();
         $this->batchCallback = $callback;
 
         return $this;
@@ -169,7 +190,23 @@ final class CSVAsyncProcessor
      */
     public function onComplete(Closure $callback): self
     {
+        $this->rejectTenantClosure();
         $this->completionCallback = $callback;
+
+        return $this;
+    }
+
+    /** Select a class-resolved tenant row handler by immutable alias. */
+    public function usingHandler(string $alias, int $version = 1): self
+    {
+        if (trim($alias) === '' || $version < 1) {
+            throw new InvalidArgumentException('CSV handler alias and version are required.');
+        }
+        if ($this->handlers !== null && ! $this->handlers->has($alias)) {
+            throw new InvalidArgumentException("CSV handler [{$alias}] is not registered.");
+        }
+        $this->handlerAlias = $alias;
+        $this->handlerVersion = $version;
 
         return $this;
     }
@@ -187,6 +224,9 @@ final class CSVAsyncProcessor
     {
         if ($this->filePath === null || $this->options === null) {
             throw new RuntimeException('File path and options must be set before processing');
+        }
+        if ($this->tenantEnabled()) {
+            return $this->processTenantAsync();
         }
         $staged = $this->createJobs();
         $jobs = $staged['jobs'];
@@ -215,6 +255,43 @@ final class CSVAsyncProcessor
         } catch (Throwable $exception) {
             Storage::disk('local')->deleteDirectory($chunkDirectory);
 
+            throw $exception;
+        }
+    }
+
+    /** Stage JSON-only tenant work and capture native batch context before dispatch. */
+    private function processTenantAsync(): Batch
+    {
+        if ($this->context === null || $this->workStore === null || $this->handlers === null || $this->queueContext === null
+            || $this->handlerAlias === null || ! $this->handlers->has($this->handlerAlias)) {
+            throw new TenantBoundaryViolation('Tenant CSV processing requires injected work services and a registered handler.');
+        }
+        if ($this->rowProcessor !== null || $this->progressCallback !== null || $this->batchCallback !== null || $this->completionCallback !== null) {
+            throw new TenantBoundaryViolation('Tenant CSV processing refuses serialized callbacks.');
+        }
+        foreach ($this->fieldMappings as $mapping) {
+            if ($mapping->transformer !== null || $mapping->validators !== []) {
+                throw new TenantBoundaryViolation('Tenant CSV processing refuses callback-backed mappings.');
+            }
+        }
+
+        $tenantId = $this->context->requireTenant()->value;
+        $workId = Str::uuid()->toString();
+        $work = new CSVWorkReference(
+            $workId,
+            $tenantId,
+            'local',
+            'tenants/'.$tenantId.'/csv/'.$workId.'/manifest.json',
+            $this->handlerAlias,
+            $this->handlerVersion,
+        );
+        $staged = $this->createTenantJobs($work, TenantJobEnvelope::capture($this->context));
+        $pending = Bus::batch($staged)->name('Tenant CSV Processing: '.$workId)->allowFailures()->onQueue('csv-processing');
+
+        try {
+            return $this->queueContext->captureBatch($pending)->dispatch();
+        } catch (Throwable $exception) {
+            $this->workStore->delete($work);
             throw $exception;
         }
     }
@@ -377,6 +454,68 @@ final class CSVAsyncProcessor
     }
 
     /**
+     * Stage isolated chunks and a signed JSON-only manifest.
+     *
+     * @return list<ProcessCSVChunkJob>
+     */
+    private function createTenantJobs(CSVWorkReference $work, TenantJobEnvelope $envelope): array
+    {
+        if ($this->filePath === null || $this->options === null || $this->workStore === null) {
+            throw new TenantBoundaryViolation('Tenant CSV work is not fully configured.');
+        }
+        $options = $this->options->toArray();
+        $mappings = array_map(static fn (CSVFieldMapping $mapping): array => $mapping->toArray(), $this->fieldMappings);
+        json_encode(['options' => $options, 'mappings' => $mappings], JSON_THROW_ON_ERROR);
+        $import = CSVImport::make()->withOptions($this->options)->fromFile($this->filePath);
+        $directory = dirname($work->manifestPath);
+        $chunks = [];
+        $buffer = [];
+        $chunkIndex = 0;
+
+        try {
+            foreach ($import->stream() as $rowNumber => $row) {
+                json_encode($row, JSON_THROW_ON_ERROR);
+                $buffer[] = ['row_number' => $rowNumber, 'data' => $row];
+                if (count($buffer) >= $this->chunkSize) {
+                    $chunks[] = $this->writeTenantChunk($work, $chunkIndex++, $buffer);
+                    $buffer = [];
+                }
+            }
+            if ($buffer !== []) {
+                $chunks[] = $this->writeTenantChunk($work, $chunkIndex, $buffer);
+            }
+            $this->workStore->write($work, [
+                'options' => $options,
+                'mappings' => $mappings,
+                'chunks' => $chunks,
+            ]);
+        } catch (Throwable $exception) {
+            Storage::disk($work->disk)->deleteDirectory($directory);
+            throw $exception;
+        }
+
+        return array_map(
+            fn (array $chunk): ProcessCSVChunkJob => ProcessCSVChunkJob::fromTenantWork($work, (int) $chunk['index'], $envelope),
+            $chunks,
+        );
+    }
+
+    /**
+     * @param list<array{row_number:int,data:array<string,mixed>}> $rows
+     * @return array{index:int,path:string,sha256:string,rows:int}
+     */
+    private function writeTenantChunk(CSVWorkReference $work, int $index, array $rows): array
+    {
+        $path = dirname($work->manifestPath).'/chunks/'.$index.'.json';
+        $payload = json_encode($rows, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if (! Storage::disk($work->disk)->put($path, $payload, ['visibility' => 'private'])) {
+            throw new RuntimeException("Unable to stage tenant CSV chunk [{$index}].");
+        }
+
+        return ['index' => $index, 'path' => $path, 'sha256' => hash('sha256', $payload), 'rows' => count($rows)];
+    }
+
+    /**
      * Persist one chunk and create a job carrying only its storage reference.
      *
      * @param  list<array{row_number: int, data: array<string, mixed>}>  $chunk
@@ -494,5 +633,18 @@ final class CSVAsyncProcessor
         }
 
         return 'processing';
+    }
+
+    private function tenantEnabled(): bool
+    {
+        return (bool) config('tenancy.enabled', false)
+            || ($this->context !== null && $this->context->snapshot()->mode !== TenantContextMode::Disabled);
+    }
+
+    private function rejectTenantClosure(): void
+    {
+        if ($this->tenantEnabled()) {
+            throw new TenantBoundaryViolation('Tenant CSV processing requires a class-resolved row handler.');
+        }
     }
 }
