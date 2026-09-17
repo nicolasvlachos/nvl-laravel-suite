@@ -4,6 +4,11 @@ All notable changes to `nvl/templates` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Added tenant template graphs, immutable platform catalog grants/copies,
+  Content copy seams, staged Media import rollback, isolated renders, and adoption.
+
 ### Fixed
 
 - Reload stored template and render model state before rendering, queueing, or

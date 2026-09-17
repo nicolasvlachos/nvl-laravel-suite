@@ -95,7 +95,8 @@ jobs:
           vendor/bin/pest --compact \
             tests/Feature/Integration/TenantResourceCompositionTest.php \
             tests/Feature/Integration/TenantResourceAdoptionTest.php \
-            tests/Feature/Integration/TenantPagePublicationTest.php
+            tests/Feature/Integration/TenantPagePublicationTest.php \
+            tests/Feature/Integration/TenantWorkflowJourneyTest.php
 
       - name: Complete test suite
         run: composer test

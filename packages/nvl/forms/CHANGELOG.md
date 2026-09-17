@@ -4,6 +4,11 @@ All notable changes to `nvl/forms` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Added canonical Form tenant ownership across public submissions, origins,
+  throttling, spam, receipts, analytics, callbacks, and adoption.
+
 ### Fixed
 
 - Delay entry callbacks until the outermost transaction commits and discard them on rollback.

@@ -68,7 +68,20 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
             'profile' => [],
             'preferences' => [],
         ]);
-        $adoption = $this->media->adopt(['activity', 'auth', 'consumer-articles', 'media'], $tenantA);
+        $adoption = $this->media->adopt([
+            'activity',
+            'auth',
+            'comments',
+            'consumer-articles',
+            'content',
+            'csv',
+            'forms',
+            'mail-notifications',
+            'media',
+            'settings',
+            'templates',
+            'translations',
+        ], $tenantA);
         $this->tenants->platform(
             $this->media->operation('rbac-catalog'),
             fn (): int => $this->synchronizePermissions->execute($principal),

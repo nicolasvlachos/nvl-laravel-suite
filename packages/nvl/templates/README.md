@@ -941,6 +941,14 @@ possible.
 
 ## Development and verification
 
+## Tenant catalogs and rendering
+
+Tenant templates copy an immutable platform catalog snapshot plus independent
+Content and Media ownership; later source edits or grant revocation do not
+rewrite copied graphs. Queued renders carry tenant envelopes and use isolated
+temporary/output paths. Catalog imports stage binaries and roll back their
+exact staging root on failure.
+
 ```bash
 composer validate --strict
 vendor/bin/pint --format agent

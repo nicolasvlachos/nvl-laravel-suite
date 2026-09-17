@@ -8,6 +8,10 @@ description: Implement, integrate, test, or review nvl/templates in Laravel 13. 
 Treat Templates as a composition and rendering package with two layers that
 share one pipeline:
 
+For tenant catalogs, copy through the package import Action; never share source
+rows or write Content/Media tables directly. Keep render envelopes and all
+temporary/output paths tenant-bound across queue retries and recovery.
+
 1. `Template`, typed options, renderer contracts, Blade/PDF implementations,
    verified output, and response helpers.
 2. The database implementation for definitions, localized metadata, versions,

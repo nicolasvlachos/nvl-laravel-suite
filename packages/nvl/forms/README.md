@@ -207,6 +207,13 @@ Set `forms.migrations.enabled=false` only for controlled adoption. A pre-existin
 
 ## Commands
 
+## Tenant ownership
+
+A Form is the canonical tenant root for definitions, translations, entries,
+submission receipts, origins, throttles, and analytics. Public site/token
+resolution establishes the tenant before lookup; callback jobs carry the
+captured tenant envelope and never infer ownership from request payloads.
+
 ```bash
 php artisan nvl:forms:doctor
 php artisan nvl:forms:doctor --strict --format=json

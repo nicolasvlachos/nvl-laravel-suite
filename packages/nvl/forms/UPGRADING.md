@@ -1,5 +1,11 @@
 # Upgrading NVL Forms
 
+## Tenant adoption
+
+Use the Forms adapter to assign each Form root through a reviewed map; child
+ownership is derived from that Form. Do not map entries, origins, receipts,
+rate limits, analytics, or translations independently.
+
 ## Upgrading to 1.0
 
 Version 1.0 stores localized definition content only in dedicated translation rows, disables all routes, removes frontend scaffolding, and makes Activity optional.

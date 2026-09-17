@@ -1,5 +1,11 @@
 # Upgrading NVL Templates
 
+## Tenant adoption
+
+Map each template/render root explicitly and derive versions and assignments
+from their canonical template. Import platform templates through the catalog
+copy Action so Content/Media copies, provenance, and rollback remain bounded.
+
 ## To 1.0
 
 There is no supported pre-1.0 public API. Install the clean schema, register
