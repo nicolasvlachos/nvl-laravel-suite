@@ -99,11 +99,12 @@ run_consumer_mode() {
 
     if [[ "$migration_mode" == 'application_owned' ]]; then
         auth_consumer_artisan vendor:publish --tag=auth-migrations --force
-        auth_consumer_artisan vendor:publish --tag=settings-migrations --force
         auth_consumer_artisan vendor:publish --tag=activity-migrations --force
-        auth_consumer_artisan vendor:publish --tag=mail-notifications-migrations --force
         if [[ "$tenancy_profile" == 'tenant' ]]; then
             auth_consumer_artisan vendor:publish --tag=tenancy-migrations --force
+        else
+            auth_consumer_artisan vendor:publish --tag=settings-migrations --force
+            auth_consumer_artisan vendor:publish --tag=mail-notifications-migrations --force
         fi
     fi
 
@@ -112,8 +113,10 @@ run_consumer_mode() {
     auth_consumer_artisan config:cache
     auth_consumer_artisan route:cache
     auth_consumer_artisan migrate --force
-    auth_consumer_artisan nvl:settings:validate
-    auth_consumer_artisan nvl:settings:sync
+    if [[ "$tenancy_profile" == 'disabled' ]]; then
+        auth_consumer_artisan nvl:settings:validate
+        auth_consumer_artisan nvl:settings:sync
+    fi
     auth_consumer_artisan nvl:suite:skills:publish --format=json
     auth_consumer_artisan nvl:data:types:generate
     auth_consumer_artisan nvl:data:types:check
@@ -130,13 +133,35 @@ run_consumer_mode() {
         auth_consumer_artisan auth-consumer:smoke --verify-queued-mail --format=json
     fi
 
-    npm install --ignore-scripts --no-save 'typescript@^5.9.3'
-    ./node_modules/.bin/tsc --noEmit -p auth-consumer-types/tsconfig.json
+    if [[ "$tenancy_profile" == 'disabled' ]]; then
+        npm install --ignore-scripts --no-save 'typescript@^5.9.3'
+        ./node_modules/.bin/tsc --noEmit -p auth-consumer-types/tsconfig.json
+    fi
     composer audit --locked --no-interaction
     auth_consumer_artisan migrate:rollback --force --step=999
 }
 
-run_consumer_mode package_owned true disabled
-run_consumer_mode application_owned false disabled
-run_consumer_mode package_owned true tenant
-run_consumer_mode application_owned false tenant
+case "${AUTH_CONSUMER_PROFILE:-all}" in
+    all)
+        run_consumer_mode package_owned true disabled
+        run_consumer_mode application_owned false disabled
+        run_consumer_mode package_owned true tenant
+        run_consumer_mode application_owned false tenant
+        ;;
+    package_owned_disabled)
+        run_consumer_mode package_owned true disabled
+        ;;
+    application_owned_disabled)
+        run_consumer_mode application_owned false disabled
+        ;;
+    package_owned_tenant)
+        run_consumer_mode package_owned true tenant
+        ;;
+    application_owned_tenant)
+        run_consumer_mode application_owned false tenant
+        ;;
+    *)
+        echo "Unknown Auth consumer profile [${AUTH_CONSUMER_PROFILE}]." >&2
+        exit 2
+        ;;
+esac

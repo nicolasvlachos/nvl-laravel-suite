@@ -25,7 +25,7 @@ return [
         'system_mutation_access' => AuthConsumerAccess::class,
     ],
     'features' => [
-        'authentication' => ['enabled' => false],
+        'authentication' => ['enabled' => env('AUTH_CONSUMER_TENANCY', false)],
         'principal_management' => [
             'enabled' => true,
             'models' => ['user' => User::class],

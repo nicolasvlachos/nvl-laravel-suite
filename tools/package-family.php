@@ -44,7 +44,7 @@ return [
     ],
     'internal_dependencies' => [
         'activity' => ['data', 'support', 'tenancy'],
-        'auth' => ['data', 'support'],
+        'auth' => ['data', 'support', 'tenancy'],
         'comments' => ['data', 'filterable', 'media', 'support'],
         'content' => ['data', 'filterable', 'media', 'support', 'translatable'],
         'csv' => ['data'],

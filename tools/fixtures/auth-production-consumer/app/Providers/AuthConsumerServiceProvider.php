@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Auth\Activity\UserActivityMapping;
+use App\Auth\AuthConsumerProbe;
+use App\Auth\AuthConsumerSmoke;
 use App\Auth\Authorization\AuthConsumerAccess;
 use App\Auth\Authorization\AuthConsumerMailReadAuthorization;
 use App\Auth\Authorization\AuthConsumerSettingsAuthorization;
+use App\Auth\TenantAuthConsumerProbe;
 use App\Console\Commands\AuthConsumerSmokeCommand;
 use Illuminate\Support\ServiceProvider;
 use Nvl\Activity\Services\MappingRegistry;
@@ -15,7 +18,6 @@ use Nvl\Auth\Contracts\AuthManagementAccess;
 use Nvl\Auth\Contracts\SystemMutationAccess;
 use Nvl\MailNotifications\Contracts\MailNotificationReadAuthorization;
 use Nvl\Settings\Contracts\SettingsAuthorization;
-use Nvl\Tenancy\Contracts\PlatformAccess;
 
 /** Registers the proof consumer's explicit package extension boundaries. */
 final class AuthConsumerServiceProvider extends ServiceProvider
@@ -26,15 +28,19 @@ final class AuthConsumerServiceProvider extends ServiceProvider
         $this->app->singleton(AuthConsumerAccess::class);
         $this->app->alias(AuthConsumerAccess::class, AuthManagementAccess::class);
         $this->app->alias(AuthConsumerAccess::class, SystemMutationAccess::class);
-        $this->app->alias(AuthConsumerAccess::class, PlatformAccess::class);
-        $this->app->singleton(
-            SettingsAuthorization::class,
-            AuthConsumerSettingsAuthorization::class,
-        );
-        $this->app->singleton(
-            MailNotificationReadAuthorization::class,
-            AuthConsumerMailReadAuthorization::class,
-        );
+        if (config('tenancy.enabled') === true) {
+            $this->app->bind(AuthConsumerSmoke::class, TenantAuthConsumerProbe::class);
+        } else {
+            $this->app->bind(AuthConsumerSmoke::class, AuthConsumerProbe::class);
+            $this->app->singleton(
+                SettingsAuthorization::class,
+                AuthConsumerSettingsAuthorization::class,
+            );
+            $this->app->singleton(
+                MailNotificationReadAuthorization::class,
+                AuthConsumerMailReadAuthorization::class,
+            );
+        }
 
         $this->app->afterResolving(
             MappingRegistry::class,

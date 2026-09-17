@@ -11,7 +11,9 @@ it('defines the complete Auth production consumer fixture', function (): void {
         'app/Auth/Authorization/AuthConsumerAccess.php',
         'app/Auth/Authorization/AuthConsumerMailReadAuthorization.php',
         'app/Auth/Authorization/AuthConsumerSettingsAuthorization.php',
+        'app/Auth/AuthConsumerSmoke.php',
         'app/Auth/AuthConsumerProbe.php',
+        'app/Auth/TenantAuthConsumerProbe.php',
         'app/Auth/Rbac/AuthConsumerPermissionCatalog.php',
         'app/Auth/Rbac/AuthConsumerRoleTemplates.php',
         'app/Console/Commands/AuthConsumerSmokeCommand.php',
@@ -53,11 +55,19 @@ it('defines the complete Auth production consumer fixture', function (): void {
         'seo' => false,
         'settings' => true,
         'taxonomy' => false,
+        'tenancy' => true,
         'templates' => false,
         'translations' => false,
         'forms' => false,
         'pages' => false,
     ]);
+
+    $suiteSource = authProductionFixtureContents($fixtureRoot.'/config/nvl-suite.php');
+    expect($suiteSource)->toContain(
+        "\$tenantProfile = (bool) env('AUTH_CONSUMER_TENANCY', false);",
+        "'mail-notifications' => ! \$tenantProfile",
+        "'settings' => ! \$tenantProfile",
+    );
 
     /** @var array{scripts: array{analyse: string|list<string>, format: string, format:test: string}} $composer */
     $composer = json_decode(
@@ -92,6 +102,12 @@ it('uses package Actions and explicit authorization without direct package queri
     $probe = authProductionFixtureContents(
         $fixtureRoot.'/app/Auth/AuthConsumerProbe.php',
     );
+    $smoke = authProductionFixtureContents(
+        $fixtureRoot.'/app/Console/Commands/AuthConsumerSmokeCommand.php',
+    );
+    $tenantProbe = authProductionFixtureContents(
+        $fixtureRoot.'/app/Auth/TenantAuthConsumerProbe.php',
+    );
     $auth = authProductionFixtureContents($fixtureRoot.'/config/nvl-auth.php');
     $mail = authProductionFixtureContents(
         $fixtureRoot.'/config/mail-notifications.php',
@@ -102,12 +118,16 @@ it('uses package Actions and explicit authorization without direct package queri
         'SystemMutationAccess::class',
         'SettingsAuthorization::class',
         'MailNotificationReadAuthorization::class',
+        'AuthConsumerSmoke::class',
+        'TenantAuthConsumerProbe::class',
         'MappingRegistry::class',
         'UserActivityMapping',
     )
         ->and($access)->toContain(
             'AuthorizationException',
             'nvl-auth.rbac.bootstrap',
+            'nvl-auth.memberships.manageAccess',
+            'nvl-auth.memberships.revoke',
             'auth-consumer.manage',
         )
         ->and($auth)->toContain(
@@ -115,6 +135,8 @@ it('uses package Actions and explicit authorization without direct package queri
             'AuthConsumerPermissionCatalog::class',
             'AuthConsumerRoleTemplates::class',
             "'use_package_storage' => true",
+            "'authentication' => ['enabled' => env('AUTH_CONSUMER_TENANCY', false)]",
+            "'api_tokens' => [",
         )
         ->and($mail)->toContain(
             "'consumer-user' => User::class",
@@ -127,6 +149,8 @@ it('uses package Actions and explicit authorization without direct package queri
         ->not->toContain('Setting::query(')
         ->not->toContain('MailNotification::query(')
         ->not->toContain('ActivityLog::query(')
+        ->and($smoke.$tenantProbe)->not->toContain('TenantMembership::query(')
+        ->and($tenantProbe)->toContain('ListOwnMembershipsAction')
         ->and($probe)->toContain(
             'BootstrapRbacAction',
             'CreateUserAction',
@@ -230,6 +254,7 @@ it('runs both Auth migration ownership modes from a sealed artifact', function (
         'package_owned',
         'application_owned',
         'AUTH_CONSUMER_TENANCY',
+        'AUTH_CONSUMER_PROFILE',
         '--tenant-smoke',
         'tenancy-migrations',
         'vendor:publish --tag=auth-migrations',

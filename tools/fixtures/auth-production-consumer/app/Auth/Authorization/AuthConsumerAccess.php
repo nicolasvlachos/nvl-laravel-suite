@@ -27,7 +27,9 @@ final class AuthConsumerAccess implements AuthManagementAccess, PlatformAccess, 
             return in_array($ability, [
                 'nvl-auth.rbac.bootstrap',
                 'nvl-auth.users.manageAccess',
+                'nvl-auth.memberships.manageAccess',
                 'nvl-auth.memberships.enroll',
+                'nvl-auth.memberships.revoke',
             ], true)
                 && in_array($authority->reason, ['auth-production-consumer-bootstrap', 'auth-production-consumer-tenancy'], true)
                 && str_starts_with($authority->correlationId, 'auth-production-consumer-');

@@ -58,7 +58,7 @@ use Nvl\Settings\Events\SettingChanged;
 use RuntimeException;
 
 /** Executes the production fixture's cross-package golden Auth workflow. */
-final readonly class AuthConsumerProbe
+final readonly class AuthConsumerProbe implements AuthConsumerSmoke
 {
     public function __construct(
         private BootstrapRbacAction $bootstrapRbac,
@@ -84,6 +84,12 @@ final readonly class AuthConsumerProbe
         private ListMailNotificationsAction $listMailNotifications,
         private GetMailNotificationStatisticsAction $mailStatistics,
     ) {}
+
+    /** @return array<string, int|string|bool> */
+    public function execute(bool $verifyQueuedMail): array
+    {
+        return $verifyQueuedMail ? $this->verifyQueuedMail() : $this->run();
+    }
 
     /**
      * Run every public boundary and return a transport-safe smoke summary.

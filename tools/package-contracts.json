@@ -1649,7 +1649,7 @@
                 "Nvl\\Auth\\Console\\Commands\\AuthDoctorCommand": "nvl:auth:doctor {--strict : Fail for configured integrations owned by disabled features} {--format=text : Output format: text or json}",
                 "Nvl\\Auth\\Console\\Commands\\InstallAuthSchemaCommand": "nvl:auth:schema {--apply : Create missing tables required by enabled features} {--format=text : Output text or json}",
                 "Nvl\\Auth\\Console\\Commands\\ListAuthFeaturesCommand": "nvl:auth:features {--format=table : table or json}",
-                "Nvl\\Auth\\Console\\Commands\\PruneAuthStateCommand": "nvl:auth:prune {--dry-run : Count terminal records without deleting them}"
+                "Nvl\\Auth\\Console\\Commands\\PruneAuthStateCommand": "nvl:auth:prune {--dry-run : Count terminal records without deleting them} {--tenant= : Prune one explicit tenant UUID} {--platform : Prune platform-owned and global identity history} {--actor-type=system : Platform operation actor type} {--actor-id=auth-pruner : Platform operation actor identifier} {--purpose=auth.prune : Platform operation purpose}"
             },
             "symbols": {
                 "Nvl\\Auth\\Actions\\AdoptPrincipalsAction": [
@@ -1666,18 +1666,18 @@
                 ],
                 "Nvl\\Auth\\Actions\\ApiTokens\\ListApiTokensAction": [
                     "final readonly class Nvl\\Auth\\Actions\\ApiTokens\\ListApiTokensAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens, Nvl\\Auth\\Services\\ApiTokenPolicy $policy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject): array",
                     "@return list<ApiTokenSnapshot>"
                 ],
                 "Nvl\\Auth\\Actions\\ApiTokens\\RevokeAllApiTokensAction": [
                     "final readonly class Nvl\\Auth\\Actions\\ApiTokens\\RevokeAllApiTokensAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\ApiTokenPolicy $policy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject): int"
                 ],
                 "Nvl\\Auth\\Actions\\ApiTokens\\RevokeApiTokenAction": [
                     "final readonly class Nvl\\Auth\\Actions\\ApiTokens\\RevokeApiTokenAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\ApiTokenPolicy $policy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject, string $tokenId): bool"
                 ],
                 "Nvl\\Auth\\Actions\\ApiTokens\\RotateApiTokenAction": [
@@ -1692,28 +1692,28 @@
                 ],
                 "Nvl\\Auth\\Actions\\Audit\\ListAuthAuditsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Audit\\ListAuthAuditsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, int $perPage=50): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, AuthAudit>"
                 ],
                 "Nvl\\Auth\\Actions\\Audit\\ShowAuthAuditAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Audit\\ShowAuthAuditAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\AuthAudit $audit): Nvl\\Auth\\Models\\AuthAudit"
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthSubjectResolver $subjects, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthSubjectResolver $subjects, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations, Nvl\\Auth\\Services\\TenantAuthenticationIntents $tenantIntents, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $tenantMemberships): mixed",
                     "public function execute(Nvl\\Auth\\ValueObjects\\SubjectReference $reference, bool $remember=false, ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext=null, Nvl\\Auth\\Enums\\AuthenticationPurpose $purpose=Nvl\\Auth\\Enums\\AuthenticationPurpose::PasswordlessLogin): Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\LoginAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Authentication\\LoginAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\AuthenticationEligibility $eligibility, Nvl\\Auth\\Contracts\\SuccessfulLoginMetadataRecorder $loginMetadata, Nvl\\Auth\\Services\\AuthOperationBoundary $operations, Nvl\\Auth\\Services\\TenantAuthenticationIntents $tenantIntents, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $tenantMemberships): mixed",
                     "public function execute(#[SensitiveParameter()] Nvl\\Auth\\Data\\Mutations\\LoginData $data, ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext=null): Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\LogoutAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Authentication\\LogoutAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(): void"
                 ],
                 "Nvl\\Auth\\Actions\\Authentication\\RequestEmailVerificationAction": [
@@ -1824,17 +1824,17 @@
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\AcceptInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\AcceptInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\InvitationRecipientProof $recipientProof, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Services\\InvitationTenantBootstrap $bootstrap, Nvl\\Tenancy\\Services\\TenantRunner $runner, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\MembershipWriter $memberships, Nvl\\Auth\\Services\\TenantMembershipAssignments $assignments, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $membershipAccess, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(string $token, Illuminate\\Contracts\\Auth\\Authenticatable $subject): Nvl\\Auth\\Models\\Invitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $membershipAccess, Nvl\\Auth\\Services\\TenantMembershipAssignments $assignments, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\StoreInvitationData $data, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\FindActiveInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\FindActiveInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function execute(string $recipient, string $purpose, ?array $types=null, ?string $context=null, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $issuance=null): ?Nvl\\Auth\\Data\\Display\\InvitationReadData",
                     "@param list<string>|null $types"
                 ],
@@ -1846,34 +1846,74 @@
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\ListInvitationsAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\SecretHasher $hasher): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?Nvl\\Auth\\Data\\Queries\\InvitationIndexQueryData $filters=null, int $perPage=25): Illuminate\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, Invitation>"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\PreviewInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\PreviewInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\InvitationTenantBootstrap $bootstrap, Nvl\\Tenancy\\Services\\TenantRunner $runner, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function execute(string $token): Nvl\\Auth\\Models\\Invitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\RecordInvitationDeliveryOutcomeAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\RecordInvitationDeliveryOutcomeAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function execute(string $invitationId, string $messageId, Nvl\\Auth\\Enums\\InvitationDeliveryStatus $status, Carbon\\CarbonImmutable $occurredAt, ?string $failureCode=null): void"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\InvitationSubjectResolver $subjects, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
-                    "public function execute(Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData $data): Nvl\\Auth\\Results\\InvitationRegistrationResult"
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\InvitationSubjectResolver $subjects, Nvl\\Auth\\Contracts\\InvitationRecipientProof $recipientProof, Nvl\\Auth\\Services\\InvitationTenantBootstrap $bootstrap, Nvl\\Auth\\Services\\RbacManager $rbac, Nvl\\Auth\\Pipelines\\AuthPipeline $pipeline, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Tenancy\\Services\\TenantRunner $runner, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\MembershipWriter $memberships, Nvl\\Auth\\Services\\TenantMembershipAssignments $assignments, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $membershipAccess, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization): mixed",
+                    "public function execute(Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData $data, ?Illuminate\\Contracts\\Auth\\Authenticatable $authenticatedRecipient=null): Nvl\\Auth\\Results\\InvitationRegistrationResult"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, ?Nvl\\Auth\\Services\\InvitationDeliveryMetadataPolicy $deliveryMetadata=null): mixed",
                     "public function execute(Nvl\\Auth\\Models\\Invitation|string $invitation, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?string $locale=null, ?Nvl\\Auth\\ValueObjects\\InvitationIssuanceContext $context=null): Nvl\\Auth\\Results\\IssuedInvitation"
                 ],
                 "Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function execute(Nvl\\Auth\\Models\\Invitation|string $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $actor): Nvl\\Auth\\Models\\Invitation"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\EnrollMembershipAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\EnrollMembershipAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Data\\Mutations\\EnrollMembershipData $data): Nvl\\Auth\\Models\\TenantMembership"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\ListMembershipsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\ListMembershipsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\ListOwnMembershipsAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\ListOwnMembershipsAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject): Illuminate\\Support\\Collection"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\ProvisionTenantOwnerAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\ProvisionTenantOwnerAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function execute(Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\ValueObjects\\SubjectReference $subject): Nvl\\Auth\\Models\\TenantMembership"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\RevokeMembershipAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\RevokeMembershipAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, int $expectedRevision): Nvl\\Auth\\Models\\TenantMembership"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\SetMembershipStatusAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\SetMembershipStatusAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Data\\Mutations\\UpdateMembershipStatusData $data): Nvl\\Auth\\Models\\TenantMembership"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\ShowMembershipAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\ShowMembershipAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\MembershipLocator $memberships, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\TenantMembership|string $membership): Nvl\\Auth\\Data\\Display\\TenantMembershipData"
+                ],
+                "Nvl\\Auth\\Actions\\Memberships\\TransferMembershipOwnershipAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Memberships\\TransferMembershipOwnershipAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Data\\Mutations\\TransferMembershipOwnershipData $data): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction",
@@ -1922,7 +1962,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\PruneAuthStateAction": [
                     "final readonly class Nvl\\Auth\\Actions\\PruneAuthStateAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Contracts\\TenantContext $tenantContext): mixed",
                     "public function execute(bool $dryRun=false): array",
                     "@return array<string, int>"
                 ],
@@ -1934,7 +1974,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ApplyRoleTemplateAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ApplyRoleTemplateAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RoleTemplateRegistry $templates, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RoleTemplateRegistry $templates, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Services\\TenantBoundary $tenancy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\ApplyRoleTemplateData $data): Nvl\\Auth\\Models\\Role"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\BootstrapRbacAction": [
@@ -1944,12 +1984,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CheckRoleNameAvailabilityAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CheckRoleNameAvailabilityAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $name, ?string $exceptId=null): Nvl\\Auth\\Data\\Display\\RoleNameAvailabilityData"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CloneRoleAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CloneRoleAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Services\\TenantBoundary $tenancy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Role|string $role, string $name, ?string $displayName=null): Nvl\\Auth\\Models\\Role"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CreatePermissionAction": [
@@ -1965,7 +2005,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CreateRoleAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CreateRoleAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Tenancy\\Services\\TenantBoundary $tenancy, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $memberships, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\StoreRoleData $data): Nvl\\Auth\\Models\\Role"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\DeletePermissionAction": [
@@ -2003,13 +2043,13 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListRoleCatalogAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRoleCatalogAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Queries\\RoleIndexQueryData $data): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator",
                     "@return LengthAwarePaginator<int, RoleListItemData>"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListRoleHierarchyAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRoleHierarchyAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RoleHierarchy $hierarchy, Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor): array"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListRoleOptionsAction": [
@@ -2026,7 +2066,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ListRolesAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ListRolesAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $search=null, int $perPage=25): Illuminate\\Contracts\\Pagination\\LengthAwarePaginator"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ResolvePermissionIdentifiersAction": [
@@ -2045,7 +2085,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ShowPermissionAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\ShowPermissionAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Permission|string $permission): Nvl\\Auth\\Models\\Permission"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\ShowRbacAnalyticsAction": [
@@ -2123,12 +2163,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\SocialIdentities\\CompleteSocialAuthorizationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\SocialIdentities\\CompleteSocialAuthorizationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SocialProviderConfiguration $configuration, Nvl\\Auth\\Contracts\\SocialIdentityProvider $provider, Nvl\\Auth\\Contracts\\SocialSubjectResolver $subjects, Nvl\\Auth\\Actions\\SocialIdentities\\LinkSocialIdentityAction $links): mixed",
-                    "public function execute(string $provider, ?Illuminate\\Contracts\\Auth\\Authenticatable $subject=null): Nvl\\Auth\\Models\\SocialIdentity"
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SocialProviderConfiguration $configuration, Nvl\\Auth\\Contracts\\SocialIdentityProvider $provider, Nvl\\Auth\\Contracts\\SocialSubjectResolver $subjects, Nvl\\Auth\\Actions\\SocialIdentities\\LinkSocialIdentityAction $links, Nvl\\Auth\\Services\\AuthOperationBoundary $operations, Nvl\\Auth\\Services\\TenantAuthenticationIntents $intents, Nvl\\Auth\\Contracts\\TenantAuthenticationSession $session, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $memberships, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function execute(string $provider, ?Illuminate\\Contracts\\Auth\\Authenticatable $subject=null, ?string $flowReference=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $requestedTenant=null): Nvl\\Auth\\Models\\SocialIdentity"
                 ],
                 "Nvl\\Auth\\Actions\\SocialIdentities\\LinkSocialIdentityAction": [
                     "final readonly class Nvl\\Auth\\Actions\\SocialIdentities\\LinkSocialIdentityAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\ValueObjects\\ExternalIdentity $identity): Nvl\\Auth\\Models\\SocialIdentity"
                 ],
                 "Nvl\\Auth\\Actions\\SocialIdentities\\RevokeSocialIdentityAction": [
@@ -2138,8 +2178,8 @@
                 ],
                 "Nvl\\Auth\\Actions\\SocialIdentities\\StartSocialAuthorizationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\SocialIdentities\\StartSocialAuthorizationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SocialProviderConfiguration $configuration, Nvl\\Auth\\Contracts\\SocialIdentityProvider $provider): mixed",
-                    "public function execute(string $provider): string"
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\SocialProviderConfiguration $configuration, Nvl\\Auth\\Contracts\\SocialIdentityProvider $provider, Nvl\\Auth\\Services\\AuthOperationBoundary $operations, Nvl\\Auth\\Services\\TenantAuthenticationIntents $intents, Nvl\\Auth\\Contracts\\TenantAuthenticationSession $session): mixed",
+                    "public function execute(string $provider, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant=null, ?string $returnPath=null): string"
                 ],
                 "Nvl\\Auth\\Actions\\Totp\\ConfirmTotpEnrollmentAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Totp\\ConfirmTotpEnrollmentAction",
@@ -2163,7 +2203,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Users\\BulkUpdateUsersAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\BulkUpdateUsersAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\PrincipalSessionContainment $sessions): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\PrincipalSessionContainment $sessions, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Enums\\UserBulkOperation $operation, array $userIds): Nvl\\Auth\\Results\\BulkUserResult",
                     "@param list<string> $userIds"
                 ],
@@ -2174,12 +2214,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Users\\DeleteOwnAccountAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\DeleteOwnAccountAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AccountConfirmation $confirmation, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AccountConfirmation $confirmation, Illuminate\\Auth\\AuthManager $auth, Nvl\\Auth\\Contracts\\BrowserSession $session, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Services\\AuthOperationBoundary $operations, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\DeleteOwnAccountData $data): bool"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\DeleteUserAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\DeleteUserAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\PrincipalSessionContainment $sessions): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\PrincipalSessionContainment $sessions, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\User|string $user): bool"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\ListUsersAction": [
@@ -2195,12 +2235,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Users\\SetUserActiveAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\SetUserActiveAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\PrincipalSessionContainment $sessions): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\PrincipalSessionContainment $sessions, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\User|string $user, Nvl\\Auth\\Data\\Mutations\\UpdateUserStatusData $data): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\ShowProfileAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\ShowProfileAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\ShowUserAction": [
@@ -2226,7 +2266,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Users\\UpdateProfileAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Users\\UpdateProfileAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\AccountConfirmation $confirmation, Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\UserLocator $users, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $attributes, Nvl\\Auth\\Contracts\\AccountConfirmation $confirmation, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\UpdateProfileData $data): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Actions\\Users\\UpdateUserAction": [
@@ -2235,26 +2275,31 @@
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\User|string $user, Nvl\\Auth\\Data\\Mutations\\UpdateUserData $data): Nvl\\Auth\\Models\\User"
                 ],
                 "Nvl\\Auth\\Adapters\\ApiTokens\\SanctumApiTokenManager": [
-                    "final class Nvl\\Auth\\Adapters\\ApiTokens\\SanctumApiTokenManager implements Nvl\\Auth\\Contracts\\ApiTokenManager",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
+                    "final class Nvl\\Auth\\Adapters\\ApiTokens\\SanctumApiTokenManager implements Nvl\\Auth\\Contracts\\ApiTokenManager, Nvl\\Auth\\Contracts\\TenantBoundApiTokenManager",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function list(Illuminate\\Contracts\\Auth\\Authenticatable $subject): array",
                     "public function create(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\ApiTokenData $data): Nvl\\Auth\\Results\\IssuedApiToken",
                     "public function update(Illuminate\\Contracts\\Auth\\Authenticatable $subject, string $tokenId, Nvl\\Auth\\Data\\Mutations\\ApiTokenData $data): Nvl\\Auth\\ValueObjects\\ApiTokenSnapshot",
                     "public function rotate(Illuminate\\Contracts\\Auth\\Authenticatable $subject, string $tokenId, Nvl\\Auth\\Data\\Mutations\\ApiTokenData $data): Nvl\\Auth\\Results\\IssuedApiToken",
                     "public function revoke(Illuminate\\Contracts\\Auth\\Authenticatable $subject, string $tokenId): bool",
-                    "public function revokeAll(Illuminate\\Contracts\\Auth\\Authenticatable $subject): int"
+                    "public function revokeAll(Illuminate\\Contracts\\Auth\\Authenticatable $subject): int",
+                    "public function tenantForToken(Illuminate\\Contracts\\Auth\\Authenticatable $subject, string $tokenId): ?Nvl\\Tenancy\\ValueObjects\\TenantId"
                 ],
                 "Nvl\\Auth\\Adapters\\Laravel\\EloquentAuthSubjectResolver": [
                     "final class Nvl\\Auth\\Adapters\\Laravel\\EloquentAuthSubjectResolver implements Nvl\\Auth\\Contracts\\AuthSubjectResolver",
                     "public function resolve(Nvl\\Auth\\ValueObjects\\SubjectReference $reference): ?Illuminate\\Contracts\\Auth\\Authenticatable"
                 ],
                 "Nvl\\Auth\\Adapters\\Laravel\\LaravelBrowserSession": [
-                    "final readonly class Nvl\\Auth\\Adapters\\Laravel\\LaravelBrowserSession implements Nvl\\Auth\\Contracts\\BrowserSession",
+                    "final readonly class Nvl\\Auth\\Adapters\\Laravel\\LaravelBrowserSession implements Nvl\\Auth\\Contracts\\BrowserSession, Nvl\\Auth\\Contracts\\TenantAuthenticationSession",
                     "public function __construct(Illuminate\\Http\\Request $request): mixed",
                     "public function regenerateIdentifier(): void",
                     "public function invalidate(): void",
                     "public function regenerateCsrfToken(): void",
-                    "public function confirmPassword(): bool"
+                    "public function confirmPassword(): bool",
+                    "public function authenticationFlowBinding(string $flow): string",
+                    "public function forgetAuthenticationFlowBinding(string $flow): void",
+                    "public function storeAuthenticationIntent(string $flow, string $nonce): void",
+                    "public function pullAuthenticationIntent(string $flow): ?string"
                 ],
                 "Nvl\\Auth\\Adapters\\Laravel\\LaravelGuardIdentifierResolver": [
                     "final readonly class Nvl\\Auth\\Adapters\\Laravel\\LaravelGuardIdentifierResolver implements Nvl\\Auth\\Contracts\\AuthIdentifierResolver",
@@ -2331,9 +2376,9 @@
                 ],
                 "Nvl\\Auth\\Console\\Commands\\PruneAuthStateCommand": [
                     "final class Nvl\\Auth\\Console\\Commands\\PruneAuthStateCommand extends Illuminate\\Console\\Command",
-                    "protected mixed $signature=\"nvl:auth:prune {--dry-run : Count terminal records without deleting them}\"",
+                    "protected mixed $signature=\"nvl:auth:prune\\n        {--dry-run : Count terminal records without deleting them}\\n        {--tenant= : Prune one explicit tenant UUID}\\n        {--platform : Prune platform-owned and global identity history}\\n        {--actor-type=system : Platform operation actor type}\\n        {--actor-id=auth-pruner : Platform operation actor identifier}\\n        {--purpose=auth.prune : Platform operation purpose}\"",
                     "protected mixed $description=\"Prune terminal NVL Auth state after its retention window\"",
-                    "public function handle(Nvl\\Auth\\Actions\\PruneAuthStateAction $action): int"
+                    "public function handle(Nvl\\Auth\\Actions\\PruneAuthStateAction $action, Nvl\\Tenancy\\Services\\TenantRunner $tenants): int"
                 ],
                 "Nvl\\Auth\\Contracts\\AccountConfirmation": [
                     "interface Nvl\\Auth\\Contracts\\AccountConfirmation",
@@ -2398,6 +2443,10 @@
                     "public abstract function confirmPassword(): bool",
                     "@return bool Whether an active session was available."
                 ],
+                "Nvl\\Auth\\Contracts\\InvitationRecipientProof": [
+                    "interface Nvl\\Auth\\Contracts\\InvitationRecipientProof",
+                    "public abstract function assertMatches(Nvl\\Auth\\Models\\Invitation $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $subject): void"
+                ],
                 "Nvl\\Auth\\Contracts\\InvitationRegistrationMapper": [
                     "interface Nvl\\Auth\\Contracts\\InvitationRegistrationMapper",
                     "public abstract function map(Nvl\\Auth\\Models\\Invitation $invitation, array $validated): array",
@@ -2408,6 +2457,12 @@
                     "interface Nvl\\Auth\\Contracts\\InvitationSubjectResolver",
                     "public abstract function resolve(Nvl\\Auth\\Models\\Invitation $invitation, array $input): Illuminate\\Contracts\\Auth\\Authenticatable",
                     "@param array<string, mixed> $input"
+                ],
+                "Nvl\\Auth\\Contracts\\MembershipPrincipalResolver": [
+                    "interface Nvl\\Auth\\Contracts\\MembershipPrincipalResolver",
+                    "public abstract function resolve(Nvl\\Auth\\ValueObjects\\SubjectReference $reference, bool $lock=false): Illuminate\\Contracts\\Auth\\Authenticatable",
+                    "public abstract function assertEligible(Illuminate\\Contracts\\Auth\\Authenticatable $principal): void",
+                    "public abstract function connectionName(): string"
                 ],
                 "Nvl\\Auth\\Contracts\\PasskeyCeremony": [
                     "interface Nvl\\Auth\\Contracts\\PasskeyCeremony",
@@ -2485,6 +2540,21 @@
                 "Nvl\\Auth\\Contracts\\SystemMutationAccess": [
                     "interface Nvl\\Auth\\Contracts\\SystemMutationAccess",
                     "public abstract function allows(Nvl\\Auth\\ValueObjects\\SystemMutationContext $context, string $ability, mixed $target=null): bool"
+                ],
+                "Nvl\\Auth\\Contracts\\TenantAuthenticationSession": [
+                    "interface Nvl\\Auth\\Contracts\\TenantAuthenticationSession",
+                    "public abstract function authenticationFlowBinding(string $flow): string",
+                    "public abstract function storeAuthenticationIntent(string $flow, string $nonce): void",
+                    "public abstract function pullAuthenticationIntent(string $flow): ?string",
+                    "public abstract function forgetAuthenticationFlowBinding(string $flow): void"
+                ],
+                "Nvl\\Auth\\Contracts\\TenantAwareAuthActivityBridge": [
+                    "interface Nvl\\Auth\\Contracts\\TenantAwareAuthActivityBridge",
+                    "public abstract function record(string $action, Nvl\\Auth\\ValueObjects\\AuthEventContext $context, array $metadata): void"
+                ],
+                "Nvl\\Auth\\Contracts\\TenantBoundApiTokenManager": [
+                    "interface Nvl\\Auth\\Contracts\\TenantBoundApiTokenManager",
+                    "public abstract function tenantForToken(Illuminate\\Contracts\\Auth\\Authenticatable $subject, string $tokenId): ?Nvl\\Tenancy\\ValueObjects\\TenantId"
                 ],
                 "Nvl\\Auth\\Data\\Display\\AuthSubjectReferenceData": [
                     "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -2848,6 +2918,40 @@
                     "@param string $namespace Translation namespace, such as 'articles::articles'",
                     "@return array<string, mixed>"
                 ],
+                "Nvl\\Auth\\Data\\Display\\TenantMembershipData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Display\\TenantMembershipData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $id",
+                    "public readonly string $tenantId",
+                    "public readonly string $subjectType",
+                    "public readonly string $subjectId",
+                    "public readonly Nvl\\Auth\\Enums\\MembershipStatus $status",
+                    "public readonly bool $owner",
+                    "public readonly int $revision",
+                    "public readonly ?string $name",
+                    "public readonly ?string $email",
+                    "public function __construct(string $id, string $tenantId, string $subjectType, string $subjectId, Nvl\\Auth\\Enums\\MembershipStatus $status, bool $owner, int $revision, ?string $name=null, ?string $email=null): mixed",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
                 "Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData": [
                     "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
                     "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -3077,6 +3181,37 @@
                     "public readonly string $currentPassword",
                     "public function __construct(#[SensitiveParameter()] #[Spatie\\LaravelData\\Attributes\\Hidden()] string $currentPassword): mixed",
                     "public static function rules(): array",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Auth\\Data\\Mutations\\EnrollMembershipData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Mutations\\EnrollMembershipData extends Spatie\\LaravelData\\Data",
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"{ type: string; identifier: string }\")]",
+                    "public readonly Nvl\\Auth\\ValueObjects\\SubjectReference $subject",
+                    "public readonly array $roles",
+                    "public readonly array $permissions",
+                    "public function __construct(#[Spatie\\TypeScriptTransformer\\Attributes\\LiteralTypeScriptType(\"{ type: string; identifier: string }\")] Nvl\\Auth\\ValueObjects\\SubjectReference $subject, array $roles=[], array $permissions=[]): mixed",
+                    "@param list<string> $roles",
+                    "@param list<string> $permissions",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
                     "@throws Exception",
@@ -3635,6 +3770,33 @@
                     "@param string $namespace Translation namespace, such as 'articles::articles'",
                     "@return array<string, mixed>"
                 ],
+                "Nvl\\Auth\\Data\\Mutations\\TransferMembershipOwnershipData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Mutations\\TransferMembershipOwnershipData extends Spatie\\LaravelData\\Data",
+                    "public readonly string $recipientMembershipId",
+                    "public readonly int $expectedRevision",
+                    "public function __construct(string $recipientMembershipId, int $expectedRevision): mixed",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
                 "Nvl\\Auth\\Data\\Mutations\\UpdateClientData": [
                     "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
                     "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -3683,6 +3845,33 @@
                     "public readonly bool $active",
                     "public function __construct(bool $active): mixed",
                     "public static function rules(): array",
+                    "public function toArray(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModel(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelFiltered(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public function toModelPatch(): array",
+                    "@return array<string, mixed>",
+                    "@throws Exception",
+                    "public static function scopedRules(string $prefix): array",
+                    "@return array<string, mixed>",
+                    "public static function translatedAttributes(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, string>",
+                    "public static function translatedMessages(string $namespace): array",
+                    "@param string $namespace Translation namespace, such as 'articles::articles'",
+                    "@return array<string, mixed>"
+                ],
+                "Nvl\\Auth\\Data\\Mutations\\UpdateMembershipStatusData": [
+                    "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
+                    "final class Nvl\\Auth\\Data\\Mutations\\UpdateMembershipStatusData extends Spatie\\LaravelData\\Data",
+                    "public readonly Nvl\\Auth\\Enums\\MembershipStatus $status",
+                    "public readonly int $expectedRevision",
+                    "public function __construct(Nvl\\Auth\\Enums\\MembershipStatus $status, int $expectedRevision): mixed",
                     "public function toArray(): array",
                     "@return array<string, mixed>",
                     "@throws Exception",
@@ -4226,6 +4415,11 @@
                     "protected mixed $model=\"Nvl\\\\Auth\\\\Models\\\\SocialIdentity\"",
                     "public function definition(): array"
                 ],
+                "Nvl\\Auth\\Database\\Factories\\TenantMembershipFactory": [
+                    "final class Nvl\\Auth\\Database\\Factories\\TenantMembershipFactory extends Illuminate\\Database\\Eloquent\\Factories\\Factory",
+                    "protected mixed $model=\"Nvl\\\\Auth\\\\Models\\\\TenantMembership\"",
+                    "public function definition(): array"
+                ],
                 "Nvl\\Auth\\Database\\Factories\\TotpCredentialFactory": [
                     "final class Nvl\\Auth\\Database\\Factories\\TotpCredentialFactory extends Illuminate\\Database\\Eloquent\\Factories\\Factory",
                     "@extends Factory<TotpCredential>",
@@ -4258,12 +4452,16 @@
                     "public const string Passkeys=\"nvl_auth_passkeys\"",
                     "public const string RecoveryCodes=\"nvl_auth_recovery_codes\"",
                     "public const string SocialIdentities=\"nvl_auth_social_identities\"",
-                    "public const string Audits=\"nvl_auth_audits\""
+                    "public const string Audits=\"nvl_auth_audits\"",
+                    "public const string TenantMemberships=\"nvl_auth_tenant_memberships\"",
+                    "public const string TenantMembershipLocks=\"nvl_auth_tenant_membership_locks\"",
+                    "public const string TenantAuthenticationIntents=\"nvl_auth_tenant_authentication_intents\""
                 ],
                 "Nvl\\Auth\\Enums\\AuthFeature": [
                     "enum Nvl\\Auth\\Enums\\AuthFeature implements BackedEnum, UnitEnum: string",
                     "public const mixed Authentication=Nvl\\Auth\\Enums\\AuthFeature::Authentication=authentication",
                     "public const mixed PrincipalManagement=Nvl\\Auth\\Enums\\AuthFeature::PrincipalManagement=principal_management",
+                    "public const mixed Memberships=Nvl\\Auth\\Enums\\AuthFeature::Memberships=memberships",
                     "public const mixed Password=Nvl\\Auth\\Enums\\AuthFeature::Password=password",
                     "public const mixed EmailVerification=Nvl\\Auth\\Enums\\AuthFeature::EmailVerification=email_verification",
                     "public const mixed MagicLinks=Nvl\\Auth\\Enums\\AuthFeature::MagicLinks=magic_links",
@@ -4278,6 +4476,23 @@
                     "public const mixed ApiTokens=Nvl\\Auth\\Enums\\AuthFeature::ApiTokens=api_tokens",
                     "public const mixed Rbac=Nvl\\Auth\\Enums\\AuthFeature::Rbac=rbac",
                     "public const mixed Audit=Nvl\\Auth\\Enums\\AuthFeature::Audit=audit",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Auth\\Enums\\AuthIdentityOperation": [
+                    "enum Nvl\\Auth\\Enums\\AuthIdentityOperation implements BackedEnum, UnitEnum: string",
+                    "public const mixed Login=Nvl\\Auth\\Enums\\AuthIdentityOperation::Login=login",
+                    "public const mixed Logout=Nvl\\Auth\\Enums\\AuthIdentityOperation::Logout=logout",
+                    "public const mixed Recovery=Nvl\\Auth\\Enums\\AuthIdentityOperation::Recovery=recovery",
+                    "public const mixed VerifyEmail=Nvl\\Auth\\Enums\\AuthIdentityOperation::VerifyEmail=verify_email",
+                    "public const mixed Profile=Nvl\\Auth\\Enums\\AuthIdentityOperation::Profile=profile",
+                    "public const mixed Password=Nvl\\Auth\\Enums\\AuthIdentityOperation::Password=password",
+                    "public const mixed Mfa=Nvl\\Auth\\Enums\\AuthIdentityOperation::Mfa=mfa",
+                    "public const mixed SocialIdentity=Nvl\\Auth\\Enums\\AuthIdentityOperation::SocialIdentity=social_identity",
+                    "public const mixed MembershipDiscovery=Nvl\\Auth\\Enums\\AuthIdentityOperation::MembershipDiscovery=membership_discovery",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -4345,6 +4560,17 @@
                     "public static function from(string|int $value): static",
                     "public static function tryFrom(string|int $value): ?static"
                 ],
+                "Nvl\\Auth\\Enums\\MembershipStatus": [
+                    "enum Nvl\\Auth\\Enums\\MembershipStatus implements BackedEnum, UnitEnum: string",
+                    "public const mixed Active=Nvl\\Auth\\Enums\\MembershipStatus::Active=active",
+                    "public const mixed Suspended=Nvl\\Auth\\Enums\\MembershipStatus::Suspended=suspended",
+                    "public const mixed Revoked=Nvl\\Auth\\Enums\\MembershipStatus::Revoked=revoked",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
                 "Nvl\\Auth\\Enums\\PrincipalAttribute": [
                     "enum Nvl\\Auth\\Enums\\PrincipalAttribute implements BackedEnum, UnitEnum: string",
                     "public const mixed Id=Nvl\\Auth\\Enums\\PrincipalAttribute::Id=id",
@@ -4364,6 +4590,21 @@
                     "public const mixed CreatedAt=Nvl\\Auth\\Enums\\PrincipalAttribute::CreatedAt=created_at",
                     "public const mixed UpdatedAt=Nvl\\Auth\\Enums\\PrincipalAttribute::UpdatedAt=updated_at",
                     "public const mixed DeletedAt=Nvl\\Auth\\Enums\\PrincipalAttribute::DeletedAt=deleted_at",
+                    "public readonly string $name",
+                    "public readonly string $value",
+                    "public static function cases(): array",
+                    "public static function from(string|int $value): static",
+                    "public static function tryFrom(string|int $value): ?static"
+                ],
+                "Nvl\\Auth\\Enums\\TenantAuthenticationPurpose": [
+                    "enum Nvl\\Auth\\Enums\\TenantAuthenticationPurpose implements BackedEnum, UnitEnum: string",
+                    "public const mixed Login=Nvl\\Auth\\Enums\\TenantAuthenticationPurpose::Login=login",
+                    "public const mixed SocialLogin=Nvl\\Auth\\Enums\\TenantAuthenticationPurpose::SocialLogin=social_login",
+                    "public const mixed SocialLink=Nvl\\Auth\\Enums\\TenantAuthenticationPurpose::SocialLink=social_link",
+                    "public const mixed MagicLink=Nvl\\Auth\\Enums\\TenantAuthenticationPurpose::MagicLink=magic_link",
+                    "public const mixed SecurityCode=Nvl\\Auth\\Enums\\TenantAuthenticationPurpose::SecurityCode=security_code",
+                    "public const mixed PasskeyLogin=Nvl\\Auth\\Enums\\TenantAuthenticationPurpose::PasskeyLogin=passkey_login",
+                    "public const mixed Invitation=Nvl\\Auth\\Enums\\TenantAuthenticationPurpose::Invitation=invitation",
                     "public readonly string $name",
                     "public readonly string $value",
                     "public static function cases(): array",
@@ -4402,9 +4643,10 @@
                     "@return \\Illuminate\\Broadcasting\\PendingBroadcast"
                 ],
                 "Nvl\\Auth\\Events\\AuthDeliveryRequested": [
-                    "final class Nvl\\Auth\\Events\\AuthDeliveryRequested implements Illuminate\\Contracts\\Events\\ShouldDispatchAfterCommit",
+                    "final class Nvl\\Auth\\Events\\AuthDeliveryRequested implements Illuminate\\Contracts\\Events\\ShouldDispatchAfterCommit, Nvl\\Tenancy\\Contracts\\TenantQueuedJob",
                     "public readonly Nvl\\Auth\\ValueObjects\\AuthDeliveryRequest $request",
                     "public function __construct(Nvl\\Auth\\ValueObjects\\AuthDeliveryRequest $request): mixed",
+                    "public function tenantJobEnvelope(): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope",
                     "public static function dispatch(mixed ...$arguments): mixed",
                     "@param mixed ...$arguments",
                     "@return mixed",
@@ -4469,7 +4711,8 @@
                     "public readonly string $purpose",
                     "public readonly Nvl\\Auth\\ValueObjects\\SubjectReference $subject",
                     "public readonly ?Carbon\\CarbonImmutable $acceptedAt",
-                    "public function __construct(string $invitationId, string $type, string $purpose, Nvl\\Auth\\ValueObjects\\SubjectReference $subject, ?Carbon\\CarbonImmutable $acceptedAt=null): mixed",
+                    "public readonly ?Nvl\\Auth\\ValueObjects\\AuthEventContext $context",
+                    "public function __construct(string $invitationId, string $type, string $purpose, Nvl\\Auth\\ValueObjects\\SubjectReference $subject, ?Carbon\\CarbonImmutable $acceptedAt=null, ?Nvl\\Auth\\ValueObjects\\AuthEventContext $context=null): mixed",
                     "public function __serialize(): array",
                     "@return array<string, mixed>",
                     "public function __unserialize(array $data): void",
@@ -4494,7 +4737,8 @@
                     "public readonly string $userId",
                     "public readonly string $operation",
                     "public readonly array $payload",
-                    "public function __construct(string $userId, string $operation, array $payload=[]): mixed",
+                    "public readonly ?Nvl\\Auth\\ValueObjects\\AuthEventContext $context",
+                    "public function __construct(string $userId, string $operation, array $payload=[], ?Nvl\\Auth\\ValueObjects\\AuthEventContext $context=null): mixed",
                     "@param array<string, mixed> $payload",
                     "public static function dispatch(mixed ...$arguments): mixed",
                     "@param mixed ...$arguments",
@@ -4518,7 +4762,8 @@
                     "public readonly array $roles",
                     "public readonly array $permissions",
                     "public readonly array $metadata",
-                    "public function __construct(string $principalId, string $operation, array $roles=[], array $permissions=[], array $metadata=[]): mixed",
+                    "public readonly ?Nvl\\Auth\\ValueObjects\\AuthEventContext $context",
+                    "public function __construct(string $principalId, string $operation, array $roles=[], array $permissions=[], array $metadata=[], ?Nvl\\Auth\\ValueObjects\\AuthEventContext $context=null): mixed",
                     "@param list<string> $roles",
                     "@param list<string> $permissions",
                     "@param array<string, mixed> $metadata",
@@ -4639,6 +4884,10 @@
                     "public function confirmPassword(Nvl\\Auth\\Data\\Mutations\\ConfirmPasswordData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Passwords\\ConfirmPasswordAction $action): Illuminate\\Http\\JsonResponse",
                     "public function requestEmailVerification(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Authentication\\RequestEmailVerificationAction $action): Illuminate\\Http\\JsonResponse"
                 ],
+                "Nvl\\Auth\\Http\\Controllers\\Account\\MembershipController": [
+                    "final class Nvl\\Auth\\Http\\Controllers\\Account\\MembershipController extends Nvl\\Auth\\Http\\Controllers\\Account\\AuthenticatedController",
+                    "public function index(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Memberships\\ListOwnMembershipsAction $action): Illuminate\\Http\\JsonResponse"
+                ],
                 "Nvl\\Auth\\Http\\Controllers\\Account\\PasskeyController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Account\\PasskeyController extends Nvl\\Auth\\Http\\Controllers\\Account\\AuthenticatedController",
                     "public function begin(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyRegistrationAction $action): Illuminate\\Http\\JsonResponse",
@@ -4703,6 +4952,15 @@
                     "public function store(Nvl\\Auth\\Data\\Mutations\\StoreInvitationData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Invitations\\CreateInvitationAction $action): Illuminate\\Http\\JsonResponse",
                     "public function resend(Illuminate\\Http\\Request $request, Nvl\\Auth\\Models\\Invitation $invitation, Nvl\\Auth\\Actions\\Invitations\\ResendInvitationAction $action): Illuminate\\Http\\JsonResponse",
                     "public function destroy(Illuminate\\Http\\Request $request, Nvl\\Auth\\Models\\Invitation $invitation, Nvl\\Auth\\Actions\\Invitations\\RevokeInvitationAction $action): Illuminate\\Http\\JsonResponse"
+                ],
+                "Nvl\\Auth\\Http\\Controllers\\Management\\MembershipController": [
+                    "final class Nvl\\Auth\\Http\\Controllers\\Management\\MembershipController extends Nvl\\Auth\\Http\\Controllers\\Account\\AuthenticatedController",
+                    "public function index(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Memberships\\ListMembershipsAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function show(Illuminate\\Http\\Request $request, string $membership, Nvl\\Auth\\Actions\\Memberships\\ShowMembershipAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function store(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Memberships\\EnrollMembershipAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function status(Illuminate\\Http\\Request $request, string $membership, Nvl\\Auth\\Actions\\Memberships\\SetMembershipStatusAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function destroy(Illuminate\\Http\\Request $request, string $membership, Nvl\\Auth\\Actions\\Memberships\\RevokeMembershipAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function transfer(Illuminate\\Http\\Request $request, string $membership, Nvl\\Auth\\Actions\\Memberships\\TransferMembershipOwnershipAction $action): Illuminate\\Http\\JsonResponse"
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Management\\PermissionController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Management\\PermissionController extends Nvl\\Auth\\Http\\Controllers\\Account\\AuthenticatedController",
@@ -4794,7 +5052,7 @@
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Public\\InvitationController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\InvitationController",
-                    "public function accept(Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData $data, Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction $register): Illuminate\\Http\\JsonResponse",
+                    "public function accept(Nvl\\Auth\\Data\\Mutations\\AcceptInvitationData $data, Nvl\\Auth\\Actions\\Invitations\\RegisterInvitationAction $register, Illuminate\\Http\\Request $request): Illuminate\\Http\\JsonResponse",
                     "protected function requestPayload(Illuminate\\Http\\Request $request): array",
                     "@return array<string, mixed>",
                     "protected function stringInput(Illuminate\\Http\\Request $request, string $key): string",
@@ -4838,7 +5096,7 @@
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Public\\SocialIdentityController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\SocialIdentityController",
-                    "public function redirect(string $provider, Nvl\\Auth\\Actions\\SocialIdentities\\StartSocialAuthorizationAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function redirect(string $provider, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\SocialIdentities\\StartSocialAuthorizationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
                     "public function callback(string $provider, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\SocialIdentities\\CompleteSocialAuthorizationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse"
                 ],
                 "Nvl\\Auth\\Http\\Middleware\\ApplyAuthSecurityHeaders": [
@@ -4851,6 +5109,11 @@
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features): mixed",
                     "public function handle(Illuminate\\Http\\Request $request, Closure $next, string $feature, string $operation=\"read\"): Symfony\\Component\\HttpFoundation\\Response",
                     "@param Closure(Request): Response $next"
+                ],
+                "Nvl\\Auth\\Http\\Middleware\\EnsureAuthTenantAccess": [
+                    "final readonly class Nvl\\Auth\\Http\\Middleware\\EnsureAuthTenantAccess",
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantHttpResolver $resolver, Illuminate\\Contracts\\Auth\\Factory $auth, Nvl\\Auth\\Services\\AuthTenantAdmission $admission): mixed",
+                    "public function handle(Illuminate\\Http\\Request $request, Closure $next): Symfony\\Component\\HttpFoundation\\Response"
                 ],
                 "Nvl\\Auth\\Http\\Middleware\\RenderAuthExceptions": [
                     "final class Nvl\\Auth\\Http\\Middleware\\RenderAuthExceptions",
@@ -4871,6 +5134,8 @@
                     "#[Illuminate\\Database\\Eloquent\\Attributes\\UseFactory(\"Nvl\\\\Auth\\\\Database\\\\Factories\\\\AuthAuditFactory\")]",
                     "final class Nvl\\Auth\\Models\\AuthAudit extends Nvl\\Auth\\Models\\AuthModel",
                     "@property string $action",
+                    "@property string|null $tenant_id",
+                    "@property string|null $ownership_key",
                     "@property string $outcome",
                     "@property string|null $subject_type",
                     "@property string|null $subject_id",
@@ -4883,7 +5148,7 @@
                     "@property array<string, mixed>|null $metadata",
                     "public const mixed TABLE=\"nvl_auth_audits\"",
                     "protected mixed $table=\"nvl_auth_audits\"",
-                    "protected mixed $fillable=[\"action\",\"outcome\",\"subject_type\",\"subject_id\",\"actor_type\",\"actor_id\",\"client_id\",\"ip_address\",\"user_agent\",\"request_id\",\"metadata\"]",
+                    "protected mixed $fillable=[\"tenant_id\",\"ownership_key\",\"action\",\"outcome\",\"subject_type\",\"subject_id\",\"actor_type\",\"actor_id\",\"client_id\",\"ip_address\",\"user_agent\",\"request_id\",\"metadata\"]",
                     "protected mixed $hidden=[\"ip_address\",\"user_agent\",\"metadata\"]",
                     "protected function casts(): array",
                     "@return array<string, string>",
@@ -4993,6 +5258,8 @@
                 "Nvl\\Auth\\Models\\Challenge": [
                     "#[Illuminate\\Database\\Eloquent\\Attributes\\UseFactory(\"Nvl\\\\Auth\\\\Database\\\\Factories\\\\ChallengeFactory\")]",
                     "final class Nvl\\Auth\\Models\\Challenge extends Nvl\\Auth\\Models\\AuthModel",
+                    "@property string|null $tenant_id",
+                    "@property string|null $ownership_key",
                     "@property string $type",
                     "@property string $purpose",
                     "@property string|null $subject_type",
@@ -5009,7 +5276,7 @@
                     "@property CarbonImmutable|null $revoked_at",
                     "public const mixed TABLE=\"nvl_auth_challenges\"",
                     "protected mixed $table=\"nvl_auth_challenges\"",
-                    "protected mixed $fillable=[\"type\",\"purpose\",\"subject_type\",\"subject_id\",\"recipient_hash\",\"secret_hash\",\"secondary_secret_hash\",\"active_key\",\"payload\",\"attempts\",\"max_attempts\",\"expires_at\",\"consumed_at\",\"revoked_at\"]",
+                    "protected mixed $fillable=[\"tenant_id\",\"ownership_key\",\"type\",\"purpose\",\"subject_type\",\"subject_id\",\"recipient_hash\",\"secret_hash\",\"secondary_secret_hash\",\"active_key\",\"payload\",\"attempts\",\"max_attempts\",\"expires_at\",\"consumed_at\",\"revoked_at\"]",
                     "protected mixed $hidden=[\"recipient_hash\",\"secret_hash\",\"secondary_secret_hash\",\"active_key\",\"payload\"]",
                     "protected function casts(): array",
                     "@return array<string, string>",
@@ -5027,6 +5294,8 @@
                     "#[Illuminate\\Database\\Eloquent\\Attributes\\UseFactory(\"Nvl\\\\Auth\\\\Database\\\\Factories\\\\InvitationFactory\")]",
                     "final class Nvl\\Auth\\Models\\Invitation extends Nvl\\Auth\\Models\\AuthModel",
                     "@property string $token_hash",
+                    "@property string|null $tenant_id",
+                    "@property string $ownership_key",
                     "@property string|null $active_key",
                     "@property string $recipient",
                     "@property string $recipient_hash",
@@ -5053,7 +5322,7 @@
                     "@property CarbonImmutable|null $revoked_at",
                     "public const mixed TABLE=\"nvl_auth_invitations\"",
                     "protected mixed $table=\"nvl_auth_invitations\"",
-                    "protected mixed $fillable=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\",\"type\",\"purpose\",\"inviter_type\",\"inviter_id\",\"accepted_by_type\",\"accepted_by_id\",\"roles\",\"permissions\",\"metadata\",\"resend_count\",\"current_delivery_message_id\",\"delivery_status\",\"delivery_attempted_at\",\"delivered_at\",\"delivery_failed_at\",\"delivery_failure_code\",\"last_sent_at\",\"expires_at\",\"accepted_at\",\"revoked_at\"]",
+                    "protected mixed $fillable=[\"tenant_id\",\"ownership_key\",\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\",\"type\",\"purpose\",\"inviter_type\",\"inviter_id\",\"accepted_by_type\",\"accepted_by_id\",\"roles\",\"permissions\",\"metadata\",\"resend_count\",\"current_delivery_message_id\",\"delivery_status\",\"delivery_attempted_at\",\"delivered_at\",\"delivery_failed_at\",\"delivery_failure_code\",\"last_sent_at\",\"expires_at\",\"accepted_at\",\"revoked_at\"]",
                     "protected mixed $hidden=[\"token_hash\",\"active_key\",\"recipient\",\"recipient_hash\",\"context_hash\",\"current_delivery_message_id\"]",
                     "protected function casts(): array",
                     "@return array<string, string>",
@@ -5117,6 +5386,7 @@
                     "protected mixed $attributes={\"is_system\":false}",
                     "public function getTable(): string",
                     "public function getConnectionName(): ?string",
+                    "public function users(): Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function getKeyType(): mixed",
@@ -5161,8 +5431,11 @@
                     "@property string $name",
                     "@property string $token",
                     "@property list<string>|null $abilities",
+                    "@property string|null $tenant_id",
+                    "@property string $ownership_key",
                     "public const mixed TABLE=\"nvl_auth_personal_access_tokens\"",
                     "protected mixed $keyType=\"string\"",
+                    "protected mixed $fillable=[\"name\",\"token\",\"abilities\",\"expires_at\",\"tenant_id\",\"ownership_key\"]",
                     "public function getTable(): string",
                     "public function getConnectionName(): ?string",
                     "public function getKeyType(): mixed",
@@ -5226,6 +5499,7 @@
                     "#[Illuminate\\Database\\Eloquent\\Attributes\\UseFactory(\"Nvl\\\\Auth\\\\Database\\\\Factories\\\\RoleFactory\")]",
                     "class Nvl\\Auth\\Models\\Role extends Spatie\\Permission\\Models\\Role",
                     "@property string $id",
+                    "@property string $tenant_id",
                     "@property string $name",
                     "@property string $guard_name",
                     "@property string|null $display_name",
@@ -5238,12 +5512,13 @@
                     "@property-read int|null $permissions_count",
                     "public const mixed TABLE=\"nvl_auth_roles\"",
                     "protected mixed $keyType=\"string\"",
-                    "protected mixed $fillable=[\"name\",\"guard_name\",\"display_name\",\"description\",\"parent_id\",\"priority\",\"is_system\",\"metadata\"]",
+                    "protected mixed $fillable=[\"tenant_id\",\"name\",\"guard_name\",\"display_name\",\"description\",\"parent_id\",\"priority\",\"is_system\",\"metadata\"]",
                     "protected mixed $attributes={\"priority\":0,\"is_system\":false}",
                     "public function getTable(): string",
                     "public function getConnectionName(): ?string",
                     "public function parent(): Illuminate\\Database\\Eloquent\\Relations\\BelongsTo",
                     "public function children(): Illuminate\\Database\\Eloquent\\Relations\\HasMany",
+                    "public function users(): Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function getKeyType(): mixed",
@@ -5305,6 +5580,55 @@
                     "@return TFactory|null",
                     "protected static function getUseFactoryAttribute(): mixed",
                     "@return TFactory|null"
+                ],
+                "Nvl\\Auth\\Models\\TenantAuthenticationIntent": [
+                    "final class Nvl\\Auth\\Models\\TenantAuthenticationIntent extends Nvl\\Auth\\Models\\AuthModel",
+                    "@property string $tenant_id",
+                    "@property TenantAuthenticationPurpose $purpose",
+                    "@property string $nonce_hash",
+                    "@property string $session_binding_hash",
+                    "@property string|null $subject_type",
+                    "@property string|null $subject_id",
+                    "@property array<string, mixed>|null $payload",
+                    "@property CarbonImmutable $expires_at",
+                    "@property CarbonImmutable|null $consumed_at",
+                    "public const string TABLE=\"nvl_auth_tenant_authentication_intents\"",
+                    "protected mixed $table=\"nvl_auth_tenant_authentication_intents\"",
+                    "protected mixed $fillable=[\"tenant_id\",\"purpose\",\"nonce_hash\",\"session_binding_hash\",\"subject_type\",\"subject_id\",\"payload\",\"expires_at\",\"consumed_at\"]",
+                    "protected mixed $hidden=[\"nonce_hash\",\"session_binding_hash\",\"payload\"]",
+                    "protected function casts(): array"
+                ],
+                "Nvl\\Auth\\Models\\TenantMembership": [
+                    "#[Illuminate\\Database\\Eloquent\\Attributes\\UseFactory(\"Nvl\\\\Auth\\\\Database\\\\Factories\\\\TenantMembershipFactory\")]",
+                    "final class Nvl\\Auth\\Models\\TenantMembership extends Nvl\\Auth\\Models\\AuthModel",
+                    "@property string $tenant_id",
+                    "@property string $subject_type",
+                    "@property string $subject_id",
+                    "@property MembershipStatus $status",
+                    "@property bool $is_owner",
+                    "@property int $revision",
+                    "public const string TABLE=\"nvl_auth_tenant_memberships\"",
+                    "protected mixed $table=\"nvl_auth_tenant_memberships\"",
+                    "protected mixed $fillable=[\"tenant_id\",\"subject_type\",\"subject_id\",\"status\",\"is_owner\",\"revision\"]",
+                    "protected mixed $attributes={\"status\":\"active\",\"is_owner\":false,\"revision\":1}",
+                    "protected function casts(): array",
+                    "public static function factory(mixed $count=null, mixed $state=[]): mixed",
+                    "@param (callable(array<string, mixed>, static|null): array<string, mixed>)|array<string, mixed>|int|null $count",
+                    "@param (callable(array<string, mixed>, static|null): array<string, mixed>)|array<string, mixed> $state",
+                    "@return TFactory",
+                    "protected static function newFactory(): mixed",
+                    "@return TFactory|null",
+                    "protected static function getUseFactoryAttribute(): mixed",
+                    "@return TFactory|null"
+                ],
+                "Nvl\\Auth\\Models\\TenantMembershipLock": [
+                    "final class Nvl\\Auth\\Models\\TenantMembershipLock extends Nvl\\Auth\\Models\\AuthModel",
+                    "@property string $tenant_id",
+                    "public const string TABLE=\"nvl_auth_tenant_membership_locks\"",
+                    "protected mixed $table=\"nvl_auth_tenant_membership_locks\"",
+                    "protected mixed $primaryKey=\"tenant_id\"",
+                    "protected mixed $fillable=[\"tenant_id\"]",
+                    "public function uniqueIds(): array"
                 ],
                 "Nvl\\Auth\\Models\\TotpCredential": [
                     "#[Illuminate\\Database\\Eloquent\\Attributes\\UseFactory(\"Nvl\\\\Auth\\\\Database\\\\Factories\\\\TotpCredentialFactory\")]",
@@ -5619,6 +5943,11 @@
                     "final class Nvl\\Auth\\Providers\\RouteServiceProvider extends Illuminate\\Support\\ServiceProvider",
                     "public function boot(Illuminate\\Routing\\Router $router, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\FeatureManifest $manifest, Nvl\\Auth\\Services\\FeatureGate $features): void"
                 ],
+                "Nvl\\Auth\\Relations\\TextCastColumnComparison": [
+                    "final readonly class Nvl\\Auth\\Relations\\TextCastColumnComparison implements Illuminate\\Contracts\\Database\\Query\\Expression",
+                    "public function __construct(string $textColumn, string $typedColumn): mixed",
+                    "public function getValue(Illuminate\\Database\\Grammar $grammar): string"
+                ],
                 "Nvl\\Auth\\Results\\AuthClientStartResult": [
                     "final readonly class Nvl\\Auth\\Results\\AuthClientStartResult",
                     "public readonly Nvl\\Auth\\Models\\AuthClient $client",
@@ -5705,14 +6034,20 @@
                 ],
                 "Nvl\\Auth\\Services\\ApiTokenPolicy": [
                     "final readonly class Nvl\\Auth\\Services\\ApiTokenPolicy",
-                    "public function __construct(Nvl\\Auth\\Contracts\\ApiTokenAbilityProvider $abilities): mixed",
-                    "public function authorize(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\ApiTokenData $data): void"
+                    "public function __construct(Nvl\\Auth\\Contracts\\ApiTokenAbilityProvider $abilities, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $memberships, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
+                    "public function authorize(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Auth\\Data\\Mutations\\ApiTokenData $data): void",
+                    "public function authorizeSubject(Illuminate\\Contracts\\Auth\\Authenticatable $subject): void"
                 ],
                 "Nvl\\Auth\\Services\\AuthAuditRecorder": [
                     "final readonly class Nvl\\Auth\\Services\\AuthAuditRecorder implements Nvl\\Auth\\Contracts\\AuthAuditRecorder",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditContextProvider $context): mixed",
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantContext $tenantContext, Nvl\\Auth\\Services\\AuthAuditWriter $writer, Nvl\\Auth\\Services\\CentralIdentityAuditRecorder $central): mixed",
                     "public function record(string $action, string $outcome=\"success\", ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, ?string $clientId=null, array $metadata=[]): ?Nvl\\Auth\\Models\\AuthAudit",
                     "@param array<string, mixed> $metadata"
+                ],
+                "Nvl\\Auth\\Services\\AuthAuditWriter": [
+                    "final readonly class Nvl\\Auth\\Services\\AuthAuditWriter",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditContextProvider $request): mixed",
+                    "public function write(Nvl\\Auth\\ValueObjects\\AuthEventContext $context, string $action, string $outcome, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor, ?string $clientId, array $metadata): ?Nvl\\Auth\\Models\\AuthAudit"
                 ],
                 "Nvl\\Auth\\Services\\AuthConfiguration": [
                     "final readonly class Nvl\\Auth\\Services\\AuthConfiguration",
@@ -5750,6 +6085,12 @@
                     "public function personalAccessTokenClass(): string",
                     "@return class-string<PersonalAccessToken>"
                 ],
+                "Nvl\\Auth\\Services\\AuthOperationBoundary": [
+                    "final readonly class Nvl\\Auth\\Services\\AuthOperationBoundary",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Tenancy\\Contracts\\TenantContext $context): mixed",
+                    "public function central(Nvl\\Auth\\Enums\\AuthIdentityOperation $operation, ?Illuminate\\Contracts\\Auth\\Authenticatable $subject=null): void",
+                    "public function requirePlatformAdministration(): void"
+                ],
                 "Nvl\\Auth\\Services\\AuthSchemaManager": [
                     "final readonly class Nvl\\Auth\\Services\\AuthSchemaManager",
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
@@ -5757,6 +6098,34 @@
                     "@return array{mode: 'apply'|'plan', required: list<string>, existing: list<string>, missing: list<string>, outdated: array<string, list<string>>, missing_indexes: array<string, list<string>>, created: list<string>}",
                     "public function requiredTables(): array",
                     "@return list<string>"
+                ],
+                "Nvl\\Auth\\Services\\AuthTenantAdmission": [
+                    "final readonly class Nvl\\Auth\\Services\\AuthTenantAdmission",
+                    "public function __construct(Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $memberships, Nvl\\Auth\\Contracts\\ApiTokenManager $tokens): mixed",
+                    "public function assertAllowed(Illuminate\\Contracts\\Auth\\Authenticatable $subject, Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): void"
+                ],
+                "Nvl\\Auth\\Services\\AuthTenantContextParticipant": [
+                    "final readonly class Nvl\\Auth\\Services\\AuthTenantContextParticipant implements Nvl\\Tenancy\\Contracts\\TenantContextParticipant",
+                    "public function __construct(Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Services\\RbacPrincipalTracker $principals): mixed",
+                    "public function enter(Nvl\\Tenancy\\ValueObjects\\TenantContextSnapshot $next): Closure"
+                ],
+                "Nvl\\Auth\\Services\\AuthTenantMembershipAccess": [
+                    "final readonly class Nvl\\Auth\\Services\\AuthTenantMembershipAccess implements Nvl\\Tenancy\\Contracts\\TenantMembershipAccess",
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantDirectory $directory, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals): mixed",
+                    "public function assertMember(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): void"
+                ],
+                "Nvl\\Auth\\Services\\AuthTenantRbacQueries": [
+                    "final readonly class Nvl\\Auth\\Services\\AuthTenantRbacQueries",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Tenancy\\Contracts\\TenantMembershipAccess $membership, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\RbacPrincipalTracker $tracker): mixed",
+                    "public function roles(): Illuminate\\Database\\Eloquent\\Builder",
+                    "public function role(string $id, bool $lock=false): Nvl\\Auth\\Models\\Role",
+                    "public function permissions(): Illuminate\\Database\\Eloquent\\Builder",
+                    "public function assertAssignmentPrincipal(Illuminate\\Contracts\\Auth\\Authenticatable $principal): Illuminate\\Contracts\\Auth\\Authenticatable"
+                ],
+                "Nvl\\Auth\\Services\\CentralIdentityAuditRecorder": [
+                    "final readonly class Nvl\\Auth\\Services\\CentralIdentityAuditRecorder",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthAuditWriter $writer): mixed",
+                    "public function record(Nvl\\Auth\\Enums\\AuthIdentityOperation $operation, string $action, string $outcome=\"success\", ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?Illuminate\\Contracts\\Auth\\Authenticatable $actor=null, array $metadata=[]): ?Nvl\\Auth\\Models\\AuthAudit"
                 ],
                 "Nvl\\Auth\\Services\\ConfiguredApiTokenAbilityProvider": [
                     "final readonly class Nvl\\Auth\\Services\\ConfiguredApiTokenAbilityProvider implements Nvl\\Auth\\Contracts\\ApiTokenAbilityProvider",
@@ -5781,6 +6150,17 @@
                     "final readonly class Nvl\\Auth\\Services\\DenySystemMutationAccess implements Nvl\\Auth\\Contracts\\SystemMutationAccess",
                     "public function allows(Nvl\\Auth\\ValueObjects\\SystemMutationContext $context, string $ability, mixed $target=null): bool"
                 ],
+                "Nvl\\Auth\\Services\\DisabledTenantAwareAuthActivityBridge": [
+                    "final readonly class Nvl\\Auth\\Services\\DisabledTenantAwareAuthActivityBridge implements Nvl\\Auth\\Contracts\\TenantAwareAuthActivityBridge",
+                    "public function record(string $action, Nvl\\Auth\\ValueObjects\\AuthEventContext $context, array $metadata): void"
+                ],
+                "Nvl\\Auth\\Services\\EloquentMembershipPrincipalResolver": [
+                    "final readonly class Nvl\\Auth\\Services\\EloquentMembershipPrincipalResolver implements Nvl\\Auth\\Contracts\\MembershipPrincipalResolver",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacPrincipalTracker $tracker): mixed",
+                    "public function resolve(Nvl\\Auth\\ValueObjects\\SubjectReference $reference, bool $lock=false): Illuminate\\Contracts\\Auth\\Authenticatable",
+                    "public function assertEligible(Illuminate\\Contracts\\Auth\\Authenticatable $principal): void",
+                    "public function connectionName(): string"
+                ],
                 "Nvl\\Auth\\Services\\EloquentPasswordUpdater": [
                     "final readonly class Nvl\\Auth\\Services\\EloquentPasswordUpdater implements Nvl\\Auth\\Contracts\\PasswordUpdater",
                     "public function __construct(Illuminate\\Contracts\\Hashing\\Hasher $hasher): mixed",
@@ -5788,7 +6168,7 @@
                 ],
                 "Nvl\\Auth\\Services\\EloquentRbacPrincipalAccess": [
                     "final readonly class Nvl\\Auth\\Services\\EloquentRbacPrincipalAccess implements Nvl\\Auth\\Contracts\\RbacPrincipalAccess",
-                    "public function __construct(?Nvl\\Auth\\Services\\AuthModelRegistry $models=null): mixed",
+                    "public function __construct(?Nvl\\Auth\\Services\\AuthModelRegistry $models=null, ?Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy=null): mixed",
                     "public function find(Illuminate\\Contracts\\Auth\\Authenticatable|string $principal): Illuminate\\Contracts\\Auth\\Authenticatable",
                     "public function identifier(Illuminate\\Contracts\\Auth\\Authenticatable $principal): string",
                     "public function connectionName(Illuminate\\Contracts\\Auth\\Authenticatable $principal): ?string",
@@ -5825,6 +6205,11 @@
                     "public function configurationIsValid(): bool",
                     "public function deliveryData(Nvl\\Auth\\Models\\Invitation $invitation): Nvl\\Auth\\Data\\Display\\InvitationDeliveryData"
                 ],
+                "Nvl\\Auth\\Services\\InvitationTenantBootstrap": [
+                    "final readonly class Nvl\\Auth\\Services\\InvitationTenantBootstrap",
+                    "public function __construct(Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Tenancy\\Contracts\\TenantDirectory $directory): mixed",
+                    "public function tenantForToken(string $token): ?Nvl\\Tenancy\\ValueObjects\\TenantId"
+                ],
                 "Nvl\\Auth\\Services\\LaravelGateAuthManagementAccess": [
                     "final readonly class Nvl\\Auth\\Services\\LaravelGateAuthManagementAccess implements Nvl\\Auth\\Contracts\\AuthManagementAccess",
                     "public function __construct(Illuminate\\Contracts\\Auth\\Access\\Gate $gate): mixed",
@@ -5832,12 +6217,39 @@
                 ],
                 "Nvl\\Auth\\Services\\ManagementAuthorizer": [
                     "final readonly class Nvl\\Auth\\Services\\ManagementAuthorizer",
-                    "public function __construct(Nvl\\Auth\\Contracts\\AuthManagementAccess $access): mixed",
+                    "public function __construct(Nvl\\Auth\\Contracts\\AuthManagementAccess $access, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function authorize(Illuminate\\Contracts\\Auth\\Authenticatable $actor, string $ability, mixed $target=null): void"
+                ],
+                "Nvl\\Auth\\Services\\MembershipLocator": [
+                    "final readonly class Nvl\\Auth\\Services\\MembershipLocator",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
+                    "public function find(Nvl\\Auth\\Models\\TenantMembership|string $membership, bool $lock=false): Nvl\\Auth\\Models\\TenantMembership"
+                ],
+                "Nvl\\Auth\\Services\\MembershipMutator": [
+                    "final readonly class Nvl\\Auth\\Services\\MembershipMutator",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipLocator $memberships, Nvl\\Auth\\Services\\MembershipWriter $writer, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\TenantMembershipAssignments $assignments, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function enroll(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Data\\Mutations\\EnrollMembershipData $data): Nvl\\Auth\\Models\\TenantMembership",
+                    "public function setStatus(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Enums\\MembershipStatus $status, int $expectedRevision): Nvl\\Auth\\Models\\TenantMembership",
+                    "public function revoke(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, int $expectedRevision): Nvl\\Auth\\Models\\TenantMembership",
+                    "public function transfer(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Data\\Mutations\\TransferMembershipOwnershipData $data): Nvl\\Auth\\Models\\TenantMembership",
+                    "public function provisionOwner(Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\ValueObjects\\SubjectReference $subject): Nvl\\Auth\\Models\\TenantMembership"
+                ],
+                "Nvl\\Auth\\Services\\MembershipOwnerGuard": [
+                    "final readonly class Nvl\\Auth\\Services\\MembershipOwnerGuard",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
+                    "public function lock(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant): void",
+                    "public function assertCanRemoveOwner(Nvl\\Auth\\Models\\TenantMembership $membership): void",
+                    "public function assertPrincipalCanBeDisabled(Nvl\\Auth\\ValueObjects\\SubjectReference $subject): void"
+                ],
+                "Nvl\\Auth\\Services\\MembershipWriter": [
+                    "final readonly class Nvl\\Auth\\Services\\MembershipWriter",
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
+                    "public function enroll(Nvl\\Auth\\ValueObjects\\SubjectReference $subject): Nvl\\Auth\\Models\\TenantMembership",
+                    "public function setStatus(Nvl\\Auth\\Models\\TenantMembership $membership, Nvl\\Auth\\Enums\\MembershipStatus $status): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Services\\MutationAuthorizer": [
                     "final readonly class Nvl\\Auth\\Services\\MutationAuthorizer",
-                    "public function __construct(Nvl\\Auth\\Services\\ManagementAuthorizer $management, Nvl\\Auth\\Contracts\\SystemMutationAccess $systems): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\ManagementAuthorizer $management, Nvl\\Auth\\Contracts\\SystemMutationAccess $systems, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function authorize(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, string $ability, mixed $target=null): ?Illuminate\\Contracts\\Auth\\Authenticatable",
                     "public function metadata(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority): array",
                     "@return array<string, mixed>"
@@ -5918,7 +6330,7 @@
                 ],
                 "Nvl\\Auth\\Services\\RbacEntityLocator": [
                     "final readonly class Nvl\\Auth\\Services\\RbacEntityLocator",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, ?Nvl\\Auth\\Services\\AuthConfiguration $configuration=null, ?Nvl\\Auth\\Services\\RbacConsumerLimits $limits=null): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, ?Nvl\\Auth\\Services\\AuthConfiguration $configuration=null, ?Nvl\\Auth\\Services\\RbacConsumerLimits $limits=null, ?Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy=null): mixed",
                     "public function role(Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Models\\Role",
                     "public function roleForConfiguredGuard(Nvl\\Auth\\Models\\Role|string $role): Nvl\\Auth\\Models\\Role",
                     "public function roleByName(string $name, string $guard): Nvl\\Auth\\Models\\Role",
@@ -5932,7 +6344,7 @@
                 ],
                 "Nvl\\Auth\\Services\\RbacManager": [
                     "final readonly class Nvl\\Auth\\Services\\RbacManager",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Contracts\\RbacPrincipalAccess $principals, Spatie\\Permission\\PermissionRegistrar $registrar): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Contracts\\RbacPrincipalAccess $principals, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Tenancy\\Contracts\\TenantContext $tenantContext): mixed",
                     "public function assign(Illuminate\\Contracts\\Auth\\Authenticatable $subject, array $roles, array $permissions): void",
                     "@param list<string> $roles",
                     "@param list<string> $permissions",
@@ -5947,7 +6359,7 @@
                 ],
                 "Nvl\\Auth\\Services\\RbacOptionReadService": [
                     "final readonly class Nvl\\Auth\\Services\\RbacOptionReadService",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacPermissionGroupExpressions $groupExpressions): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacPermissionGroupExpressions $groupExpressions, Nvl\\Auth\\Services\\AuthTenantRbacQueries $tenancy): mixed",
                     "public function roles(?string $search, int $limit): Illuminate\\Support\\Collection",
                     "@return Collection<int, RoleOptionData>",
                     "public function permissions(?string $search, ?string $group, int $limit): Illuminate\\Support\\Collection",
@@ -5964,6 +6376,12 @@
                     "public function selected(Illuminate\\Database\\Eloquent\\Builder $query): Illuminate\\Database\\Query\\Expression",
                     "@param Builder<Permission> $query",
                     "@return Expression<literal-string>"
+                ],
+                "Nvl\\Auth\\Services\\RbacPrincipalTracker": [
+                    "final class Nvl\\Auth\\Services\\RbacPrincipalTracker",
+                    "public function __construct(Spatie\\Permission\\PermissionRegistrar $registrar): mixed",
+                    "public function track(Illuminate\\Database\\Eloquent\\Model $principal): void",
+                    "public function clearRelations(): void"
                 ],
                 "Nvl\\Auth\\Services\\RbacSynchronizer": [
                     "final readonly class Nvl\\Auth\\Services\\RbacSynchronizer",
@@ -5994,6 +6412,23 @@
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
                     "public function provider(string $provider): array",
                     "@return array{callback_url: string|null, scopes: list<string>, parameters: array<string, scalar>}"
+                ],
+                "Nvl\\Auth\\Services\\TenantAuthenticationIntents": [
+                    "final readonly class Nvl\\Auth\\Services\\TenantAuthenticationIntents",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Tenancy\\Contracts\\TenantDirectory $directory): mixed",
+                    "public function issue(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant, Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $purpose, string $sessionBinding, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?string $provider=null, ?string $returnPath=null): Nvl\\Auth\\ValueObjects\\IssuedTenantAuthenticationIntent",
+                    "public function consume(string $nonce, Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $purpose, string $sessionBinding, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?string $provider=null): Nvl\\Tenancy\\ValueObjects\\TenantId"
+                ],
+                "Nvl\\Auth\\Services\\TenantMembershipAssignments": [
+                    "final readonly class Nvl\\Auth\\Services\\TenantMembershipAssignments",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Tenancy\\Contracts\\TenantContext $context): mixed",
+                    "public function sync(Illuminate\\Contracts\\Auth\\Authenticatable $principal, array $roles, array $permissions): void",
+                    "@param list<string> $roles",
+                    "@param list<string> $permissions",
+                    "public function canonicalIdentifiers(array $roles, array $permissions): array",
+                    "@param list<string> $roles",
+                    "@param list<string> $permissions",
+                    "@return array{roles: list<string>, permissions: list<string>}"
                 ],
                 "Nvl\\Auth\\Services\\TotpEngine": [
                     "final readonly class Nvl\\Auth\\Services\\TotpEngine",
@@ -6038,6 +6473,25 @@
                     "public function find(Nvl\\Auth\\Models\\User|string $user, bool $withTrashed=false): Nvl\\Auth\\Models\\User",
                     "public function authenticated(Illuminate\\Contracts\\Auth\\Authenticatable $subject): Nvl\\Auth\\Models\\User"
                 ],
+                "Nvl\\Auth\\Services\\VerifiedInvitationRecipientProof": [
+                    "final readonly class Nvl\\Auth\\Services\\VerifiedInvitationRecipientProof implements Nvl\\Auth\\Contracts\\InvitationRecipientProof",
+                    "public function __construct(Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals): mixed",
+                    "public function assertMatches(Nvl\\Auth\\Models\\Invitation $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $subject): void"
+                ],
+                "Nvl\\Auth\\Tenancy\\AuthTenancyAdoption": [
+                    "final readonly class Nvl\\Auth\\Tenancy\\AuthTenancyAdoption implements Nvl\\Tenancy\\Contracts\\TenantAdoptionAdapter, Nvl\\Tenancy\\Contracts\\TenantAdoptionMetadataValidator",
+                    "public function __construct(Illuminate\\Database\\Migrations\\Migrator $migrator, Nvl\\Auth\\Tenancy\\AuthTenancyMapping $mapping, Nvl\\Tenancy\\Services\\TenantAdoptionMappings $mappings, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Contracts\\Config\\Repository $configuration, Spatie\\Permission\\PermissionRegistrar $registrar): mixed",
+                    "public function validateAssignment(Nvl\\Tenancy\\ValueObjects\\TenantAssignment $assignment): void",
+                    "public function resources(): array",
+                    "public function prepare(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void",
+                    "public function backfill(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, ?string $cursor, int $limit): Nvl\\Tenancy\\ValueObjects\\TenantBackfillResult",
+                    "public function verify(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): Nvl\\Tenancy\\ValueObjects\\TenantVerification",
+                    "public function activate(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void"
+                ],
+                "Nvl\\Auth\\Tenancy\\AuthTenancyMapping": [
+                    "final readonly class Nvl\\Auth\\Tenancy\\AuthTenancyMapping",
+                    "public function validate(Nvl\\Tenancy\\ValueObjects\\TenantAssignment $assignment): void"
+                ],
                 "Nvl\\Auth\\ValueObjects\\ApiTokenSnapshot": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\ApiTokenSnapshot",
                     "public readonly string $id",
@@ -6046,11 +6500,13 @@
                     "public readonly ?Carbon\\CarbonImmutable $lastUsedAt",
                     "public readonly ?Carbon\\CarbonImmutable $expiresAt",
                     "public readonly Carbon\\CarbonImmutable $createdAt",
-                    "public function __construct(string $id, string $name, array $abilities, ?Carbon\\CarbonImmutable $lastUsedAt, ?Carbon\\CarbonImmutable $expiresAt, Carbon\\CarbonImmutable $createdAt): mixed",
+                    "public readonly ?string $tenantId",
+                    "public function __construct(string $id, string $name, array $abilities, ?Carbon\\CarbonImmutable $lastUsedAt, ?Carbon\\CarbonImmutable $expiresAt, Carbon\\CarbonImmutable $createdAt, ?string $tenantId=null): mixed",
                     "@param list<string> $abilities"
                 ],
                 "Nvl\\Auth\\ValueObjects\\AuthDeliveryRequest": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\AuthDeliveryRequest",
+                    "public readonly ?Nvl\\Auth\\ValueObjects\\AuthEventContext $eventContext",
                     "public readonly string $messageId",
                     "public readonly Nvl\\Auth\\Enums\\AuthFeature $feature",
                     "public readonly Nvl\\Auth\\Enums\\AuthMessageType $type",
@@ -6061,7 +6517,8 @@
                     "public readonly array $metadata",
                     "public readonly ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject",
                     "public readonly ?Nvl\\Auth\\Data\\Display\\InvitationDeliveryData $invitation",
-                    "public function __construct(string $messageId, Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $type, string $recipient, array $payload, Carbon\\CarbonImmutable $expiresAt, ?string $locale=null, array $metadata=[], ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?Nvl\\Auth\\Data\\Display\\InvitationDeliveryData $invitation=null): mixed",
+                    "public readonly ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant",
+                    "public function __construct(string $messageId, Nvl\\Auth\\Enums\\AuthFeature $feature, Nvl\\Auth\\Enums\\AuthMessageType $type, string $recipient, array $payload, Carbon\\CarbonImmutable $expiresAt, ?string $locale=null, array $metadata=[], ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?Nvl\\Auth\\Data\\Display\\InvitationDeliveryData $invitation=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant=null, ?Nvl\\Auth\\ValueObjects\\AuthEventContext $eventContext=null): mixed",
                     "@param array<string, mixed> $payload",
                     "@param array<string, mixed> $metadata",
                     "public function __debugInfo(): array",
@@ -6070,6 +6527,15 @@
                     "@return array<string, mixed>",
                     "public function __unserialize(array $data): void",
                     "@param array{"
+                ],
+                "Nvl\\Auth\\ValueObjects\\AuthEventContext": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\AuthEventContext",
+                    "public readonly Nvl\\Tenancy\\Enums\\TenantContextMode $mode",
+                    "public readonly ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId",
+                    "public function __construct(Nvl\\Tenancy\\Enums\\TenantContextMode $mode, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenantId=null): mixed",
+                    "public static function capture(Nvl\\Tenancy\\Contracts\\TenantContext $context): self",
+                    "public static function platform(): self",
+                    "public function envelope(): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope"
                 ],
                 "Nvl\\Auth\\ValueObjects\\AuthPipelineContext": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\AuthPipelineContext",
@@ -6084,7 +6550,13 @@
                     "public readonly ?string $ipAddress",
                     "public readonly ?string $userAgent",
                     "public readonly ?string $requestId",
-                    "public function __construct(?string $ipAddress=null, ?string $userAgent=null, ?string $requestId=null): mixed"
+                    "public readonly ?string $tenantIntentNonce",
+                    "public readonly ?string $tenantSessionBinding",
+                    "public readonly ?Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $tenantPurpose",
+                    "public readonly ?string $tenantProvider",
+                    "public readonly ?Nvl\\Tenancy\\ValueObjects\\TenantId $requestedTenant",
+                    "public readonly bool $tenantIntentSubjectBound",
+                    "public function __construct(?string $ipAddress=null, ?string $userAgent=null, ?string $requestId=null, ?string $tenantIntentNonce=null, ?string $tenantSessionBinding=null, ?Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $tenantPurpose=null, ?string $tenantProvider=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $requestedTenant=null, bool $tenantIntentSubjectBound=false): mixed"
                 ],
                 "Nvl\\Auth\\ValueObjects\\ExternalIdentity": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\ExternalIdentity",
@@ -6124,7 +6596,15 @@
                     "public readonly bool $actorlessAuthorized",
                     "public readonly ?Carbon\\CarbonImmutable $expiresAt",
                     "public readonly ?string $returnPath",
-                    "public function __construct(bool $actorlessAuthorized=false, ?Carbon\\CarbonImmutable $expiresAt=null, ?string $returnPath=null): mixed"
+                    "public readonly ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant",
+                    "public function __construct(bool $actorlessAuthorized=false, ?Carbon\\CarbonImmutable $expiresAt=null, ?string $returnPath=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant=null): mixed"
+                ],
+                "Nvl\\Auth\\ValueObjects\\IssuedTenantAuthenticationIntent": [
+                    "final readonly class Nvl\\Auth\\ValueObjects\\IssuedTenantAuthenticationIntent",
+                    "public readonly string $id",
+                    "public readonly string $nonce",
+                    "public readonly Carbon\\CarbonImmutable $expiresAt",
+                    "public function __construct(string $id, string $nonce, Carbon\\CarbonImmutable $expiresAt): mixed"
                 ],
                 "Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping": [
                     "final readonly class Nvl\\Auth\\ValueObjects\\LegacyPasswordResetMapping",
@@ -6248,12 +6728,13 @@
                 ]
             },
             "configuration": {
-                "config/nvl-auth.php": "14f9943c8ff2303406c31ae1a8c6527e0cc4c599f14d50a499ac1f8782c55001"
+                "config/nvl-auth.php": "c76b864ac8b364137f49281aecfd69e3e134f6c55ee29c3fe25deeddf1c96f19"
             },
             "routes": {
-                "routes/account/api_tokens.php": "87625e4b2170c152d7d47882b8023bd652474efdfa2c82bf1ec5ed8eac35e81e",
+                "routes/account/api_tokens.php": "ff9016f3c9a450aaeefdcd77aba3d09ac00b61d09c4fbf4bb697b7192520f98d",
                 "routes/account/authentication.php": "e56f923c3df66824b931410d5228d69c97dbdc6c3b41cde727aa521f03e71196",
                 "routes/account/email_verification.php": "329a90c176e3e40e696d716f7f76e8ef34da213650bf46fb2c2334a91688c7e7",
+                "routes/account/memberships.php": "cf6fbd35e54ee0fbc5000477469bae05a8d9e2d388451777b1eda94e878e80af",
                 "routes/account/passkeys.php": "fdf093a4b435c17787cf7add74907c5c5a269a538ee48954b8a7a395c83a6ef8",
                 "routes/account/passwords.php": "e07d2d23d152604aff0865bd9a36c61a6ebc399a589061d6ee7b23c6346dc091",
                 "routes/account/profile.php": "50894ac2f29452a5114fa533a9cfd8a55e9015abbefafbe81e4492f6edde757b",
@@ -6263,6 +6744,7 @@
                 "routes/management/audits.php": "9db412b526db09126f9c33f2e97741a196f3ffec7831fce8921b67bd609617e8",
                 "routes/management/clients.php": "ab05d4ea922cb06ad6db1584f903413c42b055f7a7cbeac26d7bf5c48b813eb6",
                 "routes/management/invitations.php": "1d3b76f93f159759bcb7a858394ea67726abd8df836172568b2208ba7f5030df",
+                "routes/management/memberships.php": "acca7cea644acc0e9841b517350a65c0967c88a1efd5905ff74d95dea690ca26",
                 "routes/management/rbac.php": "57e2cad41ff84a5eda3ebd09cb0412c6e440ceba68efb21f8d2f776bec68e1fb",
                 "routes/management/users.php": "886d864f3abc227225fdb59b273d4745e28630aa62ccea6e1c76ebae9d0b1f6c",
                 "routes/public/authentication.php": "e63f10db49f8e1960cbb25fe6cb838e65e798062e347dbc7cc4e9dc51e7e9130",
@@ -6279,7 +6761,8 @@
                 "database/migrations/2026_08_01_000000_create_nvl_auth_identity_tables.php": "6b8d465f4405d4a802c3b8d8346fd33749ab974550dcf9dc2937145b1df6cf35",
                 "database/migrations/2026_08_02_000000_create_nvl_auth_tables.php": "0f45180492a77baba154ffdaf9bc53fedc1413b4873f3d4c756f0e413b7e7d8c",
                 "database/migrations/2026_08_12_000000_add_auth_delivery_context_columns.php": "764d05d47efe24d564e39515b18125e9e2e7c8eb818b5dfc7c2ac4ab5505e253",
-                "database/migrations/2026_08_28_000000_add_invitation_delivery_outcomes.php": "64970d899844006fb5299be384b2b591965f1e72b48faff716defc09a5939771"
+                "database/migrations/2026_08_28_000000_add_invitation_delivery_outcomes.php": "64970d899844006fb5299be384b2b591965f1e72b48faff716defc09a5939771",
+                "database/migrations/tenancy/2026_09_16_000000_prepare_auth_tenancy.php": "51ce349c8966229c8de4f27404cd67101abb1be6ae02f67449ab0fff466c21e7"
             }
         },
         "comments": {
