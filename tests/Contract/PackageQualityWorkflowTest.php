@@ -589,6 +589,7 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
         ->and($proofConsumers['strategy']['matrix']['consumer'] ?? null)->toBe([
             'auth',
             'content',
+            'tenancy',
         ])
         ->and($proofConsumerDownload)->toBeArray()
         ->and($proofConsumerCommands)->toContain(
@@ -622,10 +623,10 @@ it('publishes one clean suite tag only after runtime archive and previous-minor 
         ->not->toContain('actions/upload-pages-artifact');
 });
 
-it('lets both proof-consumer runners reuse the candidate archive without rebuilding it', function (): void {
+it('lets every proof-consumer runner reuse the candidate archive without rebuilding it', function (): void {
     $root = dirname(__DIR__, 2);
 
-    foreach (['auth', 'content'] as $consumer) {
+    foreach (['auth', 'content', 'tenancy'] as $consumer) {
         $script = (string) file_get_contents(
             $root.'/tools/run-'.$consumer.'-production-consumer.sh',
         );

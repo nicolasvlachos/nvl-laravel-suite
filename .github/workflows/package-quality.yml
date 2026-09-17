@@ -127,7 +127,7 @@ jobs:
   postgresql:
     name: PostgreSQL stateful packages
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
 
     services:
       postgres:
@@ -159,7 +159,7 @@ jobs:
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '8.4'
-          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_pgsql, redis, zip
+          extensions: ctype, curl, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pcntl, pdo_pgsql, redis, zip
           coverage: none
           tools: composer:2.10.2
 
@@ -206,6 +206,71 @@ jobs:
             $pdo->exec("CREATE DATABASE \"{$database}\"");
           '
           DB_DATABASE=nvl_package_test_integration composer test:integration
+
+      - name: Start isolated S3-compatible storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --rm \
+            --name nvl-tenancy-minio \
+            --publish 9000:9000 \
+            --env MINIO_ROOT_USER=nvl-tenancy \
+            --env MINIO_ROOT_PASSWORD=nvl-tenancy-proof \
+            minio/minio:RELEASE.2025-10-15T17-29-55Z \
+            server /data
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:9000/minio/health/ready >/dev/null; then
+              break
+            fi
+            if [[ "$attempt" -eq 30 ]]; then
+              echo 'MinIO did not become ready.' >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          docker run --rm \
+            --network host \
+            --entrypoint /bin/sh \
+            minio/mc:RELEASE.2025-08-13T08-35-41Z \
+            -c 'mc alias set proof http://127.0.0.1:9000 nvl-tenancy nvl-tenancy-proof && mc mb --ignore-existing proof/nvl-tenancy'
+
+      - name: Sealed tenancy consumer on PostgreSQL, Redis and S3
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_USERNAME: nvl
+          DB_PASSWORD: nvl
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+          TENANCY_CONSUMER_DB_CONNECTION: pgsql
+          TENANCY_CONSUMER_FULL_DATABASE: nvl_tenancy_consumer_full_ci
+          TENANCY_CONSUMER_MEDIA_DATABASE: nvl_tenancy_consumer_media_ci
+          TENANCY_CONSUMER_CACHE_STORE: redis
+          TENANCY_CONSUMER_MEDIA_DRIVER: s3
+          AWS_ACCESS_KEY_ID: nvl-tenancy
+          AWS_SECRET_ACCESS_KEY: nvl-tenancy-proof
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_BUCKET: nvl-tenancy
+          AWS_ENDPOINT: http://127.0.0.1:9000
+        shell: bash
+        run: |
+          set -euo pipefail
+          for database in "$TENANCY_CONSUMER_FULL_DATABASE" "$TENANCY_CONSUMER_MEDIA_DATABASE"; do
+            DATABASE_NAME="$database" php -r '
+              $database = getenv("DATABASE_NAME");
+              if (! is_string($database) || preg_match("/^nvl_tenancy_consumer_(full|media)_ci$/", $database) !== 1) {
+                  throw new RuntimeException("Unsafe tenancy consumer database name.");
+              }
+              $pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=nvl_package_test_admin", "nvl", "nvl");
+              $pdo->exec("CREATE DATABASE \"{$database}\"");
+            '
+          done
+          bash tools/run-tenancy-production-consumer.sh
+
+      - name: Stop isolated S3-compatible storage
+        if: always()
+        shell: bash
+        run: docker stop nvl-tenancy-minio >/dev/null 2>&1 || true
 
   mysql-family:
     name: ${{ matrix.name }} stateful packages
