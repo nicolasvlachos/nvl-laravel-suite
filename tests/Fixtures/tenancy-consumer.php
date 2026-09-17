@@ -58,6 +58,16 @@ if (($argv[1] ?? '') === 'translatable') {
         __DIR__.'/vendor/nvl/',
     );
 }
+$resourceProviders = [
+    'media' => 'Nvl\\Media\\Providers\\MediaServiceProvider',
+    'metafields' => 'Nvl\\Metafields\\Providers\\MetafieldsServiceProvider',
+    'taxonomy' => 'Nvl\\Taxonomy\\Providers\\TaxonomyServiceProvider',
+];
+$resourceMode = $argv[1] ?? '';
+if (isset($resourceProviders[$resourceMode])) {
+    $provider = $resourceProviders[$resourceMode];
+    $sources[$provider] = str_starts_with((new ReflectionClass($provider))->getFileName(), __DIR__.'/vendor/nvl/');
+}
 $nvls = array_values(array_filter(InstalledVersions::getInstalledPackages(), static fn (string $name): bool => str_starts_with($name, 'nvl/')));
 sort($nvls);
 $result = [
@@ -76,6 +86,16 @@ $result = [
     'tables' => Schema::getTableListing(),
     'projection' => $projection,
 ];
+if (isset($resourceProviders[$resourceMode])) {
+    $result['resource_provider_loaded'] = $app->providerIsLoaded($resourceProviders[$resourceMode]);
+    $result['route_cached'] = $app->routesAreCached();
+    $result['resource_tables_absent'] = array_filter(
+        Schema::getTableListing(),
+        static fn (string $table): bool => str_contains($table, 'media')
+            || str_contains($table, 'metafield')
+            || str_contains($table, 'term'),
+    ) === [];
+}
 if (($argv[1] ?? '') === 'translatable') {
     $providers = array_keys($app->getLoadedProviders());
     $result['translatable_provider_loaded'] = $app->providerIsLoaded(TranslatableServiceProvider::class);

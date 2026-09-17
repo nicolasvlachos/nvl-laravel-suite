@@ -392,7 +392,7 @@ final readonly class SuiteModuleCatalog
         ],
         'taxonomy' => [
             'provider' => TaxonomyServiceProvider::class,
-            'dependencies' => ['data', 'support', 'translatable'],
+            'dependencies' => ['data', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'taxonomy.migrations.enabled'],
             'doctor' => 'nvl:taxonomy:doctor',

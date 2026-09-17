@@ -101,3 +101,32 @@ During F6 implementation, controller appended exact global/shared interface/test
 - Sealed copied-package consumer installed `nvl/media` 2.0.0 with `nvl/tenancy` 2.0.0, non-symlinked, and proved Auth absent. Package-family validation passed 21 distributions; root and Media Composer manifests passed strict validation; Pint and strict max-level PHPStan over every modified Media source passed with zero errors.
 - Contract baseline refresh is intentionally deferred to the parent after concurrent Auth settles. `contracts:check` currently reports the intentional Media migration/public constructor delta plus the active Auth delta; no baseline file from this closure is staged.
 - Independent-review correction closed C1-C2, I1-I14, and M1 with no disputed finding. The consolidated portable rerun was 1,032 tests / 1,024 passed / 3,481 assertions with two narrow failures and six native skips; the documentation/worklist failures were corrected and passed in exact follow-up (worklist 1/7), without a third broad run. Native Media schema/adoption/races passed 10/116 on each PostgreSQL, MySQL, and MariaDB; the authorized polymorphic string/UUID Foundation regression passed 1/5 on each engine; PostgreSQL+Redis+MinIO passed 1/20. Package family validated 21 distributions, changed production-source strict PHPStan and Pint passed, and a sealed mirrored consumer proved Media+Tenancy present with Auth absent. Combined Auth+Media contract baseline remains parent-owned.
+
+## R6 — Metafield ownership graph
+
+- Added the complete definition/value ownership graph, mixed platform catalog partition, concrete grant resource, three-phase schema, reviewed split-copy ledger, and package adoption adapter.
+- Canonical owner/reference resolution now uses registered Foundation resources and the active tenant boundary. Definitions, assignments, locale rows, values, defaults, serialized reference lists, and loaded reads fail closed across tenant contexts.
+- Added Doctor readiness/marker/connection/schema checks and dedicated coordinator-driven fixtures, feature isolation tests, and schema constraints. Disabled installs remain inert.
+- Implementation-only cadence: syntax and diff hygiene were performed; every Pest/database/service/analysis/format/contract command remains UNRUN.
+
+## R7 — Metafield definition catalog copies
+
+- Added exact platform grant/revoke Actions, scalar snapshot reader, independent definition importer, immutable provenance, revision/hash/idempotency checks, explicit handle conflicts, total reference remapping, and commit-aware grant audit facts.
+- Import locks recipient grant identity and source graph, claims the tenant idempotency key, preserves complete locale/type/default/schema copy, and writes only canonical recipient reference IDs. Committed copies survive revocation and source deletion.
+- Added catalog fixtures and tests for independence, replay mismatch, collision, revocation, stale source revision, provenance, locale copy, and source deletion.
+- Implementation-only cadence: syntax and diff hygiene were performed; all runtime verification remains UNRUN.
+
+## R8 — Tenant-local taxonomy
+
+- Added configured-table/connection resource registration, expansion/constrain migrations, reviewed graph-copy adoption ledger, canonical term/owner resolution, and composite hierarchy/translation/attachment constraints.
+- Guarded create/update/move/merge/delete/rebuild/prune/attachment paths, tenant-leading relation queries and loaded relations, tenant-scoped locks/CLI maintenance, and scoped locale-aware slug generation.
+- Added dedicated owner adapter/scenario plus isolation, schema, deletion, pruning, locale contamination, and separate-process hierarchy concurrency proof surfaces. Vocabulary definitions remain global code; terms remain tenant data.
+- Implementation-only cadence: PHP syntax and diff hygiene were performed; every test and broad verification command remains UNRUN.
+
+## R9 — Composition, recovery, and independent packages
+
+- Added an Auth-free Orchestra composition consumer with one canonical owner using Media, Metafields, and Taxonomy together; coordinator-driven adoption and denial tests cover identical business keys, eager relations, translations, foreign model/ID rollback, and retained-model tenant switching.
+- Added interrupted adoption recovery tests enforcing the immutable mapping ruling: source/schema repair may resume; a changed mapping is rejected and requires restore/new prepare; prepared resources remain closed without fabricated markers.
+- Extended independent archive consumers for Media, Metafields, and Taxonomy with inert Tenancy, no Auth/Suite, cached configuration/routes, and no automatically created resource schema. Added package-family/Suite dependency catalogs and CI composition/recovery wiring.
+- Updated all three package README/UPGRADING/CHANGELOG files and mirrored Boost skills with copy semantics, canonical owner rules, backup/recovery, bounded cleanup, and no-column-drop rollback claims.
+- `tools/package-contracts.json` intentionally remains unchanged for the parent combined baseline refresh. All requested runtime and release verification is UNRUN.

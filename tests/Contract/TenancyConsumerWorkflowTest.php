@@ -99,6 +99,25 @@ it('boots cached Translatable archives through Composer discovery without Auth o
         ]);
 });
 
+it('boots independent resource archives with inert Tenancy and no Auth', function (string $package, array $expected): void {
+    $result = TenancyArchiveConsumer::runResourcePackage($package);
+
+    expect($result['packages'])->toBe($expected)
+        ->and($result['source_paths'])->each->toBeTrue()
+        ->and($result['auth_absent'])->toBeTrue()
+        ->and($result['suite_absent'])->toBeTrue()
+        ->and($result['cached'])->toBeTrue()
+        ->and($result['route_cached'])->toBeTrue()
+        ->and($result['provider_loaded'])->toBeTrue()
+        ->and($result['resource_provider_loaded'])->toBeTrue()
+        ->and($result['mode'])->toBe('disabled')
+        ->and($result['resource_tables_absent'])->toBeTrue();
+})->with([
+    'Media' => ['media', ['nvl/data', 'nvl/filterable', 'nvl/media', 'nvl/support', 'nvl/tenancy', 'nvl/translatable']],
+    'Metafields' => ['metafields', ['nvl/data', 'nvl/metafields', 'nvl/support', 'nvl/tenancy', 'nvl/translatable']],
+    'Taxonomy' => ['taxonomy', ['nvl/data', 'nvl/support', 'nvl/taxonomy', 'nvl/tenancy', 'nvl/translatable']],
+]);
+
 it('keeps worker and race evidence in the existing database quality jobs', function (): void {
     $root = dirname(__DIR__, 2);
     $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');

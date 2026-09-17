@@ -42,6 +42,20 @@ final class TenancyArchiveConsumer
     }
 
     /**
+     * Run an independent inert resource package without Auth or Suite.
+     *
+     * @return array<string, mixed>
+     */
+    public static function runResourcePackage(string $package): array
+    {
+        if (! in_array($package, ['media', 'metafields', 'taxonomy'], true)) {
+            throw new RuntimeException('Unknown resource package archive profile.');
+        }
+
+        return self::runMode($package);
+    }
+
+    /**
      * Build and run one selected standalone archive profile.
      *
      * @return array<string, mixed>
@@ -54,7 +68,13 @@ final class TenancyArchiveConsumer
         $filterable = $mode === 'filterable';
         $activity = $mode === 'activity';
         $translatable = $mode === 'translatable';
-        $packages = ['support', 'data', 'tenancy', ...($filterable ? ['filterable'] : []), ...($activity ? ['activity'] : []), ...($translatable ? ['translatable'] : [])];
+        $resource = in_array($mode, ['media', 'metafields', 'taxonomy'], true);
+        $packages = match ($mode) {
+            'media' => ['support', 'data', 'tenancy', 'filterable', 'translatable', 'media'],
+            'metafields' => ['support', 'data', 'tenancy', 'translatable', 'metafields'],
+            'taxonomy' => ['support', 'data', 'tenancy', 'translatable', 'taxonomy'],
+            default => ['support', 'data', 'tenancy', ...($filterable ? ['filterable'] : []), ...($activity ? ['activity'] : []), ...($translatable ? ['translatable'] : [])],
+        };
 
         try {
             $filesystem->mkdir([$workspace.'/app', $workspace.'/archives', $workspace.'/bootstrap/cache', $workspace.'/config', $workspace.'/storage/framework/views']);
@@ -71,6 +91,9 @@ final class TenancyArchiveConsumer
                     if (! file_exists($directory.'/'.$required)) {
                         throw new RuntimeException('The package archive omits '.$required);
                     }
+                }
+                if ($resource && $package === $mode && ! is_dir($directory.'/database/tenancy')) {
+                    throw new RuntimeException('The resource package archive omits its opt-in tenancy migrations.');
                 }
                 $repositories[] = ['type' => 'path', 'url' => $directory, 'options' => ['versions' => ['nvl/'.$package => '2.0.0'], 'symlink' => false]];
             }
@@ -97,6 +120,7 @@ final class TenancyArchiveConsumer
                     ...($filterable ? ['nvl/filterable' => '2.0.0'] : []),
                     ...($activity ? ['nvl/activity' => '2.0.0'] : []),
                     ...($translatable ? ['nvl/translatable' => '2.0.0'] : []),
+                    ...($resource ? ['nvl/'.$mode => '2.0.0'] : []),
                 ],
                 'repositories' => $repositories,
                 'autoload' => ['psr-4' => [
@@ -129,6 +153,7 @@ ARTISAN);
             $filesystem->copy(__DIR__.'/tenancy-consumer.php', $workspace.'/consumer.php');
             self::command([PHP_BINARY, 'artisan', 'package:discover', '--no-interaction'], $workspace);
             self::command([PHP_BINARY, 'artisan', 'config:cache', '--no-interaction'], $workspace);
+            self::command([PHP_BINARY, 'artisan', 'route:cache', '--no-interaction'], $workspace);
 
             return json_decode(self::command([PHP_BINARY, 'consumer.php', $mode], $workspace), true, flags: JSON_THROW_ON_ERROR);
         } finally {

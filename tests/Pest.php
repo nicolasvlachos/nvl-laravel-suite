@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Tests\Fixtures\TenantResourceCompositionTestCase;
 use Tests\TestCase;
 
 /*
@@ -18,7 +19,21 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(LazilyRefreshDatabase::class)
-    ->in(__DIR__.'/Feature');
+    ->in(
+        __DIR__.'/Feature/ExampleTest.php',
+        __DIR__.'/Feature/PackagePublishingContractTest.php',
+        __DIR__.'/Feature/SuiteConfigurationWriterTest.php',
+        __DIR__.'/Feature/SuiteConsumerAuditTest.php',
+        __DIR__.'/Feature/SuiteDiagnosticsTest.php',
+        __DIR__.'/Feature/SuiteSkillsTest.php',
+        __DIR__.'/Feature/TenancyCompositionTest.php',
+        __DIR__.'/Feature/Integration/CrossPackageIntegrationTest.php',
+    );
+
+pest()->extend(TenantResourceCompositionTestCase::class)->in(
+    __DIR__.'/Feature/Integration/TenantResourceCompositionTest.php',
+    __DIR__.'/Feature/Integration/TenantResourceAdoptionTest.php',
+);
 
 /*
 |--------------------------------------------------------------------------

@@ -90,6 +90,12 @@ jobs:
         shell: bash
         run: bash tools/retry-composer.sh update --no-interaction --prefer-dist --with-all-dependencies
 
+      - name: Resource tenancy composition and recovery
+        run: |
+          vendor/bin/pest --compact \
+            tests/Feature/Integration/TenantResourceCompositionTest.php \
+            tests/Feature/Integration/TenantResourceAdoptionTest.php
+
       - name: Complete test suite
         run: composer test
 
