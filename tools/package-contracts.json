@@ -1756,14 +1756,19 @@
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Nvl\\Auth\\Contracts\\AuthIdentifierResolver $identifiers, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAction $links, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestMagicLinkData $data, ?string $locale=null): ?Nvl\\Auth\\Results\\IssuedChallenge"
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Nvl\\Auth\\Contracts\\AuthIdentifierResolver $identifiers, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAction $links, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents): mixed",
+                    "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestMagicLinkData $data, ?string $locale=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant=null): ?Nvl\\Auth\\Results\\IssuedChallenge"
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Actions\\Challenges\\IssueChallengeAction $challenges): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, array $payload=[], ?string $locale=null): Nvl\\Auth\\Results\\IssuedChallenge",
                     "@param array<string, mixed> $payload"
+                ],
+                "Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAuthenticationAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAuthenticationAction",
+                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Nvl\\Auth\\Contracts\\AuthIdentifierResolver $identifiers, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction $codes, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents): mixed",
+                    "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, ?string $locale=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant=null): ?Nvl\\Auth\\Results\\IssuedChallenge"
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction",
@@ -1877,7 +1882,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Memberships\\EnrollMembershipAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Memberships\\EnrollMembershipAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipWriter $writer, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\TenantMembershipAssignments $assignments, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Data\\Mutations\\EnrollMembershipData $data): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Actions\\Memberships\\ListMembershipsAction": [
@@ -1892,17 +1897,17 @@
                 ],
                 "Nvl\\Auth\\Actions\\Memberships\\ProvisionTenantOwnerAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Memberships\\ProvisionTenantOwnerAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\MembershipWriter $writer, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\ValueObjects\\SubjectReference $subject): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Actions\\Memberships\\RevokeMembershipAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Memberships\\RevokeMembershipAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipLocator $memberships, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\MembershipWriter $writer, Nvl\\Auth\\Services\\TenantMembershipAssignments $assignments, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, int $expectedRevision): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Actions\\Memberships\\SetMembershipStatusAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Memberships\\SetMembershipStatusAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipLocator $memberships, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\MembershipWriter $writer, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Data\\Mutations\\UpdateMembershipStatusData $data): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Actions\\Memberships\\ShowMembershipAction": [
@@ -1912,13 +1917,13 @@
                 ],
                 "Nvl\\Auth\\Actions\\Memberships\\TransferMembershipOwnershipAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Memberships\\TransferMembershipOwnershipAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MembershipMutator $mutator): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipLocator $memberships, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Data\\Mutations\\TransferMembershipOwnershipData $data): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PasskeyCeremony $ceremony, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(?Illuminate\\Contracts\\Auth\\Authenticatable $subject=null): Nvl\\Auth\\ValueObjects\\PasskeyCeremonyOptions"
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PasskeyCeremony $ceremony, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents): mixed",
+                    "public function execute(?Illuminate\\Contracts\\Auth\\Authenticatable $subject=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant=null): Nvl\\Auth\\ValueObjects\\PasskeyCeremonyOptions"
                 ],
                 "Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyRegistrationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyRegistrationAction",
@@ -1927,8 +1932,9 @@
                 ],
                 "Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyAuthenticationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyAuthenticationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PasskeyCeremony $ceremony, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\PasskeyInputValidator $input, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function execute(Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData $data): Nvl\\Auth\\ValueObjects\\SubjectReference"
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PasskeyCeremony $ceremony, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Auth\\Services\\PasskeyInputValidator $input, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents): mixed",
+                    "public function execute(Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData $data): Nvl\\Auth\\ValueObjects\\SubjectReference",
+                    "public function executeForSession(Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData $data, ?Nvl\\Tenancy\\ValueObjects\\TenantId $requestedTenant=null): Nvl\\Auth\\Results\\CompletedPasskeyAuthentication"
                 ],
                 "Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyRegistrationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyRegistrationAction",
@@ -1979,7 +1985,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\BootstrapRbacAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\BootstrapRbacAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacSynchronizer $synchronizer, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacSynchronizer $synchronizer, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Nvl\\Auth\\ValueObjects\\SystemMutationContext $context): Nvl\\Auth\\Results\\RbacSynchronizationResult"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CheckRoleNameAvailabilityAction": [
@@ -1994,12 +2000,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CreatePermissionAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CreatePermissionAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\StorePermissionData $data): Nvl\\Auth\\Models\\Permission"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\CreatePermissionWithRolesAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\CreatePermissionWithRolesAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RbacAssignmentService $assignments, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RbacAssignmentService $assignments, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Data\\Mutations\\StorePermissionData $data, array $roleIdentifiers=[]): Nvl\\Auth\\Models\\Permission",
                     "@param list<string> $roleIdentifiers"
                 ],
@@ -2010,7 +2016,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\DeletePermissionAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\DeletePermissionAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Permission|string $permission): bool"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\DeleteRoleAction": [
@@ -2123,12 +2129,12 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\SynchronizePermissionCatalogAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\SynchronizePermissionCatalogAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RbacSynchronizer $synchronizer, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\RbacSynchronizer $synchronizer, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor): int"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\SynchronizeRbacAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\SynchronizeRbacAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacSynchronizer $synchronizer, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacSynchronizer $synchronizer, Spatie\\Permission\\PermissionRegistrar $registrar, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor): Nvl\\Auth\\Results\\RbacSynchronizationResult"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\SynchronizeRoleTemplatesAction": [
@@ -2138,7 +2144,7 @@
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\UpdatePermissionAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Rbac\\UpdatePermissionAction",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\ManagementAuthorizer $authorization, Nvl\\Auth\\Services\\RbacEntityLocator $entities, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits, Nvl\\Auth\\Services\\AuthOperationBoundary $operations): mixed",
                     "public function execute(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Auth\\Models\\Permission|string $permission, Nvl\\Auth\\Data\\Mutations\\UpdatePermissionData $data): Nvl\\Auth\\Models\\Permission"
                 ],
                 "Nvl\\Auth\\Actions\\Rbac\\UpdateRoleAction": [
@@ -5017,10 +5023,10 @@
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Public\\ChallengeController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\ChallengeController",
-                    "public function requestMagicLink(Nvl\\Auth\\Data\\Mutations\\RequestMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function consumeMagicLink(Nvl\\Auth\\Data\\Mutations\\ConsumeMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\ConsumeMagicLinkAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse",
-                    "public function requestSecurityCode(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function verifySecurityCode(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data, Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function requestMagicLink(Nvl\\Auth\\Data\\Mutations\\RequestMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
+                    "public function consumeMagicLink(Nvl\\Auth\\Data\\Mutations\\ConsumeMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\ConsumeMagicLinkAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
+                    "public function requestSecurityCode(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAuthenticationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
+                    "public function verifySecurityCode(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
                     "protected function requestPayload(Illuminate\\Http\\Request $request): array",
                     "@return array<string, mixed>",
                     "protected function stringInput(Illuminate\\Http\\Request $request, string $key): string",
@@ -5066,8 +5072,8 @@
                 ],
                 "Nvl\\Auth\\Http\\Controllers\\Public\\PasskeyController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\PasskeyController",
-                    "public function begin(Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction $action): Illuminate\\Http\\JsonResponse",
-                    "public function finish(Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyAuthenticationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse",
+                    "public function begin(Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Passkeys\\BeginPasskeyAuthenticationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
+                    "public function finish(Nvl\\Auth\\Data\\Mutations\\FinishPasskeyAuthenticationData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Passkeys\\FinishPasskeyAuthenticationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
                     "protected function requestPayload(Illuminate\\Http\\Request $request): array",
                     "@return array<string, mixed>",
                     "protected function stringInput(Illuminate\\Http\\Request $request, string $key): string",
@@ -5963,6 +5969,12 @@
                     "public function __construct(Nvl\\Auth\\Enums\\UserBulkOperation $operation, array $userIds, int $affected): mixed",
                     "@param list<string> $userIds"
                 ],
+                "Nvl\\Auth\\Results\\CompletedPasskeyAuthentication": [
+                    "final readonly class Nvl\\Auth\\Results\\CompletedPasskeyAuthentication",
+                    "public readonly Nvl\\Auth\\ValueObjects\\SubjectReference $subject",
+                    "public readonly ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext",
+                    "public function __construct(Nvl\\Auth\\ValueObjects\\SubjectReference $subject, ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext): mixed"
+                ],
                 "Nvl\\Auth\\Results\\GeneratedRecoveryCodes": [
                     "final readonly class Nvl\\Auth\\Results\\GeneratedRecoveryCodes",
                     "public readonly string $batchId",
@@ -6089,7 +6101,8 @@
                     "final readonly class Nvl\\Auth\\Services\\AuthOperationBoundary",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Tenancy\\Contracts\\TenantContext $context): mixed",
                     "public function central(Nvl\\Auth\\Enums\\AuthIdentityOperation $operation, ?Illuminate\\Contracts\\Auth\\Authenticatable $subject=null): void",
-                    "public function requirePlatformAdministration(): void"
+                    "public function requirePlatformAdministration(): void",
+                    "public function rejectMixedRbacOperation(): void"
                 ],
                 "Nvl\\Auth\\Services\\AuthSchemaManager": [
                     "final readonly class Nvl\\Auth\\Services\\AuthSchemaManager",
@@ -6149,6 +6162,10 @@
                 "Nvl\\Auth\\Services\\DenySystemMutationAccess": [
                     "final readonly class Nvl\\Auth\\Services\\DenySystemMutationAccess implements Nvl\\Auth\\Contracts\\SystemMutationAccess",
                     "public function allows(Nvl\\Auth\\ValueObjects\\SystemMutationContext $context, string $ability, mixed $target=null): bool"
+                ],
+                "Nvl\\Auth\\Services\\DisabledInvitationRecipientProof": [
+                    "final readonly class Nvl\\Auth\\Services\\DisabledInvitationRecipientProof implements Nvl\\Auth\\Contracts\\InvitationRecipientProof",
+                    "public function assertMatches(Nvl\\Auth\\Models\\Invitation $invitation, Illuminate\\Contracts\\Auth\\Authenticatable $subject): void"
                 ],
                 "Nvl\\Auth\\Services\\DisabledTenantAwareAuthActivityBridge": [
                     "final readonly class Nvl\\Auth\\Services\\DisabledTenantAwareAuthActivityBridge implements Nvl\\Auth\\Contracts\\TenantAwareAuthActivityBridge",
@@ -6224,15 +6241,6 @@
                     "final readonly class Nvl\\Auth\\Services\\MembershipLocator",
                     "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $boundary): mixed",
                     "public function find(Nvl\\Auth\\Models\\TenantMembership|string $membership, bool $lock=false): Nvl\\Auth\\Models\\TenantMembership"
-                ],
-                "Nvl\\Auth\\Services\\MembershipMutator": [
-                    "final readonly class Nvl\\Auth\\Services\\MembershipMutator",
-                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\MutationAuthorizer $authorization, Nvl\\Auth\\Contracts\\MembershipPrincipalResolver $principals, Nvl\\Auth\\Services\\MembershipLocator $memberships, Nvl\\Auth\\Services\\MembershipWriter $writer, Nvl\\Auth\\Services\\MembershipOwnerGuard $owners, Nvl\\Auth\\Services\\TenantMembershipAssignments $assignments, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Auth\\Contracts\\AuthAuditRecorder $audits): mixed",
-                    "public function enroll(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Data\\Mutations\\EnrollMembershipData $data): Nvl\\Auth\\Models\\TenantMembership",
-                    "public function setStatus(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Enums\\MembershipStatus $status, int $expectedRevision): Nvl\\Auth\\Models\\TenantMembership",
-                    "public function revoke(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, int $expectedRevision): Nvl\\Auth\\Models\\TenantMembership",
-                    "public function transfer(Illuminate\\Contracts\\Auth\\Authenticatable|Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\Models\\TenantMembership|string $membership, Nvl\\Auth\\Data\\Mutations\\TransferMembershipOwnershipData $data): Nvl\\Auth\\Models\\TenantMembership",
-                    "public function provisionOwner(Nvl\\Auth\\ValueObjects\\SystemMutationContext $authority, Nvl\\Auth\\ValueObjects\\SubjectReference $subject): Nvl\\Auth\\Models\\TenantMembership"
                 ],
                 "Nvl\\Auth\\Services\\MembershipOwnerGuard": [
                     "final readonly class Nvl\\Auth\\Services\\MembershipOwnerGuard",
@@ -6412,6 +6420,12 @@
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration): mixed",
                     "public function provider(string $provider): array",
                     "@return array{callback_url: string|null, scopes: list<string>, parameters: array<string, scalar>}"
+                ],
+                "Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents": [
+                    "final readonly class Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents",
+                    "public function __construct(Nvl\\Auth\\Services\\TenantAuthenticationIntents $intents, Nvl\\Auth\\Contracts\\TenantAuthenticationSession $session): mixed",
+                    "public function attach(Nvl\\Auth\\Models\\Challenge $challenge, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant, Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $purpose, string $provider, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null): void",
+                    "public function context(Nvl\\Auth\\Models\\Challenge $challenge, ?Nvl\\Tenancy\\ValueObjects\\TenantId $requestedTenant=null): ?Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext"
                 ],
                 "Nvl\\Auth\\Services\\TenantAuthenticationIntents": [
                     "final readonly class Nvl\\Auth\\Services\\TenantAuthenticationIntents",
@@ -6728,7 +6742,7 @@
                 ]
             },
             "configuration": {
-                "config/nvl-auth.php": "c76b864ac8b364137f49281aecfd69e3e134f6c55ee29c3fe25deeddf1c96f19"
+                "config/nvl-auth.php": "16acaaffe04d48729e27494b0bb67d97eac055c9c257f1ab0b6589cf771d344c"
             },
             "routes": {
                 "routes/account/api_tokens.php": "ff9016f3c9a450aaeefdcd77aba3d09ac00b61d09c4fbf4bb697b7192520f98d",
@@ -20679,7 +20693,7 @@
                 "Nvl\\Media\\Console\\Commands\\MigrateDiskCommand": "nvl:media:migrate-disk {--from=media : Source value to migrate from} {--to=local : Destination value to migrate to} {--column=disk : Database column to migrate [disk|folder]} {--from-path= : Absolute path to source disk root (when the source disk is no longer configured)} {--on-disk= : Restrict folder migrations to a specific disk} {--associable-type=* : Restrict to media associated with one or more model morph classes/types} {--collection=* : Restrict to media associated through one or more collections} {--records-only : Update database records only; do not move filesystem content} {--dry-run : Preview without moving or updating}",
                 "Nvl\\Media\\Console\\Commands\\PruneExpiredMultipartUploadsCommand": "nvl:media:multipart:prune {--limit=500 : Maximum expired sessions to process}",
                 "Nvl\\Media\\Console\\Commands\\PruneMediaOwnerSlotOperationsCommand": "nvl:media:owner-slots:prune {--days= : Terminal-operation retention in days} {--chunk= : Maximum rows deleted per database chunk} {--force : Allow a shorter-than-configured retention window in production}",
-                "Nvl\\Media\\Console\\Commands\\RegenerateVariationsCommand": "nvl:media:regenerate {--type=image : Media type filter (image, video, etc.)} {--disk= : Storage disk filter} {--preset=* : Specific preset names to regenerate (default: all enabled)} {--after= : Only process media created after this date (Y-m-d)} {--before= : Only process media created before this date (Y-m-d)} {--dry-run : Show what would be processed without acting} {--sync : Process inline instead of dispatching to queue} {--force : Skip confirmation prompt}",
+                "Nvl\\Media\\Console\\Commands\\RegenerateVariationsCommand": "nvl:media:regenerate {--type=image : Media type filter (image, video, etc.)} {--disk= : Storage disk filter} {--preset=* : Specific preset names to regenerate (default: all enabled)} {--after= : Only process media created after this date (Y-m-d)} {--before= : Only process media created before this date (Y-m-d)} {--dry-run : Show what would be processed without acting} {--sync : Process inline instead of dispatching to queue} {--force : Skip confirmation prompt} {--tenant= : Regenerate media for one explicit tenant UUID} {--all-tenants : Regenerate media independently for every active tenant} {--actor-type=system : Platform operation actor type for --all-tenants} {--actor-id=media-regenerator : Platform operation actor identifier for --all-tenants} {--purpose=media.variations.regenerate : Platform operation purpose for --all-tenants}",
                 "Nvl\\Media\\Console\\Commands\\StorageHealthCommand": "nvl:media:reconcile {--disk= : Storage disk to inspect; defaults to media.disk} {--sample=50 : Maximum number of media records to inspect} {--public-private-routes : Verify public/private route-backed URL contracts} {--routes : Alias for --public-private-routes} {--include-trashed : Include soft-deleted media records} {--orphans : Inventory unreferenced originals and variations under media.root_folder} {--cleanup-orphans : Delete eligible orphan objects after inventory} {--older-than=1440 : Minimum orphan age in minutes} {--force : Required with --cleanup-orphans in production} {--require-records : Fail when the selected disk has no media records} {--production : Verifies route contracts, requires records, prohibits live-write, and requires force for orphan cleanup} {--live-write : Opt in to a temporary write/read/delete healthcheck object} {--cleanup : Explicitly request cleanup of the temporary live-write object} {--no-write : Assert read-only mode; incompatible with --live-write}"
             },
             "symbols": {
@@ -20697,7 +20711,7 @@
                 ],
                 "Nvl\\Media\\Actions\\AttachMediaAction": [
                     "final class Nvl\\Media\\Actions\\AttachMediaAction implements Nvl\\Media\\Contracts\\AttachMediaContract",
-                    "public function __construct(Nvl\\Media\\Services\\MediaVariationDispatcher $variationDispatcher, Nvl\\Media\\Services\\MediaMutationLock $mutationLock): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaVariationDispatcher $variationDispatcher, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaTenantOwnerResolver $owners, Nvl\\Tenancy\\Services\\TenantBoundary $tenantBoundary): mixed",
                     "public function execute(Nvl\\Media\\Models\\Media $media, Illuminate\\Database\\Eloquent\\Model $model, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true, bool $requirePublic=false): Nvl\\Media\\Models\\MediaAssociation",
                     "@param array<string, mixed> $metadata Optional pivot metadata",
                     "@param bool $dispatchVariations Whether to trigger association-driven variation generation",
@@ -20705,21 +20719,21 @@
                 ],
                 "Nvl\\Media\\Actions\\BulkDeleteMediaAction": [
                     "final class Nvl\\Media\\Actions\\BulkDeleteMediaAction",
-                    "public function __construct(Nvl\\Media\\Actions\\DeleteMediaAction $deleteAction, Nvl\\Media\\Services\\MediaMutationLock $mutationLock): mixed",
+                    "public function __construct(Nvl\\Media\\Actions\\DeleteMediaAction $deleteAction, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaQueryService $queries): mixed",
                     "public function execute(array $ids): int",
                     "@param array<int, string> $ids Media UUIDs",
                     "@return int Number of successfully deleted records"
                 ],
                 "Nvl\\Media\\Actions\\BulkMoveMediaAction": [
                     "final class Nvl\\Media\\Actions\\BulkMoveMediaAction",
-                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaFileExistence $existence, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaPathResolver $pathResolver): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaFileExistence $existence, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaPathResolver $pathResolver, Nvl\\Media\\Services\\MediaQueryService $queries): mixed",
                     "public function execute(array $ids, string $folder): int",
                     "@param list<string> $ids",
                     "@throws Throwable"
                 ],
                 "Nvl\\Media\\Actions\\BulkTagMediaAction": [
                     "final class Nvl\\Media\\Actions\\BulkTagMediaAction",
-                    "public function __construct(Nvl\\Media\\Services\\MediaMutationLock $mutationLock): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaQueryService $queries): mixed",
                     "public function execute(array $ids, array $tags): int",
                     "@param array<int, string> $ids Media UUIDs",
                     "@param array<int, string> $tags Tags to add",
@@ -20747,7 +20761,7 @@
                 ],
                 "Nvl\\Media\\Actions\\DetachMediaAction": [
                     "final readonly class Nvl\\Media\\Actions\\DetachMediaAction implements Nvl\\Media\\Contracts\\DetachMediaContract",
-                    "public function __construct(Nvl\\Media\\Services\\MediaMutationLock $mutationLock): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaTenantOwnerResolver $owners): mixed",
                     "public function execute(Nvl\\Media\\Models\\Media|string $media, Illuminate\\Database\\Eloquent\\Model $model, ?string $collection=null): int",
                     "@param Media|string $media Media instance or UUID",
                     "@param string|null $collection When provided, only detach from this collection",
@@ -20769,9 +20783,19 @@
                     "public function __construct(Nvl\\Media\\Services\\MediaOwnerSlotWorkflow $workflow): mixed",
                     "public function execute(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot): ?Nvl\\Media\\Data\\Display\\MediaLibraryItem"
                 ],
+                "Nvl\\Media\\Actions\\GrantMediaToTenantAction": [
+                    "final readonly class Nvl\\Media\\Actions\\GrantMediaToTenantAction",
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Tenancy\\Contracts\\TenantDirectory $directory): mixed",
+                    "public function execute(string $mediaId, Nvl\\Tenancy\\ValueObjects\\TenantId $recipient, int $sourceRevision): Nvl\\Media\\Models\\MediaTenantGrant"
+                ],
+                "Nvl\\Media\\Actions\\ImportPlatformMediaAction": [
+                    "final readonly class Nvl\\Media\\Actions\\ImportPlatformMediaAction",
+                    "public function __construct(Nvl\\Media\\Contracts\\MediaCatalogImport $imports, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function execute(Nvl\\Media\\Data\\Mutations\\ImportPlatformMediaData $data): Nvl\\Media\\Models\\Media"
+                ],
                 "Nvl\\Media\\Actions\\InitiateMultipartUploadAction": [
                     "final readonly class Nvl\\Media\\Actions\\InitiateMultipartUploadAction",
-                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaPathResolver $paths, Nvl\\Media\\Contracts\\MediaAuthorization $authorization, Nvl\\Media\\Contracts\\MultipartUploadGateway $gateway, Nvl\\Media\\Services\\MediaFileTypePolicy $fileTypes, Nvl\\Media\\Services\\MediaMultipartSessionMapper $sessionMapper): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaPathResolver $paths, Nvl\\Media\\Contracts\\MediaAuthorization $authorization, Nvl\\Media\\Contracts\\MultipartUploadGateway $gateway, Nvl\\Media\\Services\\MediaFileTypePolicy $fileTypes, Nvl\\Media\\Services\\MediaMultipartSessionMapper $sessionMapper, Nvl\\Tenancy\\Services\\TenantBoundary $tenantBoundary): mixed",
                     "public function execute(Nvl\\Media\\Data\\Multipart\\InitiateMultipartUploadData $data, Nvl\\Media\\Data\\MediaActorData $actor): Nvl\\Media\\Data\\Multipart\\MultipartUploadSessionData"
                 ],
                 "Nvl\\Media\\Actions\\MutateMediaTagsAction": [
@@ -20813,6 +20837,11 @@
                     "public function execute(Nvl\\Media\\Models\\Media|string $media, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $model, string $collection=\"default\", ?string $locale=null, ?int $order=null, array $metadata=[], bool $dispatchVariations=true): Nvl\\Media\\Models\\MediaAssociation",
                     "@param array<string, mixed> $metadata"
                 ],
+                "Nvl\\Media\\Actions\\RevokeMediaTenantGrantAction": [
+                    "final readonly class Nvl\\Media\\Actions\\RevokeMediaTenantGrantAction",
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantContext $context): mixed",
+                    "public function execute(string $grantId, int $expectedRevision): Nvl\\Media\\Models\\MediaTenantGrant"
+                ],
                 "Nvl\\Media\\Actions\\SignMultipartPartAction": [
                     "final readonly class Nvl\\Media\\Actions\\SignMultipartPartAction",
                     "public function __construct(Nvl\\Media\\Contracts\\MultipartUploadGateway $gateway, Nvl\\Media\\Services\\MediaMultipartSessionMapper $sessionMapper): mixed",
@@ -20825,7 +20854,7 @@
                 ],
                 "Nvl\\Media\\Actions\\UploadMediaAction": [
                     "final class Nvl\\Media\\Actions\\UploadMediaAction implements Nvl\\Media\\Contracts\\UploadMediaContract",
-                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaFileExistence $existence, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaIngestionPipeline $ingestion, Nvl\\Media\\Services\\MediaPathResolver $pathResolver, Nvl\\Media\\Services\\MediaVariationDispatcher $variationDispatcher, Nvl\\Media\\Services\\MediaDeduplicationLock $deduplicationLock, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaVariationDefinitionNormalizer $definitionNormalizer): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaFileExistence $existence, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaIngestionPipeline $ingestion, Nvl\\Media\\Services\\MediaPathResolver $pathResolver, Nvl\\Media\\Services\\MediaVariationDispatcher $variationDispatcher, Nvl\\Media\\Services\\MediaDeduplicationLock $deduplicationLock, Nvl\\Media\\Services\\MediaMutationLock $mutationLock, Nvl\\Media\\Services\\MediaVariationDefinitionNormalizer $definitionNormalizer, Nvl\\Media\\Services\\MediaTenantOwnerResolver $owners, Nvl\\Tenancy\\Services\\TenantBoundary $tenantBoundary): mixed",
                     "public function execute(Illuminate\\Http\\UploadedFile $file, string $disk, Illuminate\\Database\\Eloquent\\Model $model, Nvl\\Media\\Slots\\MediaSlot $slot, string $fileName, bool $isPublic=false, array $tags=[], array $metadata=[], ?string $folderOverride=null, ?bool $allowDuplicates=null, ?bool $deduplicateExisting=null, bool $skipAutoVariations=false, ?string $uploadedBy=null, ?string $uploadedByType=null, array $variationDefinitions=[]): Nvl\\Media\\Models\\Media",
                     "@param string[] $tags Flat list of classification tags",
                     "@param array<string, mixed> $metadata Arbitrary key-value pairs stored with the media",
@@ -20889,9 +20918,9 @@
                 ],
                 "Nvl\\Media\\Console\\Commands\\RegenerateVariationsCommand": [
                     "class Nvl\\Media\\Console\\Commands\\RegenerateVariationsCommand extends Illuminate\\Console\\Command",
-                    "protected mixed $signature=\"nvl:media:regenerate\\n        {--type=image : Media type filter (image, video, etc.)}\\n        {--disk= : Storage disk filter}\\n        {--preset=* : Specific preset names to regenerate (default: all enabled)}\\n        {--after= : Only process media created after this date (Y-m-d)}\\n        {--before= : Only process media created before this date (Y-m-d)}\\n        {--dry-run : Show what would be processed without acting}\\n        {--sync : Process inline instead of dispatching to queue}\\n        {--force : Skip confirmation prompt}\"",
+                    "protected mixed $signature=\"nvl:media:regenerate\\n        {--type=image : Media type filter (image, video, etc.)}\\n        {--disk= : Storage disk filter}\\n        {--preset=* : Specific preset names to regenerate (default: all enabled)}\\n        {--after= : Only process media created after this date (Y-m-d)}\\n        {--before= : Only process media created before this date (Y-m-d)}\\n        {--dry-run : Show what would be processed without acting}\\n        {--sync : Process inline instead of dispatching to queue}\\n        {--force : Skip confirmation prompt}\\n        {--tenant= : Regenerate media for one explicit tenant UUID}\\n        {--all-tenants : Regenerate media independently for every active tenant}\\n        {--actor-type=system : Platform operation actor type for --all-tenants}\\n        {--actor-id=media-regenerator : Platform operation actor identifier for --all-tenants}\\n        {--purpose=media.variations.regenerate : Platform operation purpose for --all-tenants}\"",
                     "protected mixed $description=\"Regenerate image variations for media records matching the given filters.\"",
-                    "public function __construct(Nvl\\Media\\Actions\\GenerateImageVariationAction $generateVariationAction, Nvl\\Media\\Services\\MediaConfiguredVariationService $configuredVariationService): mixed",
+                    "public function __construct(Nvl\\Media\\Actions\\GenerateImageVariationAction $generateVariationAction, Nvl\\Media\\Services\\MediaConfiguredVariationService $configuredVariationService, Nvl\\Tenancy\\Services\\TenantRunner $tenantRunner, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $tenantConnections): mixed",
                     "public function handle(): int",
                     "@return int Exit code"
                 ],
@@ -20973,6 +21002,13 @@
                 "Nvl\\Media\\Contracts\\MediaAuthorization": [
                     "interface Nvl\\Media\\Contracts\\MediaAuthorization",
                     "public abstract function allows(Nvl\\Media\\Data\\MediaActorData $actor, Nvl\\Media\\Enums\\MediaAbility $ability, ?Nvl\\Media\\Models\\Media $media=null, ?Illuminate\\Database\\Eloquent\\Model $owner=null): bool"
+                ],
+                "Nvl\\Media\\Contracts\\MediaCatalogImport": [
+                    "interface Nvl\\Media\\Contracts\\MediaCatalogImport",
+                    "public abstract function inspect(string $grantId): Nvl\\Media\\Data\\MediaCatalogSnapshot",
+                    "public abstract function stage(Nvl\\Media\\Data\\MediaCatalogSnapshot $source): Nvl\\Media\\Data\\StagedCatalogMedia",
+                    "public abstract function persist(Nvl\\Media\\Data\\MediaCatalogSnapshot $source, Nvl\\Media\\Data\\StagedCatalogMedia $file, string $idempotencyKey): Nvl\\Media\\Models\\Media",
+                    "public abstract function discard(Nvl\\Media\\Data\\StagedCatalogMedia $file): void"
                 ],
                 "Nvl\\Media\\Contracts\\MediaContentScanner": [
                     "interface Nvl\\Media\\Contracts\\MediaContentScanner",
@@ -21822,6 +21858,27 @@
                     "@param list<string> $missingPaths",
                     "@param list<string> $errors"
                 ],
+                "Nvl\\Media\\Data\\MediaCatalogSnapshot": [
+                    "final readonly class Nvl\\Media\\Data\\MediaCatalogSnapshot",
+                    "public readonly string $grantId",
+                    "public readonly int $grantRevision",
+                    "public readonly string $sourceId",
+                    "public readonly int $sourceRevision",
+                    "public readonly string $sourceDigest",
+                    "public readonly string $disk",
+                    "public readonly string $storagePath",
+                    "public readonly string $filename",
+                    "public readonly string $extension",
+                    "public readonly string $mimeType",
+                    "public readonly int $size",
+                    "public readonly array $metadata",
+                    "public readonly array $tags",
+                    "public readonly array $translations",
+                    "public function __construct(string $grantId, int $grantRevision, string $sourceId, int $sourceRevision, string $sourceDigest, string $disk, string $storagePath, string $filename, string $extension, string $mimeType, int $size, array $metadata, array $tags, array $translations): mixed",
+                    "@param array<string, mixed> $metadata",
+                    "@param list<string> $tags",
+                    "@param array<string, array<string, string|null>> $translations"
+                ],
                 "Nvl\\Media\\Data\\MediaDoctorCheckData": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
                     "final class Nvl\\Media\\Data\\MediaDoctorCheckData extends Spatie\\LaravelData\\Data",
@@ -22112,6 +22169,14 @@
                     "@param string $namespace Translation namespace, such as 'articles::articles'",
                     "@return array<string, mixed>"
                 ],
+                "Nvl\\Media\\Data\\Mutations\\ImportPlatformMediaData": [
+                    "final class Nvl\\Media\\Data\\Mutations\\ImportPlatformMediaData extends Spatie\\LaravelData\\Data",
+                    "public string $grantId",
+                    "public int $expectedGrantRevision",
+                    "public int $expectedSourceRevision",
+                    "public string $idempotencyKey",
+                    "public function __construct(string $grantId, int $expectedGrantRevision, int $expectedSourceRevision, string $idempotencyKey): mixed"
+                ],
                 "Nvl\\Media\\Data\\Mutations\\RenameMediaData": [
                     "#[Spatie\\LaravelData\\Attributes\\MapInputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
                     "#[Spatie\\LaravelData\\Attributes\\MapOutputName(\"Spatie\\\\LaravelData\\\\Mappers\\\\CamelCaseMapper\")]",
@@ -22328,6 +22393,16 @@
                     "@param string $namespace Translation namespace, such as 'articles::articles'",
                     "@return array<string, mixed>"
                 ],
+                "Nvl\\Media\\Data\\StagedCatalogMedia": [
+                    "final readonly class Nvl\\Media\\Data\\StagedCatalogMedia",
+                    "public readonly string $operationId",
+                    "public readonly string $tenantId",
+                    "public readonly string $disk",
+                    "public readonly string $storagePath",
+                    "public readonly string $digest",
+                    "public readonly int $size",
+                    "public function __construct(string $operationId, string $tenantId, string $disk, string $storagePath, string $digest, int $size): mixed"
+                ],
                 "Nvl\\Media\\Database\\Factories\\MediaFactory": [
                     "class Nvl\\Media\\Database\\Factories\\MediaFactory extends Illuminate\\Database\\Eloquent\\Factories\\Factory",
                     "@extends Factory<Media>",
@@ -22347,12 +22422,16 @@
                     "public const string I18n=\"px_media_i18n\"",
                     "public const string MultipartUploads=\"px_media_multipart_uploads\"",
                     "public const string OwnerSlotOperations=\"px_media_owner_slot_operations\"",
+                    "public const string TenantGrants=\"px_media_tenant_grants\"",
+                    "public const string TenantAdoptionCopies=\"px_media_tenant_adoption_copies\"",
                     "public const string MEDIA=\"px_media\"",
                     "public const string MEDIA_ASSOCIATIONS=\"px_media_associations\"",
                     "public const string MEDIA_IMAGE_VARIATIONS=\"px_media_image_variations\"",
                     "public const string MEDIA_I18N=\"px_media_i18n\"",
                     "public const string MEDIA_MULTIPART_UPLOADS=\"px_media_multipart_uploads\"",
-                    "public const string MEDIA_OWNER_SLOT_OPERATIONS=\"px_media_owner_slot_operations\""
+                    "public const string MEDIA_OWNER_SLOT_OPERATIONS=\"px_media_owner_slot_operations\"",
+                    "public const string MEDIA_TENANT_GRANTS=\"px_media_tenant_grants\"",
+                    "public const string MEDIA_TENANT_ADOPTION_COPIES=\"px_media_tenant_adoption_copies\""
                 ],
                 "Nvl\\Media\\Enums\\ImageCompression": [
                     "#[Spatie\\TypeScriptTransformer\\Attributes\\TypeScript()]",
@@ -23075,7 +23154,7 @@
                     "public function validate(string $attribute, mixed $value, Closure $fail): void"
                 ],
                 "Nvl\\Media\\Jobs\\GenerateImageVariationJob": [
-                    "final class Nvl\\Media\\Jobs\\GenerateImageVariationJob implements Illuminate\\Contracts\\Queue\\ShouldBeUnique, Illuminate\\Contracts\\Queue\\ShouldQueue",
+                    "final class Nvl\\Media\\Jobs\\GenerateImageVariationJob implements Illuminate\\Contracts\\Queue\\ShouldBeUnique, Illuminate\\Contracts\\Queue\\ShouldQueue, Nvl\\Tenancy\\Contracts\\TenantQueuedJob",
                     "public int $tries",
                     "public int $timeout",
                     "public int $uniqueFor",
@@ -23092,9 +23171,10 @@
                     "public mixed $chainConnection=null",
                     "public mixed $chainQueue=null",
                     "public mixed $chainCatchCallbacks=null",
-                    "public function __construct(string $mediaId, string $presetName, Nvl\\Media\\Conversions\\ConversionDefinition|array $presetConfig, int $sourceRevision=1): mixed",
+                    "public function __construct(string $mediaId, string $presetName, Nvl\\Media\\Conversions\\ConversionDefinition|array $presetConfig, int $sourceRevision=1, ?Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope $envelope=null): mixed",
                     "@param array<string, mixed>|ConversionDefinition $presetConfig",
                     "public function uniqueId(): string",
+                    "public function tenantJobEnvelope(): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope",
                     "public function handle(Nvl\\Media\\Actions\\GenerateImageVariationAction $action): void",
                     "public function tags(): array",
                     "@return array<int, string>",
@@ -23252,7 +23332,7 @@
                     "@return \\Illuminate\\Database\\Eloquent\\Builder<TModel>"
                 ],
                 "Nvl\\Media\\Jobs\\ProcessMediaVariationsJob": [
-                    "final class Nvl\\Media\\Jobs\\ProcessMediaVariationsJob implements Illuminate\\Contracts\\Queue\\ShouldBeUnique, Illuminate\\Contracts\\Queue\\ShouldQueue",
+                    "final class Nvl\\Media\\Jobs\\ProcessMediaVariationsJob implements Illuminate\\Contracts\\Queue\\ShouldBeUnique, Illuminate\\Contracts\\Queue\\ShouldQueue, Nvl\\Tenancy\\Contracts\\TenantQueuedJob",
                     "public int $tries",
                     "public int $timeout",
                     "public int $uniqueFor",
@@ -23269,11 +23349,12 @@
                     "public mixed $chainConnection=null",
                     "public mixed $chainQueue=null",
                     "public mixed $chainCatchCallbacks=null",
-                    "public function __construct(string $mediaId, bool $includeOutputConversion=true): mixed",
+                    "public function __construct(string $mediaId, bool $includeOutputConversion=true, ?Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope $envelope=null): mixed",
                     "public function handle(Nvl\\Media\\Services\\MediaConfiguredVariationService $configuredVariationService): void",
                     "public function tags(): array",
                     "@return array<int, string>",
                     "public function uniqueId(): string",
+                    "public function tenantJobEnvelope(): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope",
                     "public function backoff(): array",
                     "@return list<int>",
                     "public function failed(?Throwable $exception): void",
@@ -23428,7 +23509,7 @@
                     "@return \\Illuminate\\Database\\Eloquent\\Builder<TModel>"
                 ],
                 "Nvl\\Media\\Jobs\\RegenerateMediaVariationsJob": [
-                    "final class Nvl\\Media\\Jobs\\RegenerateMediaVariationsJob implements Illuminate\\Contracts\\Queue\\ShouldQueue",
+                    "final class Nvl\\Media\\Jobs\\RegenerateMediaVariationsJob implements Illuminate\\Contracts\\Queue\\ShouldQueue, Nvl\\Tenancy\\Contracts\\TenantQueuedJob",
                     "public int $tries",
                     "public int $timeout",
                     "public mixed $batchId=null",
@@ -23445,7 +23526,7 @@
                     "public mixed $chainConnection=null",
                     "public mixed $chainQueue=null",
                     "public mixed $chainCatchCallbacks=null",
-                    "public function __construct(?Nvl\\Media\\Enums\\MediaType $type=null, ?string $disk=null, ?string $createdAfter=null, ?string $createdBefore=null, ?array $presetNames=null, int $chunkSize=500): mixed",
+                    "public function __construct(?Nvl\\Media\\Enums\\MediaType $type=null, ?string $disk=null, ?string $createdAfter=null, ?string $createdBefore=null, ?array $presetNames=null, int $chunkSize=500, ?Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope $envelope=null): mixed",
                     "@param MediaType|null $type Filter by media type (null = images only by default)",
                     "@param string|null $disk Filter by storage disk",
                     "@param string|null $createdAfter Only process media created after this date (Y-m-d)",
@@ -23455,6 +23536,7 @@
                     "public function handle(Nvl\\Media\\Services\\MediaConfiguredVariationService $configuredVariationService): void",
                     "public function tags(): array",
                     "@return array<int, string>",
+                    "public function tenantJobEnvelope(): Nvl\\Tenancy\\ValueObjects\\TenantJobEnvelope",
                     "public function backoff(): array",
                     "@return list<int>",
                     "public function failed(?Throwable $exception): void",
@@ -23727,9 +23809,20 @@
                     "public function abortMultipart(string $uploadId, Nvl\\Media\\Data\\MediaActorData $actor): void",
                     "public function allows(Illuminate\\Contracts\\Auth\\Authenticatable $actor, Nvl\\Media\\Enums\\MediaAbility $ability, ?Nvl\\Media\\Models\\Media $media=null, ?Illuminate\\Database\\Eloquent\\Model $owner=null): bool"
                 ],
+                "Nvl\\Media\\Models\\Concerns\\AppliesTenantBoundary": [
+                    "trait Nvl\\Media\\Models\\Concerns\\AppliesTenantBoundary",
+                    "public static function bootAppliesTenantBoundary(): void",
+                    "protected abstract static function tenantResourceKey(): string"
+                ],
+                "Nvl\\Media\\Models\\Concerns\\GuardsTenantOwnership": [
+                    "trait Nvl\\Media\\Models\\Concerns\\GuardsTenantOwnership",
+                    "protected static function bootGuardsTenantOwnership(): void"
+                ],
                 "Nvl\\Media\\Models\\Media": [
                     "class Nvl\\Media\\Models\\Media extends Illuminate\\Database\\Eloquent\\Model implements Nvl\\Translatable\\Contracts\\TranslatableModel, Nvl\\Translatable\\Contracts\\TranslatableResourceModel",
                     "@property string $id",
+                    "@property string|null $tenant_id Canonical tenant UUID when tenant-owned.",
+                    "@property string|null $ownership_key Mixed catalog partition identity.",
                     "@property string $filename",
                     "@property string $hash",
                     "@property string $extension",
@@ -23753,6 +23846,11 @@
                     "@property string|null $uploaded_by_type",
                     "@property string|null $upload_session_id",
                     "@property string|null $failure_code",
+                    "@property string|null $storage_path Immutable persisted original object path.",
+                    "@property string|null $catalog_import_key Tenant-local catalog import idempotency UUID.",
+                    "@property string|null $catalog_source_id Immutable platform source UUID provenance.",
+                    "@property int|null $catalog_source_revision Immutable source revision provenance.",
+                    "@property string|null $catalog_source_digest Immutable source digest provenance.",
                     "@property array<string, mixed>|null $failure_context",
                     "@property Carbon|null $available_at",
                     "@property Carbon|null $quarantined_at",
@@ -23768,6 +23866,7 @@
                     "protected mixed $fillable=[\"filename\",\"hash\",\"extension\",\"mime_type\",\"size\",\"disk\",\"folder\",\"is_public\",\"visibility\",\"status\",\"revision\",\"width\",\"height\",\"duration_ms\",\"available_at\",\"quarantined_at\",\"failure_code\",\"failure_context\",\"type\",\"digest\",\"tags\",\"metadata\",\"variation_definitions\",\"uploaded_by\",\"uploaded_by_type\",\"upload_session_id\"]",
                     "protected mixed $forceDeleting=false",
                     "protected ?string $currentLocale=null",
+                    "protected static function tenantResourceKey(): string",
                     "protected function defineTranslations(): Nvl\\Translatable\\RelatedTranslationDefinition",
                     "protected function casts(): array",
                     "@return array<string, string>",
@@ -23845,6 +23944,8 @@
                     "@return string",
                     "public function uniqueIds(): mixed",
                     "@return array",
+                    "public static function bootAppliesTenantBoundary(): void",
+                    "protected static function bootGuardsTenantOwnership(): void",
                     "public static function factory(mixed $count=null, mixed $state=[]): mixed",
                     "@param (callable(array<string, mixed>, static|null): array<string, mixed>)|array<string, mixed>|int|null $count",
                     "@param (callable(array<string, mixed>, static|null): array<string, mixed>)|array<string, mixed> $state",
@@ -23946,6 +24047,8 @@
                 "Nvl\\Media\\Models\\MediaAssociation": [
                     "class Nvl\\Media\\Models\\MediaAssociation extends Illuminate\\Database\\Eloquent\\Model",
                     "@property string $id",
+                    "@property string|null $tenant_id Canonical tenant UUID inherited from media.",
+                    "@property string|null $ownership_key Mixed catalog partition inherited from media.",
                     "@property string $media_id",
                     "@property string $associable_type",
                     "@property string $associable_id",
@@ -23960,6 +24063,7 @@
                     "public const string TABLE=\"px_media_associations\"",
                     "protected mixed $table=\"px_media_associations\"",
                     "protected mixed $fillable=[\"media_id\",\"associable_type\",\"associable_id\",\"collection\",\"locale\",\"order\",\"is_active\",\"replaced_at\",\"metadata\"]",
+                    "protected static function tenantResourceKey(): string",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function media(): Illuminate\\Database\\Eloquent\\Relations\\BelongsTo",
@@ -23986,6 +24090,8 @@
                     "@return string",
                     "public function uniqueIds(): mixed",
                     "@return array",
+                    "public static function bootAppliesTenantBoundary(): void",
+                    "protected static function bootGuardsTenantOwnership(): void",
                     "protected function isValidUniqueId(mixed $value): bool",
                     "@param mixed $value",
                     "@return bool",
@@ -24000,6 +24106,8 @@
                 "Nvl\\Media\\Models\\MediaImageVariation": [
                     "class Nvl\\Media\\Models\\MediaImageVariation extends Illuminate\\Database\\Eloquent\\Model",
                     "@property string $id",
+                    "@property string|null $tenant_id Canonical tenant UUID inherited from media.",
+                    "@property string|null $ownership_key Mixed catalog partition inherited from media.",
                     "@property string $media_id",
                     "@property string $label",
                     "@property string|null $storage_path",
@@ -24017,6 +24125,7 @@
                     "public const string TABLE=\"px_media_image_variations\"",
                     "protected mixed $table=\"px_media_image_variations\"",
                     "protected mixed $fillable=[\"media_id\",\"label\",\"storage_path\",\"status\",\"width\",\"height\",\"size\",\"format\",\"quality\",\"source_revision\",\"attempts\",\"failure_context\"]",
+                    "protected static function tenantResourceKey(): string",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function media(): Illuminate\\Database\\Eloquent\\Relations\\BelongsTo",
@@ -24039,6 +24148,8 @@
                     "@return string",
                     "public function uniqueIds(): mixed",
                     "@return array",
+                    "public static function bootAppliesTenantBoundary(): void",
+                    "protected static function bootGuardsTenantOwnership(): void",
                     "protected function isValidUniqueId(mixed $value): bool",
                     "@param mixed $value",
                     "@return bool",
@@ -24053,6 +24164,8 @@
                 "Nvl\\Media\\Models\\MediaMultipartUpload": [
                     "final class Nvl\\Media\\Models\\MediaMultipartUpload extends Illuminate\\Database\\Eloquent\\Model",
                     "@property string $id",
+                    "@property string|null $tenant_id Canonical tenant UUID.",
+                    "@property string|null $ownership_key Operational ownership partition when platform-owned.",
                     "@property array<string, mixed>|null $provider_state",
                     "@property string $disk",
                     "@property string $object_key",
@@ -24083,6 +24196,7 @@
                     "protected mixed $table=\"px_media_multipart_uploads\"",
                     "protected mixed $fillable=[\"provider_state\",\"disk\",\"object_key\",\"object_key_hash\",\"display_filename\",\"canonical_extension\",\"declared_mime\",\"expected_size\",\"expected_checksum\",\"visibility\",\"uploader_id\",\"uploader_type\",\"expires_at\",\"part_size\",\"expected_parts\",\"minimum_part_size\",\"maximum_part_size\",\"maximum_parts\",\"signed_parts\",\"status\",\"completed_media_id\",\"provider_object_identity\",\"failure_code\",\"failure_context\"]",
                     "protected mixed $hidden=[\"provider_state\"]",
+                    "protected static function tenantResourceKey(): string",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function completedMedia(): Illuminate\\Database\\Eloquent\\Relations\\BelongsTo",
@@ -24101,6 +24215,8 @@
                     "@return string",
                     "public function uniqueIds(): mixed",
                     "@return array",
+                    "public static function bootAppliesTenantBoundary(): void",
+                    "protected static function bootGuardsTenantOwnership(): void",
                     "protected function isValidUniqueId(mixed $value): bool",
                     "@param mixed $value",
                     "@return bool",
@@ -24115,6 +24231,7 @@
                 "Nvl\\Media\\Models\\MediaOwnerSlotOperation": [
                     "final class Nvl\\Media\\Models\\MediaOwnerSlotOperation extends Illuminate\\Database\\Eloquent\\Model",
                     "@property string $id",
+                    "@property string|null $tenant_id Canonical tenant UUID inherited from owner.",
                     "@property string $idempotency_key",
                     "@property string|null $actor_type",
                     "@property string|null $actor_id",
@@ -24134,6 +24251,8 @@
                     "protected mixed $fillable=[\"idempotency_key\",\"actor_type\",\"actor_id\",\"owner_type\",\"owner_id\",\"slot\",\"operation\",\"request_hash\",\"status\",\"result_media_id\",\"result_payload\",\"failure_code\",\"completed_at\",\"failed_at\"]",
                     "public function getTable(): string",
                     "public function getConnectionName(): ?string",
+                    "public function owner(): Illuminate\\Database\\Eloquent\\Relations\\MorphTo",
+                    "@return MorphTo<Model, $this>",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function getKeyType(): mixed",
@@ -24150,6 +24269,52 @@
                     "@return string",
                     "public function uniqueIds(): mixed",
                     "@return array",
+                    "protected static function bootGuardsTenantOwnership(): void",
+                    "protected function isValidUniqueId(mixed $value): bool",
+                    "@param mixed $value",
+                    "@return bool",
+                    "public function initializeHasUniqueStringIds(): mixed",
+                    "@return void",
+                    "protected function handleInvalidUniqueId(mixed $value, mixed $field): mixed",
+                    "@param mixed $value",
+                    "@param string|null $field",
+                    "@return never",
+                    "@throws \\Illuminate\\Database\\Eloquent\\ModelNotFoundException"
+                ],
+                "Nvl\\Media\\Models\\MediaTenantGrant": [
+                    "final class Nvl\\Media\\Models\\MediaTenantGrant extends Illuminate\\Database\\Eloquent\\Model",
+                    "@property string $id Persisted UUID.",
+                    "@property string $tenant_id Recipient tenant UUID.",
+                    "@property string $media_id Platform source asset UUID.",
+                    "@property int $source_revision Granted source revision.",
+                    "@property int $revision Optimistic grant revision.",
+                    "@property bool $enabled Whether new inspection and import is allowed.",
+                    "@property Carbon|null $revoked_at Revocation time.",
+                    "@property Carbon|null $created_at Creation time.",
+                    "@property Carbon|null $updated_at Update time.",
+                    "@property-read Media $media Platform source asset.",
+                    "public const string TABLE=\"px_media_tenant_grants\"",
+                    "protected mixed $table=\"px_media_tenant_grants\"",
+                    "protected mixed $fillable=[]",
+                    "protected static function tenantResourceKey(): string",
+                    "public function media(): Illuminate\\Database\\Eloquent\\Relations\\BelongsTo",
+                    "protected function casts(): array",
+                    "public function getKeyType(): mixed",
+                    "@return string",
+                    "public function getIncrementing(): mixed",
+                    "@return bool",
+                    "public function resolveRouteBindingQuery(mixed $query, mixed $value, mixed $field=null): mixed",
+                    "@param \\Illuminate\\Database\\Eloquent\\Model|\\Illuminate\\Database\\Eloquent\\Relations\\Relation<*, *, *> $query",
+                    "@param mixed $value",
+                    "@param string|null $field",
+                    "@return \\Illuminate\\Contracts\\Database\\Eloquent\\Builder",
+                    "@throws \\Illuminate\\Database\\Eloquent\\ModelNotFoundException",
+                    "public function newUniqueId(): mixed",
+                    "@return string",
+                    "public function uniqueIds(): mixed",
+                    "@return array",
+                    "public static function bootAppliesTenantBoundary(): void",
+                    "protected static function bootGuardsTenantOwnership(): void",
                     "protected function isValidUniqueId(mixed $value): bool",
                     "@param mixed $value",
                     "@return bool",
@@ -24164,6 +24329,8 @@
                 "Nvl\\Media\\Models\\MediaTranslation": [
                     "class Nvl\\Media\\Models\\MediaTranslation extends Illuminate\\Database\\Eloquent\\Model",
                     "@property string $id",
+                    "@property string|null $tenant_id Canonical tenant UUID inherited from media.",
+                    "@property string|null $ownership_key Mixed catalog partition inherited from media.",
                     "@property string $media_id",
                     "@property string $locale",
                     "@property string|null $title",
@@ -24175,6 +24342,7 @@
                     "public const string TABLE=\"px_media_i18n\"",
                     "protected mixed $table=\"px_media_i18n\"",
                     "protected mixed $fillable=[\"media_id\",\"locale\",\"title\",\"alt\",\"caption\",\"description\"]",
+                    "protected static function tenantResourceKey(): string",
                     "protected function casts(): array",
                     "@return array<string, string>",
                     "public function media(): Illuminate\\Database\\Eloquent\\Relations\\BelongsTo",
@@ -24195,6 +24363,8 @@
                     "@return string",
                     "public function uniqueIds(): mixed",
                     "@return array",
+                    "public static function bootAppliesTenantBoundary(): void",
+                    "protected static function bootGuardsTenantOwnership(): void",
                     "protected function isValidUniqueId(mixed $value): bool",
                     "@param mixed $value",
                     "@return bool",
@@ -24221,7 +24391,7 @@
                 ],
                 "Nvl\\Media\\Providers\\MediaServiceProvider": [
                     "final class Nvl\\Media\\Providers\\MediaServiceProvider extends Illuminate\\Support\\ServiceProvider",
-                    "public function boot(Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Illuminate\\Contracts\\Events\\Dispatcher $events, Nvl\\Media\\Services\\MediaTransactionRollbackRegistry $rollbackCallbacks): void",
+                    "public function boot(Nvl\\Translatable\\Services\\TranslationResourceRegistry $translationResources, Nvl\\Data\\Services\\TypeScriptSourceRegistry $typeScriptSources, Illuminate\\Contracts\\Events\\Dispatcher $events, Nvl\\Media\\Services\\MediaTransactionRollbackRegistry $rollbackCallbacks, Nvl\\Media\\Tenancy\\MediaTenancyResources $tenancyResources, Nvl\\Tenancy\\Services\\TenantResourceRegistry $tenantResourceRegistry, Nvl\\Tenancy\\Services\\TenantAdoptionRegistry $tenantAdoptions): void",
                     "public function register(): void",
                     "protected function registerScopedServices(): void",
                     "protected function registerConfig(): void",
@@ -24307,9 +24477,23 @@
                 ],
                 "Nvl\\Media\\Services\\MediaAssociableResolver": [
                     "final class Nvl\\Media\\Services\\MediaAssociableResolver",
+                    "public function __construct(Nvl\\Media\\Services\\MediaTenantOwnerResolver $owners): mixed",
                     "public function resolveForMutation(string $type, string $id): Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia",
                     "@throws AuthorizationException",
                     "@throws ValidationException"
+                ],
+                "Nvl\\Media\\Services\\MediaCatalogImporter": [
+                    "final class Nvl\\Media\\Services\\MediaCatalogImporter implements Nvl\\Media\\Contracts\\MediaCatalogImport",
+                    "public function __construct(Nvl\\Media\\Services\\MediaCatalogReader $reader, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaPathResolver $paths, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Tenancy\\Contracts\\TenantContext $context, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections): mixed",
+                    "public function inspect(string $grantId): Nvl\\Media\\Data\\MediaCatalogSnapshot",
+                    "public function stage(Nvl\\Media\\Data\\MediaCatalogSnapshot $source): Nvl\\Media\\Data\\StagedCatalogMedia",
+                    "public function persist(Nvl\\Media\\Data\\MediaCatalogSnapshot $source, Nvl\\Media\\Data\\StagedCatalogMedia $file, string $idempotencyKey): Nvl\\Media\\Models\\Media",
+                    "public function discard(Nvl\\Media\\Data\\StagedCatalogMedia $file): void"
+                ],
+                "Nvl\\Media\\Services\\MediaCatalogReader": [
+                    "final readonly class Nvl\\Media\\Services\\MediaCatalogReader",
+                    "public function __construct(Nvl\\Tenancy\\Contracts\\TenantContext $context): mixed",
+                    "public function find(string $grantId): Nvl\\Media\\Data\\MediaCatalogSnapshot"
                 ],
                 "Nvl\\Media\\Services\\MediaConfiguredVariationService": [
                     "final class Nvl\\Media\\Services\\MediaConfiguredVariationService",
@@ -24332,6 +24516,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaDeduplicationLock": [
                     "final class Nvl\\Media\\Services\\MediaDeduplicationLock",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $tenantBoundary): mixed",
                     "public function execute(string $digest, string $disk, bool $isPublic, ?string $uploadedBy, ?string $uploadedByType, Closure $callback): Nvl\\Media\\Models\\Media",
                     "@param string $digest SHA-256 file digest",
                     "@param string $disk Target storage disk",
@@ -24404,7 +24589,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaDoctor": [
                     "final readonly class Nvl\\Media\\Services\\MediaDoctor",
-                    "public function __construct(Illuminate\\Contracts\\Container\\Container $container, Nvl\\Media\\Services\\MediaFileExistence $existence): mixed",
+                    "public function __construct(Illuminate\\Contracts\\Container\\Container $container, Nvl\\Media\\Services\\MediaFileExistence $existence, Nvl\\Tenancy\\Services\\TenantInstallationState $tenantInstallation, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $tenantConnections): mixed",
                     "public function inspect(bool $production=false): array",
                     "@return list<MediaDoctorCheckData>"
                 ],
@@ -24552,6 +24737,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaMultipartLock": [
                     "final class Nvl\\Media\\Services\\MediaMultipartLock",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $tenantBoundary): mixed",
                     "public function execute(string $sessionId, Closure $callback): mixed",
                     "@template TResult",
                     "@param Closure(): TResult $callback",
@@ -24571,7 +24757,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaMutationLock": [
                     "final class Nvl\\Media\\Services\\MediaMutationLock",
-                    "public function __construct(Nvl\\Media\\Services\\MediaTransactionRollbackRegistry $rollbackCallbacks): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaTransactionRollbackRegistry $rollbackCallbacks, Nvl\\Tenancy\\Services\\TenantBoundary $tenantBoundary): mixed",
                     "public function execute(string $mediaId, Closure $callback): mixed",
                     "@template TResult",
                     "@param Closure(): TResult $callback",
@@ -24611,6 +24797,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaOwnerSlotIdempotency": [
                     "final class Nvl\\Media\\Services\\MediaOwnerSlotIdempotency",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantBoundary $tenantBoundary): mixed",
                     "public function begin(string $key, Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model $owner, string $slot, Nvl\\Media\\Enums\\MediaOwnerSlotOperationType $operation, array $payload): Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
                     "@param array<array-key, mixed> $payload",
                     "public function completed(string $key, Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model $owner, string $slot, Nvl\\Media\\Enums\\MediaOwnerSlotOperationType $operation, array $payload): ?Nvl\\Media\\Support\\MediaOwnerSlotOperationClaim",
@@ -24627,6 +24814,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaOwnerSlotResolver": [
                     "final readonly class Nvl\\Media\\Services\\MediaOwnerSlotResolver",
+                    "public function __construct(Nvl\\Media\\Services\\MediaTenantOwnerResolver $owners): mixed",
                     "public function slot(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot): Nvl\\Media\\Slots\\MediaSlot",
                     "public function ownerIdentity(Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner): array",
                     "@return array{type: string, id: string}",
@@ -24642,7 +24830,8 @@
                     "public function clear(Nvl\\Media\\Data\\MediaActorData $actor, Illuminate\\Database\\Eloquent\\Model&Nvl\\Media\\Contracts\\HasMedia $owner, string $slot, ?string $idempotencyKey=null): void"
                 ],
                 "Nvl\\Media\\Services\\MediaPathResolver": [
-                    "final class Nvl\\Media\\Services\\MediaPathResolver",
+                    "final readonly class Nvl\\Media\\Services\\MediaPathResolver",
+                    "public function __construct(?Nvl\\Tenancy\\Contracts\\TenantContext $tenantContext=null): mixed",
                     "public function resolve(Illuminate\\Database\\Eloquent\\Model $model, Nvl\\Media\\Slots\\MediaSlot $slot): string",
                     "public function normalizeFolder(string $folder): string",
                     "public function resolveForConversions(Illuminate\\Database\\Eloquent\\Model $model, Nvl\\Media\\Slots\\MediaSlot $slot): string",
@@ -24661,6 +24850,7 @@
                     "@return string Relative storage path for the variation object",
                     "public static function rootFolder(): string",
                     "public static function storagePath(string $folder): string",
+                    "public function storageFolder(string $folder): string",
                     "public static function conversionsFolder(): string",
                     "public static function assertSafe(string $path): void",
                     "@throws MediaUploadException When path contains traversal or null bytes"
@@ -24686,7 +24876,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaReplacementStager": [
                     "final class Nvl\\Media\\Services\\MediaReplacementStager",
-                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaIngestionPipeline $ingestion): mixed",
+                    "public function __construct(Nvl\\Media\\Services\\MediaDiskGateway $disks, Nvl\\Media\\Services\\MediaDiskGuard $diskGuard, Nvl\\Media\\Services\\MediaFileOperator $files, Nvl\\Media\\Services\\MediaIngestionPipeline $ingestion, Nvl\\Media\\Services\\MediaPathResolver $pathResolver): mixed",
                     "public function stage(Nvl\\Media\\Models\\Media $media, Illuminate\\Http\\UploadedFile $file): Nvl\\Media\\Data\\Ingestion\\StagedMediaFileData",
                     "@throws MediaUploadException",
                     "@throws RuntimeException"
@@ -24744,6 +24934,11 @@
                     "@param string $path Absolute temporary path",
                     "public function releaseAll(): void"
                 ],
+                "Nvl\\Media\\Services\\MediaTenantOwnerResolver": [
+                    "final readonly class Nvl\\Media\\Services\\MediaTenantOwnerResolver",
+                    "public function __construct(Nvl\\Tenancy\\Services\\TenantResourceRegistry $resources, Nvl\\Tenancy\\Services\\TenantBoundary $boundary, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function resolve(Illuminate\\Database\\Eloquent\\Model $owner, bool $lock=false): Illuminate\\Database\\Eloquent\\Model"
+                ],
                 "Nvl\\Media\\Services\\MediaTransactionRollbackRegistry": [
                     "final class Nvl\\Media\\Services\\MediaTransactionRollbackRegistry",
                     "public function register(string $connection, int $rootLevel, Closure $callback): int",
@@ -24788,7 +24983,7 @@
                 ],
                 "Nvl\\Media\\Services\\MediaVariationDispatcher": [
                     "final class Nvl\\Media\\Services\\MediaVariationDispatcher",
-                    "public function __construct(Nvl\\Media\\Actions\\GenerateImageVariationAction $generateVariation, Nvl\\Media\\Services\\MediaConfiguredVariationService $configuredVariationService, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaVariationDefinitionNormalizer $definitionNormalizer): mixed",
+                    "public function __construct(Nvl\\Media\\Actions\\GenerateImageVariationAction $generateVariation, Nvl\\Media\\Services\\MediaConfiguredVariationService $configuredVariationService, Nvl\\Media\\Services\\MediaFileEffectScheduler $fileEffects, Nvl\\Media\\Services\\MediaVariationDefinitionNormalizer $definitionNormalizer, Nvl\\Tenancy\\Contracts\\TenantContext $tenantContext): mixed",
                     "public function dispatchConfiguredForUpload(Nvl\\Media\\Models\\Media $media): void",
                     "@param Media $media Uploaded media record",
                     "public function dispatchMissingConfiguredForUpload(Nvl\\Media\\Models\\Media $media): void",
@@ -25049,6 +25244,26 @@
                     "final class Nvl\\Media\\Support\\MediaVariationFileNamer",
                     "public static function make(string $sourceFilename, string $label, int $width, int $height, string $extension): string"
                 ],
+                "Nvl\\Media\\Tenancy\\MediaAdoptionAdapter": [
+                    "final readonly class Nvl\\Media\\Tenancy\\MediaAdoptionAdapter implements Nvl\\Tenancy\\Contracts\\TenantAdoptionAdapter, Nvl\\Tenancy\\Contracts\\TenantAdoptionMetadataValidator",
+                    "public function __construct(Illuminate\\Database\\Migrations\\Migrator $migrator, Nvl\\Tenancy\\Services\\TenantAdoptionMappings $mappings, Nvl\\Tenancy\\Services\\EffectiveTenantConnection $connections, Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function validateAssignment(Nvl\\Tenancy\\ValueObjects\\TenantAssignment $assignment): void",
+                    "public function resources(): array",
+                    "public function prepare(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void",
+                    "public function backfill(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan, ?string $cursor, int $limit): Nvl\\Tenancy\\ValueObjects\\TenantBackfillResult",
+                    "public function verify(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): Nvl\\Tenancy\\ValueObjects\\TenantVerification",
+                    "public function activate(Nvl\\Tenancy\\ValueObjects\\TenantAdoptionPlan $plan): void"
+                ],
+                "Nvl\\Media\\Tenancy\\MediaTenancyResources": [
+                    "final readonly class Nvl\\Media\\Tenancy\\MediaTenancyResources",
+                    "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function register(Nvl\\Tenancy\\Services\\TenantResourceRegistry $resources): void"
+                ],
+                "Nvl\\Media\\Tenancy\\MediaTenantParentResolver": [
+                    "final readonly class Nvl\\Media\\Tenancy\\MediaTenantParentResolver implements Nvl\\Tenancy\\Contracts\\TenantParentResolver",
+                    "public function __construct(Illuminate\\Contracts\\Config\\Repository $configuration): mixed",
+                    "public function types(): array"
+                ],
                 "Nvl\\Media\\Traits\\InteractsWithMedia": [
                     "trait Nvl\\Media\\Traits\\InteractsWithMedia",
                     "protected array $mediaSlots=[]",
@@ -25127,11 +25342,11 @@
                 ]
             },
             "configuration": {
-                "config/media.php": "f52efa8418aaf1c98dc6f2f0a8aafeae8d1bff820bda1bc75c361fa0d366d056"
+                "config/media.php": "8d356a5b743f0fa3b0c250d1d3140c91be9593b475cc75fd06c6949380ef923f"
             },
             "routes": {
                 "routes/api.php": "85bb1199819a207493a61fe48f6772fcf696358d949b010f5c5939b28d4a4ff9",
-                "routes/assets.php": "83e6e15c42567f231eeffa7981d0e2e3c27c899ece6d0b63329882d0b45d65dd"
+                "routes/assets.php": "592b45b0651ddce69803a2932ca54b074f9102595dc0319fa9ff78606fb9f225"
             },
             "migrations": {
                 "database/migrations/2024_02_01_000001_create_media_table.php": "5d42d29a8c01253f2d2f0ec843620bf463f303d17365148c694e5a333bbf9a71",
@@ -25139,7 +25354,10 @@
                 "database/migrations/2024_02_01_000003_create_media_image_variations_table.php": "89b381b8d24335e9704eb382c56015d5e4ce71fc5369a6c687804cf84677845e",
                 "database/migrations/2024_02_01_000004_create_media_i18n_table.php": "61916648befa9fead9fff0fbbd147b0444b28ad090cfc4b2cf513674db32c0f6",
                 "database/migrations/2026_07_28_000003_create_media_multipart_uploads_table.php": "351c188d9e14481174e4fd73dfc0c7578a795d7a27063b09039925b65de3bc2e",
-                "database/migrations/2026_08_28_000000_create_media_owner_slot_operations_table.php": "7ef1a483de948d75de2ddf77492437f07aedb7be43593bdc235712f3acaa1a5d"
+                "database/migrations/2026_08_28_000000_create_media_owner_slot_operations_table.php": "7ef1a483de948d75de2ddf77492437f07aedb7be43593bdc235712f3acaa1a5d",
+                "database/tenancy/2026_09_16_100001_expand_media_tenant_ownership.php": "411d3504d2e73ac43b663dabc36a74fb11db6128525a2f12af2a58865c5bfd10",
+                "database/tenancy/2026_09_16_100002_create_media_tenant_grants.php": "f0f44a9f72dfb2df6ac848082ca2fe05b5bbda9eb7081b24e7ac6cfde329d169",
+                "database/tenancy/2026_09_16_100003_constrain_media_tenant_ownership.php": "21af4b18b47dfefdaa0231140dcbade6be087c3aec5368ce9ffe4376e9a2a51f"
             }
         },
         "metafields": {
