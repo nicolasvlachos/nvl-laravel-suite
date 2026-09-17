@@ -312,3 +312,6 @@ The package is held to maximum PHPStan strictness, the monorepo's measured line-
 ## License
 
 `nvl/csv` is open-source software licensed under the [MIT license](LICENSE).
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

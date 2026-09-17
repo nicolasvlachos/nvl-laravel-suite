@@ -7,3 +7,6 @@ Report vulnerabilities privately through the repository host’s security-adviso
 CSV files are untrusted input. Consumers must authorize access, enforce upload and source-size policy, scan files where required, validate mappings before persistence, and avoid exposing retained failed-row data. The package does not neutralize spreadsheet formulas; apply an application-specific formula-injection policy before files are opened by spreadsheet software.
 
 Async callbacks must capture only serializable state and perform idempotent work. Keep the queue connection’s `retry_after` above the job timeout and protect queue/batch metadata with the same operational access controls as other job infrastructure.
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy implementation is present; its consolidated verification matrix remains pending and no release-readiness claim is made.

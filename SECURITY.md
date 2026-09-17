@@ -29,3 +29,6 @@ destructive maintenance commands. Keep management routes disabled unless they
 are protected by real application authorization, run each module's strict
 doctor command after deployment, and review the module security and operations
 documentation before enabling production integrations.
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy program implementation is present across all 21 distributions, including adoption, lifecycle, sealed-consumer, and release-gate surfaces. Consolidated runtime verification is pending; this statement is not a release-readiness claim.

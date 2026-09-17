@@ -61,3 +61,6 @@ All notable changes to `nvl/csv` are documented here.
 - Added operation-local duplicate policies and explicit transaction behavior.
 - Added serializable, storage-staged Laravel batch processing with tracking and cancellation.
 - Added strict static analysis and comprehensive Pest coverage for compatibility and edge cases.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

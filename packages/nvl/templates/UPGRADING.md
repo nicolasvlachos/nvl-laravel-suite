@@ -73,3 +73,6 @@ container. Replace custom string/asset persistence with Content compositions
 and Media identifiers. Bind `TemplateAssetResolver` only when frame, sticker,
 or scoped asset handles are required. Keep application-specific template
 subclasses and authorization in the consuming application.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

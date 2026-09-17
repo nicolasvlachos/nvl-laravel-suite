@@ -29,3 +29,6 @@ Version 1.0 preserves the original class names and public fluent methods under t
 7. Remove calls copied from the legacy prose documentation that never existed in the implementation, including instance `withTransformer`, `StringTransformer::make`, `lowercase` fluent methods, `nullIfEmpty`, `limit`, and importer `withDelimiter`.
 
 The package now honors import/export DTO mappings and format/encoding options, resets reusable service state, handles variable-length BOMs, streams remote disks, and serializes queued callbacks. Strict imports reject uneven rows; lenient imports preserve the legacy pad/truncate behavior. Failure counters remain complete while only the first 1,000 failed-row payloads and error strings are retained. Test encoding, strictness, failure-reporting, and queue behavior when migrating workloads that depended on the previous accidental behavior.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

@@ -32,3 +32,6 @@ This is the first stable contract.
 - The default navigation endpoint is `/api/v1/pages/_navigation` and the default management prefix is `/api/v1/pages/_manage`; the leading underscore keeps both outside the valid page-slug grammar.
 
 Run `php artisan nvl:pages:doctor --strict --format=json` before and after an application adoption.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

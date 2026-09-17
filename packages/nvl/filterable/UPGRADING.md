@@ -32,3 +32,6 @@ Custom handlers now run inside a nested `where` group. This keeps a handler's or
 Review every custom handler before upgrading. Move joins, selected columns, grouping, and other query setup to the caller before applying the `FilterSet`, and express ordering with declared `SortDefinition` aliases. Handler return values remain compatible, but the handler must mutate only the nested predicate builder it receives.
 
 Handlers are trusted application code, not an authorization sandbox. Raw SQL or other arbitrary callback behavior can still bypass application authorization, so authorize independently and keep handlers bounded and parameterized.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

@@ -93,3 +93,6 @@ All notable changes to `nvl/seo` are documented here.
   capabilities.
 - Marked centralized SEO translation mutation as `DomainActionOnly` so package
   lifecycle invariants cannot be bypassed.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

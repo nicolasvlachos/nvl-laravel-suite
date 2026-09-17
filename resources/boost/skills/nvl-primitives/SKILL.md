@@ -60,3 +60,10 @@ Use `MoneyData`, `LengthData`, `CoordinatesData`, `PostalAddressData`, and `Refe
 ## Verify
 
 Test invalid construction, canonical storage, equality, Eloquent round trips, precision and rounding, currency mismatch, missing exchange rates, region-specific phones, current IBAN metadata, locale normalization, and TypeScript DTO shapes. Run the package Pest suite, Pint, PHPStan at maximum strictness, and the dependency audit.
+
+## Configurable-tenancy release discipline
+
+- Preserve disabled compatibility and package independence; tenant support never creates an undeclared Auth or Suite dependency.
+- Use registered package-owned resources, adoption adapters, Actions, and lifecycle APIs. Never add a generic tenant delete-all path or raw cross-package cleanup.
+- Treat mapping/configuration hashes, interruption checkpoints, conservation evidence, worker context, tenant-leading queries, and standalone consumption as release contracts.
+- The P2 implementation is present, but consolidated runtime verification is pending. Do not claim release readiness until the complete matrix passes.

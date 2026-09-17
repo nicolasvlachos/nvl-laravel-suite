@@ -61,3 +61,6 @@ All notable changes to `nvl/forms` are documented here.
 - Added revision checks, idempotency, payload bounds, trusted timing, origins, throttling, and spam contracts.
 - Added entry export, redaction, anonymization, and deletion policies.
 - Removed consumer defaults, frontend scaffolding, legacy JSON localization, and the hard Activity dependency.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

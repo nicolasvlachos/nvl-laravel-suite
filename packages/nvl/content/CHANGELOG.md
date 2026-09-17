@@ -131,3 +131,6 @@ All notable changes to `nvl/content` are documented here.
   diagnostics, private Media delivery, structured localization, default and
   normalized-payload validation, URI-scheme safety, and generated JSON Schema
   parity with focused regression coverage.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

@@ -25,3 +25,6 @@ PHP array-key segments containing literal dots or empty strings must be renamed 
 Run a fresh scan after migrating. Usage identities now include the resolved scope, and the new scan-run linkage makes that scan the authoritative baseline while historical usage rows age out according to retention.
 
 Never assume a database edit may silently overwrite a changed file.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

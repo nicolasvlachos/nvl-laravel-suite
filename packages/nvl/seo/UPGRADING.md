@@ -56,3 +56,6 @@ Version 1.0 is headless, uses dedicated translation rows, and has no application
     `SyncSeoProfileAction`.
 
 Verify localized paths, canonical and hreflang output, redirects, sitemap artifacts, row counts, and rollback before removing old SEO code.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

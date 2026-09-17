@@ -45,3 +45,6 @@ All notable changes to `nvl/filterable` are documented here.
 - Split value normalization from Eloquent predicate application and normalized custom-handler criteria.
 - Added generated TypeScript value unions and sort directions.
 - Added SQLite, PostgreSQL, and MySQL package coverage in CI.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

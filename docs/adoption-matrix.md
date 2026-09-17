@@ -118,3 +118,8 @@ rollback mechanism after activation.
 The implementation and proof surfaces are present, but no Content/Sites tenant
 readiness claim is made until the deferred package suites, database matrices,
 real Redis/concurrency, archive, and sealed-consumer commands have run green.
+## P2 complete-graph rehearsal
+
+The sealed production consumer now composes translated Pages, Content placements and snapshots, private Media, reference Metafields, Taxonomy, Forms, Templates, Comments/mentions, Activity, scheduled Mail, and tenant-scoped CSV exports in two tenants with identical business keys, sites, and paths. It also carries legacy vendor/copied migration, role-fanout, shared-binary, platform-history, self-translation, ambiguous-owner, and revoked-token fixture declarations with immutable mapping/configuration hashes and conservation checks.
+
+Implementation is present; the consolidated runtime/database/archive verification is pending. See [configurable tenancy operations](tenancy-operations.md).

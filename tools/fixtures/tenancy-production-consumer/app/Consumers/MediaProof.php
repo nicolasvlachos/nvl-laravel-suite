@@ -46,13 +46,14 @@ final readonly class MediaProof
         private TenantContext $context,
         private Filesystem $files,
         private FilesystemFactory $storage,
+        private LegacyAdoptionProof $legacy,
     ) {}
 
     /**
      * Adopt one legacy root through an interrupted/resumed plan.
      *
      * @param list<string> $packages
-     * @return array{legacy_article_id: string, adoption_run_id: string, adoption_interrupted: bool, adoption_resumed: bool}
+     * @return array{legacy_article_id: string, adoption_run_id: string, adoption_interrupted: bool, adoption_resumed: bool, mapping_hash: string, configuration_hash: string, conservation_manifested: bool, ambiguous_activation_blocked: bool}
      */
     public function adopt(array $packages, TenantId $tenantA): array
     {
@@ -61,9 +62,9 @@ final readonly class MediaProof
             'title' => 'Known legacy article',
         ]);
         $operation = $this->operation('adoption');
-        $plan = $this->adoption->prepare($packages, [
-            new TenantAssignment('consumer.articles', $legacy->id, $tenantA),
-        ], $operation);
+        $assignment = new TenantAssignment('consumer.articles', $legacy->id, $tenantA);
+        $legacyProof = $this->legacy->inspect($assignment, $tenantA);
+        $plan = $this->adoption->prepare($packages, [$assignment], $operation);
         $interrupted = ! $this->adoption->backfill($plan, 1, $operation);
         $resumed = $this->adoption->resume($plan->id);
         $complete = false;
@@ -80,6 +81,7 @@ final readonly class MediaProof
             'adoption_run_id' => $resumed->id,
             'adoption_interrupted' => $interrupted,
             'adoption_resumed' => true,
+            ...$legacyProof,
         ];
     }
 
@@ -110,7 +112,7 @@ final readonly class MediaProof
                     model: $article,
                     slot: new MediaSlot('document'),
                     fileName: 'same.txt',
-                    isPublic: false,
+                    isPublic: true,
                     skipAutoVariations: true,
                 );
             } finally {

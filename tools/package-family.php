@@ -12,6 +12,7 @@ declare(strict_types=1);
  *     database_tested: list<string>,
  *     stateful: list<string>,
  *     optional_migrations: array<string, array{configuration: string, path: string}>,
+ *     tenancy_release: array{package_count: int, profiles: list<string>, distribution_assertions: list<string>},
  *     quality: array{
  *         released_migrations_contract: string,
  *         packages: array<string, array{analysis_paths: list<string>, migration_tests: list<string>}>
@@ -125,6 +126,26 @@ return [
     ],
     'optional_migrations' => [
         'tenancy' => ['configuration' => 'tenancy', 'path' => 'database/migrations/tenancy'],
+    ],
+    'tenancy_release' => [
+        'package_count' => 21,
+        'profiles' => [
+            'disabled',
+            'full-package-auth',
+            'host-uuid-custom-principals',
+            'standalone-media-no-auth',
+            'standalone-taxonomy-no-auth',
+        ],
+        'distribution_assertions' => [
+            'archive-closure',
+            'provider-discovery',
+            'module-config-closure',
+            'source-skill-sync',
+            'typescript-inputs',
+            'public-contract-inputs',
+            'composer-validation',
+            'dependency-audit',
+        ],
     ],
     'quality' => [
         'released_migrations_contract' => 'tools/package-contracts.json',

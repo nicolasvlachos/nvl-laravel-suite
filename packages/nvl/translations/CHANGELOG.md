@@ -57,3 +57,6 @@ All notable changes to `nvl/translations` are documented here.
 - Added scoped literal-key scanning, configurable patterns, retained usage history, and unused-key reporting.
 - Added disabled-by-default authorized workspace APIs with optimistic revisions, independent prune authorization, force requirements, and stable error responses.
 - Added Laravel 12–13, PHP 8.3–8.4, SQLite/MySQL/PostgreSQL quality coverage and the documented migrations and skill publish tags.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

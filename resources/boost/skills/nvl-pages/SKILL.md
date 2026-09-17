@@ -74,3 +74,10 @@ Use this skill when application work creates, resolves, translates, composes, or
     derives the path from the current parent.
 
 Use `ResolvePageAction` for headless delivery. Its `ResolvedPageData` combines a localized redacted Page projection, Content, SEO, and the optional dynamic resource projection.
+
+## Configurable-tenancy release discipline
+
+- Preserve disabled compatibility and package independence; tenant support never creates an undeclared Auth or Suite dependency.
+- Use registered package-owned resources, adoption adapters, Actions, and lifecycle APIs. Never add a generic tenant delete-all path or raw cross-package cleanup.
+- Treat mapping/configuration hashes, interruption checkpoints, conservation evidence, worker context, tenant-leading queries, and standalone consumption as release contracts.
+- The P2 implementation is present, but consolidated runtime verification is pending. Do not claim release readiness until the complete matrix passes.

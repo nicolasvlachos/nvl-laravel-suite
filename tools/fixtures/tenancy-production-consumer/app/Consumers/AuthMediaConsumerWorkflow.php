@@ -18,9 +18,11 @@ use Nvl\Auth\Data\Display\RoleOptionData;
 use Nvl\Auth\Data\Mutations\SyncUserRolesData;
 use Nvl\Auth\ValueObjects\SubjectReference;
 use Nvl\Auth\ValueObjects\SystemMutationContext;
+use Nvl\Media\Models\Media;
 use Nvl\Tenancy\Actions\ProvisionTenantAction;
 use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\TenantId;
+use Nvl\Tenancy\ValueObjects\TenantSiteContext;
 use RuntimeException;
 
 /** Runs the full Auth plus Media sealed consumer profile. */
@@ -39,6 +41,7 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
         private ShowProfileAction $showProfile,
         private ListOwnMembershipsAction $memberships,
         private ListRoleOptionsAction $roles,
+        private PublicationProof $publication,
     ) {}
 
     /** @return array{passed: bool, checks: array<string, bool>, profile: string} */
@@ -78,7 +81,11 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
             'forms',
             'mail-notifications',
             'media',
+            'metafields',
+            'pages',
+            'seo',
             'settings',
+            'taxonomy',
             'templates',
             'translations',
         ], $tenantA);
@@ -104,8 +111,14 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
                 return $this->consumerRoleId($principal);
             });
         }
+        $this->tenants->platform(
+            $this->media->operation('publication-vocabulary'),
+            fn (): null => $this->synchronizePublication(),
+        );
         $assetA = $this->media->seedTenant($tenantA, 'A');
         $assetB = $this->media->seedTenant($tenantB, 'B');
+        $publicationA = $this->seedPublication($tenantA, 'A', $assetA['media_id'], $principal);
+        $publicationB = $this->seedPublication($tenantB, 'B', $assetB['media_id'], $principal);
         $this->media->dispatchProbes($tenantA, $tenantB);
         $this->writeReport([
             'profile' => 'auth-media',
@@ -115,6 +128,8 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
             'role_ids' => $roleIds,
             'asset_a' => $assetA,
             'asset_b' => $assetB,
+            'publication_a' => $publicationA,
+            'publication_b' => $publicationB,
             ...$adoption,
         ]);
 
@@ -166,6 +181,10 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
                 $tenantB,
                 $this->asset($report, 'asset_a'),
                 $this->asset($report, 'asset_b'),
+            ),
+            ...$this->publication->compare(
+                $this->record($report, 'publication_a'),
+                $this->record($report, 'publication_b'),
             ),
         ];
 
@@ -248,5 +267,45 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
 
         /** @var array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int} $value */
         return $value;
+    }
+
+    /** @param array<string, mixed> $report @return array<string, mixed> */
+    private function record(array $report, string $key): array
+    {
+        $value = $report[$key] ?? null;
+        if (! is_array($value)) {
+            throw new RuntimeException("The report record [{$key}] is invalid.");
+        }
+
+        return $value;
+    }
+
+    /** @return array<string, scalar> */
+    private function seedPublication(TenantId $tenant, string $label, string $mediaId, User $principal): array
+    {
+        return $this->tenants->run($tenant, function () use ($label, $mediaId, $principal, $tenant): array {
+            app()->instance(TenantSiteContext::class, new TenantSiteContext(
+                $tenant,
+                'default',
+                'https://'.strtolower($label).'.tenancy-consumer.test',
+            ));
+            try {
+                return $this->publication->seed(
+                    $label,
+                    Media::query()->findOrFail($mediaId),
+                    $principal,
+                );
+            } finally {
+                app()->forgetInstance(TenantSiteContext::class);
+            }
+        });
+    }
+
+    /** Synchronize platform-owned publication vocabulary. */
+    private function synchronizePublication(): null
+    {
+        $this->publication->synchronize();
+
+        return null;
     }
 }

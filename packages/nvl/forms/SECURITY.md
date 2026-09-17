@@ -11,3 +11,6 @@ Do not accept submission origin from payload data. Restricted public requests mu
 Custom handlers can perform external side effects that a database transaction cannot roll back. Use the package receipt and an application-level idempotency key in the downstream system. A failed or in-progress receipt intentionally conflicts instead of automatically replaying unknown work.
 
 Entry lifecycle events are sanitized. Keep complete entry payloads out of logs, queues, exception metadata, and custom events unless the destination has an explicit PII retention policy.
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy implementation is present; its consolidated verification matrix remains pending and no release-readiness claim is made.

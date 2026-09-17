@@ -18,3 +18,6 @@ Version 1.0 is database-free and contains reusable values only.
 12. Verify cast round trips before converting existing columns.
 
 Changed canonical serialization is a data migration and must be handled by the consuming application.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

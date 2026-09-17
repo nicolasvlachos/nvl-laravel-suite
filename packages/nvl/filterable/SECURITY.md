@@ -7,3 +7,6 @@ Report vulnerabilities privately through the repository host's security-advisory
 Never register raw request column names, relation paths, SQL fragments, or unbounded custom handlers. Treat filter definitions as part of the application's authorization and data-exposure boundary.
 
 Use `fromHttpQuery()` at HTTP boundaries, set endpoint-appropriate filter/sort/value/string limits, and declare a stable tie-breaker for paginated queries. Custom handlers receive normalized values but remain responsible for parameterized SQL and bounded query cost.
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy implementation is present; its consolidated verification matrix remains pending and no release-readiness claim is made.

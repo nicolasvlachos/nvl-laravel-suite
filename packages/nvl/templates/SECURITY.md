@@ -22,3 +22,6 @@ SHA-256 checksum, safe filename, subject line safety, and PDF signature.
 Content-Disposition, and nosniff headers. PDF headers and footers must be
 source-controlled views; database/request-provided raw header or footer HTML is
 not supported.
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy implementation is present; its consolidated verification matrix remains pending and no release-readiness claim is made.

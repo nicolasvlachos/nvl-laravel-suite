@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "fixtures": {
+        "vendor_migrations": ["activity", "auth", "media", "forms"],
+        "copied_migrations": ["content", "pages", "taxonomy", "templates"],
+        "role_fanout": {"source_role": "editor", "per_tenant": true},
+        "shared_binaries": {"strategy": "copy", "checksum": "sha256"},
+        "platform_history": {"retention": "platform"},
+        "self_translation_groups": {"ownerless_groups": true},
+        "ambiguous_owners": {"activation": "blocked"},
+        "revoked_tokens": {"retention": "audit-only"}
+    },
+    "conservation": ["row_count", "stable_id", "structured_payload", "binary_checksum", "render_checksum"]
+}

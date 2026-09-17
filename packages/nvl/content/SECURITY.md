@@ -31,3 +31,6 @@ content, scope, placement, and Media policy, and roll back the complete batch
 on any failure. Authorization adapters that expose a block catalog should
 implement `ContentBlockQueryScope` so tenant constraints are applied before
 caller-controlled filters.
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy implementation is present; its consolidated verification matrix remains pending and no release-readiness claim is made.

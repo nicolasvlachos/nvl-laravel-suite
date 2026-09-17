@@ -47,3 +47,6 @@ All notable changes to `nvl/primitives` are documented here.
 - Added English and Bulgarian Laravel validation messages.
 - Added ISO-backed reference catalogs with injected configuration, distinct locale labels, strict entries and deterministic unavailable or stale exchange-rate behavior.
 - Added stable `Nvl.Primitives.*` TypeScript-facing contracts.
+
+<!-- tenancy-program-p2 -->
+Configurable-tenancy implementation and adoption documentation are present. The final consolidated verification matrix is pending; do not treat this package as release-ready until that gate passes.

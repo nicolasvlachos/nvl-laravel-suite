@@ -230,3 +230,6 @@ error in either mode:
 php artisan nvl:suite:consumer-audit --format=json
 php artisan nvl:suite:consumer-audit --strict --format=json
 ~~~
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy program implementation is present across all 21 distributions, including adoption, lifecycle, sealed-consumer, and release-gate surfaces. Consolidated runtime verification is pending; this statement is not a release-readiness claim.

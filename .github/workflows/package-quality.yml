@@ -101,6 +101,33 @@ jobs:
       - name: Complete test suite
         run: composer test
 
+  tenancy-release-adoption:
+    name: Tenancy release adoption contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: ctype, dom, fileinfo, filter, gd, intl, json, libxml, mbstring, pdo_sqlite, zip
+          coverage: none
+          tools: composer:2.10.2
+
+      - name: Install dependencies
+        shell: bash
+        run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
+
+      - name: Verify release, lifecycle and 21-package closure contracts
+        env:
+          RUN_TENANCY_PRODUCTION_CONSUMER: 0
+        run: |
+          vendor/bin/pest --compact \
+            tests/Contract/TenancyProductionConsumerWorkflowTest.php \
+            tests/Contract/TenancyReleaseReadinessTest.php
+
   laravel13-lowest:
     name: PHP 8.4 / Laravel 13 / lowest
     runs-on: ubuntu-latest
@@ -253,6 +280,8 @@ jobs:
           TENANCY_CONSUMER_DB_CONNECTION: pgsql
           TENANCY_CONSUMER_FULL_DATABASE: nvl_tenancy_consumer_full_ci
           TENANCY_CONSUMER_MEDIA_DATABASE: nvl_tenancy_consumer_media_ci
+          TENANCY_CONSUMER_TAXONOMY_DATABASE: nvl_tenancy_consumer_taxonomy_ci
+          TENANCY_CONSUMER_RESTORE_DATABASE: nvl_tenancy_consumer_restore_ci
           TENANCY_CONSUMER_CACHE_STORE: redis
           TENANCY_CONSUMER_MEDIA_DRIVER: s3
           AWS_ACCESS_KEY_ID: nvl-tenancy
@@ -263,10 +292,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for database in "$TENANCY_CONSUMER_FULL_DATABASE" "$TENANCY_CONSUMER_MEDIA_DATABASE"; do
+          for database in "$TENANCY_CONSUMER_FULL_DATABASE" "$TENANCY_CONSUMER_MEDIA_DATABASE" "$TENANCY_CONSUMER_TAXONOMY_DATABASE" "$TENANCY_CONSUMER_RESTORE_DATABASE"; do
             DATABASE_NAME="$database" php -r '
               $database = getenv("DATABASE_NAME");
-              if (! is_string($database) || preg_match("/^nvl_tenancy_consumer_(full|media)_ci$/", $database) !== 1) {
+              if (! is_string($database) || preg_match("/^nvl_tenancy_consumer_(full|media|taxonomy|restore)_ci$/", $database) !== 1) {
                   throw new RuntimeException("Unsafe tenancy consumer database name.");
               }
               $pdo = new PDO("pgsql:host=127.0.0.1;port=5432;dbname=nvl_package_test_admin", "nvl", "nvl");

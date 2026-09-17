@@ -42,3 +42,10 @@ Keep definitions, public rendering, submissions, and entry operations behind pac
 ## Verify
 
 Test installation without Activity, revisions, nested translations, public DTO serialization, UUID/handle routes, locale middleware, origins, real preflight behavior, throttling, tokens, spam, payload limits, registration and idempotency races, callback isolation, privacy policies, sanitized after-commit events, pre-validation route authorization, and query counts.
+
+## Configurable-tenancy release discipline
+
+- Preserve disabled compatibility and package independence; tenant support never creates an undeclared Auth or Suite dependency.
+- Use registered package-owned resources, adoption adapters, Actions, and lifecycle APIs. Never add a generic tenant delete-all path or raw cross-package cleanup.
+- Treat mapping/configuration hashes, interruption checkpoints, conservation evidence, worker context, tenant-leading queries, and standalone consumption as release contracts.
+- The P2 implementation is present, but consolidated runtime verification is pending. Do not claim release readiness until the complete matrix passes.

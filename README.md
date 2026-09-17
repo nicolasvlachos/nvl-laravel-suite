@@ -467,3 +467,6 @@ and adoption activation reject loaded runtime packages whose real tenancy
 integrations have not shipped. An incomplete composition can still boot for
 Unresolved diagnostics and explicitly admitted platform bootstrap. See
 [Tenancy readiness and migration ownership](packages/nvl/tenancy/README.md#runtime-compatibility-and-readiness).
+
+<!-- tenancy-program-p2 -->
+The configurable-tenancy program implementation is present across all 21 distributions, including adoption, lifecycle, sealed-consumer, and release-gate surfaces. Consolidated runtime verification is pending; this statement is not a release-readiness claim.

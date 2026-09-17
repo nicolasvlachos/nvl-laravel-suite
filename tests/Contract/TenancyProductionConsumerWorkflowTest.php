@@ -9,18 +9,33 @@ it('ships the complete sealed tenancy consumer fixture and bounded public action
     $fixture = $root.'/tools/fixtures/tenancy-production-consumer';
     $required = [
         'app/Console/Commands/TenancyConsumerSmokeCommand.php',
+        'app/Console/Commands/TenancyConsumerLifecycleCommand.php',
+        'app/Console/Commands/TenancyConsumerConfigurationCommand.php',
+        'app/Console/Commands/TenancyConsumerRaceCommand.php',
+        'app/Console/Commands/TenancyConsumerQueryPlanCommand.php',
         'app/Consumers/AuthMediaConsumerWorkflow.php',
+        'app/Consumers/PublicationProof.php',
+        'app/Consumers/LegacyAdoptionProof.php',
         'app/Consumers/MediaOnlyConsumerWorkflow.php',
+        'app/Consumers/TaxonomyOnlyConsumerWorkflow.php',
         'app/Consumers/MediaProof.php',
         'app/Jobs/TenantProbeJob.php',
         'app/Models/TenantArticle.php',
         'app/Providers/MediaOnlyTenancyConsumerServiceProvider.php',
         'app/Providers/TenancyConsumerServiceProvider.php',
+        'app/Providers/TaxonomyOnlyTenancyConsumerServiceProvider.php',
         'app/Tenancy/HostMembershipAccess.php',
         'app/Tenancy/HostTenantDirectory.php',
         'app/Tenancy/TenantArticleAdoptionAdapter.php',
         'bootstrap/providers.php',
         'bootstrap/providers-media-only.php',
+        'bootstrap/providers-taxonomy-only.php',
+        'legacy/adoption-manifest.json',
+        'config/comments.php',
+        'config/content.php',
+        'config/metafields.php',
+        'config/taxonomy.php',
+        'config/templates.php',
         'config/media.php',
         'config/nvl-auth.php',
         'config/nvl-suite.php',
@@ -42,16 +57,7 @@ it('ships the complete sealed tenancy consumer fixture and bounded public action
     $mediaProvider = (string) file_get_contents($fixture.'/app/Providers/MediaOnlyTenancyConsumerServiceProvider.php');
     $mediaTenancy = (string) file_get_contents($fixture.'/config/tenancy-media-only.php');
 
-    expect($selectedModules)->toBe([
-        'support',
-        'data',
-        'filterable',
-        'translatable',
-        'activity',
-        'auth',
-        'media',
-        'tenancy',
-    ])
+    expect($selectedModules)->toHaveCount(21)
         ->and($fullWorkflow)->toContain(
             'ProvisionTenantAction',
             'ProvisionTenantOwnerAction',
@@ -79,6 +85,56 @@ it('ships the complete sealed tenancy consumer fixture and bounded public action
         ->and($probeJob)->toContain("DB::table('tenant_probe_observations')->insert");
 });
 
+it('covers publication lifecycle legacy matrix races and query budgets through explicit boundaries', function (): void {
+    $root = dirname(__DIR__, 2);
+    $fixture = $root.'/tools/fixtures/tenancy-production-consumer/app';
+    $publication = (string) file_get_contents($fixture.'/Consumers/PublicationProof.php');
+    $lifecycle = (string) file_get_contents($fixture.'/Console/Commands/TenancyConsumerLifecycleCommand.php');
+    $configuration = (string) file_get_contents($fixture.'/Console/Commands/TenancyConsumerConfigurationCommand.php');
+    $races = (string) file_get_contents($fixture.'/Console/Commands/TenancyConsumerRaceCommand.php');
+    $plans = (string) file_get_contents($fixture.'/Console/Commands/TenancyConsumerQueryPlanCommand.php');
+
+    expect($publication)->toContain(
+        'CreatePageAction',
+        'Content::capture',
+        'CreateMetafieldDefinitionAction',
+        "'referencedModelType' => 'media'",
+        'CreateTermAction',
+        'CreateFormEntryAction',
+        'RenderStoredTemplateAction',
+        'CreateRichCommentAction',
+        'ActivityLog::record',
+        'ScheduledMailScheduler',
+        'CSVExport::make()',
+        'getTemporaryUrl',
+        "generate('default')",
+    )->and($lifecycle)->toContain(
+        'backup|adopt|suspend|cleanup|restore|verify',
+        'TenantMaintenanceRunner',
+        'approved_ids',
+        "'retain-audit'",
+        "'retain-delivery-ledger'",
+        "'retain-immutable-render-history'",
+        'checkpoints',
+        'TENANCY_CONSUMER_RESTORE_SOURCE',
+    )->not->toContain('deleteTenant', 'truncate')
+        ->and($configuration)->toContain(
+            'conflicting-platform-family',
+            'invalid-classes',
+            'invalid-families',
+            'invalid-custom-tables',
+            'invalid-connection-aliases',
+        )
+        ->and($races)->toContain(
+            'last-owner',
+            'grant-revoke-import',
+            'slug-handle-create',
+            'media-slot-completion',
+            'submission-idempotency',
+        )
+        ->and($plans)->toContain('EXPLAIN ', 'tenant_id', "'budget'");
+});
+
 it('defines sealed full and standalone media runner phases with restart and downgrade proof', function (): void {
     $root = dirname(__DIR__, 2);
     $scriptPath = $root.'/tools/run-tenancy-production-consumer.sh';
@@ -93,6 +149,7 @@ it('defines sealed full and standalone media runner phases with restart and down
             '"symlink":false',
             'prepare_application auth-media',
             'prepare_application media-only',
+            'prepare_application taxonomy-only',
             'install_fixture media-only',
             'packages=(support data filterable tenancy translatable media)',
             'test ! -d vendor/nvl/auth',
@@ -107,6 +164,10 @@ it('defines sealed full and standalone media runner phases with restart and down
             'tenancy-consumer:smoke --phase=verify --format=json',
             'TENANCY_CONSUMER_ENABLED=false consumer_artisan',
             'unsafe_downgrade_denied:true',
+            'run_configuration_matrix',
+            'run_competing_operations',
+            'tenancy-consumer:lifecycle cleanup',
+            'tenancy-consumer:query-plans',
             'auth_dependency_absent:$auth_dependency_absent',
         )
         ->not->toContain('--ignore-platform-reqs', 'sleep ')
@@ -142,7 +203,7 @@ it('runs the sealed consumer and asserts its actual outcomes when explicitly req
         $result = json_decode((string) file_get_contents($evidence), true, flags: JSON_THROW_ON_ERROR);
         expect($result['passed'] ?? null)->toBeTrue();
 
-        foreach (['auth_media', 'media_only'] as $profile) {
+        foreach (['auth_media', 'media_only', 'taxonomy_only'] as $profile) {
             $outcome = $result['profiles'][$profile] ?? null;
             expect($outcome)->toBeArray()
                 ->and($outcome['sealed_archive'] ?? null)->toBeTrue()
@@ -158,6 +219,10 @@ it('runs the sealed consumer and asserts its actual outcomes when explicitly req
         }
 
         expect($result['profiles']['media_only']['auth_dependency_absent'] ?? null)->toBeTrue();
+        expect($result['profiles']['taxonomy_only']['auth_dependency_absent'] ?? null)->toBeTrue()
+            ->and($result['lifecycle'] ?? null)->toBeTrue()
+            ->and($result['competing_processes'] ?? null)->toBeTrue()
+            ->and($result['query_plans'] ?? null)->toBeTrue();
     } finally {
         if (is_file($evidence)) {
             unlink($evidence);

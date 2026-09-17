@@ -258,6 +258,7 @@ jobs:
               throw new RuntimeException("The archive does not preserve host principal fillable fields safely.");
           }
           '
+
           publish_tags=/tmp/nvl-publish-tags
           jq -r '.suite.publish_tags[], .packages[].publish_tags[]' \
             "$GITHUB_WORKSPACE/tools/package-contracts.json" \
@@ -339,6 +340,20 @@ jobs:
             fi
           done < "$expected_doctors"
           bash "$GITHUB_WORKSPACE/tools/retry-composer.sh" audit --locked --no-interaction
+
+      - name: Tenancy sealed adoption and lifecycle proof
+        env:
+          RUN_TENANCY_PRODUCTION_CONSUMER: 1
+          NVL_CANDIDATE_VERSION: ${{ inputs.version }}
+          TENANCY_CONSUMER_TAXONOMY_DATABASE: tenancy_consumer_taxonomy_release
+        shell: bash
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          archive="$(find build/archives -maxdepth 1 -name 'nvl-laravel-suite-*.zip' -print -quit)"
+          test -n "$archive"
+          NVL_CANDIDATE_ARCHIVE="$archive" vendor/bin/pest --compact \
+            tests/Contract/TenancyReleaseReadinessTest.php \
+            tests/Contract/TenancyProductionConsumerWorkflowTest.php
 
       - name: Exercise sealed tenant Content and Sites consumer
         shell: bash

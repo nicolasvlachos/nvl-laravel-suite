@@ -303,3 +303,6 @@ keys, preserved OR/relation ownership predicates and safe Data mutation projecti
 The [package consumer contract](../packages/nvl/tenancy/tests/Feature/TenantConsumerContractTest.php)
 also verifies source registration. These gates certify foundation distribution;
 downstream tenant-owned domain integrations have separate adoption requirements.
+## P2 readiness status
+
+All 21 package distributions now have implementation surfaces for configurable tenancy, the full sealed consumer, lifecycle/adoption rehearsal, standalone Media and Taxonomy consumers without Auth, configuration/race/query-plan fixtures, and release-contract inputs. The status remains **implementation present, consolidated verification pending**. This is not a release-readiness claim. Operators must complete the [configurable tenancy operations](tenancy-operations.md) release gate.
