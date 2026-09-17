@@ -207,3 +207,25 @@ The follow-up review's remaining I-2 and new N-1 findings were confirmed and cor
 - Pint: explicit changed Auth PHP paths with `vendor/bin/pint --format agent` — passed.
 
 An intermediate combined HTTP run exposed that nullable controller method injection selected its `null` default even when the tenant resolver was bound. Required injection plus the disabled-only sentinel corrected that issue; the isolated affected groups above are the final evidence. No broad package, native database, or four-profile consumer matrix was rerun, per the targeted-fix instruction.
+
+## Final public tenant-intent retry closure
+
+The final I-2 re-review correctly identified that rewinding `Challenge::consumed_at` in a test did not prove a production caller could retry tenant selection. The database rewind was deleted and replaced with a real post-authentication completion seam.
+
+- A denied selector now stores the exact nonce, session binding, subject, provider, purpose, and subject-binding flag only in the authenticated Laravel session. The client never submits or selects those values.
+- `POST tenant-intents/complete` accepts no request body, requires an authenticated session, resolves only the trusted server tenant selector, and atomically consumes the pending intent for that expected tenant. Success removes the pending reference; replay returns `tenant_authentication_intent_unavailable`.
+- The original magic-link, explicit passwordless-code, and passkey proof remains consumed exactly once. The real HTTP test proves a tenant-B completion leaves the tenant-A intent unconsumed, a subsequent unmodified tenant-A completion request succeeds, and replay fails. The same seam is exercised after mismatched explicit security-code and passkey completions.
+- Disabled-tenancy defaults are unchanged: the new Sessions public route is disabled by default, and existing generic security-code behavior remains host-managed and unauthenticated.
+- The passkey completion Action now has the single canonical `execute` entry point required by package-family rules, returning its existing typed completion result. The subject-bound security-code wrapper now documents its approved Action orchestration.
+
+### Final retry evidence
+
+- Tenant intent HTTP/store tests: 8 passed, 59 assertions.
+- Challenge, passkey lifecycle, genuine WebAuthn ceremony, and HTTP compatibility tests: 20 passed, 122 assertions.
+- OpenAPI/feature-manifest focused contracts: 2 passed, 576 assertions.
+- All-enabled route inventory: 1 passed, 1 assertion.
+- Disabled-tenancy challenge/provider compatibility: 7 passed, 35 assertions.
+- Auth PHPStan: 0 errors.
+- Pint on every changed Auth PHP path: passed.
+- Package-family validator: Auth has zero violations. The command remains non-zero only for four concurrently owned Media findings (dependency inventory plus service-locator rules in `AppliesTenantBoundary.php`, `Media.php`, and `MediaPathResolver.php`).
+- The generated package-contract baseline was intentionally left untouched for the parent-requested combined Auth/Media deterministic refresh after both code commits land. No consumer fixture changed and no broad consumer run was repeated.
