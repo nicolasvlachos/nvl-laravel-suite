@@ -49,3 +49,67 @@ The three portable skips are the native production/concurrency gates and were ex
 `tools/package-contracts.json` is not staged in the final closure commit. Concurrent Auth work changes the same generated baseline, so the parent requested one deterministic combined `contracts:update` / `contracts:check` after both Media and Auth commits land. The intentional Media delta includes the PostgreSQL-safe `ownership_key` migration correction and the adapter/provider public reflection changes.
 
 No functional Media concern remains from R1–R5. The canonical Larastan package bootstrap exited silently in the concurrently dirty shared app, so every modified Media PHP source was instead run through strict max-level serial PHPStan and passed; the parent can rerun the combined package analysis once Auth is stable.
+
+## Independent-review correction wave
+
+The 2 Critical, 14 Important, and 1 Minor findings in `media-full-review.md`
+were verified against the committed implementation. None was disputed; all were
+closed in `703f6d3`, `e0eab9d`, `b7bc07a`, and the final focused correction commit.
+
+| Finding | Closure |
+| --- | --- |
+| C1 | Tenant orphan inventory/deletion is restricted to the active tenant's canonical prefix; A/B destructive cleanup proves B survives A cleanup. |
+| C2 | Private capabilities bind tenant UUID, Media revision, relative signature, and verified canonical origin; disabled mode retains its absolute legacy signature. Wrong host/tenant, stale revision, suspension, selector conflict, HEAD/range, and neutral-not-found cases are covered. |
+| I1 | Platform expansion, constrain, and adoption consistently use `ownership_key=platform` with null tenant identity; platform-only activation is covered. |
+| I2 | Resume/final verification recheck mapping identity, root/variation bytes, size/checksum, translations, associations, parent ownership, and multipart objects instead of trusting ledger status. |
+| I3 | Every reviewed root requires a SHA-256 digest and every destination is justified by registered canonical owners; unknown owners fail closed. |
+| I4 | Final constraints have reverse-order driver-correct teardown/reapplication, and activated root `storage_path` is non-null. |
+| I5 | Multipart completion converts the physical tenant path back to one logical folder before replacement, preventing duplicate tenant prefixes. |
+| I6 | Staging records the exact grant/source/revision/digest/size tuple; persist requires equality with the supplied and locked snapshot. |
+| I7 | Grant/import/revoke use a durable grant-identity lock before source/claim locks; separate-process revoke/import and refresh/import winner cases pass. |
+| I8 | Final persistence re-reads the recipient from `TenantDirectory` and requires active status inside the transaction. |
+| I9 | Catalog metadata uses a documented scalar allowlist; tags have count and length bounds. |
+| I10 | Imported-image variation dispatch is registered after commit with the captured tenant envelope. |
+| I11 | Create/refresh/revoke emit documented scalar `MediaCatalogGrantAudited` facts after commit. |
+| I12 | `--all-tenants` uses injected `MediaTenantWorklist` under an explicit platform operation; Media assumes no host directory table. |
+| I13 | Trait reads delegate ownership validation to the injected existing Media service boundary; no trait service locator remains. |
+| I14 | Route, multipart/replacement, privileged-reader, platform adoption, corruption/resume, A/B native slot race, and tenant-prefixed production evidence is present and invoked. |
+| M1 | Versioned owner-slot request fingerprints include the canonical tenant UUID or disabled sentinel. |
+
+The native A/B slot gate also exposed a Foundation portability defect: inherited
+polymorphic children persist heterogeneous owner IDs as strings while a parent
+may use a native UUID column. The parent authorized the narrow shared fix in
+`TenantBoundary`: only polymorphic identity comparison is cast to portable text.
+The focused Foundation regression passes on PostgreSQL, MySQL, and MariaDB;
+ordinary inherited relations are unchanged.
+
+### Correction verification
+
+| Gate | Result |
+| --- | ---: |
+| Consolidated portable Media rerun | 1,032 tests; 1,024 passed; 3,481 assertions; 2 narrow failures; 6 expected native/service skips; the overlapping risky result belonged to the failing set |
+| Exact documentation closure | contract/event documentation passed in the 2-case run; its companion exposed one duplicate-output expectation |
+| Exact tenant worklist closure | 1 test; 7 assertions |
+| PostgreSQL Media schema/adoption/races | 10 tests; 116 assertions |
+| MySQL 8.4 Media schema/adoption/races | 10 tests; 116 assertions |
+| MariaDB 12.3 Media schema/adoption/races | 10 tests; 116 assertions |
+| Polymorphic string/UUID Foundation regression | 1 test; 5 assertions on each of PostgreSQL, MySQL, and MariaDB |
+| PostgreSQL + Redis + MinIO exact production closure | 1 test; 20 assertions |
+| Strict max-level changed production-source PHPStan | 0 errors |
+| Pint / syntax / diff check | passed |
+| Package family | 21 distributions validated |
+| Sealed standalone consumer | mirrored Media + inert Tenancy present; Auth absent; neither package symlinked |
+
+The broad rerun's two failures were documentation for the new scalar audit event
+and a console-output expectation that incorrectly required one occurrence across
+two tenant iterations. Both were corrected and their exact cases passed; per the
+requested cadence the 1,032-test suite was not run a third time. The production
+failure collected later in the same matrix was incomplete test context around
+the low-level multipart lifecycle; its exact PostgreSQL/Redis/MinIO case then
+passed 1/20.
+
+`contracts:check` remains deliberately parent-owned and reports only the combined
+intentional `nvl/auth` and `nvl/media` baseline delta. The canonical package
+Larastan launcher still exits silently in this shared application profile; direct
+2 GiB max-level analysis of the changed Media/Foundation production sources
+passed with zero errors. No service skip was accepted as native evidence.
