@@ -37,6 +37,7 @@ use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\PlatformOperation;
 use Nvl\Tenancy\ValueObjects\TenantDescriptor;
 use Nvl\Tenancy\ValueObjects\TenantId;
+use Nvl\Translatable\Providers\TranslatableServiceProvider;
 
 $loader = require __DIR__.'/vendor/autoload.php';
 $app = require __DIR__.'/bootstrap/app.php';
@@ -50,6 +51,12 @@ $prefixes = array_filter(array_keys($loader->getPrefixesPsr4()), static fn (stri
 $sources = [];
 foreach (['Nvl\\Tenancy\\Providers\\TenancyServiceProvider', 'Nvl\\Data\\Providers\\DataServiceProvider', 'Nvl\\Support\\Providers\\SupportServiceProvider'] as $class) {
     $sources[$class] = str_starts_with((new ReflectionClass($class))->getFileName(), __DIR__.'/vendor/nvl/');
+}
+if (($argv[1] ?? '') === 'translatable') {
+    $sources[TranslatableServiceProvider::class] = str_starts_with(
+        (new ReflectionClass(TranslatableServiceProvider::class))->getFileName(),
+        __DIR__.'/vendor/nvl/',
+    );
 }
 $nvls = array_values(array_filter(InstalledVersions::getInstalledPackages(), static fn (string $name): bool => str_starts_with($name, 'nvl/')));
 sort($nvls);
@@ -69,6 +76,19 @@ $result = [
     'tables' => Schema::getTableListing(),
     'projection' => $projection,
 ];
+if (($argv[1] ?? '') === 'translatable') {
+    $providers = array_keys($app->getLoadedProviders());
+    $result['translatable_provider_loaded'] = $app->providerIsLoaded(TranslatableServiceProvider::class);
+    $result['provider_order'] = array_values(array_filter(
+        $providers,
+        static fn (string $provider): bool => in_array($provider, [
+            'Nvl\\Support\\Providers\\SupportServiceProvider',
+            'Nvl\\Data\\Providers\\DataServiceProvider',
+            TenancyServiceProvider::class,
+            TranslatableServiceProvider::class,
+        ], true),
+    ));
+}
 if (($argv[1] ?? '') === 'filterable') {
     Schema::create('predicate_records', function (Blueprint $table): void {
         $table->id();

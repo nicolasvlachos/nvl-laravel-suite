@@ -32,6 +32,16 @@ final class TenancyArchiveConsumer
     }
 
     /**
+     * Run an independent Translatable consumer without Auth or Suite.
+     *
+     * @return array<string, mixed>
+     */
+    public static function runTranslatable(): array
+    {
+        return self::runMode('translatable');
+    }
+
+    /**
      * Build and run one selected standalone archive profile.
      *
      * @return array<string, mixed>
@@ -43,7 +53,8 @@ final class TenancyArchiveConsumer
         $filesystem = new Filesystem;
         $filterable = $mode === 'filterable';
         $activity = $mode === 'activity';
-        $packages = ['support', 'data', 'tenancy', ...($filterable ? ['filterable'] : []), ...($activity ? ['activity'] : [])];
+        $translatable = $mode === 'translatable';
+        $packages = ['support', 'data', 'tenancy', ...($filterable ? ['filterable'] : []), ...($activity ? ['activity'] : []), ...($translatable ? ['translatable'] : [])];
 
         try {
             $filesystem->mkdir([$workspace.'/app', $workspace.'/archives', $workspace.'/bootstrap/cache', $workspace.'/config', $workspace.'/storage/framework/views']);
@@ -85,6 +96,7 @@ final class TenancyArchiveConsumer
                     'nvl/tenancy' => '2.0.0',
                     ...($filterable ? ['nvl/filterable' => '2.0.0'] : []),
                     ...($activity ? ['nvl/activity' => '2.0.0'] : []),
+                    ...($translatable ? ['nvl/translatable' => '2.0.0'] : []),
                 ],
                 'repositories' => $repositories,
                 'autoload' => ['psr-4' => [

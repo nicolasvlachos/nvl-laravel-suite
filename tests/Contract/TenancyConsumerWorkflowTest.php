@@ -6,6 +6,7 @@ use Illuminate\Config\Repository;
 use Illuminate\Filesystem\Filesystem;
 use Nvl\Suite\Services\SuitePackageConfigurationInspector;
 use Nvl\Suite\Support\SuiteModuleCatalog;
+use Symfony\Component\Yaml\Yaml;
 use Tests\Fixtures\TenancyArchiveConsumer;
 
 it('classifies Tenancy type discovery and configuration for consumers', function (): void {
@@ -77,4 +78,33 @@ it('records tenant-partitioned Activity facts from cached standalone archives wi
         ->and($result['activity_ids'])->toBe($result['expected_activity_ids'])
         ->and($result['ownership_keys'])->toBe(['tenant:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'])
         ->and($result['ownership_schema'])->toBeTrue();
+});
+
+it('boots cached Translatable archives through Composer discovery without Auth or Suite', function (): void {
+    $result = TenancyArchiveConsumer::runTranslatable();
+
+    expect($result['packages'])->toBe(['nvl/data', 'nvl/support', 'nvl/tenancy', 'nvl/translatable'])
+        ->and($result['source_paths'])->each->toBeTrue()
+        ->and($result['loader_local'])->toBeTrue()
+        ->and($result['auth_absent'])->toBeTrue()
+        ->and($result['suite_absent'])->toBeTrue()
+        ->and($result['cached'])->toBeTrue()
+        ->and($result['provider_loaded'])->toBeTrue()
+        ->and($result['translatable_provider_loaded'])->toBeTrue()
+        ->and($result['provider_order'])->toBe([
+            'Nvl\\Data\\Providers\\DataServiceProvider',
+            'Nvl\\Support\\Providers\\SupportServiceProvider',
+            'Nvl\\Tenancy\\Providers\\TenancyServiceProvider',
+            'Nvl\\Translatable\\Providers\\TranslatableServiceProvider',
+        ]);
+});
+
+it('keeps worker and race evidence in the existing database quality jobs', function (): void {
+    $root = dirname(__DIR__, 2);
+    $workflow = Yaml::parseFile($root.'/.github/workflows/package-quality.yml');
+    $postgres = json_encode($workflow['jobs']['postgresql'] ?? [], JSON_THROW_ON_ERROR);
+    $mysql = json_encode($workflow['jobs']['mysql-family'] ?? [], JSON_THROW_ON_ERROR);
+
+    expect($postgres)->toContain('redis:8.0-alpine', 'pdo_pgsql', 'redis', 'REDIS_HOST', 'translatable')
+        ->and($mysql)->toContain('TranslationTenancySchemaTest.php');
 });
