@@ -105,6 +105,17 @@ name: string,
 description: string | null,
 isSystem: boolean,
 };
+export type TenantMembershipData = {
+id: string,
+tenantId: string,
+subjectType: string,
+subjectId: string,
+status: Nvl.Auth.Enums.MembershipStatus,
+owner: boolean,
+revision: number,
+name: string | null,
+email: string | null,
+};
 }
 namespace Mutations {
 export type AcceptInvitationData = {
@@ -142,6 +153,11 @@ code: string,
 };
 export type DeleteOwnAccountData = {
 currentPassword: string,
+};
+export type EnrollMembershipData = {
+subject: { type: string; identifier: string },
+roles: string[],
+permissions: string[],
 };
 export type FinishPasskeyAuthenticationData = {
 ceremonyId: string,
@@ -241,6 +257,10 @@ permissions: string[],
 export type SyncUserRolesData = {
 roles: string[],
 };
+export type TransferMembershipOwnershipData = {
+recipientMembershipId: string,
+expectedRevision: number,
+};
 export type UpdateClientData = {
 name: string,
 surface: string,
@@ -253,6 +273,10 @@ active: boolean,
 };
 export type UpdateClientStatusData = {
 active: boolean,
+};
+export type UpdateMembershipStatusData = {
+status: Nvl.Auth.Enums.MembershipStatus,
+expectedRevision: number,
 };
 export type UpdatePasswordData = {
 currentPassword: string,
@@ -352,13 +376,16 @@ limit: number | null,
 }
 }
 namespace Enums {
-export type AuthFeature = 'authentication' | 'principal_management' | 'password' | 'email_verification' | 'magic_links' | 'security_codes' | 'invitations' | 'totp' | 'passkeys' | 'recovery_codes' | 'social_identities' | 'clients' | 'sessions' | 'api_tokens' | 'rbac' | 'audit';
+export type AuthFeature = 'authentication' | 'principal_management' | 'memberships' | 'password' | 'email_verification' | 'magic_links' | 'security_codes' | 'invitations' | 'totp' | 'passkeys' | 'recovery_codes' | 'social_identities' | 'clients' | 'sessions' | 'api_tokens' | 'rbac' | 'audit';
+export type AuthIdentityOperation = 'login' | 'logout' | 'recovery' | 'verify_email' | 'profile' | 'password' | 'mfa' | 'social_identity' | 'membership_discovery';
 export type AuthIntegrationPreset = 'embedded-application';
 export type AuthMessageType = 'invitation' | 'magic_link' | 'security_code' | 'password_reset' | 'email_verification';
 export type AuthenticationPurpose = 'credential_login' | 'passwordless_login' | 'social_login' | 'password_reset';
 export type FeatureOperation = 'read' | 'enroll' | 'issue' | 'use' | 'update' | 'revoke' | 'cleanup';
 export type InvitationDeliveryStatus = 'pending' | 'delivered' | 'failed';
+export type MembershipStatus = 'active' | 'suspended' | 'revoked';
 export type PrincipalAttribute = 'id' | 'name' | 'email' | 'email_verified_at' | 'password' | 'active' | 'locale' | 'timezone' | 'profile' | 'preferences' | 'last_login_at' | 'last_login_ip' | 'locked_until' | 'remember_token' | 'created_at' | 'updated_at' | 'deleted_at';
+export type TenantAuthenticationPurpose = 'login' | 'social_login' | 'social_link' | 'magic_link' | 'security_code' | 'passkey_login' | 'invitation';
 export type UserBulkOperation = 'enable' | 'disable' | 'delete' | 'restore';
 }
 }

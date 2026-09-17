@@ -15,6 +15,7 @@ use Nvl\Auth\Contracts\AuthManagementAccess;
 use Nvl\Auth\Contracts\SystemMutationAccess;
 use Nvl\MailNotifications\Contracts\MailNotificationReadAuthorization;
 use Nvl\Settings\Contracts\SettingsAuthorization;
+use Nvl\Tenancy\Contracts\PlatformAccess;
 
 /** Registers the proof consumer's explicit package extension boundaries. */
 final class AuthConsumerServiceProvider extends ServiceProvider
@@ -25,6 +26,7 @@ final class AuthConsumerServiceProvider extends ServiceProvider
         $this->app->singleton(AuthConsumerAccess::class);
         $this->app->alias(AuthConsumerAccess::class, AuthManagementAccess::class);
         $this->app->alias(AuthConsumerAccess::class, SystemMutationAccess::class);
+        $this->app->alias(AuthConsumerAccess::class, PlatformAccess::class);
         $this->app->singleton(
             SettingsAuthorization::class,
             AuthConsumerSettingsAuthorization::class,

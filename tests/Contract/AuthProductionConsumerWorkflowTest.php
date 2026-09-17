@@ -23,6 +23,7 @@ it('defines the complete Auth production consumer fixture', function (): void {
         'config/activity.php',
         'config/mail-notifications.php',
         'config/nvl-auth.php',
+        'config/tenancy.php',
         'config/nvl-suite.php',
         'config/settings.php',
         'resources/views/mail/auth-consumer.blade.php',
@@ -175,6 +176,7 @@ it('compiles the generated Auth and Settings transport contracts', function (): 
         'Nvl.Auth.Data.Display.RoleAnalyticsData',
         'satisfies Nvl.Settings.Data.SettingMutationData',
         'Nvl.Settings.Data.SettingValueData',
+        'Nvl.Auth.Data.Display.TenantMembershipData',
     )
         ->and($configuration['compilerOptions']['strict'] ?? null)->toBeTrue()
         ->and($configuration['compilerOptions']['skipLibCheck'] ?? null)->toBeFalse()
@@ -227,6 +229,9 @@ it('runs both Auth migration ownership modes from a sealed artifact', function (
         'test ! -L vendor/nvl/laravel-suite',
         'package_owned',
         'application_owned',
+        'AUTH_CONSUMER_TENANCY',
+        '--tenant-smoke',
+        'tenancy-migrations',
         'vendor:publish --tag=auth-migrations',
         'vendor:publish --tag=settings-migrations',
         'vendor:publish --tag=activity-migrations',

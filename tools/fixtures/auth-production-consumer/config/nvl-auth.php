@@ -39,14 +39,18 @@ return [
         'email_verification' => ['enabled' => false],
         'magic_links' => ['enabled' => false],
         'security_codes' => ['enabled' => false],
-        'invitations' => ['enabled' => false],
+        'memberships' => ['enabled' => env('AUTH_CONSUMER_TENANCY', false)],
+        'invitations' => ['enabled' => env('AUTH_CONSUMER_TENANCY', false)],
         'totp' => ['enabled' => false],
         'passkeys' => ['enabled' => false],
         'recovery_codes' => ['enabled' => false],
         'social_identities' => ['enabled' => false],
         'clients' => ['enabled' => false],
         'sessions' => ['enabled' => false],
-        'api_tokens' => ['enabled' => false],
+        'api_tokens' => [
+            'enabled' => env('AUTH_CONSUMER_TENANCY', false),
+            'settings' => ['abilities' => ['consumer:read']],
+        ],
         'rbac' => [
             'enabled' => true,
             'models' => [

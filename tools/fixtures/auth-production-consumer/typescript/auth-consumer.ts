@@ -10,6 +10,10 @@ function activePrincipalCount(analytics: Nvl.Auth.Data.Display.RoleAnalyticsData
     return analytics.activeUsers;
 }
 
+function tenantMembershipOwner(membership: Nvl.Auth.Data.Display.TenantMembershipData): boolean {
+    return membership.owner && membership.status === 'active';
+}
+
 const enableConsumer = {
     key: 'consumer.enabled',
     value: true,
@@ -24,6 +28,7 @@ void [
     roleLabel,
     permissionLabel,
     activePrincipalCount,
+    tenantMembershipOwner,
     enableConsumer,
     effectiveSetting,
 ];

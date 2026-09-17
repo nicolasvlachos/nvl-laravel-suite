@@ -40,7 +40,8 @@ unzip -q "$archive" -d "$consumer_workspace/artifact"
 run_consumer_mode() {
     local migration_mode="$1"
     local package_migrations="$2"
-    local consumer_root="$consumer_workspace/$migration_mode"
+    local tenancy_profile="$3"
+    local consumer_root="$consumer_workspace/${migration_mode}_${tenancy_profile}"
 
     composer create-project \
         --no-interaction \
@@ -83,6 +84,7 @@ run_consumer_mode() {
         APP_DEBUG=false \
         APP_URL=https://auth-consumer.test \
         AUTH_CONSUMER_PACKAGE_MIGRATIONS="$package_migrations" \
+        AUTH_CONSUMER_TENANCY="$([[ "$tenancy_profile" == 'tenant' ]] && echo true || echo false)" \
         CACHE_STORE=database \
         CACHE_LIMITER=database \
         DB_CONNECTION=sqlite \
@@ -100,6 +102,9 @@ run_consumer_mode() {
         auth_consumer_artisan vendor:publish --tag=settings-migrations --force
         auth_consumer_artisan vendor:publish --tag=activity-migrations --force
         auth_consumer_artisan vendor:publish --tag=mail-notifications-migrations --force
+        if [[ "$tenancy_profile" == 'tenant' ]]; then
+            auth_consumer_artisan vendor:publish --tag=tenancy-migrations --force
+        fi
     fi
 
     auth_consumer_artisan config:clear
@@ -112,11 +117,18 @@ run_consumer_mode() {
     auth_consumer_artisan nvl:suite:skills:publish --format=json
     auth_consumer_artisan nvl:data:types:generate
     auth_consumer_artisan nvl:data:types:check
-    auth_consumer_artisan nvl:suite:doctor --strict --production --format=json
-    auth_consumer_artisan nvl:suite:consumer-audit --strict --format=json
-    auth_consumer_artisan auth-consumer:smoke --format=json
-    auth_consumer_artisan queue:work --stop-when-empty --max-jobs=10 --tries=1
-    auth_consumer_artisan auth-consumer:smoke --verify-queued-mail --format=json
+    if [[ "$tenancy_profile" == 'tenant' ]]; then
+        auth_consumer_artisan down
+        auth_consumer_artisan auth-consumer:smoke --tenant-smoke --format=json
+        auth_consumer_artisan up
+        auth_consumer_artisan nvl:auth:doctor --format=json
+    else
+        auth_consumer_artisan nvl:suite:doctor --strict --production --format=json
+        auth_consumer_artisan nvl:suite:consumer-audit --strict --format=json
+        auth_consumer_artisan auth-consumer:smoke --format=json
+        auth_consumer_artisan queue:work --stop-when-empty --max-jobs=10 --tries=1
+        auth_consumer_artisan auth-consumer:smoke --verify-queued-mail --format=json
+    fi
 
     npm install --ignore-scripts --no-save 'typescript@^5.9.3'
     ./node_modules/.bin/tsc --noEmit -p auth-consumer-types/tsconfig.json
@@ -124,5 +136,7 @@ run_consumer_mode() {
     auth_consumer_artisan migrate:rollback --force --step=999
 }
 
-run_consumer_mode package_owned true
-run_consumer_mode application_owned false
+run_consumer_mode package_owned true disabled
+run_consumer_mode application_owned false disabled
+run_consumer_mode package_owned true tenant
+run_consumer_mode application_owned false tenant
