@@ -82,3 +82,11 @@ During F6 implementation, controller appended exact global/shared interface/test
 - Stage copies and verifies exact bytes into the active tenant partition. Persist requires the caller's canonical open transaction, locks grant then source, rechecks recipient/revisions/digest/status, enforces tenant-local idempotency provenance, and registers rollback cleanup.
 - Revocation blocks every new/replayed import authorization while committed tenant copies remain independent. Caller-substituted tuples and out-of-transaction persistence fail before writes.
 - Evidence: catalog revocation/import and graph rollback tests — 2 tests, 15 assertions.
+
+## R5 — Media queue and operational boundaries
+
+- All three Media jobs now carry the foundation scalar tenant envelope without changing their existing positional arguments. Producer dispatchers capture the envelope before after-commit callbacks, child jobs preserve it, and tenant identity participates in uniqueness keys only when tenancy is enabled.
+- Regeneration rejects unresolved tenant-wide scans. `--tenant` enters one bounded runner; `--all-tenants` obtains an explicitly authorized active-tenant worklist and runs each tenant independently. Disabled installations retain the legacy command behavior.
+- Added Media's own sealed consumer fixture with explicit schema/adoption setup and a real database queue worker. It proves same-worker A/B image variation isolation, stale work rejection, failure retry, corrupted-envelope rejection before lookup, tenant-prefixed storage, and clean worker scope. The gate exposed and fixed missing inherited ownership on newly generated variation rows.
+- Evidence: focused queue/command/job/action/worker matrix — 41 tests, 124 assertions before the inherited-writer correction; corrected action plus real-worker proof — 16 tests, 75 assertions. Focused Media PHPStan is green.
+- Remaining final-matrix work: run the portable package suite and the provisioned PostgreSQL/MySQL/MariaDB, Redis, S3-compatible, race, contract, and sealed-consumer release gates once after the R1-R5 code is committed.
