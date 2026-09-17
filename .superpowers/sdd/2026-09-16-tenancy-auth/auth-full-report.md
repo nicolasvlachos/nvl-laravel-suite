@@ -185,3 +185,25 @@ The `auth-full-review.md` findings (1 Critical, 5 Important) were verified again
 
 - No new Auth release concern was found. The previously disclosed broad PostgreSQL legacy timestamp failures and unrelated Translatable dependency findings remain outside this correction wave and were not rerun.
 - The shared worktree contains concurrent Media changes. They were neither edited intentionally, staged, reset, nor included in the Auth correction commit; Auth paths are clean after the path-specific commit.
+
+## Final I-2 / N-1 targeted closure
+
+The follow-up review's remaining I-2 and new N-1 findings were confirmed and corrected without changing Media or the sealed consumer fixture.
+
+- `TenantAuthenticationIntents::consume()` now requires the server-resolved expected tenant and compares it under the locked intent row before writing `consumed_at`. Missing, invalid, and conflicting completion selectors are denied and cannot consume a different tenant flow's nonce. The real magic-link HTTP mismatch test proves the intent remains unconsumed, then completes with the correct tenant and proves the intent is consumed exactly once.
+- Generic `security-codes` request/verify routes again use `RequestSecurityCodeAction` and `VerifySecurityCodeAction`; verification returns proof without session establishment and continues to support host-managed recipients in disabled-tenancy mode.
+- Explicit `security-codes/authentication` request/verify routes now own subject resolution, the exact `passwordless_login` purpose, tenant-intent attachment/consumption, and session establishment. Generic purposes cannot enter that authentication path.
+- Required tenant-resolver injection is preserved for enabled flows. An Auth-owned disabled resolver is bound only when no host resolver exists, so disabled public routes remain injectable without silently bypassing a configured resolver.
+- OpenAPI, route inventory, flow documentation, and the Auth public-contract baseline include the explicit passwordless surface.
+
+### Targeted closure evidence
+
+- Tenant HTTP intent and atomic-intent tests: `vendor/bin/pest --test-directory=packages/nvl/auth/tests --configuration=packages/nvl/auth/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/auth/tests/Feature/Tenancy/AuthenticationIntentHttpTest.php packages/nvl/auth/tests/Feature/Tenancy/AuthenticationIntentTest.php` — 8 passed, 52 assertions.
+- Generic challenge, disabled HTTP compatibility, and OpenAPI tests: `vendor/bin/pest --test-directory=packages/nvl/auth/tests --configuration=packages/nvl/auth/phpunit.xml.dist --bootstrap=vendor/autoload.php --compact packages/nvl/auth/tests/Feature/ChallengeLifecycleTest.php packages/nvl/auth/tests/Feature/HttpApiTest.php packages/nvl/auth/tests/Unit/OpenApiContractTest.php` — 11 passed, 393 assertions.
+- Route/feature manifest alignment: focused `FeatureManifestTest` route-alignment case — 1 passed, 278 assertions.
+- Direct sealed-consumer source contract: `vendor/bin/pest --compact tests/Contract/AuthProductionConsumerWorkflowTest.php` — 4 passed, 151 assertions. The four-profile Composer consumer was not rerun because its fixture did not change.
+- Auth PHPStan: `(cd packages/nvl/auth && ../../../vendor/bin/phpstan analyse --memory-limit=2G --debug)` — 0 errors.
+- Public contracts: `composer contracts:check` — unchanged after the Auth-only baseline refresh.
+- Pint: explicit changed Auth PHP paths with `vendor/bin/pint --format agent` — passed.
+
+An intermediate combined HTTP run exposed that nullable controller method injection selected its `null` default even when the tenant resolver was bound. Required injection plus the disabled-only sentinel corrected that issue; the isolated affected groups above are the final evidence. No broad package, native database, or four-profile consumer matrix was rerun, per the targeted-fix instruction.

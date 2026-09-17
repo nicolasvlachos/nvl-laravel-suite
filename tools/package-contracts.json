@@ -1767,13 +1767,18 @@
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAuthenticationAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAuthenticationAction",
-                    "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Nvl\\Auth\\Contracts\\AuthIdentifierResolver $identifiers, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction $codes, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents): mixed",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Contracts\\PrincipalAttributeMapper $principalAttributes, Nvl\\Auth\\Contracts\\AuthIdentifierResolver $identifiers, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction $codes, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, ?string $locale=null, ?Nvl\\Tenancy\\ValueObjects\\TenantId $tenant=null): ?Nvl\\Auth\\Results\\IssuedChallenge"
                 ],
                 "Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction",
                     "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Actions\\Challenges\\ConsumeChallengeAction $challenges): mixed",
                     "public function execute(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data): Nvl\\Auth\\Models\\Challenge"
+                ],
+                "Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAuthenticationAction": [
+                    "final readonly class Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAuthenticationAction",
+                    "public function __construct(Nvl\\Auth\\Services\\FeatureGate $features, Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction $codes, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): mixed",
+                    "public function execute(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data, Nvl\\Auth\\ValueObjects\\AuthenticationRequestContext $requestContext): Nvl\\Auth\\Models\\Challenge"
                 ],
                 "Nvl\\Auth\\Actions\\Clients\\CreateAuthClientAction": [
                     "final readonly class Nvl\\Auth\\Actions\\Clients\\CreateAuthClientAction",
@@ -5025,8 +5030,10 @@
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\ChallengeController",
                     "public function requestMagicLink(Nvl\\Auth\\Data\\Mutations\\RequestMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestMagicLinkAuthenticationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
                     "public function consumeMagicLink(Nvl\\Auth\\Data\\Mutations\\ConsumeMagicLinkData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\ConsumeMagicLinkAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
-                    "public function requestSecurityCode(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAuthenticationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
-                    "public function verifySecurityCode(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions, Nvl\\Auth\\Services\\TenantAuthenticationChallengeIntents $tenantIntents, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
+                    "public function requestSecurityCode(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function verifySecurityCode(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data, Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAction $action): Illuminate\\Http\\JsonResponse",
+                    "public function requestSecurityCodeAuthentication(Nvl\\Auth\\Data\\Mutations\\RequestSecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\RequestSecurityCodeAuthenticationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
+                    "public function verifySecurityCodeAuthentication(Nvl\\Auth\\Data\\Mutations\\VerifySecurityCodeData $data, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\Challenges\\VerifySecurityCodeAuthenticationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
                     "protected function requestPayload(Illuminate\\Http\\Request $request): array",
                     "@return array<string, mixed>",
                     "protected function stringInput(Illuminate\\Http\\Request $request, string $key): string",
@@ -5103,7 +5110,7 @@
                 "Nvl\\Auth\\Http\\Controllers\\Public\\SocialIdentityController": [
                     "final class Nvl\\Auth\\Http\\Controllers\\Public\\SocialIdentityController",
                     "public function redirect(string $provider, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\SocialIdentities\\StartSocialAuthorizationAction $action, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse",
-                    "public function callback(string $provider, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\SocialIdentities\\CompleteSocialAuthorizationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions): Illuminate\\Http\\JsonResponse"
+                    "public function callback(string $provider, Illuminate\\Http\\Request $request, Nvl\\Auth\\Actions\\SocialIdentities\\CompleteSocialAuthorizationAction $action, Nvl\\Auth\\Actions\\Authentication\\EstablishAuthenticatedSessionAction $sessions, Nvl\\Tenancy\\Contracts\\TenantHttpResolver $tenants): Illuminate\\Http\\JsonResponse"
                 ],
                 "Nvl\\Auth\\Http\\Middleware\\ApplyAuthSecurityHeaders": [
                     "final class Nvl\\Auth\\Http\\Middleware\\ApplyAuthSecurityHeaders",
@@ -6171,6 +6178,10 @@
                     "final readonly class Nvl\\Auth\\Services\\DisabledTenantAwareAuthActivityBridge implements Nvl\\Auth\\Contracts\\TenantAwareAuthActivityBridge",
                     "public function record(string $action, Nvl\\Auth\\ValueObjects\\AuthEventContext $context, array $metadata): void"
                 ],
+                "Nvl\\Auth\\Services\\DisabledTenantHttpResolver": [
+                    "final readonly class Nvl\\Auth\\Services\\DisabledTenantHttpResolver implements Nvl\\Tenancy\\Contracts\\TenantHttpResolver",
+                    "public function resolve(Illuminate\\Http\\Request $request): Nvl\\Tenancy\\ValueObjects\\TenantId"
+                ],
                 "Nvl\\Auth\\Services\\EloquentMembershipPrincipalResolver": [
                     "final readonly class Nvl\\Auth\\Services\\EloquentMembershipPrincipalResolver implements Nvl\\Auth\\Contracts\\MembershipPrincipalResolver",
                     "public function __construct(Nvl\\Auth\\Services\\AuthModelRegistry $models, Nvl\\Auth\\Services\\RbacPrincipalTracker $tracker): mixed",
@@ -6431,7 +6442,7 @@
                     "final readonly class Nvl\\Auth\\Services\\TenantAuthenticationIntents",
                     "public function __construct(Nvl\\Auth\\Services\\AuthConfiguration $configuration, Nvl\\Auth\\Services\\OpaqueTokenFactory $tokens, Nvl\\Auth\\Services\\SecretHasher $hasher, Nvl\\Tenancy\\Contracts\\TenantDirectory $directory): mixed",
                     "public function issue(Nvl\\Tenancy\\ValueObjects\\TenantId $tenant, Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $purpose, string $sessionBinding, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?string $provider=null, ?string $returnPath=null): Nvl\\Auth\\ValueObjects\\IssuedTenantAuthenticationIntent",
-                    "public function consume(string $nonce, Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $purpose, string $sessionBinding, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?string $provider=null): Nvl\\Tenancy\\ValueObjects\\TenantId"
+                    "public function consume(string $nonce, Nvl\\Auth\\Enums\\TenantAuthenticationPurpose $purpose, string $sessionBinding, Nvl\\Tenancy\\ValueObjects\\TenantId $expectedTenant, ?Nvl\\Auth\\ValueObjects\\SubjectReference $subject=null, ?string $provider=null): Nvl\\Tenancy\\ValueObjects\\TenantId"
                 ],
                 "Nvl\\Auth\\Services\\TenantMembershipAssignments": [
                     "final readonly class Nvl\\Auth\\Services\\TenantMembershipAssignments",
@@ -6768,7 +6779,7 @@
                 "routes/public/magic_links.php": "1480cd7e6af481717957a9a8695e05eebfa86403af68c510ab0d5ed4f3d03d5a",
                 "routes/public/passkeys.php": "25da6fdd9767892bf3e8572e5b4d993dfdab2f617e2cb177bea6fdb6fba488a2",
                 "routes/public/passwords.php": "a7e352190ba69be1cdf093cab14b3c4058445fbebae7e55e740d773bc96c0065",
-                "routes/public/security_codes.php": "07be167f4ca64f4badc67a7436fb3588a2c0467515673613561a0535055806e6",
+                "routes/public/security_codes.php": "e57b2a1f917e3f0698d3cba8e2cc645cfb2112f5f0abc037f3e8715e098a89c0",
                 "routes/public/social_identities.php": "c982c6a1ffdb5543ae5822a202e67bc7fbcb90ba898e820dc4fe98acd77a41f3"
             },
             "migrations": {
