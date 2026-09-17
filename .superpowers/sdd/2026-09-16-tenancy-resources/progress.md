@@ -68,3 +68,10 @@ During F6 implementation, controller appended exact global/shared interface/test
 - Public and private asset routes now establish the trusted public tenant before Laravel route-model binding. Cross-tenant public reuse of an already-passed model is rejected explicitly, and null/privileged library reads remain tenant-scoped.
 - Bulk delete/tag/move now validate the entire identifier set before mutation, preventing partial success when any identifier is unavailable to the active tenant.
 - Evidence: new boundary proof plus Actions/API/InteractsWithMedia focused matrix — 126 tests, 347 assertions.
+
+## R3 — Media storage and operation identity
+
+- Tenant writes now persist immutable object identities under `root/tenants/<uuid>/...`; platform writes use `root/platform/...`. Existing adopted records always resolve their persisted path, while disabled untouched rows retain legacy reconstruction.
+- Deduplication, mutation, multipart, and owner-slot operation identities include the foundation tenant key. Multipart roots and completed assets carry derived tenant ownership and persisted object paths.
+- The exact dedup isolation proof passes: repeated bytes deduplicate inside A, while B receives a distinct row and physical path. Existing multipart/slot/transaction/path/storage-health coverage remains green.
+- Evidence: 143 focused existing/new tests, 574 assertions, plus the dedicated storage proof (1 test, 9 assertions).
