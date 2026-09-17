@@ -8,6 +8,7 @@ it('defines the complete Auth production consumer fixture', function (): void {
 
     foreach ([
         'app/Auth/Activity/UserActivityMapping.php',
+        'app/Auth/Activity/AuthConsumerActivityBridge.php',
         'app/Auth/Authorization/AuthConsumerAccess.php',
         'app/Auth/Authorization/AuthConsumerMailReadAuthorization.php',
         'app/Auth/Authorization/AuthConsumerSettingsAuthorization.php',
@@ -109,6 +110,9 @@ it('uses package Actions and explicit authorization without direct package queri
         $fixtureRoot.'/app/Auth/TenantAuthConsumerProbe.php',
     );
     $auth = authProductionFixtureContents($fixtureRoot.'/config/nvl-auth.php');
+    $activityBridge = authProductionFixtureContents(
+        $fixtureRoot.'/app/Auth/Activity/AuthConsumerActivityBridge.php',
+    );
     $mail = authProductionFixtureContents(
         $fixtureRoot.'/config/mail-notifications.php',
     );
@@ -137,6 +141,12 @@ it('uses package Actions and explicit authorization without direct package queri
             "'use_package_storage' => true",
             "'authentication' => ['enabled' => env('AUTH_CONSUMER_TENANCY', false)]",
             "'api_tokens' => [",
+            'AuthConsumerActivityBridge::class',
+        )
+        ->and($activityBridge)->toContain(
+            'TenantAwareAuthActivityBridge',
+            'ActivityRecorder',
+            'resolveChanges: false',
         )
         ->and($mail)->toContain(
             "'consumer-user' => User::class",
@@ -151,6 +161,12 @@ it('uses package Actions and explicit authorization without direct package queri
         ->not->toContain('ActivityLog::query(')
         ->and($smoke.$tenantProbe)->not->toContain('TenantMembership::query(')
         ->and($tenantProbe)->toContain('ListOwnMembershipsAction')
+        ->and($tenantProbe)->toContain(
+            'SynchronizePermissionCatalogAction',
+            'SynchronizeRoleTemplatesAction',
+            '->platform(',
+        )
+        ->and($tenantProbe)->not->toContain('BootstrapRbacAction')
         ->and($probe)->toContain(
             'BootstrapRbacAction',
             'CreateUserAction',

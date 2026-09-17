@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Auth\Activity\AuthConsumerActivityBridge;
 use App\Auth\Authorization\AuthConsumerAccess;
 use App\Auth\Rbac\AuthConsumerPermissionCatalog;
 use App\Auth\Rbac\AuthConsumerRoleTemplates;
@@ -23,6 +24,11 @@ return [
     'identifier' => 'email',
     'services' => [
         'system_mutation_access' => AuthConsumerAccess::class,
+    ],
+    'tenancy' => [
+        'activity_bridge' => env('AUTH_CONSUMER_TENANCY', false)
+            ? AuthConsumerActivityBridge::class
+            : 'disabled',
     ],
     'features' => [
         'authentication' => ['enabled' => env('AUTH_CONSUMER_TENANCY', false)],

@@ -13,7 +13,8 @@ use Nvl\Auth\Actions\Invitations\CreateInvitationAction;
 use Nvl\Auth\Actions\Memberships\ListOwnMembershipsAction;
 use Nvl\Auth\Actions\Memberships\ProvisionTenantOwnerAction;
 use Nvl\Auth\Actions\Memberships\RevokeMembershipAction;
-use Nvl\Auth\Actions\Rbac\BootstrapRbacAction;
+use Nvl\Auth\Actions\Rbac\SynchronizePermissionCatalogAction;
+use Nvl\Auth\Actions\Rbac\SynchronizeRoleTemplatesAction;
 use Nvl\Auth\Actions\Users\SyncUserRolesAction;
 use Nvl\Auth\Data\Mutations\ApiTokenData;
 use Nvl\Auth\Data\Mutations\StoreInvitationData;
@@ -32,7 +33,8 @@ final readonly class TenantAuthConsumerProbe implements AuthConsumerSmoke
         private TenantAdoptionCoordinator $adoption,
         private TenantRunner $tenants,
         private ProvisionTenantOwnerAction $provisionOwner,
-        private BootstrapRbacAction $bootstrapRbac,
+        private SynchronizePermissionCatalogAction $synchronizePermissions,
+        private SynchronizeRoleTemplatesAction $synchronizeRoles,
         private SyncUserRolesAction $syncRoles,
         private CreateApiTokenAction $createToken,
         private CreateInvitationAction $createInvitation,
@@ -58,15 +60,6 @@ final readonly class TenantAuthConsumerProbe implements AuthConsumerSmoke
         }
 
         $operation = new PlatformOperation('auth-consumer.adoption', 'system', 'auth-consumer');
-        $plan = $this->adoption->prepare(['auth'], [], $operation);
-        while (! $this->adoption->backfill($plan, 100, $operation)) {
-            // Continue only advancing bounded package checkpoints.
-        }
-        if (! $this->adoption->verify($plan)->passed()) {
-            throw new LogicException('The sealed consumer Auth adoption did not verify.');
-        }
-        $this->adoption->activate($plan, $operation);
-
         $principal = User::forceCreate([
             'name' => 'Tenant Consumer Principal',
             'email' => 'tenant-principal@auth-consumer.test',
@@ -78,6 +71,19 @@ final readonly class TenantAuthConsumerProbe implements AuthConsumerSmoke
             'profile' => [],
             'preferences' => [],
         ]);
+        $plan = $this->adoption->prepare(['auth'], [], $operation);
+        while (! $this->adoption->backfill($plan, 100, $operation)) {
+            // Continue only advancing bounded package checkpoints.
+        }
+        if (! $this->adoption->verify($plan)->passed()) {
+            throw new LogicException('The sealed consumer Auth adoption did not verify.');
+        }
+        $this->adoption->activate($plan, $operation);
+        $this->tenants->platform(
+            $operation,
+            fn (): int => $this->synchronizePermissions->execute($principal),
+        );
+
         $reference = SubjectReference::fromAuthenticatable($principal);
         $authority = new SystemMutationContext(
             reason: 'auth-production-consumer-tenancy',
@@ -86,7 +92,7 @@ final readonly class TenantAuthConsumerProbe implements AuthConsumerSmoke
         foreach ([$tenantA, $tenantB] as $tenant) {
             $this->tenants->run($tenant, function () use ($authority, $principal, $reference): void {
                 $this->provisionOwner->execute($authority, $reference);
-                $this->bootstrapRbac->execute($authority);
+                $this->synchronizeRoles->execute($principal);
                 $this->syncRoles->execute(
                     $authority,
                     $principal,

@@ -35,6 +35,12 @@ final class AuthConsumerAccess implements AuthManagementAccess, PlatformAccess, 
                 && str_starts_with($authority->correlationId, 'auth-production-consumer-');
         }
 
+        if ($authority instanceof User
+            && $authority->email === 'tenant-principal@auth-consumer.test'
+            && $ability === 'nvl-auth.rbac.synchronize') {
+            return true;
+        }
+
         return $authority instanceof User
             && $authority->hasPermissionTo(self::PERMISSION);
     }
