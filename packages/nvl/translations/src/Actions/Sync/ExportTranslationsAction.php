@@ -10,6 +10,7 @@ use Nvl\Translations\Exceptions\TranslationsException;
 use Nvl\Translations\Services\TranslationExportService;
 use Nvl\Translations\Services\TranslationImportService;
 use Nvl\Translations\Services\TranslationProcessLock;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Runs translation export synchronization.
@@ -23,6 +24,7 @@ final class ExportTranslationsAction
         private readonly TranslationExportService $exportService,
         private readonly TranslationImportService $importService,
         private readonly TranslationProcessLock $lock,
+        private readonly SourceTranslationWorkspace $workspace,
     ) {}
 
     /**
@@ -38,6 +40,7 @@ final class ExportTranslationsAction
         bool $prune = false,
         bool $dryRun = false,
     ): array {
+        $this->workspace->authorize();
         $result = $this->lock->execute(
             'export',
             function () use ($scopeTokens, $locales, $format, $target, $prune, $dryRun): array {

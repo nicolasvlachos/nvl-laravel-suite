@@ -6,12 +6,15 @@ namespace Nvl\Translations\Actions\Entries;
 
 use LogicException;
 use Nvl\Translations\Models\TranslationEntry;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Lists distinct translation filter options from one entry query.
  */
 final class ListTranslationFilterOptionsAction
 {
+    public function __construct(private readonly SourceTranslationWorkspace $workspace) {}
+
     /**
      * Return sorted option values for the translation index.
      *
@@ -19,6 +22,7 @@ final class ListTranslationFilterOptionsAction
      */
     public function execute(): array
     {
+        $this->workspace->authorize();
         return [
             'scopeTypes' => $this->values('scope_type'),
             'scopeNames' => $this->values('scope_name'),

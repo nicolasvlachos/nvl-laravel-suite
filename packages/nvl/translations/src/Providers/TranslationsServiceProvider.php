@@ -19,9 +19,15 @@ use Nvl\Translations\Console\Commands\TranslationsStatusCommand;
 use Nvl\Translations\Console\Commands\TranslationsUnusedCommand;
 use Nvl\Translations\Contracts\ImportTranslationsContract;
 use Nvl\Translations\Contracts\ScanTranslationsContract;
+use Nvl\Translations\Contracts\TenantTranslationRepository;
 use Nvl\Translations\Contracts\TranslationsAuthorization;
 use Nvl\Translations\Contracts\UpdateTranslationEntryContract;
 use Nvl\Translations\Services\ConfiguredTranslationsAuthorization;
+use Nvl\Translations\Services\DatabaseTenantTranslationRepository;
+use Nvl\Translations\Tenancy\TranslationsResourceRegistrar;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
+use Nvl\Tenancy\Services\TenantAdoptionRegistry;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Registers the translation workspace package and its optional management API.
@@ -63,7 +69,13 @@ final class TranslationsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->register(TenancyServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/translations.php', 'translations');
+        (new TranslationsResourceRegistrar)->register(
+            $this->app->make(TenantResourceRegistry::class),
+            $this->app->make(TenantAdoptionRegistry::class),
+        );
+        $this->app->scoped(TenantTranslationRepository::class, DatabaseTenantTranslationRepository::class);
 
         $this->app->bind(
             UpdateTranslationEntryContract::class,

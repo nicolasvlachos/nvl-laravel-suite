@@ -7,12 +7,15 @@ namespace Nvl\Translations\Actions\Entries;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Nvl\Filterable\Data\FilterSet;
 use Nvl\Translations\Models\TranslationEntry;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Lists translation entries with query filters and sorting.
  */
 final class ListTranslationEntriesAction
 {
+    public function __construct(private readonly SourceTranslationWorkspace $workspace) {}
+
     /**
      * Execute listing query.
      *
@@ -21,6 +24,7 @@ final class ListTranslationEntriesAction
      */
     public function execute(int $perPage = 25, ?FilterSet $filters = null): LengthAwarePaginator
     {
+        $this->workspace->authorize();
         $pageSize = max(1, min($perPage, 200));
 
         return TranslationEntry::query()

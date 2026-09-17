@@ -6,6 +6,7 @@ namespace Nvl\Translations\Actions\Sync;
 
 use Carbon\CarbonImmutable;
 use Nvl\Translations\Services\TranslationUnusedService;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Builds unused translation reports.
@@ -17,6 +18,7 @@ final class ListUnusedTranslationsAction
      */
     public function __construct(
         private readonly TranslationUnusedService $unusedService,
+        private readonly SourceTranslationWorkspace $workspace,
     ) {}
 
     /**
@@ -25,6 +27,7 @@ final class ListUnusedTranslationsAction
      */
     public function execute(array $scopeTokens = [], int $days = 0): array
     {
+        $this->workspace->authorize();
         return $this->unusedService->execute($scopeTokens, $days);
     }
 }

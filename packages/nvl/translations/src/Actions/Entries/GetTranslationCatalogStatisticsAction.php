@@ -12,6 +12,7 @@ use Nvl\Translations\Enums\TranslationsAbility;
 use Nvl\Translations\Enums\TranslationScopeType;
 use Nvl\Translations\Enums\TranslationSyncStatus;
 use Nvl\Translations\Models\TranslationEntry;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Returns bounded health statistics for an authorized filtered translation catalog.
@@ -23,6 +24,7 @@ final class GetTranslationCatalogStatisticsAction
      */
     public function __construct(
         private readonly TranslationsAuthorization $authorization,
+        private readonly SourceTranslationWorkspace $workspace,
     ) {}
 
     /**
@@ -30,6 +32,7 @@ final class GetTranslationCatalogStatisticsAction
      */
     public function execute(?FilterSet $filters = null): TranslationCatalogStatisticsData
     {
+        $this->workspace->authorize();
         $this->authorization->authorize(TranslationsAbility::ListEntries);
 
         $query = TranslationEntry::query()

@@ -15,6 +15,8 @@ final class TranslationsTables
 
     public const string Usages = 'translation_usages';
 
+    public const string TenantOverrides = 'tenant_translation_overrides';
+
     public const string TRANSLATION_ENTRIES = self::Entries;
 
     public const string TRANSLATION_SCAN_RUNS = self::ScanRuns;

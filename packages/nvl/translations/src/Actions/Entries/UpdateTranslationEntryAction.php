@@ -13,6 +13,7 @@ use Nvl\Translations\Exceptions\InvalidTranslationInputException;
 use Nvl\Translations\Exceptions\StaleTranslationWorkspaceException;
 use Nvl\Translations\Models\TranslationEntry;
 use Nvl\Translations\Services\TranslationProcessLock;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 use Nvl\Translations\Support\TranslationValueHash;
 
 /**
@@ -22,6 +23,7 @@ final class UpdateTranslationEntryAction implements UpdateTranslationEntryContra
 {
     public function __construct(
         private readonly TranslationProcessLock $lock,
+        private readonly SourceTranslationWorkspace $workspace,
     ) {}
 
     /**
@@ -31,6 +33,7 @@ final class UpdateTranslationEntryAction implements UpdateTranslationEntryContra
      */
     public function execute(TranslationEntry|string $entry, UpdateTranslationEntryPayload $data): TranslationEntry
     {
+        $this->workspace->authorize();
         if ($data->value !== null && ! mb_check_encoding($data->value, 'UTF-8')) {
             throw new InvalidTranslationInputException('Translation values must contain valid UTF-8 text.');
         }

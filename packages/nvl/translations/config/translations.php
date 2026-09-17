@@ -14,6 +14,10 @@ return [
         'enabled' => true,
     ],
 
+    'tenant_overrides' => [
+        'keys' => [],
+    ],
+
     'authorization' => [
         'ability' => null,
     ],

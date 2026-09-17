@@ -9,6 +9,7 @@ use Nvl\Translations\Contracts\ScanTranslationsContract;
 use Nvl\Translations\Events\TranslationsScanned;
 use Nvl\Translations\Services\TranslationProcessLock;
 use Nvl\Translations\Services\TranslationScanService;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Runs translation usage scanner.
@@ -21,6 +22,7 @@ final class ScanTranslationsAction implements ScanTranslationsContract
     public function __construct(
         private readonly TranslationScanService $scanService,
         private readonly TranslationProcessLock $lock,
+        private readonly SourceTranslationWorkspace $workspace,
     ) {}
 
     /**
@@ -28,6 +30,7 @@ final class ScanTranslationsAction implements ScanTranslationsContract
      */
     public function execute(): array
     {
+        $this->workspace->authorize();
         $result = $this->lock->execute(
             'scan',
             fn (): array => $this->scanService->execute(),

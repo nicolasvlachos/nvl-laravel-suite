@@ -8,6 +8,7 @@ use Nvl\Translations\Contracts\ImportTranslationsContract;
 use Nvl\Translations\Events\TranslationsImported;
 use Nvl\Translations\Services\TranslationImportService;
 use Nvl\Translations\Services\TranslationProcessLock;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Runs translation import synchronization.
@@ -20,6 +21,7 @@ final class ImportTranslationsAction implements ImportTranslationsContract
     public function __construct(
         private readonly TranslationImportService $importService,
         private readonly TranslationProcessLock $lock,
+        private readonly SourceTranslationWorkspace $workspace,
     ) {}
 
     /**
@@ -31,6 +33,7 @@ final class ImportTranslationsAction implements ImportTranslationsContract
         string $format = 'both',
         bool $dryRun = false,
     ): array {
+        $this->workspace->authorize();
         $result = $this->lock->execute(
             'sync',
             fn (): array => $this->importService->execute($scopeTokens, $format, $dryRun),
