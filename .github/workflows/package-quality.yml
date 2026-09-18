@@ -200,7 +200,10 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: bash tools/retry-composer.sh install --no-interaction --prefer-dist
+        run: |
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-client-17
+          bash tools/retry-composer.sh install --no-interaction --prefer-dist
 
       - name: Stateful package tests
         env:

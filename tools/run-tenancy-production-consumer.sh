@@ -386,6 +386,9 @@ if [[ "${TENANCY_CONSUMER_DB_CONNECTION:-sqlite}" == 'sqlite' ]]; then
     cp "$consumer_workspace/auth-media/database/database.sqlite" "$restore_source"
 else
     : "${TENANCY_CONSUMER_RESTORE_DATABASE:?Set TENANCY_CONSUMER_RESTORE_DATABASE for native proof.}"
+    if [[ -d "/usr/lib/postgresql/17/bin" ]] && [[ ":$PATH:" != *":/usr/lib/postgresql/17/bin:"* ]]; then
+        export PATH="/usr/lib/postgresql/17/bin:$PATH"
+    fi
     PGPASSWORD="${DB_PASSWORD:-}" pg_dump \
         --host="${DB_HOST:-127.0.0.1}" \
         --port="${DB_PORT:-5432}" \
