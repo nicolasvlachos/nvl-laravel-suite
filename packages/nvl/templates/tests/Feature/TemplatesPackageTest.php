@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1112,97 +1113,101 @@ it('fails closed across template Media alias registration and resolution', funct
 });
 
 it('plans prepares applies and reconciles an idempotent staged adoption manifest', function (): void {
-    Schema::create('legacy_template_assets', function (Blueprint $table): void {
-        $table->id();
-        $table->string('alias');
-        $table->index('alias', 'template_assets_alias_index');
-    });
-    $media = Media::factory()->create([
-        'status' => MediaLifecycleStatus::Available,
-        'revision' => 4,
-    ]);
     $manifestPath = storage_path('framework/testing/templates-adoption.json');
-    File::ensureDirectoryExists(dirname($manifestPath));
-    File::put($manifestPath, (string) json_encode([
-        'version' => 1,
-        'staging_tables' => ['legacy_template_assets'],
-        'legacy_asset_count' => 1,
-        'templates' => [[
-            'legacy_key' => 'legacy-welcome',
-            'key' => 'welcome',
-            'translations' => [
-                'en' => ['title' => 'Adopted welcome'],
-                'bg' => ['title' => 'Приветствие'],
-            ],
-        ]],
-        'content' => [[
-            'legacy_key' => 'legacy-welcome-copy',
-            'legacy_scope' => 'legacy-global',
-            'legacy_scope_key' => 'legacy',
-            'definition' => 'template-copy',
-            'key' => 'welcome-copy',
-            'scope' => 'global',
-            'scope_key' => '*',
-            'translations' => [
-                'en' => ['text' => 'Adopted copy'],
-                'bg' => ['text' => 'Приет текст'],
-            ],
-            'publish' => true,
-        ]],
-        'assets' => [[
-            'legacy_alias' => 'legacy-logo',
-            'key' => 'adopted-logo',
-            'media_id' => $media->id,
-            'scope' => 'document',
-            'type' => 'logo',
-            'expected_revision' => 4,
-        ]],
-    ], JSON_THROW_ON_ERROR));
 
-    $this->artisan('nvl:templates:adopt', [
-        'manifest' => $manifestPath,
-        '--format' => 'json',
-    ])->assertSuccessful()
-        ->expectsOutputToContain('"mode": "plan"');
-    expect(collect(Schema::getIndexes('legacy_template_assets'))->pluck('name'))
-        ->toContain('template_assets_alias_index');
+    try {
+        Schema::create('legacy_template_assets', function (Blueprint $table): void {
+            $table->id();
+            $table->string('alias');
+            $table->index('alias', 'template_assets_alias_index');
+        });
+        $media = Media::factory()->create([
+            'status' => MediaLifecycleStatus::Available,
+            'revision' => 4,
+        ]);
+        File::ensureDirectoryExists(dirname($manifestPath));
+        File::put($manifestPath, (string) json_encode([
+            'version' => 1,
+            'staging_tables' => ['legacy_template_assets'],
+            'legacy_asset_count' => 1,
+            'templates' => [[
+                'legacy_key' => 'legacy-welcome',
+                'key' => 'welcome',
+                'translations' => [
+                    'en' => ['title' => 'Adopted welcome'],
+                    'bg' => ['title' => 'Приветствие'],
+                ],
+            ]],
+            'content' => [[
+                'legacy_key' => 'legacy-welcome-copy',
+                'legacy_scope' => 'legacy-global',
+                'legacy_scope_key' => 'legacy',
+                'definition' => 'template-copy',
+                'key' => 'welcome-copy',
+                'scope' => 'global',
+                'scope_key' => '*',
+                'translations' => [
+                    'en' => ['text' => 'Adopted copy'],
+                    'bg' => ['text' => 'Приет текст'],
+                ],
+                'publish' => true,
+            ]],
+            'assets' => [[
+                'legacy_alias' => 'legacy-logo',
+                'key' => 'adopted-logo',
+                'media_id' => $media->id,
+                'scope' => 'document',
+                'type' => 'logo',
+                'expected_revision' => 4,
+            ]],
+        ], JSON_THROW_ON_ERROR));
 
-    $this->artisan('nvl:templates:adopt', [
-        'manifest' => $manifestPath,
-        '--prepare' => true,
-        '--format' => 'json',
-    ])->assertSuccessful()
-        ->expectsOutputToContain('"operation": "dropped"');
+        $this->artisan('nvl:templates:adopt', [
+            'manifest' => $manifestPath,
+            '--format' => 'json',
+        ])->assertSuccessful()
+            ->expectsOutputToContain('"mode": "plan"');
+        expect(collect(Schema::getIndexes('legacy_template_assets'))->pluck('name'))
+            ->toContain('template_assets_alias_index');
 
-    expect(collect(Schema::getIndexes('legacy_template_assets'))->pluck('name'))
-        ->not->toContain('template_assets_alias_index')
-        ->and(Template::query()->where('key', 'welcome')->count())->toBe(0);
+        $this->artisan('nvl:templates:adopt', [
+            'manifest' => $manifestPath,
+            '--prepare' => true,
+            '--format' => 'json',
+        ])->assertSuccessful()
+            ->expectsOutputToContain('"operation": "dropped"');
 
-    $this->artisan('nvl:templates:adopt', [
-        'manifest' => $manifestPath,
-        '--apply' => true,
-        '--format' => 'json',
-    ])->assertSuccessful()
-        ->expectsOutputToContain('"healthy": true');
+        expect(collect(Schema::getIndexes('legacy_template_assets'))->pluck('name'))
+            ->not->toContain('template_assets_alias_index')
+            ->and(Template::query()->where('key', 'welcome')->count())->toBe(0);
 
-    expect(Template::query()->where('key', 'welcome')->count())->toBe(1)
-        ->and(ContentBlock::query()
-            ->where('scope', 'global')
-            ->where('scope_key', '*')
-            ->where('key', 'welcome-copy')
-            ->where('status', ContentStatus::Published->value)
-            ->count())->toBe(1)
-        ->and(app(MediaTemplateAssetRegistry::class)->get('adopted-logo')?->mediaId)
-        ->toBe($media->id);
+        $this->artisan('nvl:templates:adopt', [
+            'manifest' => $manifestPath,
+            '--apply' => true,
+            '--format' => 'json',
+        ])->assertSuccessful()
+            ->expectsOutputToContain('"healthy": true');
 
-    $this->artisan('nvl:templates:adopt', [
-        'manifest' => $manifestPath,
-        '--apply' => true,
-        '--format' => 'json',
-    ])->assertSuccessful()
-        ->expectsOutputToContain('"unchanged": 1');
+        expect(Template::query()->where('key', 'welcome')->count())->toBe(1)
+            ->and(ContentBlock::query()
+                ->where('scope', 'global')
+                ->where('scope_key', '*')
+                ->where('key', 'welcome-copy')
+                ->where('status', ContentStatus::Published->value)
+                ->count())->toBe(1)
+            ->and(app(MediaTemplateAssetRegistry::class)->get('adopted-logo')?->mediaId)
+            ->toBe($media->id);
 
-    File::delete($manifestPath);
+        $this->artisan('nvl:templates:adopt', [
+            'manifest' => $manifestPath,
+            '--apply' => true,
+            '--format' => 'json',
+        ])->assertSuccessful()
+            ->expectsOutputToContain('"unchanged": 1');
+    } finally {
+        Schema::dropIfExists('legacy_template_assets');
+        File::delete($manifestPath);
+    }
 });
 
 it('rejects malformed adoption manifests before mutating consumer data', function (): void {
@@ -1879,45 +1884,49 @@ it('fetches allowed PDF assets with bounded bodies and no redirects', function (
 });
 
 it('preserves unique staging indexes while removing canonical name collisions', function (): void {
-    Schema::create('adoption_unique_sources', function (Blueprint $table): void {
-        $table->id();
-        $table->string('alias');
-        $table->string('code');
-        $table->unique('alias', 'adoption_constraint_unique');
-    });
-    DB::statement('CREATE UNIQUE INDEX adoption_standalone_unique ON adoption_unique_sources (code)');
-    DB::table('adoption_unique_sources')->insert(['alias' => 'logo', 'code' => 'brand']);
-    $schema = app(TemplateAdoptionSchema::class);
-    $operations = $schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']);
-    $duplicateAliasRejected = false;
-    $duplicateCodeRejected = false;
-
     try {
-        DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
-            'alias' => 'logo',
-            'code' => 'different',
-        ]));
-    } catch (Throwable) {
-        $duplicateAliasRejected = true;
-    }
+        Schema::create('adoption_unique_sources', function (Blueprint $table): void {
+            $table->id();
+            $table->string('alias');
+            $table->string('code');
+            $table->unique('alias', 'adoption_constraint_unique');
+        });
+        DB::statement('CREATE UNIQUE INDEX adoption_standalone_unique ON adoption_unique_sources (code)');
+        DB::table('adoption_unique_sources')->insert(['alias' => 'logo', 'code' => 'brand']);
+        $schema = app(TemplateAdoptionSchema::class);
+        $operations = $schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']);
+        $duplicateAliasRejected = false;
+        $duplicateCodeRejected = false;
 
-    try {
-        DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
-            'alias' => 'different',
-            'code' => 'brand',
-        ]));
-    } catch (Throwable) {
-        $duplicateCodeRejected = true;
-    }
+        try {
+            DB::table('adoption_unique_sources')->insert([
+                'alias' => 'logo',
+                'code' => 'different',
+            ]);
+        } catch (QueryException) {
+            $duplicateAliasRejected = true;
+        }
 
-    expect(array_column($operations, 'operation'))->toBe(['renamed', 'renamed'])
-        ->and(collect(Schema::getIndexes('adoption_unique_sources'))->pluck('name'))
-        ->not->toContain('adoption_constraint_unique')
-        ->not->toContain('adoption_standalone_unique')
-        ->and($duplicateAliasRejected)->toBeTrue()
-        ->and($duplicateCodeRejected)->toBeTrue()
-        ->and(DB::table('adoption_unique_sources')->count())->toBe(1)
-        ->and($schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']))->toBe([]);
+        try {
+            DB::table('adoption_unique_sources')->insert([
+                'alias' => 'different',
+                'code' => 'brand',
+            ]);
+        } catch (QueryException) {
+            $duplicateCodeRejected = true;
+        }
+
+        expect(array_column($operations, 'operation'))->toBe(['renamed', 'renamed'])
+            ->and(collect(Schema::getIndexes('adoption_unique_sources'))->pluck('name'))
+            ->not->toContain('adoption_constraint_unique')
+            ->not->toContain('adoption_standalone_unique')
+            ->and($duplicateAliasRejected)->toBeTrue()
+            ->and($duplicateCodeRejected)->toBeTrue()
+            ->and(DB::table('adoption_unique_sources')->count())->toBe(1)
+            ->and($schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']))->toBe([]);
+    } finally {
+        Schema::dropIfExists('adoption_unique_sources');
+    }
 });
 
 it('keeps adoption preflight read-only for invalid scope and locale mappings', function (string $invalid): void {
