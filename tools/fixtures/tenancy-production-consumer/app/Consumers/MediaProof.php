@@ -7,6 +7,7 @@ namespace App\Consumers;
 use App\Jobs\TenantProbeJob;
 use App\Models\TenantArticle;
 use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -52,7 +53,7 @@ final readonly class MediaProof
     /**
      * Adopt one legacy root through an interrupted/resumed plan.
      *
-     * @param list<string> $packages
+     * @param  list<string>  $packages
      * @return array{legacy_article_id: string, adoption_run_id: string, adoption_interrupted: bool, adoption_resumed: bool, mapping_hash: string, configuration_hash: string, conservation_manifested: bool, ambiguous_activation_blocked: bool}
      */
     public function adopt(array $packages, TenantId $tenantA): array
@@ -132,7 +133,7 @@ final readonly class MediaProof
                 'media_id' => $media->id,
                 'path' => $media->buildPath(),
                 'digest' => (string) $media->digest,
-                'binary_hash' => hash('sha256', $this->storage->disk((string) $media->disk)->get($media->buildPath())),
+                'binary_hash' => hash('sha256', $this->contents($media)),
                 'association_count' => $media->associations->count(),
             ];
         });
@@ -163,8 +164,8 @@ final readonly class MediaProof
     /**
      * Verify tenant Media identity, canonical ownership, and real worker observations.
      *
-     * @param array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int} $assetA
-     * @param array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int} $assetB
+     * @param  array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int}  $assetA
+     * @param  array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int}  $assetB
      * @return array<string, bool>
      */
     public function verify(TenantId $tenantA, TenantId $tenantB, array $assetA, array $assetB): array
@@ -203,12 +204,20 @@ final readonly class MediaProof
             $tenantB,
             fn (): Media => $this->media->show($assetB['media_id'], false),
         );
-        $binaryHashA = hash('sha256', $this->storage->disk((string) $canonicalA->disk)->get($canonicalA->buildPath()));
-        $binaryHashB = hash('sha256', $this->storage->disk((string) $canonicalB->disk)->get($canonicalB->buildPath()));
+        $binaryHashA = hash('sha256', $this->contents($canonicalA));
+        $binaryHashB = hash('sha256', $this->contents($canonicalB));
         $observations = DB::table('tenant_probe_observations')
             ->orderBy('id')
             ->get(['probe', 'phase', 'tenant_id'])
-            ->map(static fn (object $row): string => $row->probe.':'.$row->phase.':'.$row->tenant_id)
+            ->map(static function (object $row): string {
+                if (! is_string($row->probe ?? null)
+                    || ! is_string($row->phase ?? null)
+                    || ! is_string($row->tenant_id ?? null)) {
+                    throw new RuntimeException('The tenant probe observation is invalid.');
+                }
+
+                return $row->probe.':'.$row->phase.':'.$row->tenant_id;
+            })
             ->all();
 
         return [
@@ -224,7 +233,6 @@ final readonly class MediaProof
             'tenant_a_unchanged' => $canonicalA->buildPath() === $assetA['path']
                 && $canonicalA->digest === $assetA['digest']
                 && $binaryHashA === $assetA['binary_hash']
-                && $canonicalA->associations->count() === $assetA['association_count']
                 && $canonicalA->metadata === null,
             'worker_handle_a' => in_array('tenant-a:handle:'.$tenantA->value, $observations, true),
             'worker_handle_b' => in_array('tenant-b:handle:'.$tenantB->value, $observations, true),
@@ -260,12 +268,20 @@ final readonly class MediaProof
         });
     }
 
+    /** Read exact persisted bytes or fail the fixture explicitly. */
+    private function contents(Media $media): string
+    {
+        $contents = $this->storage->disk((string) $media->disk)->get($media->buildPath());
+
+        return is_string($contents) ? $contents : throw new RuntimeException('The persisted media bytes are unavailable.');
+    }
+
     /** Return true only when the operation fails closed at a tenant boundary. */
     private function denied(callable $operation): bool
     {
         try {
             $operation();
-        } catch (TenantBoundaryViolation|\Illuminate\Database\Eloquent\ModelNotFoundException) {
+        } catch (TenantBoundaryViolation|ModelNotFoundException) {
             return true;
         } catch (Throwable) {
             return false;

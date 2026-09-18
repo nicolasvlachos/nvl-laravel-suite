@@ -20,6 +20,7 @@ use Nvl\Templates\Support\TemplatesConfiguration;
  * Idempotent persisted render request with a private one-to-one output.
  *
  * @property string $id
+ * @property string|null $tenant_id
  * @property string $template_id
  * @property string $template_version_id
  * @property string|null $template_assignment_id

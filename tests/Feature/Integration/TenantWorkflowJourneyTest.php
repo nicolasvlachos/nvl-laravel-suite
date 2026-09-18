@@ -11,7 +11,7 @@ it('declares the complete tenant workflow ownership graph before a journey is ad
         'forms.forms' => TenantResourceKind::Root,
         'forms.entries' => TenantResourceKind::Inherited,
         'templates.templates' => TenantResourceKind::Root,
-        'templates.renders' => TenantResourceKind::Root,
+        'templates.renders' => TenantResourceKind::Inherited,
         'comments.comments' => TenantResourceKind::Inherited,
         'activity.events' => TenantResourceKind::Root,
         'mail.scheduled' => TenantResourceKind::Root,

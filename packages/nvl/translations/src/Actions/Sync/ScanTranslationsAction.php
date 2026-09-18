@@ -7,9 +7,9 @@ namespace Nvl\Translations\Actions\Sync;
 use Carbon\CarbonImmutable;
 use Nvl\Translations\Contracts\ScanTranslationsContract;
 use Nvl\Translations\Events\TranslationsScanned;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 use Nvl\Translations\Services\TranslationProcessLock;
 use Nvl\Translations\Services\TranslationScanService;
-use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Runs translation usage scanner.

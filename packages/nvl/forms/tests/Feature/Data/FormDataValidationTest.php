@@ -28,7 +28,7 @@ test('form data validation passes with valid payload', function (): void {
     expect($validator->passes())->toBeTrue();
 });
 
-test('form data validation enforces handle uniqueness with route context', function (): void {
+test('form data validation leaves tenant scoped handle uniqueness to domain actions', function (): void {
     $form = Form::factory()->create(['handle' => 'existing']);
 
     $payload = [
@@ -49,7 +49,7 @@ test('form data validation enforces handle uniqueness with route context', funct
 
     $validator = Validator::make($payload, MutateFormPayload::rulesForUpdate($form->id));
 
-    expect($validator->fails())->toBeTrue();
+    expect($validator->passes())->toBeTrue();
 });
 
 test('form data validation validates availability dates', function (): void {

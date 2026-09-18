@@ -88,7 +88,10 @@ final readonly class MediaOnlyConsumerWorkflow implements TenancyConsumerWorkflo
         return $this->result($checks);
     }
 
-    /** @param array<string, bool> $checks @return array{passed: bool, checks: array<string, bool>, profile: string} */
+    /**
+     * @param  array<string, bool>  $checks
+     * @return array{passed: bool, checks: array<string, bool>, profile: string}
+     */
     private function result(array $checks): array
     {
         return ['passed' => ! in_array(false, $checks, true), 'checks' => $checks, 'profile' => 'media-only'];
@@ -109,7 +112,7 @@ final readonly class MediaOnlyConsumerWorkflow implements TenancyConsumerWorkflo
             throw new RuntimeException('The standalone consumer report is invalid.');
         }
 
-        return $report;
+        return $this->associativeArray($report, 'standalone consumer report');
     }
 
     /** Return the persistent phase report path. */
@@ -129,15 +132,48 @@ final readonly class MediaOnlyConsumerWorkflow implements TenancyConsumerWorkflo
         return $value;
     }
 
-    /** @param array<string, mixed> $report @return array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int} */
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int}
+     */
     private function asset(array $report, string $key): array
     {
         $value = $report[$key] ?? null;
+        $asset = $this->associativeArray($value, "report asset [{$key}]");
+
+        return [
+            'article_id' => $this->string($asset, 'article_id'),
+            'media_id' => $this->string($asset, 'media_id'),
+            'path' => $this->string($asset, 'path'),
+            'digest' => $this->string($asset, 'digest'),
+            'binary_hash' => $this->string($asset, 'binary_hash'),
+            'association_count' => $this->integer($asset, 'association_count'),
+        ];
+    }
+
+    /** @param array<string, mixed> $values */
+    private function integer(array $values, string $key): int
+    {
+        $value = $values[$key] ?? null;
+
+        return is_int($value) ? $value : throw new RuntimeException("The report field [{$key}] is invalid.");
+    }
+
+    /** @return array<string, mixed> */
+    private function associativeArray(mixed $value, string $name): array
+    {
         if (! is_array($value)) {
-            throw new RuntimeException("The report asset [{$key}] is invalid.");
+            throw new RuntimeException("The {$name} is invalid.");
         }
 
-        /** @var array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int} $value */
-        return $value;
+        $record = [];
+        foreach ($value as $key => $item) {
+            if (! is_string($key)) {
+                throw new RuntimeException("The {$name} is invalid.");
+            }
+            $record[$key] = $item;
+        }
+
+        return $record;
     }
 }

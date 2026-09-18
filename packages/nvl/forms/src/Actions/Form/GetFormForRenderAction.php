@@ -31,7 +31,7 @@ final class GetFormForRenderAction
     public function execute(Form|string $formIdentifier): Form
     {
         $identifier = $formIdentifier instanceof Form
-            ? (string) $formIdentifier->getKey()
+            ? $formIdentifier->identifier()
             : $formIdentifier;
 
         $query = $this->boundary->query(Form::query(), 'forms.forms')

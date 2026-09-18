@@ -7,10 +7,11 @@ namespace App\Comments;
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Comments\Contracts\CommentTargetResolver;
 use Nvl\Pages\Models\Page;
+use Nvl\Templates\Contracts\TemplateOwnerResolver;
 use Nvl\Tenancy\Services\TenantBoundary;
 
 /** Resolves a Page through its tenant-leading package query. */
-final readonly class PageCommentTargetResolver implements CommentTargetResolver
+final readonly class PageCommentTargetResolver implements CommentTargetResolver, TemplateOwnerResolver
 {
     public function __construct(private TenantBoundary $boundary) {}
 

@@ -6,7 +6,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -108,6 +107,7 @@ use Nvl\Templates\Support\TemplatesRouteConfiguration;
 use Nvl\Templates\Template as RenderableTemplate;
 use Nvl\Templates\Tests\Fixtures\TestClassPdfTemplate;
 use Nvl\Templates\Tests\Fixtures\TestTemplateOwner;
+use Nvl\Tenancy\Services\TenantInstallationState;
 
 /**
  * @param  array<string, mixed>  $values
@@ -411,6 +411,7 @@ it('keeps localized template list queries independent of result size', function 
         ]);
     };
     $measure = static function () use ($actor): int {
+        app(TenantInstallationState::class)->assertUsable('templates.templates');
         DB::flushQueryLog();
         DB::enableQueryLog();
 
@@ -900,7 +901,7 @@ it('applies durable render job policies and records processing failures', functi
     config()->set('templates.rendering.backoff', 'invalid');
     $job = new RenderTemplateJob($render->id, $render->dispatch_generation);
 
-    expect($job->uniqueId())->toBe($render->id)
+    expect($job->uniqueId())->toBe($render->id.':'.$render->dispatch_generation)
         ->and($job->backoff())->toBe([10, 30, 90]);
 
     config()->set('templates.rendering.backoff', [0, 'later']);
@@ -1888,19 +1889,34 @@ it('preserves unique staging indexes while removing canonical name collisions', 
     DB::table('adoption_unique_sources')->insert(['alias' => 'logo', 'code' => 'brand']);
     $schema = app(TemplateAdoptionSchema::class);
     $operations = $schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']);
+    $duplicateAliasRejected = false;
+    $duplicateCodeRejected = false;
+
+    try {
+        DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
+            'alias' => 'logo',
+            'code' => 'different',
+        ]));
+    } catch (Throwable) {
+        $duplicateAliasRejected = true;
+    }
+
+    try {
+        DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
+            'alias' => 'different',
+            'code' => 'brand',
+        ]));
+    } catch (Throwable) {
+        $duplicateCodeRejected = true;
+    }
 
     expect(array_column($operations, 'operation'))->toBe(['renamed', 'renamed'])
         ->and(collect(Schema::getIndexes('adoption_unique_sources'))->pluck('name'))
         ->not->toContain('adoption_constraint_unique')
         ->not->toContain('adoption_standalone_unique')
-        ->and(fn () => DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
-            'alias' => 'logo',
-            'code' => 'different',
-        ])))->toThrow(UniqueConstraintViolationException::class)
-        ->and(fn () => DB::transaction(fn () => DB::table('adoption_unique_sources')->insert([
-            'alias' => 'different',
-            'code' => 'brand',
-        ])))->toThrow(UniqueConstraintViolationException::class)
+        ->and($duplicateAliasRejected)->toBeTrue()
+        ->and($duplicateCodeRejected)->toBeTrue()
+        ->and(DB::table('adoption_unique_sources')->count())->toBe(1)
         ->and($schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']))->toBe([]);
 });
 

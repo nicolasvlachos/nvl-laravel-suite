@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Models;
 
+use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,11 +13,10 @@ use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoScope;
-use Nvl\Translatable\Support\LocaleCode;
 use Nvl\Tenancy\Contracts\TenantContext;
 use Nvl\Tenancy\Enums\TenantContextMode;
 use Nvl\Tenancy\Exceptions\TenantContextMissing;
-use Illuminate\Container\Container;
+use Nvl\Translatable\Support\LocaleCode;
 
 /**
  * One scoped, optionally localized HTTP redirect.
@@ -38,8 +38,8 @@ use Illuminate\Container\Container;
  */
 final class SeoRedirect extends Model
 {
-    use HasUuids;
     use GuardsTenantOwnership;
+    use HasUuids;
     use SoftDeletes;
 
     public const string TENANT_RESOURCE = 'seo.redirects';
@@ -111,8 +111,6 @@ final class SeoRedirect extends Model
 
     public static function sourceHash(string $scope, ?string $locale, string $source): string
     {
-        $locale = $locale === null ? '*' : (new LocaleCode($locale))->value;
-
         $tenant = '*';
         $container = Container::getInstance();
         if ($container->bound('config') && $container->make('config')->get('tenancy.enabled') === true) {

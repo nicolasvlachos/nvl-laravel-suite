@@ -7,8 +7,8 @@ namespace Nvl\Content\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Localized field values for one content block.

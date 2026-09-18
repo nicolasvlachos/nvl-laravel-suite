@@ -23,6 +23,8 @@ use Nvl\Filterable\Definitions\FilterSchema;
 use Nvl\Filterable\Definitions\SortDefinition;
 use Nvl\Filterable\Enums\FilterOperator;
 use Nvl\Filterable\Enums\FilterValueType;
+use Nvl\Media\Contracts\HasMedia;
+use Nvl\Media\Traits\InteractsWithMedia;
 use Nvl\Translatable\Contracts\TranslatableModel;
 use Nvl\Translatable\Enums\TranslationMutationPolicy;
 use Nvl\Translatable\RelatedTranslationDefinition;
@@ -58,10 +60,11 @@ use Nvl\Translatable\Translatable;
  * @property-read Collection<int, ContentPlacement> $placements
  * @property-read Collection<int, ContentRevision> $revisions
  */
-final class ContentBlock extends Model implements TranslatableModel
+final class ContentBlock extends Model implements HasMedia, TranslatableModel
 {
     use GuardsTenantOwnership;
     use HasUuids;
+    use InteractsWithMedia;
     use SoftDeletes;
     use Translatable;
 
@@ -110,6 +113,7 @@ final class ContentBlock extends Model implements TranslatableModel
             fields: ['values'],
             locales: $locales !== [] ? $locales : null,
             mutationPolicy: TranslationMutationPolicy::DomainActionOnly,
+            ownershipResource: self::TENANT_RESOURCE,
         );
     }
 

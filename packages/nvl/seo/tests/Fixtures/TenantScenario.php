@@ -16,6 +16,7 @@ use Nvl\Tenancy\Services\TenantAdoptionCoordinator;
 use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\PlatformOperation;
+use Nvl\Tenancy\ValueObjects\TenantAssignment;
 use Nvl\Tenancy\ValueObjects\TenantDescriptor;
 use Nvl\Tenancy\ValueObjects\TenantId;
 use Nvl\Tenancy\ValueObjects\TenantSiteContext;
@@ -49,17 +50,29 @@ final readonly class TenantScenario
         {
             private bool $enabled = true;
 
-            public function activate(array $payload): void { $this->enabled = true; }
+            public function activate(array $payload): void
+            {
+                $this->enabled = true;
+            }
 
-            public function deactivate(): void { $this->enabled = false; }
+            public function deactivate(): void
+            {
+                $this->enabled = false;
+            }
 
-            public function active(): bool { return $this->enabled; }
+            public function active(): bool
+            {
+                return $this->enabled;
+            }
 
-            public function data(): array { return []; }
+            public function data(): array
+            {
+                return [];
+            }
         });
     }
 
-    /** @param iterable<\Nvl\Tenancy\ValueObjects\TenantAssignment> $mappings */
+    /** @param iterable<TenantAssignment> $mappings */
     public static function install(iterable $mappings = []): self
     {
         $coordinator = app(TenantAdoptionCoordinator::class);

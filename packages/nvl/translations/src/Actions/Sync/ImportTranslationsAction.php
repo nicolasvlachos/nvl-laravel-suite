@@ -6,9 +6,9 @@ namespace Nvl\Translations\Actions\Sync;
 
 use Nvl\Translations\Contracts\ImportTranslationsContract;
 use Nvl\Translations\Events\TranslationsImported;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 use Nvl\Translations\Services\TranslationImportService;
 use Nvl\Translations\Services\TranslationProcessLock;
-use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Runs translation import synchronization.

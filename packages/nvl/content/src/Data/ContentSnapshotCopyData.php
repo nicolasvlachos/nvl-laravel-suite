@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Nvl\Content\Data;
+
 final readonly class ContentSnapshotCopyData
 {
     /** @param list<string> $mediaIds */

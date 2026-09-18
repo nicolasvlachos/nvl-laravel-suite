@@ -14,8 +14,8 @@ use Nvl\Templates\Models\Template;
 use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
 use Nvl\Templates\Support\TemplatesConfiguration;
-use Nvl\Translatable\Services\TranslationWriter;
 use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Translatable\Services\TranslationWriter;
 
 /**
  * Creates a translated stored template from its source-authoritative definition.

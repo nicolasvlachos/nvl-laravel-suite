@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -73,6 +74,8 @@ use Nvl\Media\Http\Controllers\MediaAssetController;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaPathResolver;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 beforeEach(function (): void {
     Storage::fake('public');
@@ -1583,6 +1586,9 @@ it('fails closed for invalid route middleware unsafe URLs and unbounded definiti
     $references = new ContentReferenceRegistry(
         app(),
         app(ContentPayloadGuard::class),
+        app(Repository::class),
+        app(TenantBoundary::class),
+        app(TenantResourceRegistry::class),
     );
     $references->register('unsafe', UnsafeReferenceResolver::class);
     expect(fn () => $references->display(

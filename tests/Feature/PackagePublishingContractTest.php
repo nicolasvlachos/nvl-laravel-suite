@@ -63,8 +63,11 @@ it('registers every stateful migration directory as timestamp-aware', function (
     );
 
     foreach ($catalog['stateful'] as $package) {
+        $migrationDirectory = $package === 'tenancy'
+            ? $root.'/packages/nvl/tenancy/database/migrations/tenancy'
+            : $root.'/packages/nvl/'.$package.'/database/migrations';
         expect($publishableMigrations)->toContain(
-            realpath($root.'/packages/nvl/'.$package.'/database/migrations'),
+            realpath($migrationDirectory),
         );
     }
 });

@@ -60,7 +60,7 @@ final class PersistFormEntryAction
     ): array {
         return DB::transaction(function () use ($form, $data, $spamDetection, $ipAddress, $userAgent, $sessionId, $idempotencyKey, $payloadDigest, $registrationFingerprint) {
             $submittedFrom = $data->submittedFrom instanceof Optional ? null : $data->submittedFrom;
-            $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+            $formId = $form instanceof Form ? $form->identifier() : $form;
             $form = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
 
             $entryPayload = $data->except('id', 'createdAt')->toModelFiltered();

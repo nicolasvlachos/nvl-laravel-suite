@@ -9,6 +9,11 @@ artifact_version="${NVL_CANDIDATE_VERSION:-1.99.0}"
 candidate_archive="${NVL_CANDIDATE_ARCHIVE:-}"
 
 cleanup() {
+    if [[ "${TENANCY_CONSUMER_KEEP_WORKSPACE:-false}" == 'true' ]]; then
+        printf 'Preserved tenancy consumer workspace: %s\n' "$consumer_workspace" >&2
+
+        return
+    fi
     rm -rf "$consumer_workspace"
 }
 
@@ -69,6 +74,7 @@ install_fixture() {
         cp -R "$fixture_root/app/." "$consumer_root/app/"
         cp -R "$fixture_root/config/." "$consumer_root/config/"
         cp -R "$fixture_root/database/." "$consumer_root/database/"
+        cp -R "$fixture_root/legacy" "$consumer_root/legacy"
         cp "$fixture_root/bootstrap/providers.php" "$consumer_root/bootstrap/providers.php"
 
         return
@@ -150,7 +156,7 @@ configure_standalone_archives() {
     fi
     local package
     for package in "$@"; do
-        local source="$consumer_workspace/artifact/packages/nvl/$package"
+        local source="$repository_root/packages/nvl/$package"
         local archive_dir="$consumer_workspace/$profile-archives"
         local extracted="$consumer_workspace/$profile-standalone/$package"
         mkdir -p "$archive_dir" "$extracted"
@@ -190,7 +196,7 @@ configure_media_archives() {
     local packages=(support data filterable tenancy translatable media)
     local package
     for package in "${packages[@]}"; do
-        local source="$consumer_workspace/artifact/packages/nvl/$package"
+        local source="$repository_root/packages/nvl/$package"
         local archive_dir="$consumer_workspace/standalone-archives"
         local extracted="$consumer_workspace/standalone/$package"
         mkdir -p "$archive_dir" "$extracted"
@@ -265,22 +271,25 @@ run_profile() {
     local consumer_root="$consumer_workspace/$profile"
     (
         cd "$consumer_root"
-        composer dump-autoload --no-interaction --no-scripts
-    )
-    consumer_artisan "$profile" key:generate --force
-    consumer_artisan "$profile" package:discover --ansi
-    consumer_artisan "$profile" config:clear
-    consumer_artisan "$profile" route:clear
-    consumer_artisan "$profile" config:cache
-    consumer_artisan "$profile" route:cache
-    consumer_artisan "$profile" migrate --force
-    consumer_artisan "$profile" down --render='errors::503'
+        composer dump-autoload --no-interaction
+    ) >&2
+    consumer_artisan "$profile" key:generate --force >&2
+    consumer_artisan "$profile" package:discover --ansi >&2
+    consumer_artisan "$profile" config:clear >&2
+    consumer_artisan "$profile" route:clear >&2
+    consumer_artisan "$profile" config:cache >&2
+    consumer_artisan "$profile" route:cache >&2
+    consumer_artisan "$profile" migrate --force >&2
+    consumer_artisan "$profile" down --render='errors::503' >&2
     local seed_json
     seed_json="$(consumer_artisan "$profile" tenancy-consumer:smoke --phase=seed --format=json)"
-    jq -e '.passed == true and ([.checks[]] | all)' <<< "$seed_json" >/dev/null
-    consumer_artisan "$profile" up
+    if ! jq -e '.passed == true and ([.checks[]] | all)' <<< "$seed_json" >/dev/null; then
+        printf 'Invalid or failing seed response for profile [%s]:\n%s\n' "$profile" "$seed_json" >&2
+        return 1
+    fi
+    consumer_artisan "$profile" up >&2
 
-    TENANCY_CONSUMER_ENABLED=false consumer_artisan "$profile" config:clear
+    TENANCY_CONSUMER_ENABLED=false consumer_artisan "$profile" config:clear >&2
     local disabled_output="$consumer_workspace/$profile-disabled.out"
     local unsafe_downgrade_denied=false
     if ! TENANCY_CONSUMER_ENABLED=false consumer_artisan "$profile" config:cache >"$disabled_output" 2>&1; then
@@ -297,7 +306,7 @@ run_profile() {
         exit 1
     fi
     rm -f "$consumer_root/bootstrap/cache/config.php"
-    TENANCY_CONSUMER_ENABLED=true consumer_artisan "$profile" config:cache
+    TENANCY_CONSUMER_ENABLED=true consumer_artisan "$profile" config:cache >&2
 
     consumer_artisan "$profile" queue:work database \
         --queue=tenancy-proof \
@@ -305,10 +314,13 @@ run_profile() {
         --max-jobs=4 \
         --tries=1 \
         --timeout=60 \
-        --sleep=0
+        --sleep=0 >&2
     local verify_json
     verify_json="$(consumer_artisan "$profile" tenancy-consumer:smoke --phase=verify --format=json)"
-    jq -e '.passed == true and ([.checks[]] | all)' <<< "$verify_json" >/dev/null
+    if ! jq -e '.passed == true and ([.checks[]] | all)' <<< "$verify_json" >/dev/null; then
+        printf 'Invalid or failing verification response for profile [%s]:\n%s\n' "$profile" "$verify_json" >&2
+        return 1
+    fi
     local auth_dependency_absent=false
     if [[ "$profile" == 'media-only' || "$profile" == 'taxonomy-only' ]]; then
         auth_dependency_absent=true
@@ -336,7 +348,13 @@ run_configuration_matrix() {
         if TENANCY_CONSUMER_MATRIX_PROFILE="$case" consumer_artisan "$profile" config:cache >/dev/null 2>&1; then
             result="$(TENANCY_CONSUMER_MATRIX_PROFILE="$case" consumer_artisan "$profile" tenancy-consumer:configuration "$case" --format=json)"
         else
-            result="$(jq -nc --arg profile "$case" --argjson expects_failure "$(case "$case" in conflicting-platform-family|invalid-classes|invalid-families|invalid-custom-tables|invalid-connection-aliases) echo true ;; *) echo false ;; esac)" '{profile:$profile,passed:$expects_failure,expects_failure:$expects_failure,boot_rejected:true}')"
+            local expects_failure=false
+            case "$case" in
+                conflicting-platform-family|invalid-classes|invalid-families|invalid-custom-tables|invalid-connection-aliases)
+                    expects_failure=true
+                    ;;
+            esac
+            result="$(jq -nc --arg profile "$case" --argjson expects_failure "$expects_failure" '{profile:$profile,passed:$expects_failure,expects_failure:$expects_failure,boot_rejected:true}')"
         fi
         results="$(jq -nc --argjson previous "$results" --argjson result "$result" '$previous + [$result]')"
     done
@@ -391,6 +409,8 @@ consumer_artisan auth-media tenancy-consumer:lifecycle cleanup --format=json
 consumer_artisan auth-media tenancy-consumer:lifecycle cleanup --format=json
 consumer_artisan auth-media up
 consumer_artisan auth-media tenancy-consumer:lifecycle verify --format=json
+TENANCY_CONSUMER_RESTORE_SOURCE="$restore_source" consumer_artisan auth-media-restore config:clear
+TENANCY_CONSUMER_RESTORE_SOURCE="$restore_source" consumer_artisan auth-media-restore config:cache
 TENANCY_CONSUMER_RESTORE_SOURCE="$restore_source" consumer_artisan auth-media-restore tenancy-consumer:lifecycle restore --format=json
 
 prepare_application media-only
@@ -413,4 +433,9 @@ printf '%s\n' "$combined"
 
 if [[ -n "${TENANCY_CONSUMER_EVIDENCE_FILE:-}" ]]; then
     printf '%s\n' "$combined" > "$TENANCY_CONSUMER_EVIDENCE_FILE"
+fi
+
+if ! jq -e '.passed == true' <<< "$combined" >/dev/null; then
+    printf 'The tenancy production consumer reported a failing profile or configuration case.\n' >&2
+    exit 1
 fi

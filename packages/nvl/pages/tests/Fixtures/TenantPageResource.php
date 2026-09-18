@@ -7,7 +7,14 @@ namespace Nvl\Pages\Tests\Fixtures;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-/** Application resource queried through the tenant-safe Page handler boundary. */
+/**
+ * Application resource queried through the tenant-safe Page handler boundary.
+ *
+ * @property string $id
+ * @property string $slug
+ * @property string $title
+ * @property bool $is_public
+ */
 final class TenantPageResource extends Model
 {
     use HasUuids;

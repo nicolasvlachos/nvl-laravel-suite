@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
-use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\View\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;

@@ -31,7 +31,7 @@ final readonly class LegacyAdoptionProof
         try {
             $this->assertUnambiguous([
                 ...$mapping,
-                ['resource' => $assignment->resource, 'resource_id' => $assignment->resourceId, 'tenant_id' => $tenant->value.'-other'],
+                ['resource' => $assignment->resource, 'resource_id' => $assignment->recordId, 'tenant_id' => $tenant->value.'-other'],
             ]);
         } catch (InvalidArgumentException) {
             $ambiguousBlocked = true;

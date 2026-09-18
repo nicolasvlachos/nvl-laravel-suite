@@ -29,6 +29,11 @@ use Nvl\Templates\Support\TemplatesConfiguration;
  * @property ContentCompositionSnapshotData|null $content_snapshot
  * @property string|null $content_hash
  * @property int $revision
+ * @property string|null $catalog_grant_id
+ * @property string|null $catalog_source_version_id
+ * @property int|null $catalog_source_revision
+ * @property string|null $catalog_source_hash
+ * @property string|null $catalog_import_key
  * @property string|null $published_by_type
  * @property string|null $published_by
  * @property Carbon|null $published_at

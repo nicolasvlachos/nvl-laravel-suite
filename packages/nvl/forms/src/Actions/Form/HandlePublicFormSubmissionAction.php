@@ -7,8 +7,8 @@ namespace Nvl\Forms\Actions\Form;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Nvl\Forms\Actions\FormEntry\CreateFormEntryAction;
-use Nvl\Forms\Data\Mutations\SubmitFormPayload;
 use Nvl\Forms\Data\FormSubmissionCallbackContext;
+use Nvl\Forms\Data\Mutations\SubmitFormPayload;
 use Nvl\Forms\Enums\FormAnalyticEventType;
 use Nvl\Forms\Enums\Resolvement;
 use Nvl\Forms\Exceptions\FormSubmissionRejectionException;
@@ -205,8 +205,8 @@ final class HandlePublicFormSubmissionAction
                     locale: $request->getLocale(),
                     correlationId: $context->idempotencyKey,
                 );
-                $formId = (string) $form->getKey();
-                $entryId = (string) $entry->getKey();
+                $formId = $form->identifier();
+                $entryId = $entry->identifier();
                 $form->getConnection()->afterCommit(function () use ($envelope, $callbackContext, $formId, $entryId): void {
                     $this->queueContext->run($envelope, function () use ($callbackContext, $formId, $entryId): void {
                         $form = $this->getForm->execute($formId);

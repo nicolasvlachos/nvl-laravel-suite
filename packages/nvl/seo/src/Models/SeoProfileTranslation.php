@@ -42,8 +42,8 @@ use Nvl\Seo\Support\SeoPath;
  */
 final class SeoProfileTranslation extends Model
 {
-    use HasUuids;
     use GuardsTenantOwnership;
+    use HasUuids;
 
     public const string TENANT_RESOURCE = 'seo.translations';
 

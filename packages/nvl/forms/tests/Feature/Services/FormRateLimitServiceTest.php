@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
 use Nvl\Forms\Enums\FormAnalyticEventType;
 use Nvl\Forms\Models\Form;
 use Nvl\Forms\Models\FormAnalytic;
@@ -11,11 +11,11 @@ use Nvl\Forms\Services\FormRateLimitService;
 use Nvl\Forms\Services\FormRateLimitStatisticsService;
 
 beforeEach(function (): void {
-    CarbonImmutable::setTestNow('2026-08-02 12:00:00');
+    Carbon::setTestNow('2026-08-02 12:00:00');
 });
 
 afterEach(function (): void {
-    CarbonImmutable::setTestNow();
+    Carbon::setTestNow();
 });
 
 test('rate limiting disabled paths remain read only', function (): void {

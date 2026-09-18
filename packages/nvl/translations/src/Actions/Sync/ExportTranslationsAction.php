@@ -7,10 +7,10 @@ namespace Nvl\Translations\Actions\Sync;
 use Illuminate\Support\Facades\DB;
 use Nvl\Translations\Events\TranslationsExported;
 use Nvl\Translations\Exceptions\TranslationsException;
+use Nvl\Translations\Services\SourceTranslationWorkspace;
 use Nvl\Translations\Services\TranslationExportService;
 use Nvl\Translations\Services\TranslationImportService;
 use Nvl\Translations\Services\TranslationProcessLock;
-use Nvl\Translations\Services\SourceTranslationWorkspace;
 
 /**
  * Runs translation export synchronization.

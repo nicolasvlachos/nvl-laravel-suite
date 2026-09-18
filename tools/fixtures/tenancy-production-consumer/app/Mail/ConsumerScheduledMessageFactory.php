@@ -35,7 +35,11 @@ final class ConsumerScheduledMessageFactory implements ScheduledMessageFactory
     public function make(ScheduledMessageData $message): Mailable
     {
         $this->validate($message->payloadVersion, $message->payload);
+        $label = $message->payload['tenant_label'] ?? null;
+        if (! is_string($label)) {
+            throw new InvalidArgumentException('The publication mail payload is invalid.');
+        }
 
-        return new ConsumerPublicationMail((string) $message->payload['tenant_label']);
+        return new ConsumerPublicationMail($label);
     }
 }

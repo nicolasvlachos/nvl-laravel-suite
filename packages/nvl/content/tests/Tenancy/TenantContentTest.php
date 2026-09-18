@@ -8,6 +8,7 @@ use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Facades\Content;
 use Nvl\Content\Tests\Fixtures\TenantScenario;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Tenancy\Exceptions\TenantContextMissing;
 
 beforeEach(function (): void {
     $this->scenario = TenantScenario::install();
@@ -37,7 +38,7 @@ it('fails closed without an admitted tenant', function (): void {
         scope: 'site',
         scopeKey: 'default',
         translations: ['en' => ['title' => 'Denied']],
-    ), ContentActorData::system()))->toThrow(TenantBoundaryViolation::class);
+    ), ContentActorData::system()))->toThrow(TenantContextMissing::class);
 });
 
 it('keeps definition synchronization behind explicit platform execution', function (): void {

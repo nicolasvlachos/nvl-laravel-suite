@@ -52,11 +52,12 @@ use Nvl\Translatable\Translatable;
  */
 final class SeoProfile extends Model implements TranslatableModel
 {
+    use GuardsTenantOwnership;
+
     /** @use HasFactory<SeoProfileFactory> */
     use HasFactory;
 
     use HasUuids;
-    use GuardsTenantOwnership;
     use Translatable;
 
     public const string TENANT_RESOURCE = 'seo.profiles';
@@ -155,6 +156,7 @@ final class SeoProfile extends Model implements TranslatableModel
                 'metadata',
             ],
             mutationPolicy: TranslationMutationPolicy::DomainActionOnly,
+            ownershipResource: self::TENANT_RESOURCE,
         );
     }
 

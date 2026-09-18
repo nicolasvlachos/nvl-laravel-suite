@@ -48,7 +48,7 @@ final class ShowFormAction
         ?string $sessionId = null,
         ?Authenticatable $actor = null,
     ): Form {
-        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formId = $form instanceof Form ? $form->identifier() : $form;
         $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
 
         if ($recordView) {

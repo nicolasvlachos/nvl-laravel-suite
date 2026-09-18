@@ -55,6 +55,7 @@ final readonly class TemplatesAdoptionAdapter implements TenantAdoptionAdapter
         return $assignments === [] ? new TenantBackfillResult(null, 0) : new TenantBackfillResult($assignments[array_key_last($assignments)]->recordId, count($assignments));
     }
 
+    /** @phpstan-impure */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $connection = $this->connection($plan);
@@ -63,7 +64,7 @@ final readonly class TemplatesAdoptionAdapter implements TenantAdoptionAdapter
         foreach ($connection->table($root)->select(['id', 'tenant_id', 'ownership_key'])->cursor() as $row) {
             $expected = is_string($row->tenant_id) ? 'tenant:'.$row->tenant_id : 'platform';
             if ($row->ownership_key !== $expected) {
-                $errors[] = 'templates.ownership:'.$row->id;
+                $errors[] = 'templates.ownership:'.(is_string($row->id) || is_int($row->id) ? (string) $row->id : 'unknown');
             }
         }
 

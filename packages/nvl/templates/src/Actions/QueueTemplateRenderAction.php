@@ -20,8 +20,8 @@ use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\StoredTemplateRenderResolver;
 use Nvl\Templates\Services\TemplateRenderDispatcher;
 use Nvl\Templates\Support\TemplatesConfiguration;
-use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 
 /**
@@ -110,7 +110,7 @@ final readonly class QueueTemplateRenderAction
                     }
 
                     $render = TemplateRender::query()->create([
-                        'tenant_id' => $model->tenant_id,
+                        ...(config('tenancy.enabled') === true ? ['tenant_id' => $model->tenant_id] : []),
                         'template_id' => $model->id,
                         'template_version_id' => $resolved->version->id,
                         'template_assignment_id' => $resolved->assignment?->id,

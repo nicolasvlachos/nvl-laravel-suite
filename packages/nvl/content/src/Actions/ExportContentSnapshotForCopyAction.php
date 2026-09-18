@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Nvl\Content\Actions;
+
 use Nvl\Content\Data\ContentCompositionSnapshotData;
 use Nvl\Content\Data\ContentSnapshotCopyData;
 use Nvl\Content\Services\ContentCatalogCopyRegistry;
@@ -8,9 +11,11 @@ use Nvl\Content\Services\ContentMediaReferences;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Tenancy\Contracts\TenantContext;
 use RuntimeException;
+
 final readonly class ExportContentSnapshotForCopyAction
 {
     public function __construct(private ContentCatalogCopyRegistry $copies, private ContentOwnerRegistry $owners, private ContentMediaReferences $media, private TenantContext $context) {}
+
     public function execute(string $ownerAlias, string $ownerId, string $group, string $grantId): ContentSnapshotCopyData
     {
         $destination = $this->context->requireTenant();
@@ -31,6 +36,7 @@ final readonly class ExportContentSnapshotForCopyAction
                 }
             }
         }
+
         return new ContentSnapshotCopyData($ownerAlias, $ownerId, $group, $grantId, $revision, $snapshot->version, $snapshot, array_keys($mediaIds));
     }
 }

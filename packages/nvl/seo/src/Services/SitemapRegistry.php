@@ -67,14 +67,11 @@ final class SitemapRegistry
     /**
      * Register an immutable source declaration resolved freshly in each active tenant scope.
      *
-     * @param class-string<SitemapSource> $sourceClass
-     * @param list<class-string<Model>> $ownerTypes
+     * @param  class-string<SitemapSource>  $sourceClass
+     * @param  list<class-string<Model>>  $ownerTypes
      */
     public function registerType(string $sourceClass, ?string $key = null, array $ownerTypes = []): self
     {
-        if (! is_a($sourceClass, SitemapSource::class, true)) {
-            throw new InvalidArgumentException("Sitemap source [{$sourceClass}] must implement SitemapSource.");
-        }
         if ($this->container->make('config')->get('tenancy.enabled') === true
             && ! is_a($sourceClass, TenantSafeSitemapSource::class, true)) {
             throw new InvalidArgumentException(
@@ -89,7 +86,7 @@ final class SitemapRegistry
         }
 
         foreach ($ownerTypes as $ownerType) {
-            if (! is_a($ownerType, Model::class, true) || isset($this->profileOwners[$ownerType])) {
+            if (isset($this->profileOwners[$ownerType])) {
                 throw new InvalidArgumentException("Sitemap SEO owner type [{$ownerType}] is invalid or already assigned.");
             }
         }
@@ -151,7 +148,7 @@ final class SitemapRegistry
                     throw new InvalidArgumentException("Tenant sitemap source [{$key}] has no resource capability.");
                 }
                 foreach ($source->tenantResources() as $resource) {
-                    if (! is_string($resource) || $resource === '') {
+                    if ($resource === '') {
                         throw new InvalidArgumentException("Tenant sitemap source [{$key}] has an invalid resource capability.");
                     }
 

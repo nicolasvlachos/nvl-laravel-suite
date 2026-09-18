@@ -141,7 +141,8 @@ it('defines sealed full and standalone media runner phases with restart and down
     $script = (string) file_get_contents($scriptPath);
     $qualityWorkflow = (string) file_get_contents($root.'/.github/workflows/package-quality.yml');
 
-    expect($scriptPath)->toBeFile()->toBeExecutable()
+    expect($scriptPath)->toBeFile()
+        ->and(is_executable($scriptPath))->toBeTrue()
         ->and($script)->toContain(
             'artifact_version="${NVL_CANDIDATE_VERSION:-1.99.0}"',
             'candidate_archive="${NVL_CANDIDATE_ARCHIVE:-}"',
@@ -178,6 +179,26 @@ it('defines sealed full and standalone media runner phases with restart and down
             'TENANCY_CONSUMER_MEDIA_DRIVER: s3',
             'bash tools/run-tenancy-production-consumer.sh',
         );
+});
+
+it('uses the supported application profile for the host directory matrix case', function (): void {
+    $root = dirname(__DIR__, 2);
+    $process = new Process([
+        PHP_BINARY,
+        '-r',
+        'require "vendor/autoload.php"; $configuration = require "tools/fixtures/tenancy-production-consumer/config/tenancy.php"; echo json_encode(["profile" => $configuration["profile"], "directory" => $configuration["directory"]], JSON_THROW_ON_ERROR);',
+    ], $root, ['TENANCY_CONSUMER_MATRIX_PROFILE' => 'host-uuid-custom-principals']);
+    $process->mustRun();
+
+    $configuration = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($configuration)->toMatchArray([
+        'profile' => 'application',
+        'directory' => [
+            'driver' => 'host',
+            'adapter' => 'App\\Tenancy\\HostTenantDirectory',
+        ],
+    ]);
 });
 
 it('runs the sealed consumer and asserts its actual outcomes when explicitly requested', function (): void {

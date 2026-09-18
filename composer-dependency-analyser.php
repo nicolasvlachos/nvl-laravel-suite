@@ -36,6 +36,44 @@ if (is_string($packageName) && $packageName !== '') {
                 [ErrorType::DEV_DEPENDENCY_IN_PROD],
             );
     }
+
+    if ($packageName === 'media') {
+        $testPath = __DIR__.'/packages/nvl/media/tests';
+        $configuration
+            ->ignoreErrorsOnExtensionAndPath(
+                'ext-pdo',
+                $testPath,
+                [ErrorType::SHADOW_DEPENDENCY],
+            )
+            ->ignoreErrorsOnPackagesAndPaths(
+                ['symfony/console', 'symfony/filesystem', 'symfony/process'],
+                [$testPath],
+                [ErrorType::SHADOW_DEPENDENCY],
+            );
+    }
+
+    if ($packageName === 'taxonomy') {
+        $configuration->ignoreErrorsOnExtensionAndPath(
+            'ext-pcntl',
+            __DIR__.'/packages/nvl/taxonomy/tests',
+            [ErrorType::SHADOW_DEPENDENCY],
+        );
+    }
+
+    if ($packageName === 'translatable') {
+        $testPath = __DIR__.'/packages/nvl/translatable/tests';
+        $configuration
+            ->ignoreErrorsOnExtensionsAndPaths(
+                ['ext-pdo', 'ext-redis'],
+                [$testPath],
+                [ErrorType::SHADOW_DEPENDENCY],
+            )
+            ->ignoreErrorsOnPackagesAndPaths(
+                ['symfony/console', 'symfony/filesystem', 'symfony/process'],
+                [$testPath],
+                [ErrorType::SHADOW_DEPENDENCY],
+            );
+    }
 }
 
 return $configuration;

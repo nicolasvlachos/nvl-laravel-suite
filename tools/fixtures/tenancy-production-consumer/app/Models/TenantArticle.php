@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Nvl\Media\Contracts\HasMedia;
 use Nvl\Media\Traits\InteractsWithMedia;
 
@@ -17,6 +18,8 @@ use Nvl\Media\Traits\InteractsWithMedia;
  * @property string|null $tenant_id Canonical tenant owner after adoption.
  * @property string $slug Tenant-local business key.
  * @property string $title Fixture display title.
+ * @property Carbon|null $updated_at
+ *
  * @method static Builder<static> query()
  */
 final class TenantArticle extends Model implements HasMedia

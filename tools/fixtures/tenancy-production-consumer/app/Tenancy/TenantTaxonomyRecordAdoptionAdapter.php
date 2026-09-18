@@ -33,9 +33,10 @@ final readonly class TenantTaxonomyRecordAdoptionAdapter implements TenantAdopti
             ]);
         }
 
-        return new TenantBackfillResult(count($assignments) === $limit ? $assignments[array_key_last($assignments)]->recordId : null, count($assignments));
+        return new TenantBackfillResult(count($assignments) === $limit ? $assignments[count($assignments) - 1]->recordId : null, count($assignments));
     }
 
+    /** @phpstan-impure */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $errors = [];

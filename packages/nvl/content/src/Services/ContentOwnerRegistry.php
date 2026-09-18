@@ -127,14 +127,15 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
         $id = (string) $identifier;
         $this->identities->owner($this->type($owner), $id);
 
-        if (! $owner->newQuery()->whereKey($identifier)->exists()) {
+        $query = $owner->newQuery()->withoutGlobalScope(SoftDeletingScope::class);
+        if (! (clone $query)->whereKey($identifier)->exists()) {
             throw new InvalidArgumentException(
                 'The supplied Content owner no longer exists.',
             );
         }
 
         if ($this->configuration->get('tenancy.enabled') === true) {
-            $canonical = $owner->newQuery()->findOrFail($identifier);
+            $canonical = $query->findOrFail($identifier);
             $resource = $this->tenantResources->forModel($canonical);
             $this->tenancy->assertRecord($canonical, $resource->key);
         }

@@ -252,7 +252,7 @@ final readonly class SuiteModuleCatalog
         ],
         'auth' => [
             'provider' => AuthServiceProvider::class,
-            'dependencies' => ['data', 'support'],
+            'dependencies' => ['data', 'support', 'tenancy'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'nvl-auth.migrations.enabled'],
             'doctor' => 'nvl:auth:doctor',
@@ -266,7 +266,7 @@ final readonly class SuiteModuleCatalog
         ],
         'csv' => [
             'provider' => CsvServiceProvider::class,
-            'dependencies' => ['data'],
+            'dependencies' => ['data', 'tenancy'],
             'stateful' => false,
             'migration' => ['mode' => 'none', 'config' => null],
             'doctor' => null,
@@ -276,9 +276,21 @@ final readonly class SuiteModuleCatalog
             'schedules' => [],
             'typescript' => true,
         ],
+        'settings' => [
+            'provider' => SettingsServiceProvider::class,
+            'dependencies' => ['data', 'support', 'tenancy'],
+            'stateful' => true,
+            'migration' => ['mode' => 'configurable', 'config' => 'settings.migrations.enabled'],
+            'doctor' => 'nvl:settings:doctor',
+            'contracts' => [SettingsAuthorization::class, SettingsAuditContextProvider::class],
+            'aliases' => [],
+            'queues' => [],
+            'schedules' => [],
+            'typescript' => true,
+        ],
         'mail-notifications' => [
             'provider' => MailNotificationsServiceProvider::class,
-            'dependencies' => ['support'],
+            'dependencies' => ['settings', 'support', 'tenancy'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'mail-notifications.migrations.enabled'],
             'doctor' => 'nvl:mail-notifications:doctor',
@@ -311,7 +323,7 @@ final readonly class SuiteModuleCatalog
         ],
         'comments' => [
             'provider' => CommentsServiceProvider::class,
-            'dependencies' => ['data', 'filterable', 'media', 'support'],
+            'dependencies' => ['data', 'filterable', 'media', 'support', 'tenancy'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'comments.migrations.enabled'],
             'doctor' => 'nvl:comments:doctor',
@@ -323,7 +335,7 @@ final readonly class SuiteModuleCatalog
         ],
         'content' => [
             'provider' => ContentServiceProvider::class,
-            'dependencies' => ['data', 'filterable', 'media', 'support', 'translatable'],
+            'dependencies' => ['data', 'filterable', 'media', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'content.migrations.enabled'],
             'doctor' => 'nvl:content:doctor',
@@ -363,7 +375,7 @@ final readonly class SuiteModuleCatalog
         ],
         'seo' => [
             'provider' => SeoServiceProvider::class,
-            'dependencies' => ['data', 'support', 'translatable'],
+            'dependencies' => ['data', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'seo.migrations.enabled'],
             'doctor' => 'nvl:seo:doctor',
@@ -376,18 +388,6 @@ final readonly class SuiteModuleCatalog
                 ['command' => 'nvl:seo:sitemap:warm', 'enabled' => null, 'required_when_enabled' => false],
                 ['command' => 'nvl:seo:redirects:prune', 'enabled' => null, 'required_when_enabled' => false],
             ],
-            'typescript' => true,
-        ],
-        'settings' => [
-            'provider' => SettingsServiceProvider::class,
-            'dependencies' => ['data', 'support', 'tenancy'],
-            'stateful' => true,
-            'migration' => ['mode' => 'configurable', 'config' => 'settings.migrations.enabled'],
-            'doctor' => 'nvl:settings:doctor',
-            'contracts' => [SettingsAuthorization::class, SettingsAuditContextProvider::class],
-            'aliases' => [],
-            'queues' => [],
-            'schedules' => [],
             'typescript' => true,
         ],
         'taxonomy' => [
@@ -406,7 +406,7 @@ final readonly class SuiteModuleCatalog
         ],
         'templates' => [
             'provider' => TemplatesServiceProvider::class,
-            'dependencies' => ['content', 'data', 'filterable', 'media', 'support', 'translatable'],
+            'dependencies' => ['content', 'data', 'filterable', 'media', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'templates.migrations.enabled'],
             'doctor' => 'nvl:templates:doctor',
@@ -423,7 +423,7 @@ final readonly class SuiteModuleCatalog
         ],
         'translations' => [
             'provider' => TranslationsServiceProvider::class,
-            'dependencies' => ['data', 'filterable', 'support'],
+            'dependencies' => ['data', 'filterable', 'support', 'tenancy'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'translations.migrations.enabled'],
             'doctor' => 'nvl:translations:doctor',
@@ -435,7 +435,7 @@ final readonly class SuiteModuleCatalog
         ],
         'forms' => [
             'provider' => FormsServiceProvider::class,
-            'dependencies' => ['data', 'filterable', 'support', 'translatable'],
+            'dependencies' => ['data', 'filterable', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'forms.migrations.enabled'],
             'doctor' => 'nvl:forms:doctor',
@@ -449,7 +449,7 @@ final readonly class SuiteModuleCatalog
         ],
         'pages' => [
             'provider' => PagesServiceProvider::class,
-            'dependencies' => ['content', 'data', 'filterable', 'metafields', 'seo', 'support', 'translatable'],
+            'dependencies' => ['content', 'data', 'filterable', 'metafields', 'seo', 'support', 'tenancy', 'translatable'],
             'stateful' => true,
             'migration' => ['mode' => 'configurable', 'config' => 'pages.migrations.enabled'],
             'doctor' => 'nvl:pages:doctor',

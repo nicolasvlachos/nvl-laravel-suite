@@ -7,6 +7,7 @@ use Nvl\Auth\Providers\AuthServiceProvider;
 use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Suite\Support\SuiteModuleCatalog;
 use Nvl\Support\Providers\SupportServiceProvider;
+use Nvl\Tenancy\Providers\TenancyServiceProvider;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Process\Process;
@@ -357,6 +358,7 @@ it('selects only an enabled module and its transitive dependencies', function ()
     expect($suiteCatalog->effectiveProviders())->toBe([
         SupportServiceProvider::class,
         DataServiceProvider::class,
+        TenancyServiceProvider::class,
         AuthServiceProvider::class,
     ]);
 });

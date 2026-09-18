@@ -10,7 +10,7 @@ return [
     'enabled' => env('TENANCY_CONSUMER_ENABLED', true),
     'strategy' => 'shared-database',
     'connection' => null,
-    'profile' => 'library',
+    'profile' => 'application',
     'directory' => ['driver' => 'host', 'adapter' => HostTenantDirectory::class],
     'resolvers' => ['http' => null, 'public_site' => null],
     'access' => ['membership' => HostMembershipAccess::class, 'platform' => ConsumerPlatformAccess::class],

@@ -7,10 +7,21 @@ namespace Nvl\Templates\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 
-/** Revocable platform permission to copy one immutable Template version. */
+/**
+ * Revocable platform permission to copy one immutable Template version.
+ *
+ * @property string $id
+ * @property string $template_version_id
+ * @property string $recipient_tenant_id
+ * @property int $source_revision
+ * @property int $revision
+ * @property Carbon|null $revoked_at
+ * @property-read TemplateVersion $version
+ */
 final class TemplateTenantGrant extends Model
 {
     use HasUuids;

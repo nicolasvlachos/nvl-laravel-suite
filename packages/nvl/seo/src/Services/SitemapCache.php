@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Cache\Repository;
 use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
@@ -12,7 +13,6 @@ use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Tenancy\ValueObjects\TenantSiteContext;
-use Illuminate\Container\Container;
 use Throwable;
 
 /**

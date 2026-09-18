@@ -501,7 +501,7 @@ final class CSVAsyncProcessor
     }
 
     /**
-     * @param list<array{row_number:int,data:array<string,mixed>}> $rows
+     * @param  list<array{row_number:int,data:array<string,mixed>}>  $rows
      * @return array{index:int,path:string,sha256:string,rows:int}
      */
     private function writeTenantChunk(CSVWorkReference $work, int $index, array $rows): array

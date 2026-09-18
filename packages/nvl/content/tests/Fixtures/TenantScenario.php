@@ -17,6 +17,7 @@ use Nvl\Tenancy\Services\TenantAdoptionCoordinator;
 use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\PlatformOperation;
+use Nvl\Tenancy\ValueObjects\TenantAssignment;
 use Nvl\Tenancy\ValueObjects\TenantDescriptor;
 use Nvl\Tenancy\ValueObjects\TenantId;
 use RuntimeException;
@@ -49,17 +50,31 @@ final readonly class TenantScenario
         {
             private bool $enabled = true;
 
-            public function activate(array $payload): void { $this->enabled = true; }
+            /** @param array<string, mixed> $payload */
+            public function activate(array $payload): void
+            {
+                $this->enabled = true;
+            }
 
-            public function deactivate(): void { $this->enabled = false; }
+            public function deactivate(): void
+            {
+                $this->enabled = false;
+            }
 
-            public function active(): bool { return $this->enabled; }
+            public function active(): bool
+            {
+                return $this->enabled;
+            }
 
-            public function data(): array { return []; }
+            /** @return array<string, mixed> */
+            public function data(): array
+            {
+                return [];
+            }
         });
     }
 
-    /** @param iterable<\Nvl\Tenancy\ValueObjects\TenantAssignment> $mappings */
+    /** @param iterable<TenantAssignment> $mappings */
     public static function install(iterable $mappings = []): self
     {
         $coordinator = app(TenantAdoptionCoordinator::class);
@@ -82,6 +97,12 @@ final readonly class TenantScenario
         return new self;
     }
 
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
     public function run(string $tenant, Closure $callback): mixed
     {
         return app(TenantRunner::class)->run(new TenantId($tenant), $callback);

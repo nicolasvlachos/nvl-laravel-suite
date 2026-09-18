@@ -46,19 +46,35 @@ final readonly class TenantArticleAdoptionAdapter implements TenantAdoptionAdapt
         }
 
         $nextCursor = count($assignments) === $limit
-            ? $assignments[array_key_last($assignments)]->recordId
+            ? $assignments[count($assignments) - 1]->recordId
             : null;
 
         return new TenantBackfillResult($nextCursor, count($assignments));
     }
 
-    /** Verify every article has a canonical owner matching its reviewed mapping. */
+    /**
+     * Verify every article has a canonical owner matching its reviewed mapping.
+     *
+     * @phpstan-impure
+     */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
+        $reviewed = [];
+        $cursor = null;
+        do {
+            $assignments = $this->mappings->assignments($plan, 'consumer.articles', $cursor, 100);
+            foreach ($assignments as $assignment) {
+                $reviewed[$assignment->recordId] = $assignment->tenantId->value;
+            }
+            $cursor = count($assignments) === 100
+                ? $assignments[array_key_last($assignments)]->recordId
+                : null;
+        } while ($cursor !== null);
+
         $errors = [];
         foreach (TenantArticle::query()->orderBy('id')->get(['id', 'tenant_id']) as $article) {
             if ($article->tenant_id === null
-                || $article->tenant_id !== $this->mappings->tenantFor($plan, 'consumer.articles', $article->id)->value) {
+                || (isset($reviewed[$article->id]) && $article->tenant_id !== $reviewed[$article->id])) {
                 $errors[] = 'consumer.articles:'.$article->id;
             }
         }

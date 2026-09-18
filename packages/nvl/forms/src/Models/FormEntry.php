@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Query\Builder;
+use LogicException;
 use Nvl\Forms\Builders\FormEntryBuilder;
 use Nvl\Forms\Database\Factories\FormEntryFactory;
 use Nvl\Forms\Definitions\Tables\FormsTables;
@@ -55,6 +56,18 @@ class FormEntry extends Model
     use HasUuids;
 
     private bool $idempotentReplay = false;
+
+    /** Return this persisted entry's required UUID identifier. */
+    public function identifier(): string
+    {
+        $identifier = $this->getAttribute($this->getKeyName());
+
+        if (! is_string($identifier) || $identifier === '') {
+            throw new LogicException('Persisted form entries require a UUID identifier.');
+        }
+
+        return $identifier;
+    }
 
     protected $table = FormsTables::Entries;
 

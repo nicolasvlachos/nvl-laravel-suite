@@ -106,7 +106,7 @@ final readonly class AssignTemplateAction
                     $assignment ??= new TemplateAssignment;
                     $assignment->fill([
                         'template_id' => $template->id,
-                        'tenant_id' => $template->tenant_id,
+                        ...(config('tenancy.enabled') === true ? ['tenant_id' => $template->tenant_id] : []),
                         'template_version_id' => $data->versionId,
                         'owner_type' => $data->ownerType,
                         'owner_id' => $data->ownerId,

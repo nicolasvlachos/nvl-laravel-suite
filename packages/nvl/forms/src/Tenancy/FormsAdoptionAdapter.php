@@ -6,6 +6,7 @@ namespace Nvl\Forms\Tenancy;
 
 use Illuminate\Database\Connection;
 use Illuminate\Database\Migrations\Migrator;
+use Illuminate\Database\Query\Builder;
 use Nvl\Forms\Definitions\Tables\FormsTables;
 use Nvl\Forms\Models\Form;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
@@ -53,7 +54,11 @@ final readonly class FormsAdoptionAdapter implements TenantAdoptionAdapter
             : new TenantBackfillResult($assignments[array_key_last($assignments)]->recordId, count($assignments));
     }
 
-    /** Verify root completeness and exact inherited ownership. */
+    /**
+     * Verify root completeness and exact inherited ownership.
+     *
+     * @phpstan-impure
+     */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $connection = $this->connection($plan);
@@ -64,7 +69,7 @@ final readonly class FormsAdoptionAdapter implements TenantAdoptionAdapter
         foreach ($this->childTables() as $table) {
             if ($connection->table($table.' as child')
                 ->join(FormsTables::Forms.' as parent', 'parent.id', '=', 'child.form_id')
-                ->where(function ($query): void {
+                ->where(function (Builder $query): void {
                     $query->whereNull('child.tenant_id')->orWhereColumn('child.tenant_id', '!=', 'parent.tenant_id');
                 })->exists()) {
                 $errors[] = $table.'.ownership';

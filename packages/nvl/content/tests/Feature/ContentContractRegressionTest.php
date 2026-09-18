@@ -6,6 +6,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -78,6 +79,8 @@ use Nvl\Content\Validation\ContentValueValidator;
 use Nvl\Filterable\Data\FilterCriterion;
 use Nvl\Filterable\Data\FilterSet;
 use Nvl\Filterable\Enums\FilterOperator;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 beforeEach(function (): void {
     app(SyncContentDefinitionsAction::class)->execute(ContentActorData::system());
@@ -2581,6 +2584,9 @@ it('exposes the registered reference aliases without resolving them', function (
     $registry = new ContentReferenceRegistry(
         app(),
         app(ContentPayloadGuard::class),
+        app(ConfigRepository::class),
+        app(TenantBoundary::class),
+        app(TenantResourceRegistry::class),
     );
 
     expect($registry->has('missing'))->toBeFalse();

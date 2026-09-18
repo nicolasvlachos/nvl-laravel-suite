@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Translations\Services;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Services\TenantBoundary;
@@ -63,8 +64,8 @@ final readonly class DatabaseTenantTranslationRepository implements TenantTransl
         }
     }
 
-    /** @return \Illuminate\Database\Eloquent\Builder<TenantTranslationOverride> */
-    private function query(string $key, string $locale): \Illuminate\Database\Eloquent\Builder
+    /** @return Builder<TenantTranslationOverride> */
+    private function query(string $key, string $locale): Builder
     {
         $this->assertLocale($locale);
 

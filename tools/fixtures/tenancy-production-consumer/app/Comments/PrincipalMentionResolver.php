@@ -24,25 +24,27 @@ final readonly class PrincipalMentionResolver implements CommentMentionResourceR
             ->where('tenant_id', $tenant->value)
             ->whereIn('subject_id', $ids)
             ->pluck('subject_id')
-            ->map(static fn (mixed $id): string => (string) $id);
+            ->filter(static fn (mixed $id): bool => is_string($id))
+            ->values();
 
         return User::query()
             ->whereIn('id', $allowed)
             ->get(['id', 'name'])
             ->map(static fn (User $user): CommentMentionResourceData => new CommentMentionResourceData(
-                id: (string) $user->getKey(),
+                id: $user->id,
                 label: $user->name,
             ));
     }
 
     public function suggest(CommentMentionContext $context, string $query, int $limit): Collection
     {
-        $ids = TenantMembership::query()
+        $ids = array_values(TenantMembership::query()
             ->where('tenant_id', $this->context->requireTenant()->value)
             ->limit($limit)
             ->pluck('subject_id')
-            ->map(static fn (mixed $id): string => (string) $id)
-            ->all();
+            ->filter(static fn (mixed $id): bool => is_string($id))
+            ->values()
+            ->all());
 
         return $this->resolve($context, $ids)
             ->filter(static fn (CommentMentionResourceData $resource): bool => str_contains(

@@ -7,6 +7,10 @@ description: Implement, integrate, test, or review nvl/translations in Laravel 1
 
 Treat PHP and JSON language files as authoritative. The database is an editable synchronization workspace, never an implicit replacement source.
 
+In tenant mode, source tooling is denied. Use `TenantTranslationRepository`
+for allowlisted copy and `ExportTenantTranslationsAction` for tenant artifacts;
+never derive a filesystem source scope from tenant input.
+
 ## Configure profiles
 
 - Define source and target profiles for application, package, vendor-style, module-style, or explicit custom roots.

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Nvl\Seo\Services;
 
 use LogicException;
-use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\TenantSafeSitemapSource;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;

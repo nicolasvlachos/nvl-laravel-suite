@@ -88,16 +88,21 @@ final readonly class ImportContentSnapshotAction
         );
     }
 
-    /** @param array<string,string> $mediaMap */
-    private function replaceMedia(mixed $value, array $mediaMap): mixed
+    /**
+     * @param  array<array-key, mixed>  $value
+     * @param  array<string, string>  $mediaMap
+     * @return array<array-key, mixed>
+     */
+    private function replaceMedia(array $value, array $mediaMap): array
     {
-        if (is_string($value)) {
-            return $mediaMap[$value] ?? $value;
-        }
-        if (! is_array($value)) {
-            return $value;
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->replaceMedia($item, $mediaMap);
+            } elseif (is_string($item)) {
+                $value[$key] = $mediaMap[$item] ?? $item;
+            }
         }
 
-        return array_map(fn (mixed $item): mixed => $this->replaceMedia($item, $mediaMap), $value);
+        return $value;
     }
 }

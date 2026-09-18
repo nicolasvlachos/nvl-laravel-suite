@@ -36,6 +36,7 @@ final readonly class TranslationsAdoptionAdapter implements TenantAdoptionAdapte
         return new TenantBackfillResult(null, 0);
     }
 
+    /** @phpstan-impure */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $schema = $this->connection($plan)->getSchemaBuilder();

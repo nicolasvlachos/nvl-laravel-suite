@@ -6,10 +6,10 @@ use Nvl\Pages\Actions\CreatePageAction;
 use Nvl\Pages\Actions\ResolvePageAction;
 use Nvl\Pages\Data\Mutations\CreatePageData;
 use Nvl\Pages\Data\PageActorData;
-use Nvl\Pages\Enums\PageStatus;
 use Nvl\Pages\Enums\PageKind;
+use Nvl\Pages\Enums\PageStatus;
+use Nvl\Pages\Exceptions\PageHierarchyException;
 use Nvl\Pages\Tests\Fixtures\TenantScenario;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 
 beforeEach(function (): void {
     $this->scenario = TenantScenario::install();
@@ -70,6 +70,6 @@ it('rejects a foreign canonical parent before changing a tree', function (): voi
         expect(fn () => app(CreatePageAction::class)->execute(
             new CreatePageData('pages.child', 'child', $parent->id, translations: ['en' => ['title' => 'Child']]),
             PageActorData::system(),
-        ))->toThrow(TenantBoundaryViolation::class);
+        ))->toThrow(PageHierarchyException::class);
     });
 });

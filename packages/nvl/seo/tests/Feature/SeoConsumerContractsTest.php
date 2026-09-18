@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -53,6 +54,8 @@ use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Support\StructuredDataLimits;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Spatie\LaravelData\DataCollection;
 
 function seoConsumerOwner(string $name = 'Consumer owner'): TestSeoOwner
@@ -685,7 +688,11 @@ it('covers owner, route uniqueness, and database constraint boundaries', functio
         ->and(DatabaseConstraintViolation::matches($integrityQuery, ['other']))->toBeFalse()
         ->and(DatabaseConstraintViolation::isIntegrityViolation($syntaxQuery))->toBeFalse();
 
-    $registry = new SeoOwnerRegistry;
+    $registry = new SeoOwnerRegistry(
+        app(Repository::class),
+        app(TenantBoundary::class),
+        app(TenantResourceRegistry::class),
+    );
     expect(fn () => $registry->modelClass('missing'))
         ->toThrow(InvalidSeoMutationException::class)
         ->and(fn () => $registry->aliasForMorphType('missing'))
@@ -695,10 +702,18 @@ it('covers owner, route uniqueness, and database constraint boundaries', functio
         'first' => TestSeoOwner::class,
         'second' => TestSeoOwner::class,
     ]);
-    expect(fn () => (new SeoOwnerRegistry)->configured())
+    expect(fn () => (new SeoOwnerRegistry(
+        app(Repository::class),
+        app(TenantBoundary::class),
+        app(TenantResourceRegistry::class),
+    ))->configured())
         ->toThrow(InvalidArgumentException::class);
     config()->set('seo.owners', 'invalid');
-    expect(fn () => (new SeoOwnerRegistry)->configured())
+    expect(fn () => (new SeoOwnerRegistry(
+        app(Repository::class),
+        app(TenantBoundary::class),
+        app(TenantResourceRegistry::class),
+    ))->configured())
         ->toThrow(InvalidArgumentException::class);
 });
 

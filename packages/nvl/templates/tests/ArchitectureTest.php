@@ -28,6 +28,13 @@ it('consumes Content only through its canonical public boundaries', function ():
             'Nvl\\Content\\Services\\ContentScopeRegistry',
             'Nvl\\Content\\Validation\\ContentValueValidator',
         ],
+        'Providers/TemplatesServiceProvider.php' => [
+            'Nvl\\Content\\Services\\ContentCatalogCopyRegistry',
+        ],
+        'Actions/ImportPlatformTemplateAction.php' => [
+            'Nvl\\Content\\Actions\\ExportContentSnapshotForCopyAction',
+            'Nvl\\Content\\Actions\\ImportContentSnapshotAction',
+        ],
     ];
 
     foreach ($files as $file) {

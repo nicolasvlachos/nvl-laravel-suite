@@ -149,6 +149,7 @@ it('runs six routine gates without scheduled fan-out', function (): void {
     expect(array_keys($jobs))->toBe([
         'quality',
         'current-tests',
+        'tenancy-release-adoption',
         'laravel13-lowest',
         'postgresql',
         'mysql-family',

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -45,6 +46,8 @@ use Nvl\Media\Enums\MediaLifecycleStatus;
 use Nvl\Media\Enums\MediaType;
 use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 it('round trips typed composition snapshots through the Eloquent cast', function (): void {
     $model = new class extends Model {};
@@ -576,7 +579,12 @@ it('enforces media shape availability visibility MIME and authorization boundari
 
 it('fails closed for invalid owner registrations identities and group declarations', function (): void {
     $originalMorphMap = Relation::morphMap();
-    $registry = new ContentOwnerRegistry(app(ContentIdentityGuard::class));
+    $registry = new ContentOwnerRegistry(
+        app(ContentIdentityGuard::class),
+        app(Repository::class),
+        app(TenantBoundary::class),
+        app(TenantResourceRegistry::class),
+    );
     $plainModel = new class extends Model {};
     $validOwner = new class extends Model implements ContentOwner
     {
@@ -647,7 +655,12 @@ it('fails closed for invalid owner registrations identities and group declaratio
             ->toThrow(InvalidArgumentException::class);
         expect(fn () => $registry->assertGroup($validOwner, 'secondary'))
             ->toThrow(InvalidArgumentException::class);
-        expect(fn () => (new ContentOwnerRegistry(app(ContentIdentityGuard::class)))
+        expect(fn () => (new ContentOwnerRegistry(
+            app(ContentIdentityGuard::class),
+            app(Repository::class),
+            app(TenantBoundary::class),
+            app(TenantResourceRegistry::class),
+        ))
             ->register('alternate-boundary-owner', TestContentOwner::class))
             ->toThrow(InvalidArgumentException::class);
     } finally {

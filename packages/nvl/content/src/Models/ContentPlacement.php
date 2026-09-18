@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Media\Contracts\HasMedia;
+use Nvl\Media\Traits\InteractsWithMedia;
 
 /**
  * Ordered placement of a reusable block within an allowlisted owner.
@@ -34,10 +36,11 @@ use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
  * @property-read ContentPlacement|null $parent
  * @property-read Collection<int, ContentPlacement> $children
  */
-final class ContentPlacement extends Model
+final class ContentPlacement extends Model implements HasMedia
 {
     use GuardsTenantOwnership;
     use HasUuids;
+    use InteractsWithMedia;
 
     public const string TENANT_RESOURCE = 'content.placements';
 

@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Enums\ContentRevisionEvent;
-use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Immutable audit snapshot created by public block mutations.

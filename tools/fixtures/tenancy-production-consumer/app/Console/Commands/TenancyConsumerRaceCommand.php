@@ -16,11 +16,13 @@ use Nvl\Forms\Actions\FormEntry\CreateFormEntryAction;
 use Nvl\Forms\Data\FormEntryPayload;
 use Nvl\Media\Actions\AttachMediaAction;
 use Nvl\Media\Models\Media;
+use Nvl\Metafields\Actions\GrantMetafieldDefinitionToTenantAction;
 use Nvl\Pages\Actions\CreatePageAction;
 use Nvl\Pages\Data\Mutations\CreatePageData;
 use Nvl\Pages\Data\PageActorData;
 use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\TenantId;
+use RuntimeException;
 use Throwable;
 
 /** Runs one half of a deliberately competing package operation. */
@@ -49,10 +51,14 @@ final class TenancyConsumerRaceCommand extends Command
     public function handle(): int
     {
         $report = $this->report();
-        $race = (string) $this->argument('race');
-        $competitor = (string) $this->argument('competitor');
-        $tenant = new TenantId((string) $report['tenant_a']);
-        $barrier = Cache::lock((string) $this->option('barrier').':'.$race, 30);
+        $race = $this->argument('race');
+        $competitor = $this->argument('competitor');
+        $barrierName = $this->option('barrier');
+        if (! is_string($race) || ! is_string($competitor) || ! is_string($barrierName)) {
+            throw new RuntimeException('The race arguments must be strings.');
+        }
+        $tenant = new TenantId($this->string($report, 'tenant_a'));
+        $barrier = Cache::lock($barrierName.':'.$race, 30);
         $barrier->block(10, static fn (): null => null);
         $succeeded = true;
         $error = null;
@@ -101,11 +107,12 @@ final class TenancyConsumerRaceCommand extends Command
     /** @param array<string, mixed> $report */
     private function completeSameMediaSlot(array $report): mixed
     {
-        $publication = (array) $report['publication_a'];
+        $publication = $this->record($report, 'publication_a');
+        $asset = $this->record($report, 'asset_a');
 
         return $this->attachMedia->execute(
-            Media::query()->findOrFail($publication['media_id']),
-            TenantArticle::query()->findOrFail(((array) $report['asset_a'])['article_id']),
+            Media::query()->whereKey($this->string($publication, 'media_id'))->firstOrFail(),
+            TenantArticle::query()->whereKey($this->string($asset, 'article_id'))->firstOrFail(),
             collection: 'concurrent-slot',
             dispatchVariations: false,
         );
@@ -114,24 +121,24 @@ final class TenancyConsumerRaceCommand extends Command
     /** @param array<string, mixed> $report */
     private function submitSameEntry(array $report): mixed
     {
-        $publication = (array) $report['publication_a'];
+        $publication = $this->record($report, 'publication_a');
 
         return $this->createEntry->execute(FormEntryPayload::from([
-            'formId' => $publication['form_id'],
+            'formId' => $this->string($publication, 'form_id'),
             'subject' => 'Concurrent submission',
             'email' => 'race@tenancy-consumer.test',
             'submissionData' => ['proof' => true],
             'submittedFrom' => 'https://auth-media.tenancy-consumer.test/publication',
-        ]), '127.0.0.1', 'race', 'race', User::query()->findOrFail($report['principal_id']), 'shared-race-key');
+        ]), '127.0.0.1', 'race', 'race', User::query()->whereKey($this->string($report, 'principal_id'))->firstOrFail(), 'shared-race-key');
     }
 
     /** @param array<string, mixed> $report */
     private function grantRaceSentinel(array $report): int
     {
-        return app(\Nvl\Metafields\Actions\GrantMetafieldDefinitionToTenantAction::class)->execute(
-            (string) $report['platform_metafield_definition_id'],
-            new TenantId((string) $report['tenant_a']),
-            (int) $report['platform_metafield_definition_revision'],
+        return app(GrantMetafieldDefinitionToTenantAction::class)->execute(
+            $this->string($report, 'platform_metafield_definition_id'),
+            new TenantId($this->string($report, 'tenant_a')),
+            $this->integer($report, 'platform_metafield_definition_revision'),
         )->revision;
     }
 
@@ -140,6 +147,49 @@ final class TenancyConsumerRaceCommand extends Command
     {
         $report = json_decode($this->files->get(storage_path('app/private/tenancy-consumer/report.json')), true, flags: JSON_THROW_ON_ERROR);
 
-        return is_array($report) ? $report : throw new \RuntimeException('The consumer report is invalid.');
+        return $this->associativeArray($report, 'consumer report');
+    }
+
+    /** @param array<string, mixed> $values */
+    private function string(array $values, string $key): string
+    {
+        $value = $values[$key] ?? null;
+
+        return is_string($value) ? $value : throw new RuntimeException("Invalid [{$key}] value.");
+    }
+
+    /** @param array<string, mixed> $values */
+    private function integer(array $values, string $key): int
+    {
+        $value = $values[$key] ?? null;
+
+        return is_int($value) ? $value : throw new RuntimeException("Invalid [{$key}] value.");
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    private function record(array $values, string $key): array
+    {
+        return $this->associativeArray($values[$key] ?? null, $key);
+    }
+
+    /** @return array<string, mixed> */
+    private function associativeArray(mixed $value, string $name): array
+    {
+        if (! is_array($value)) {
+            throw new RuntimeException("The {$name} is invalid.");
+        }
+
+        $record = [];
+        foreach ($value as $key => $item) {
+            if (! is_string($key)) {
+                throw new RuntimeException("The {$name} is invalid.");
+            }
+            $record[$key] = $item;
+        }
+
+        return $record;
     }
 }

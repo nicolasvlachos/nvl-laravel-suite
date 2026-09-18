@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Csv\Tenancy;
 
 use Illuminate\Contracts\Filesystem\Factory;
-use Throwable;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
 use Nvl\Tenancy\ValueObjects\TenantVerification;
+use Throwable;
 
 /** Declares that CSV has no durable relational resources to adopt. */
 final readonly class CsvAdoptionAdapter implements TenantAdoptionAdapter
@@ -35,6 +35,7 @@ final readonly class CsvAdoptionAdapter implements TenantAdoptionAdapter
         return new TenantBackfillResult(null, 0);
     }
 
+    /** @phpstan-impure */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $errors = [];

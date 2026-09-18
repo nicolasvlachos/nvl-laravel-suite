@@ -68,7 +68,7 @@ it('treats omitted legacy module decisions as intentionally disabled', function 
         ->and($catalog->requested('pages'))->toBeFalse()
         ->and($catalog->requested('support'))->toBeFalse()
         ->and($catalog->selection()->enabled('support'))->toBeTrue()
-        ->and($catalog->effectiveModules())->toBe(['support', 'data', 'auth']);
+        ->and($catalog->effectiveModules())->toBe(['support', 'data', 'tenancy', 'auth']);
 
     $report = app(SuiteConfigurationInspector::class)->inspect();
 
@@ -129,12 +129,12 @@ it('disables every omitted legacy module while re-enabling required dependencies
         'activity',
         'auth',
         'csv',
+        'settings',
         'mail-notifications',
         'comments',
         'metafields',
         'primitives',
         'seo',
-        'settings',
         'taxonomy',
         'templates',
         'translations',
@@ -155,6 +155,7 @@ it('disables every omitted legacy module while re-enabling required dependencies
         ->and($catalog->effectiveModules())->toBe([
             'support',
             'data',
+            'tenancy',
             'filterable',
             'translatable',
             'media',
@@ -193,6 +194,7 @@ it('provides dependency-complete installation profiles', function (): void {
     ])->and($catalog->profileModules('auth-only'))->toBe([
         'support',
         'data',
+        'tenancy',
         'auth',
     ])->and($catalog->profileModules('content-platform'))->toContain(
         'support',
@@ -234,7 +236,7 @@ it('keeps legacy module maps authoritative while resolving declarative profiles 
     ], $catalog);
 
     expect($legacy->source)->toBe('legacy')
-        ->and($legacy->effectiveModules())->toBe(['support', 'data', 'auth'])
+        ->and($legacy->effectiveModules())->toBe(['support', 'data', 'tenancy', 'auth'])
         ->and($legacy->decision('pages'))->toBe('disabled')
         ->and($declarative->source)->toBe('declarative')
         ->and($declarative->effectiveModules())->toContain('support', 'data', 'auth', 'pages')
@@ -281,17 +283,17 @@ it('expresses the KPO module set as capability roots without an application-spec
             'activity',
             'auth',
             'csv',
+            'settings',
             'mail-notifications',
             'comments',
             'pages',
-            'settings',
             'templates',
             'translations',
         ],
         'exclude' => ['primitives', 'taxonomy', 'forms'],
     ], app(SuiteModuleCatalog::class));
 
-    expect($selection->effectiveModules())->toHaveCount(17)
+    expect($selection->effectiveModules())->toHaveCount(18)
         ->not->toContain('primitives')
         ->not->toContain('taxonomy')
         ->not->toContain('forms');
@@ -316,6 +318,7 @@ it('uses the shipped full-suite default when the consumer has no published confi
             'activity',
             'auth',
             'csv',
+            'settings',
             'mail-notifications',
             'media',
             'comments',
@@ -323,7 +326,6 @@ it('uses the shipped full-suite default when the consumer has no published confi
             'metafields',
             'primitives',
             'seo',
-            'settings',
             'taxonomy',
             'templates',
             'translations',
@@ -631,7 +633,7 @@ it('runs every effective package doctor through the root strict command', functi
 
     $report = json_decode($output->fetch(), true, flags: JSON_THROW_ON_ERROR);
 
-    expect(array_keys($report['doctors'] ?? []))->toBe(['settings'])
+    expect(array_keys($report['doctors'] ?? []))->toBe(['tenancy', 'settings'])
         ->and($report['doctors']['settings']['healthy'] ?? null)->toBeTrue()
         ->and($report['healthy'] ?? null)->toBeTrue();
 

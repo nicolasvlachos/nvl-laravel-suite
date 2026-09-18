@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Models\PageTranslation;
-use Nvl\Pages\Tests\Fixtures\TenantScenario;
 use Nvl\Pages\Support\PagePath;
+use Nvl\Pages\Tests\Fixtures\TenantScenario;
 use Nvl\Tenancy\Services\TenantInstallationState;
 use Nvl\Tenancy\ValueObjects\TenantAssignment;
 use Nvl\Tenancy\ValueObjects\TenantId;

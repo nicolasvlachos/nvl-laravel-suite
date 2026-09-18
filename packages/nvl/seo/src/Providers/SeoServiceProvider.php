@@ -16,10 +16,10 @@ use Nvl\Seo\Console\SeoDoctorCommand;
 use Nvl\Seo\Console\WarmSeoSitemapCommand;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
-use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
+use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Http\Controllers\RobotsController;
 use Nvl\Seo\Http\Controllers\SitemapChunkController;
 use Nvl\Seo\Http\Controllers\SitemapController;
@@ -28,8 +28,8 @@ use Nvl\Seo\Services\ConfiguredSeoAuthorization;
 use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\EloquentSeoSitemapSource;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
-use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\SeoOwnerRegistry;
+use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Tenancy\SeoResourceRegistrar;
@@ -235,6 +235,7 @@ final class SeoServiceProvider extends ServiceProvider
 
         $middleware = config('seo.routes.middleware', ['web']);
         $middleware = is_array($middleware) ? $middleware : ['web'];
+        $middleware = array_values(array_filter($middleware, is_string(...)));
         if (config('tenancy.enabled') === true) {
             array_unshift($middleware, ResolvePublicTenant::class);
         }

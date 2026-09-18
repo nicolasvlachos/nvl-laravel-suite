@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Nvl\Templates\Actions;
 
 use Illuminate\Support\Facades\DB;
-use Nvl\Templates\Models\TemplateTenantGrant;
-use Nvl\Templates\Models\TemplateVersion;
 use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Enums\TemplateVersionStatus;
+use Nvl\Templates\Models\TemplateTenantGrant;
+use Nvl\Templates\Models\TemplateVersion;
 use Nvl\Templates\Support\TemplatesConfiguration;
 use Nvl\Tenancy\Contracts\TenantContext;
 use Nvl\Tenancy\Contracts\TenantDirectory;

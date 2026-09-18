@@ -25,6 +25,7 @@ use Nvl\Taxonomy\Actions\AttachTermsAction;
 use Nvl\Taxonomy\Actions\CreateTermAction;
 use Nvl\Taxonomy\Data\MutateTermPayload;
 use Nvl\Taxonomy\Services\TaxonomyOwnerRegistry;
+use Nvl\Tenancy\Services\TenantInstallationState;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Nvl\Workbench\Models\IntegrationTestModel;
 
@@ -191,6 +192,8 @@ it('can attach media to the integration model using isolated package actions', f
 });
 
 it('keeps eager-loaded reference owner reads within a constant query budget', function (): void {
+    app(TenantInstallationState::class)->assertUsable('taxonomy.terms');
+
     $measure = static function (): int {
         DB::flushQueryLog();
         DB::enableQueryLog();

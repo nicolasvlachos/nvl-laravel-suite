@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentCompositionSnapshotData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
@@ -68,7 +69,7 @@ it('captures format two snapshots and denies foreign owners blocks and snapshots
 
     $this->scenario->run(TenantScenario::B, function () use ($blockA, $ownerB, $snapshot): void {
         expect(fn () => Content::place($blockA, $ownerB, 'default', new PlaceContentBlockData('foreign'), $this->actor))
-            ->toThrow(TenantBoundaryViolation::class)
+            ->toThrow(ModelNotFoundException::class)
             ->and(fn () => Content::renderSnapshot($snapshot, 'en', $this->actor))
             ->toThrow(TenantBoundaryViolation::class);
     });

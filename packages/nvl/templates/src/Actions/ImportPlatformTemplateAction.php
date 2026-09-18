@@ -14,16 +14,16 @@ use Nvl\Templates\Enums\TemplateVersionStatus;
 use Nvl\Templates\Models\Template;
 use Nvl\Templates\Models\TemplateTenantGrant;
 use Nvl\Templates\Models\TemplateVersion;
+use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Services\TemplateContentCopyAccess;
 use Nvl\Templates\Services\TemplateDefinitionRegistry;
-use Nvl\Templates\Services\CanonicalJson;
 use Nvl\Templates\Support\TemplatesConfiguration;
 use Nvl\Tenancy\Contracts\TenantContext;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Services\TenantBoundary;
 use Throwable;
 
-/** Copies one granted platform Template, Content graph, and Media set atomically. */
+/** Orchestrates copying one granted platform Template, Content graph, and Media set atomically. */
 final readonly class ImportPlatformTemplateAction
 {
     public function __construct(
@@ -108,7 +108,11 @@ final readonly class ImportPlatformTemplateAction
                         $staged[$sourceId],
                         $this->mediaImportKey($data->idempotencyKey, $sourceId),
                     );
-                    $mediaMap[$sourceId] = (string) $copy->getKey();
+                    $copyId = $copy->getAttribute($copy->getKeyName());
+                    if (! is_string($copyId) || $copyId === '') {
+                        throw new TenantBoundaryViolation('An imported Template Media copy has no canonical identifier.');
+                    }
+                    $mediaMap[$sourceId] = $copyId;
                 }
                 $content = $this->importContent->execute($version, $source, $mediaMap, $actor->contentActor());
                 $version->forceFill([
@@ -134,8 +138,7 @@ final readonly class ImportPlatformTemplateAction
         TemplateTenantGrant $grant,
         ImportPlatformTemplateData $data,
         ?string $sourceHash = null,
-    ): void
-    {
+    ): void {
         if ($grant->revision !== $data->expectedGrantRevision || $grant->source_revision !== $data->expectedSourceRevision
             || $grant->version->revision !== $data->expectedSourceRevision || $grant->revoked_at !== null
             || ($sourceHash !== null && ! hash_equals((string) $grant->version->content_hash, $sourceHash))) {

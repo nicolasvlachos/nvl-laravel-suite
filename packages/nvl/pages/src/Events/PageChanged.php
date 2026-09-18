@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Pages\Events;
 
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Nvl\Pages\Data\PageActorData;
@@ -34,6 +35,7 @@ final readonly class PageChanged implements ShouldDispatchAfterCommit
         public array $affectedPageIds = [],
         ?SitemapCacheIdentity $sitemapIdentity = null,
     ) {
-        $this->sitemapIdentity = $sitemapIdentity ?? app(SitemapCache::class)->capture($site);
+        $this->sitemapIdentity = $sitemapIdentity
+            ?? Container::getInstance()->make(SitemapCache::class)->capture($site);
     }
 }

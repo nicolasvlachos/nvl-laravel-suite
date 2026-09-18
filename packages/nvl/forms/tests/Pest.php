@@ -6,9 +6,10 @@ use Illuminate\Http\Request;
 use Nvl\Forms\Services\RequestOriginResolver;
 use Nvl\Forms\Support\FormSubmissionContext;
 use Nvl\Forms\Tests\FormsTestCase;
+use Nvl\Forms\Tests\TenancyTestCase;
 
 uses(FormsTestCase::class)->in('Feature');
-uses(\Nvl\Forms\Tests\TenancyTestCase::class)->in('Tenancy');
+uses(TenancyTestCase::class)->in('Tenancy');
 
 function formSubmissionContext(Request $request): FormSubmissionContext
 {

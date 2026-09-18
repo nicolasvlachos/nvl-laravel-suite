@@ -7,10 +7,10 @@ namespace Nvl\Seo\Tenancy;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Migrations\Migrator;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Models\SeoRedirect;
-use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
@@ -57,13 +57,16 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
                 if ($row === null) {
                     continue;
                 }
+                if (! is_string($row->scope ?? null) || ! is_string($row->source_path ?? null)) {
+                    throw new TenantBoundaryViolation('An SEO redirect has invalid canonical source identity.');
+                }
                 $connection->table((new SeoRedirect)->getTable())->where('id', $assignment->recordId)->update([
                     'tenant_id' => $assignment->tenantId->value,
                     'source_hash' => SeoRedirect::sourceHashForTenant(
                         $assignment->tenantId->value,
-                        (string) $row->scope,
+                        $row->scope,
                         is_string($row->locale) ? $row->locale : null,
-                        (string) $row->source_path,
+                        $row->source_path,
                     ),
                 ]);
             }
@@ -82,7 +85,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
             ->orderBy('id')->limit($limit)->get();
         $connection->transaction(function () use ($connection, $profiles): void {
             foreach ($profiles as $row) {
-                if (! is_string($row->seoable_type) || ! is_string($row->seoable_id)) {
+                if (! is_string($row->id ?? null) || ! is_string($row->seoable_type) || ! is_string($row->seoable_id)) {
                     throw new TenantBoundaryViolation('An SEO profile has invalid canonical owner identity.');
                 }
                 $alias = $this->owners->aliasForMorphType($row->seoable_type);
@@ -103,8 +106,11 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
 
         if ($profiles->isNotEmpty()) {
             $last = $profiles->last();
+            if (! is_string($last->id ?? null)) {
+                throw new TenantBoundaryViolation('An SEO profile has no canonical identifier.');
+            }
 
-            return new TenantBackfillResult('profiles:'.(string) $last->id, $profiles->count());
+            return new TenantBackfillResult('profiles:'.$last->id, $profiles->count());
         }
 
         $connection->table(SeoTables::RedirectLocks)->whereNull('tenant_id')->delete();
@@ -112,6 +118,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
         return new TenantBackfillResult(null, 0);
     }
 
+    /** @phpstan-impure */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $connection = $this->connection($plan);
@@ -134,6 +141,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
         }
 
         foreach ($connection->table($profiles)->orderBy('id')->get() as $row) {
+            $rowId = is_string($row->id ?? null) ? $row->id : 'unknown';
             try {
                 if (! is_string($row->seoable_type) || ! is_string($row->seoable_id)) {
                     throw new TenantBoundaryViolation('Invalid SEO owner identity.');
@@ -141,12 +149,11 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
                 $alias = $this->owners->aliasForMorphType($row->seoable_type);
                 $class = $this->owners->modelClass($alias);
                 $owner = (new $class)->newQueryWithoutScopes()->find($row->seoable_id);
-                if (! $owner instanceof Model || $this->resources->forModel($owner) === null
-                    || $owner->getAttribute('tenant_id') !== $row->tenant_id) {
-                    $errors[] = 'seo.profiles.owner_ownership:'.$row->id;
+                if (! $owner instanceof Model || $owner->getAttribute('tenant_id') !== $row->tenant_id) {
+                    $errors[] = 'seo.profiles.owner_ownership:'.$rowId;
                 }
             } catch (\Throwable) {
-                $errors[] = 'seo.profiles.owner_ownership:'.$row->id;
+                $errors[] = 'seo.profiles.owner_ownership:'.$rowId;
             }
             if (count($errors) >= 100) {
                 break;
@@ -154,15 +161,17 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
         }
 
         foreach ($connection->table($redirects)->orderBy('id')->get() as $row) {
+            $rowId = is_string($row->id ?? null) ? $row->id : 'unknown';
             if (! is_string($row->tenant_id) || ! is_string($row->scope)
                 || ! is_string($row->source_path)
-                || ! hash_equals((string) $row->source_hash, SeoRedirect::sourceHashForTenant(
+                || ! is_string($row->source_hash)
+                || ! hash_equals($row->source_hash, SeoRedirect::sourceHashForTenant(
                     $row->tenant_id,
                     $row->scope,
                     is_string($row->locale) ? $row->locale : null,
                     $row->source_path,
                 ))) {
-                $errors[] = 'seo.redirects.source_identity:'.$row->id;
+                $errors[] = 'seo.redirects.source_identity:'.$rowId;
             }
             if (count($errors) >= 100) {
                 break;
@@ -174,13 +183,17 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
 
     public function activate(TenantAdoptionPlan $plan): void
     {
-        if (! $this->verify($plan)->passed()) {
-            throw new TenantBoundaryViolation('SEO tenant ownership did not verify.');
-        }
+        $this->assertVerified($plan, 'SEO tenant ownership did not verify.');
         $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170013_constrain_seo_ownership.php';
         $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([$path], ['force' => true]));
-        if (! $this->verify($plan)->passed()) {
-            throw new TenantBoundaryViolation('SEO tenant ownership failed after constraint activation.');
+        $this->assertVerified($plan, 'SEO tenant ownership failed after constraint activation.');
+    }
+
+    /** Require a fresh persisted verification at one activation checkpoint. */
+    private function assertVerified(TenantAdoptionPlan $plan, string $message): void
+    {
+        if ($this->verify($plan)->errors !== []) {
+            throw new TenantBoundaryViolation($message);
         }
     }
 

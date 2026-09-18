@@ -16,9 +16,10 @@ use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoImageContext;
 use Nvl\Seo\Support\SeoModelIdentifier;
-use Nvl\Translatable\Services\ContentLocale;
+use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Translatable\Services\ContentLocale;
 
 /**
  * Resolves persisted SEO, deterministic locale fallbacks, and site defaults.
@@ -200,6 +201,9 @@ final readonly class SeoMetadataResolver
 
         $resource = $this->tenantResources->forModel($owner);
         $canonical = $owner->newQuery()->findOrFail($owner->getKey());
+        if (! $canonical instanceof Model) {
+            throw new TenantBoundaryViolation('The SEO owner cannot be resolved canonically.');
+        }
         $this->tenancy->assertRecord($canonical, $resource->key);
 
         return $canonical;

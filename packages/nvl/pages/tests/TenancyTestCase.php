@@ -11,9 +11,9 @@ use Nvl\Filterable\Providers\FilterableServiceProvider;
 use Nvl\Media\Providers\MediaServiceProvider;
 use Nvl\Metafields\Providers\MetafieldsServiceProvider;
 use Nvl\Pages\Providers\PagesServiceProvider;
-use Nvl\Pages\Tests\Fixtures\TenantScenario;
 use Nvl\Pages\Tests\Fixtures\PagesTenancyFixtureServiceProvider;
 use Nvl\Pages\Tests\Fixtures\TenantPageResourceHandler;
+use Nvl\Pages\Tests\Fixtures\TenantScenario;
 use Nvl\Seo\Providers\SeoServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Tenancy\Providers\TenancyServiceProvider;
@@ -89,7 +89,7 @@ abstract class TenancyTestCase extends Orchestra
                 'pages' => 'tenant',
                 'page-test-resources' => 'tenant',
             ],
-            'tenancy.sharing' => ['media' => 'none', 'metafields' => 'none'],
+            'tenancy.sharing' => ['media' => 'none', 'metafields' => 'none', 'templates' => 'none'],
         ]);
         TenantScenario::bind($app);
     }

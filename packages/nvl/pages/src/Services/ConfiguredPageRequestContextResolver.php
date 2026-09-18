@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace Nvl\Pages\Services;
 
-use Illuminate\Container\Container;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Nvl\Pages\Contracts\PageRequestContextResolver;
 use Nvl\Pages\Data\PageRequestContextData;
+use Nvl\Tenancy\ValueObjects\TenantSiteContext;
 use Nvl\Translatable\Exceptions\InvalidLocaleException;
 use Nvl\Translatable\Services\LocaleRegistry;
-use Nvl\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
  * Resolves one configured site and a validated supported content locale.
@@ -26,7 +25,6 @@ final readonly class ConfiguredPageRequestContextResolver implements PageRequest
     public function __construct(
         private LocaleRegistry $locales,
         private Repository $configuration,
-        private Container $container,
     ) {}
 
     /**
@@ -34,10 +32,17 @@ final readonly class ConfiguredPageRequestContextResolver implements PageRequest
      */
     public function resolve(Request $request): PageRequestContextData
     {
-        $tenantSite = $this->configuration->get('tenancy.enabled') === true
-            ? $this->container->make(TenantSiteContext::class)
-            : null;
-        $site = $tenantSite?->site ?? config('pages.public.default_site', 'default');
+        $tenantSite = null;
+        if ($this->configuration->get('tenancy.enabled') === true) {
+            $resolvedTenantSite = $request->attributes->get(TenantSiteContext::class);
+            if (! $resolvedTenantSite instanceof TenantSiteContext) {
+                throw new InvalidArgumentException('A verified public tenant site is required.');
+            }
+            $tenantSite = $resolvedTenantSite;
+        }
+        $site = $tenantSite instanceof TenantSiteContext
+            ? $tenantSite->site
+            : config('pages.public.default_site', 'default');
 
         if (! is_string($site)
             || preg_match('/^[a-z0-9][a-z0-9._-]{0,63}$/D', $site) !== 1) {

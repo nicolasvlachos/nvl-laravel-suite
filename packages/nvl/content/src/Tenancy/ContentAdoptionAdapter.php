@@ -89,14 +89,22 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
 
         if ($placements->isNotEmpty()) {
             $last = $placements->last();
+            $lastId = $last->id ?? null;
+            if (! is_string($lastId) && ! is_int($lastId)) {
+                throw new TenantBoundaryViolation('A Content placement has an invalid canonical identity.');
+            }
 
-            return new TenantBackfillResult('placements:'.(string) $last->id, $placements->count());
+            return new TenantBackfillResult('placements:'.(string) $lastId, $placements->count());
         }
 
         return new TenantBackfillResult(null, 0);
     }
 
-    /** Verify roots, inherited rows, canonical owners, and cross-graph equality. */
+    /**
+     * Verify roots, inherited rows, canonical owners, and cross-graph equality.
+     *
+     * @phpstan-impure
+     */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $connection = $this->connection($plan);
@@ -115,6 +123,9 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
             $errors[] = 'content.placements.block_ownership';
         }
         foreach ($connection->table((new ContentPlacement)->getTable())->orderBy('id')->get() as $row) {
+            $rowId = is_string($row->id ?? null) || is_int($row->id ?? null)
+                ? (string) $row->id
+                : 'unknown';
             if (! is_string($row->owner_type) || ! is_string($row->owner_id)) {
                 $errors[] = 'content.placements.owner_identity';
 
@@ -126,10 +137,10 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
                 $resource = $owner instanceof Model ? $this->resources->forModel($owner) : null;
                 if (! $owner instanceof Model || $resource === null
                     || $owner->getAttribute('tenant_id') !== $row->tenant_id) {
-                    $errors[] = 'content.placements.owner_ownership:'.$row->id;
+                    $errors[] = 'content.placements.owner_ownership:'.$rowId;
                 }
             } catch (\Throwable) {
-                $errors[] = 'content.placements.owner_ownership:'.$row->id;
+                $errors[] = 'content.placements.owner_ownership:'.$rowId;
             }
             if (count($errors) >= 100) {
                 break;
@@ -142,13 +153,17 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
     /** Refuse activation until the complete graph has verified. */
     public function activate(TenantAdoptionPlan $plan): void
     {
-        if (! $this->verify($plan)->passed()) {
-            throw new TenantBoundaryViolation('Content tenant ownership did not verify.');
-        }
+        $this->assertVerified($plan, 'Content tenant ownership did not verify.');
         $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170011_constrain_content_ownership.php';
         $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([$path], ['force' => true]));
-        if (! $this->verify($plan)->passed()) {
-            throw new TenantBoundaryViolation('Content tenant ownership failed after constraint activation.');
+        $this->assertVerified($plan, 'Content tenant ownership failed after constraint activation.');
+    }
+
+    /** Require a fresh persisted verification at one activation checkpoint. */
+    private function assertVerified(TenantAdoptionPlan $plan, string $message): void
+    {
+        if ($this->verify($plan)->errors !== []) {
+            throw new TenantBoundaryViolation($message);
         }
     }
 

@@ -13,6 +13,7 @@ use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Support\HttpUrl;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoRedirectTarget;
+use Nvl\Translatable\Exceptions\InvalidLocaleException;
 use Nvl\Translatable\Services\LocaleRegistry;
 use Spatie\LaravelData\Optional;
 
@@ -52,11 +53,23 @@ final readonly class SeoMutationValidator
     {
         $this->validate($payload->toArray(), SeoRedirectPayload::rules());
 
-        if ($payload->locale !== null && ! $this->locales->supports($payload->locale)) {
-            throw InvalidSeoMutationException::forField(
-                'locale',
-                "The locale [{$payload->locale}] is not supported.",
-            );
+        if ($payload->locale !== null) {
+            try {
+                $supported = $this->locales->supports($payload->locale);
+            } catch (InvalidLocaleException $exception) {
+                throw InvalidSeoMutationException::forField(
+                    'locale',
+                    $exception->getMessage(),
+                    $exception,
+                );
+            }
+
+            if (! $supported) {
+                throw InvalidSeoMutationException::forField(
+                    'locale',
+                    "The locale [{$payload->locale}] is not supported.",
+                );
+            }
         }
 
         try {
@@ -114,7 +127,17 @@ final readonly class SeoMutationValidator
      */
     private function assertTranslationSemantics(string $locale, array $translation): void
     {
-        if (! $this->locales->supports($locale)) {
+        try {
+            $supported = $this->locales->supports($locale);
+        } catch (InvalidLocaleException $exception) {
+            throw InvalidSeoMutationException::forField(
+                "translations.{$locale}",
+                $exception->getMessage(),
+                $exception,
+            );
+        }
+
+        if (! $supported) {
             throw InvalidSeoMutationException::forField(
                 "translations.{$locale}",
                 "The locale [{$locale}] is not supported.",

@@ -26,12 +26,11 @@ beforeEach(function (): void {
 it('resolves tenant site before public Page binding and canonical URL work', function (): void {
     $configuration = config()->all();
     $a = $this->withHeaders([
-        'Host' => 'a.pages.test',
         'X-Tenant-Id' => TenantScenario::B,
         'X-Site' => 'foreign',
         'X-Canonical-Origin' => 'https://b.pages.test',
-    ])->getJson('/api/v1/pages/about?tenant_id='.TenantScenario::B.'&site=foreign');
-    $b = $this->withHeader('Host', 'b.pages.test')->getJson('/api/v1/pages/about');
+    ])->getJson('https://a.pages.test/api/v1/pages/about?tenant_id='.TenantScenario::B.'&site=foreign');
+    $b = $this->getJson('https://b.pages.test/api/v1/pages/about');
 
     $a->assertOk()->assertJsonPath('data.page.title', 'About A');
     $b->assertOk()->assertJsonPath('data.page.title', 'About B');
@@ -41,7 +40,6 @@ it('resolves tenant site before public Page binding and canonical URL work', fun
 });
 
 it('fails closed for an unknown host without leaking another site', function (): void {
-    $this->withHeader('Host', 'unknown.pages.test')
-        ->getJson('/api/v1/pages/about')
+    $this->getJson('https://unknown.pages.test/api/v1/pages/about')
         ->assertNotFound();
 });

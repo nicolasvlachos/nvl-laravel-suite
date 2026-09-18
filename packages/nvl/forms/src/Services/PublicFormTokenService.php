@@ -244,7 +244,11 @@ final class PublicFormTokenService
         return $payload;
     }
 
-    /** Confirm token tenancy and site against the currently admitted request. */
+    /**
+     * Confirm token tenancy and site against the currently admitted request.
+     *
+     * @param  array<string, mixed>  $payload
+     */
     private function matchesOwnership(array $payload, string $site): bool
     {
         $snapshot = $this->context->snapshot();

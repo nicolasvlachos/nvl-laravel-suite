@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use App\Auth\Authorization\ConsumerAuthAccess;
+use App\Tenancy\ConsumerPlatformAccess;
+use App\Tenancy\HostMembershipAccess;
+use App\Tenancy\HostTenantDirectory;
 
 $configuration = [
     'enabled' => env('TENANCY_CONSUMER_ENABLED', true),
@@ -20,7 +23,6 @@ $configuration = [
     ],
     'resources' => [
         'activity' => 'tenant',
-        'auth' => 'tenant',
         'comments' => 'tenant',
         'consumer-articles' => 'tenant',
         'content' => 'tenant',
@@ -44,16 +46,16 @@ $profile = (string) env('TENANCY_CONSUMER_MATRIX_PROFILE', 'full');
 return match ($profile) {
     'disabled' => array_replace_recursive($configuration, ['enabled' => false]),
     'host-uuid-custom-principals' => array_replace_recursive($configuration, [
-        'profile' => 'library',
-        'directory' => ['driver' => 'host', 'adapter' => \App\Tenancy\HostTenantDirectory::class],
+        'profile' => 'application',
+        'directory' => ['driver' => 'host', 'adapter' => HostTenantDirectory::class],
         'access' => [
-            'membership' => \App\Tenancy\HostMembershipAccess::class,
-            'platform' => \App\Tenancy\ConsumerPlatformAccess::class,
+            'membership' => HostMembershipAccess::class,
+            'platform' => ConsumerPlatformAccess::class,
         ],
     ]),
     'conflicting-platform-family' => array_replace_recursive($configuration, ['resources' => ['media' => 'platform']]),
     'sharing-copy' => array_replace_recursive($configuration, ['sharing' => ['media' => 'copy', 'metafields' => 'copy', 'templates' => 'copy']]),
-    'invalid-classes' => array_replace_recursive($configuration, ['directory' => ['driver' => 'host', 'adapter' => \stdClass::class]]),
+    'invalid-classes' => array_replace_recursive($configuration, ['directory' => ['driver' => 'host', 'adapter' => stdClass::class]]),
     'invalid-families' => array_replace_recursive($configuration, ['resources' => ['unknown-family' => 'tenant']]),
     'invalid-custom-tables' => array_replace_recursive($configuration, ['tables' => ['ownership_markers' => 'bad table name']]),
     'invalid-connection-aliases' => array_replace_recursive($configuration, ['connection' => 'not-configured']),

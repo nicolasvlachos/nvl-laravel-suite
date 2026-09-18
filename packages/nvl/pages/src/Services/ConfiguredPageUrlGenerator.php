@@ -31,8 +31,9 @@ final class ConfiguredPageUrlGenerator implements PageUrlGenerator
         if ($tenantSite !== null && $page->site !== $tenantSite->site) {
             throw new TenantBoundaryViolation('The Page site differs from the verified public site.');
         }
-        $base = $tenantSite?->canonicalOrigin
-            ?? config('pages.urls.base_url', config('app.url', 'http://localhost'));
+        $base = $tenantSite instanceof TenantSiteContext
+            ? $tenantSite->canonicalOrigin
+            : config('pages.urls.base_url', config('app.url', 'http://localhost'));
 
         if (! is_string($base)
             || filter_var($base, FILTER_VALIDATE_URL) === false

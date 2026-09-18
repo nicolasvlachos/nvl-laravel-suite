@@ -135,11 +135,11 @@ it('publishes effective skills with versioned ownership and safely updates only 
         );
 
         expect($report['healthy'])->toBeTrue()
-            ->and(array_column($report['results'], 'skill'))->toBe(['nvl-support', 'nvl-data', 'nvl-auth'])
-            ->and(array_column($report['results'], 'status'))->toBe(['installed', 'installed', 'installed'])
+            ->and(array_column($report['results'], 'skill'))->toBe(['nvl-support', 'nvl-data', 'nvl-tenancy', 'nvl-auth'])
+            ->and(array_column($report['results'], 'status'))->toBe(['installed', 'installed', 'installed', 'installed'])
             ->and($manifest['owner'] ?? null)->toBe(SuiteSkillManager::OWNER)
             ->and($manifest['suite_version'] ?? null)->toBe('1.0.7')
-            ->and(array_keys($manifest['skills'] ?? []))->toBe(['nvl-auth', 'nvl-data', 'nvl-support'])
+            ->and(array_keys($manifest['skills'] ?? []))->toBe(['nvl-auth', 'nvl-data', 'nvl-support', 'nvl-tenancy'])
             ->and($manager->inspect()['healthy'])->toBeTrue();
 
         foreach ($applicationSkills as $relativePath => $contents) {
@@ -148,7 +148,7 @@ it('publishes effective skills with versioned ownership and safely updates only 
 
         $unchanged = $manager->publish();
 
-        expect(array_column($unchanged['results'], 'status'))->toBe(['unchanged', 'unchanged', 'unchanged']);
+        expect(array_column($unchanged['results'], 'status'))->toBe(['unchanged', 'unchanged', 'unchanged', 'unchanged']);
 
         $authSkill = $workspace.'/.agents/skills/nvl-auth/SKILL.md';
         $filesystem->append($authSkill, "\nlocal customization\n");

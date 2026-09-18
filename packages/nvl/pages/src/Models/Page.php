@@ -132,6 +132,7 @@ final class Page extends Model implements ContentOwner, TranslatableModel
             foreignKey: 'page_id',
             fields: ['title', 'navigation_label', 'summary'],
             mutationPolicy: TranslationMutationPolicy::DomainActionOnly,
+            ownershipResource: self::TENANT_RESOURCE,
         );
     }
 

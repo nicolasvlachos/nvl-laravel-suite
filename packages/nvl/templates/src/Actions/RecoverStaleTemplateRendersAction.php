@@ -11,8 +11,8 @@ use Nvl\Templates\Enums\TemplateRenderStatus;
 use Nvl\Templates\Models\TemplateRender;
 use Nvl\Templates\Services\TemplateRenderDispatcher;
 use Nvl\Templates\Support\TemplatesConfiguration;
-use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\ValueObjects\TenantJobEnvelope;
 
 /**

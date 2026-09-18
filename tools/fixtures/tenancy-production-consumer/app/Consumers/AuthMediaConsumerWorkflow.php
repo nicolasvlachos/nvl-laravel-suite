@@ -124,7 +124,7 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
             'profile' => 'auth-media',
             'tenant_a' => $tenantA->value,
             'tenant_b' => $tenantB->value,
-            'principal_id' => (string) $principal->getKey(),
+            'principal_id' => $principal->id,
             'role_ids' => $roleIds,
             'asset_a' => $assetA,
             'asset_b' => $assetB,
@@ -191,7 +191,10 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
         return $this->result($checks);
     }
 
-    /** @param array<string, bool> $checks @return array{passed: bool, checks: array<string, bool>, profile: string} */
+    /**
+     * @param  array<string, bool>  $checks
+     * @return array{passed: bool, checks: array<string, bool>, profile: string}
+     */
     private function result(array $checks): array
     {
         return ['passed' => ! in_array(false, $checks, true), 'checks' => $checks, 'profile' => 'auth-media'];
@@ -225,7 +228,7 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
             throw new RuntimeException('The full consumer report is invalid.');
         }
 
-        return $report;
+        return $this->associativeArray($report, 'full consumer report');
     }
 
     /** Return the persistent phase report path. */
@@ -245,7 +248,10 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
         return $value;
     }
 
-    /** @param array<string, mixed> $report @return array<string, string> */
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array<string, string>
+     */
     private function stringMap(array $report, string $key): array
     {
         $value = $report[$key] ?? null;
@@ -253,31 +259,71 @@ final readonly class AuthMediaConsumerWorkflow implements TenancyConsumerWorkflo
             throw new RuntimeException("The report field [{$key}] is invalid.");
         }
 
-        /** @var array<string, string> $value */
-        return $value;
+        $strings = [];
+        foreach ($value as $mapKey => $mapValue) {
+            if (! is_string($mapKey) || ! is_string($mapValue)) {
+                throw new RuntimeException("The report field [{$key}] is invalid.");
+            }
+            $strings[$mapKey] = $mapValue;
+        }
+
+        return $strings;
     }
 
-    /** @param array<string, mixed> $report @return array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int} */
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int}
+     */
     private function asset(array $report, string $key): array
     {
         $value = $report[$key] ?? null;
-        if (! is_array($value)) {
-            throw new RuntimeException("The report asset [{$key}] is invalid.");
-        }
+        $asset = $this->associativeArray($value, "report asset [{$key}]");
 
-        /** @var array{article_id: string, media_id: string, path: string, digest: string, binary_hash: string, association_count: int} $value */
-        return $value;
+        return [
+            'article_id' => $this->string($asset, 'article_id'),
+            'media_id' => $this->string($asset, 'media_id'),
+            'path' => $this->string($asset, 'path'),
+            'digest' => $this->string($asset, 'digest'),
+            'binary_hash' => $this->string($asset, 'binary_hash'),
+            'association_count' => $this->integer($asset, 'association_count'),
+        ];
     }
 
-    /** @param array<string, mixed> $report @return array<string, mixed> */
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array<string, mixed>
+     */
     private function record(array $report, string $key): array
     {
         $value = $report[$key] ?? null;
+
+        return $this->associativeArray($value, "report record [{$key}]");
+    }
+
+    /** @param array<string, mixed> $values */
+    private function integer(array $values, string $key): int
+    {
+        $value = $values[$key] ?? null;
+
+        return is_int($value) ? $value : throw new RuntimeException("The report field [{$key}] is invalid.");
+    }
+
+    /** @return array<string, mixed> */
+    private function associativeArray(mixed $value, string $name): array
+    {
         if (! is_array($value)) {
-            throw new RuntimeException("The report record [{$key}] is invalid.");
+            throw new RuntimeException("The {$name} is invalid.");
         }
 
-        return $value;
+        $record = [];
+        foreach ($value as $key => $item) {
+            if (! is_string($key)) {
+                throw new RuntimeException("The {$name} is invalid.");
+            }
+            $record[$key] = $item;
+        }
+
+        return $record;
     }
 
     /** @return array<string, scalar> */

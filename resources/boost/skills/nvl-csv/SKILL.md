@@ -7,6 +7,10 @@ description: Implement, integrate, test, or review nvl/csv in Laravel 13. Use fo
 
 Treat CSV input as untrusted, potentially large data whose dialect, encoding, validation policy, and write boundary must be explicit.
 
+Tenant async imports must use `usingHandler()` with a registered handler class.
+Do not serialize closures or models; preserve the manifest's tenant/work/path
+identity and let each handler call its owning domain Action.
+
 ## Import
 
 - Configure a source with `CSVImport::make()->fromFile(...)` or `fromDisk(...)`.

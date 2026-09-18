@@ -16,8 +16,10 @@ use Nvl\Tenancy\Contracts\TenantSiteResolver;
 use Nvl\Tenancy\Enums\TenantStatus;
 use Nvl\Tenancy\Exceptions\TenantNotFound;
 use Nvl\Tenancy\Services\TenantAdoptionCoordinator;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\PlatformOperation;
+use Nvl\Tenancy\ValueObjects\TenantAssignment;
 use Nvl\Tenancy\ValueObjects\TenantDescriptor;
 use Nvl\Tenancy\ValueObjects\TenantId;
 use Nvl\Tenancy\ValueObjects\TenantSiteContext;
@@ -51,13 +53,27 @@ final readonly class TenantScenario
         {
             private bool $enabled = true;
 
-            public function activate(array $payload): void { $this->enabled = true; }
+            /** @param array<string, mixed> $payload */
+            public function activate(array $payload): void
+            {
+                $this->enabled = true;
+            }
 
-            public function deactivate(): void { $this->enabled = false; }
+            public function deactivate(): void
+            {
+                $this->enabled = false;
+            }
 
-            public function active(): bool { return $this->enabled; }
+            public function active(): bool
+            {
+                return $this->enabled;
+            }
 
-            public function data(): array { return []; }
+            /** @return array<string, mixed> */
+            public function data(): array
+            {
+                return [];
+            }
         });
         $app->instance(TenantSiteResolver::class, new class implements TenantSiteResolver
         {
@@ -72,7 +88,7 @@ final readonly class TenantScenario
         });
     }
 
-    /** @param iterable<\Nvl\Tenancy\ValueObjects\TenantAssignment> $mappings */
+    /** @param iterable<TenantAssignment> $mappings */
     public static function install(iterable $mappings = []): self
     {
         $coordinator = app(TenantAdoptionCoordinator::class);
@@ -95,11 +111,23 @@ final readonly class TenantScenario
         return new self;
     }
 
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
     public function run(string $tenant, Closure $callback): mixed
     {
         return app(TenantRunner::class)->run(new TenantId($tenant), $callback);
     }
 
+    /**
+     * @template T
+     *
+     * @param  Closure(TenantSiteContext=): T  $callback
+     * @return T
+     */
     public function runWithSite(string $tenant, Closure $callback): mixed
     {
         return $this->run($tenant, function () use ($callback, $tenant): mixed {
@@ -108,12 +136,10 @@ final readonly class TenantScenario
             $request = Request::create($site->canonicalOrigin.'/fixture');
             $request->attributes->set(TenantSiteContext::class, $site);
             app()->instance('request', $request);
-            app()->instance(Request::class, $request);
             try {
                 return $callback($site);
             } finally {
                 app()->instance('request', $previous);
-                app()->instance(Request::class, $previous);
             }
         });
     }
@@ -132,7 +158,7 @@ final readonly class TenantScenario
     {
         return $this->runWithSite($tenant, static function () use ($slug, $title): TenantPageResource {
             $resource = new TenantPageResource(['slug' => $slug, 'title' => $title, 'is_public' => true]);
-            $resource->forceFill(app(\Nvl\Tenancy\Services\TenantBoundary::class)->attributes('test.page-resources'));
+            $resource->forceFill(app(TenantBoundary::class)->attributes('test.page-resources'));
             $resource->save();
 
             return $resource->refresh();

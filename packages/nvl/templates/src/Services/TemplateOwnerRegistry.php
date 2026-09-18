@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nvl\Templates\Services;
 
-use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Templates\Contracts\TemplateOwnerResolver;

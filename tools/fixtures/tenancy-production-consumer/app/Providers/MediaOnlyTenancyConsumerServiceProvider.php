@@ -11,7 +11,6 @@ use App\Models\TenantArticle;
 use App\Tenancy\HostMembershipAccess;
 use App\Tenancy\TenantArticleAdoptionAdapter;
 use Illuminate\Support\ServiceProvider;
-use Nvl\Tenancy\Contracts\TenantMembershipAccess;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\ValueObjects\TenantResourceDefinition;
@@ -23,7 +22,6 @@ final class MediaOnlyTenancyConsumerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(HostMembershipAccess::class);
-        $this->app->alias(HostMembershipAccess::class, TenantMembershipAccess::class);
         $this->app->bind(TenancyConsumerWorkflow::class, MediaOnlyConsumerWorkflow::class);
         $this->app->singleton(TenantArticleAdoptionAdapter::class);
     }

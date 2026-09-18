@@ -29,6 +29,7 @@ pest()->extend(TestCase::class)
         __DIR__.'/Feature/SuiteSkillsTest.php',
         __DIR__.'/Feature/TenancyCompositionTest.php',
         __DIR__.'/Feature/Integration/CrossPackageIntegrationTest.php',
+        __DIR__.'/Feature/Integration/TenantWorkflowJourneyTest.php',
     );
 
 pest()->extend(TenantResourceCompositionTestCase::class)->in(

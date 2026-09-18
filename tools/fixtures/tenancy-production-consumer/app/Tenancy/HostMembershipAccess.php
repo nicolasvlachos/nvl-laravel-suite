@@ -15,7 +15,8 @@ final class HostMembershipAccess implements TenantMembershipAccess
     /** Require the principal's stable host mapping to match the requested tenant. */
     public function assertMember(Authenticatable $actor, TenantId $tenant): void
     {
-        $expected = match ((string) $actor->getAuthIdentifier()) {
+        $identifier = $actor->getAuthIdentifier();
+        $expected = match (is_string($identifier) ? $identifier : null) {
             'host-a' => HostTenantDirectory::TENANT_A,
             'host-b' => HostTenantDirectory::TENANT_B,
             default => null,

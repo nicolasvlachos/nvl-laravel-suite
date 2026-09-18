@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nvl\Templates\Services;
 
-use InvalidArgumentException;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Nvl\Templates\Support\TemplatesConfiguration;
 use Nvl\Tenancy\Contracts\TenantContext;
 use Nvl\Tenancy\Enums\TenantContextMode;

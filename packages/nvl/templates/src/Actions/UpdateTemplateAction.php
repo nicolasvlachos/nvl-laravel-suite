@@ -14,9 +14,9 @@ use Nvl\Templates\Exceptions\StaleTemplateException;
 use Nvl\Templates\Models\Template;
 use Nvl\Templates\Services\TemplateContentGuard;
 use Nvl\Templates\Support\TemplatesConfiguration;
+use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Translatable\Enums\TranslationSyncMode;
 use Nvl\Translatable\Services\TranslationWriter;
-use Nvl\Tenancy\Services\TenantBoundary;
 
 /**
  * Updates editable state and labels without mutating source-authoritative structure.

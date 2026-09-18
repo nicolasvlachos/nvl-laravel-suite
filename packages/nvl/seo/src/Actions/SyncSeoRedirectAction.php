@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Actions;
 
-use Illuminate\Database\QueryException;
 use Illuminate\Container\Container;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
@@ -19,10 +19,10 @@ use Nvl\Seo\Support\DatabaseConstraintViolation;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoRedirectTarget;
 use Nvl\Seo\Support\SeoScope;
-use Nvl\Translatable\Services\LocaleRegistry;
-use Spatie\LaravelData\Optional;
 use Nvl\Tenancy\Contracts\TenantContext;
 use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Translatable\Services\LocaleRegistry;
+use Spatie\LaravelData\Optional;
 
 /**
  * Creates or updates a redirect with loop detection and chain flattening.

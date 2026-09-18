@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use LogicException;
 use Nvl\Forms\Data\FormOptions;
 use Nvl\Forms\Database\Factories\FormFactory;
 use Nvl\Forms\Definitions\Tables\FormsTables;
@@ -69,6 +70,18 @@ class Form extends Model implements TranslatableModel
     use HasUuids;
     use SoftDeletes;
     use Translatable;
+
+    /** Return this persisted form's required UUID identifier. */
+    public function identifier(): string
+    {
+        $identifier = $this->getAttribute($this->getKeyName());
+
+        if (! is_string($identifier) || $identifier === '') {
+            throw new LogicException('Persisted forms require a UUID identifier.');
+        }
+
+        return $identifier;
+    }
 
     /**
      * @var string The database table name

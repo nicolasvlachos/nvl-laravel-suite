@@ -6,6 +6,7 @@ namespace Nvl\Seo\Services;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Support\SeoModelIdentifier;
@@ -93,7 +94,15 @@ final class SeoOwnerRegistry
      */
     public function aliasFor(Model $model): string
     {
-        return $this->aliasForMorphType($model->getMorphClass());
+        foreach ($this->configured() as $alias => $modelClass) {
+            if ($model::class === $modelClass) {
+                return $alias;
+            }
+        }
+
+        throw InvalidSeoMutationException::because(
+            'SEO owner model ['.$model::class.'] has no registered alias.',
+        );
     }
 
     /**
@@ -103,6 +112,15 @@ final class SeoOwnerRegistry
     {
         $this->configured();
         $alias = $this->morphAliases[$morphType] ?? null;
+
+        if ($alias === null) {
+            $modelClass = Relation::getMorphedModel($morphType) ?? $morphType;
+            foreach ($this->owners ?? [] as $registeredAlias => $registeredModel) {
+                if ($registeredModel === $modelClass) {
+                    return $registeredAlias;
+                }
+            }
+        }
 
         if ($alias === null) {
             throw InvalidSeoMutationException::because(
@@ -130,11 +148,7 @@ final class SeoOwnerRegistry
      */
     public function configured(): array
     {
-        if ($this->owners !== null) {
-            return $this->owners;
-        }
-
-        $configured = config('seo.owners', []);
+        $configured = $this->configuration->get('seo.owners', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('seo.owners must be an alias-to-model map.');

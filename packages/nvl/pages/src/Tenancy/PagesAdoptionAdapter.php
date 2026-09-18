@@ -6,6 +6,7 @@ namespace Nvl\Pages\Tenancy;
 
 use Illuminate\Database\Connection;
 use Illuminate\Database\Migrations\Migrator;
+use Illuminate\Database\Query\Builder;
 use Nvl\Pages\Definitions\Tables\PagesTables;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Models\PageTranslation;
@@ -65,7 +66,11 @@ final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
         return new TenantBackfillResult($last->recordId, count($batch));
     }
 
-    /** Verify Page roots, translations, parents, and site/path identity remain tenant-local. */
+    /**
+     * Verify Page roots, translations, parents, and site/path identity remain tenant-local.
+     *
+     * @phpstan-impure
+     */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
         $connection = $this->connection($plan);
@@ -80,7 +85,7 @@ final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
         if ($connection->table($translations.' as translation')->join($pages.' as page', 'page.id', '=', 'translation.page_id')->whereColumn('translation.tenant_id', '!=', 'page.tenant_id')->exists()) {
             $errors[] = 'pages.translations.ownership';
         }
-        if ($connection->table($pages.' as child')->join($pages.' as parent', 'parent.id', '=', 'child.parent_id')->where(fn ($query) => $query->whereColumn('child.tenant_id', '!=', 'parent.tenant_id')->orWhereColumn('child.site', '!=', 'parent.site'))->exists()) {
+        if ($connection->table($pages.' as child')->join($pages.' as parent', 'parent.id', '=', 'child.parent_id')->where(fn (Builder $query): Builder => $query->whereColumn('child.tenant_id', '!=', 'parent.tenant_id')->orWhereColumn('child.site', '!=', 'parent.site'))->exists()) {
             $errors[] = 'pages.pages.parent_ownership';
         }
 
@@ -90,13 +95,17 @@ final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
     /** Refuse activation until the complete Page tree verifies. */
     public function activate(TenantAdoptionPlan $plan): void
     {
-        if (! $this->verify($plan)->passed()) {
-            throw new TenantBoundaryViolation('Pages tenant ownership did not verify.');
-        }
+        $this->assertVerified($plan, 'Pages tenant ownership did not verify.');
         $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170012_constrain_pages_ownership.php';
         $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([$path], ['force' => true]));
-        if (! $this->verify($plan)->passed()) {
-            throw new TenantBoundaryViolation('Pages tenant ownership failed after constraint activation.');
+        $this->assertVerified($plan, 'Pages tenant ownership failed after constraint activation.');
+    }
+
+    /** Require a fresh persisted verification at one activation checkpoint. */
+    private function assertVerified(TenantAdoptionPlan $plan, string $message): void
+    {
+        if ($this->verify($plan)->errors !== []) {
+            throw new TenantBoundaryViolation($message);
         }
     }
 

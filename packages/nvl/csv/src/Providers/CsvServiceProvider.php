@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Nvl\Csv\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Container\Container;
-use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Illuminate\Support\ServiceProvider;
 use Nvl\Csv\Services\CSVAsyncProcessor;
 use Nvl\Csv\Services\CSVHandlerRegistry;
 use Nvl\Csv\Services\CSVWorkStore;
+use Nvl\Csv\Tenancy\CsvAdoptionAdapter;
+use Nvl\Data\Services\TypeScriptSourceRegistry;
 use Nvl\Tenancy\Contracts\TenantContext;
 use Nvl\Tenancy\Providers\TenancyServiceProvider;
-use Nvl\Tenancy\Services\TenantQueueContext;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
-use Nvl\Csv\Tenancy\CsvAdoptionAdapter;
+use Nvl\Tenancy\Services\TenantQueueContext;
 
 /**
  * Registers generated TypeScript discovery and publishable agent guidance.

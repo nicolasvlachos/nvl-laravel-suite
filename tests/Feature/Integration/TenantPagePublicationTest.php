@@ -25,7 +25,7 @@ use Nvl\Seo\Actions\SyncSeoRedirectAction;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
 use Nvl\Seo\Services\SitemapGenerator;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Tenancy\Services\TenantBoundary;
 
 it('publishes one isolated Page Content Metafield SEO and sitemap graph', function (): void {
     Storage::fake('local');
@@ -39,6 +39,8 @@ it('publishes one isolated Page Content Metafield SEO and sitemap graph', functi
             translations: ['en' => ['title' => 'Tenant A home']],
         ), PageActorData::system());
         $media = Media::factory()->create([
+            ...app(TenantBoundary::class)->attributes('media.assets'),
+            'storage_path' => 'tenants/'.TenantScenario::A.'/factory/media/home.jpg',
             'mime_type' => 'image/jpeg',
             'extension' => 'jpg',
             'type' => MediaType::IMAGE,
@@ -81,11 +83,17 @@ it('publishes one isolated Page Content Metafield SEO and sitemap graph', functi
     $xml = $scenario->runWithSite(TenantScenario::A, static fn () => app(SitemapGenerator::class)->generate('default'));
 
     expect($snapshot->tenantId)->toBe(TenantScenario::A)
-        ->and($snapshot->blocks[0]->overrides['image'])->toBe($media->id)
+        ->and($snapshot->blocks[0]->values['image'])->toBe($media->id)
         ->and($xml)->toContain('https://a.pages.test/home')
         ->and($xml)->not->toContain('b.pages.test');
 
-    $foreignMedia = $scenario->runWithSite(TenantScenario::B, static fn () => Media::factory()->create());
+    $foreignMedia = $scenario->runWithSite(
+        TenantScenario::B,
+        static fn () => Media::factory()->create([
+            ...app(TenantBoundary::class)->attributes('media.assets'),
+            'storage_path' => 'tenants/'.TenantScenario::B.'/factory/media/foreign.jpg',
+        ]),
+    );
     $scenario->runWithSite(TenantScenario::A, static function () use ($foreignMedia, $page): void {
         $block = Content::createBlock(new CreateContentBlockData(
             definition: 'hero',
@@ -102,6 +110,6 @@ it('publishes one isolated Page Content Metafield SEO and sitemap graph', functi
             'content',
             new PlaceContentBlockData('foreign', overrides: ['image' => $foreignMedia->id]),
             ContentActorData::system(),
-        ))->toThrow(TenantBoundaryViolation::class);
+        ))->toThrow(InvalidArgumentException::class);
     });
 });

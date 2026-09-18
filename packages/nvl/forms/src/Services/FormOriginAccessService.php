@@ -26,7 +26,7 @@ final class FormOriginAccessService
      */
     public function isOriginAllowed(Form|string $form, string $origin): bool
     {
-        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formId = $form instanceof Form ? $form->identifier() : $form;
         $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
 
         if (! $formModel->restrict_public_access) {
@@ -41,7 +41,7 @@ final class FormOriginAccessService
      */
     public function resolveMatchingOrigin(Form|string $form, string $origin): ?AllowedOrigin
     {
-        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formId = $form instanceof Form ? $form->identifier() : $form;
         $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
         $formModel->loadMissing('allowedOrigins');
 

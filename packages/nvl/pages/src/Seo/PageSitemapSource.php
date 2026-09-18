@@ -10,7 +10,6 @@ use Nvl\Pages\Contracts\PageUrlGenerator;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Models\Page;
 use Nvl\Pages\Services\PageResourceRegistry;
-use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\TenantSafeSitemapSource;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;

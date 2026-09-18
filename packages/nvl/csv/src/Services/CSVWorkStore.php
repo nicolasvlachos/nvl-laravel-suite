@@ -45,7 +45,7 @@ final readonly class CSVWorkStore
         try {
             $payload = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
-            throw new TenantBoundaryViolation('CSV work manifest is invalid.', previous: $exception);
+            throw new TenantBoundaryViolation('CSV work manifest is invalid: '.$exception->getMessage());
         }
         if (! is_array($payload) || ($payload['work_id'] ?? null) !== $work->workId
             || ($payload['tenant_id'] ?? null) !== $work->tenantId
@@ -54,16 +54,30 @@ final readonly class CSVWorkStore
             throw new TenantBoundaryViolation('CSV work manifest identity does not match its reference.');
         }
         $checksum = $payload['checksum'] ?? null;
-        unset($payload['checksum']);
-        if (! is_string($checksum) || ! hash_equals($checksum, $this->checksum($payload))) {
+        $manifest = $payload['manifest'] ?? null;
+        $checksumPayload = [
+            'work_id' => $work->workId,
+            'tenant_id' => $work->tenantId,
+            'handler_alias' => $work->handlerAlias,
+            'handler_version' => $work->handlerVersion,
+            'manifest' => $manifest,
+        ];
+        if (! is_string($checksum) || ! hash_equals($checksum, $this->checksum($checksumPayload))) {
             throw new TenantBoundaryViolation('CSV work manifest checksum is invalid.');
         }
-        $manifest = $payload['manifest'] ?? null;
         if (! is_array($manifest)) {
             throw new TenantBoundaryViolation('CSV work manifest payload is invalid.');
         }
 
-        return $manifest;
+        $normalized = [];
+        foreach ($manifest as $key => $value) {
+            if (! is_string($key)) {
+                throw new TenantBoundaryViolation('CSV work manifest payload keys are invalid.');
+            }
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
     }
 
     public function delete(CSVWorkReference $work): void

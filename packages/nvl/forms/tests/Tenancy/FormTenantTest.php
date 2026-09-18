@@ -8,11 +8,12 @@ use Nvl\Forms\Actions\Form\GetFormForRenderAction;
 use Nvl\Forms\Data\Mutations\MutateFormPayload;
 use Nvl\Forms\Enums\FormType;
 use Nvl\Forms\Enums\Resolvement;
+use Nvl\Forms\Models\Form;
 use Nvl\Forms\Tests\Fixtures\TenantScenario;
 use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\TenantId;
 
-function createTenantForm(string $handle): \Nvl\Forms\Models\Form
+function createTenantForm(string $handle): Form
 {
     return app(CreateFormAction::class)->execute(MutateFormPayload::from([
         'handle' => $handle,

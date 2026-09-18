@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nvl\Pages\Services;
 
-use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Pages\Contracts\PageResourceHandler;
@@ -117,9 +117,6 @@ final class PageResourceRegistry
                 );
             }
             $model = $handler->tenantResourceModel();
-            if (! is_a($model, Model::class, true)) {
-                throw new InvalidArgumentException("Page resource [{$alias}] declares an invalid tenant model.");
-            }
             $this->tenantResources->forModel(new $model);
         }
 

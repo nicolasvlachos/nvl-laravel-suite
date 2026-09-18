@@ -33,7 +33,7 @@ final class RecordFormAnalyticAction
         ?string $sessionId = null,
         ?array $metadata = null,
     ): FormAnalytic {
-        $formId = $form instanceof Form ? (string) $form->getKey() : (string) $form;
+        $formId = $form instanceof Form ? $form->identifier() : $form;
         $canonical = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
         $event = $eventType instanceof FormAnalyticEventType
             ? $eventType

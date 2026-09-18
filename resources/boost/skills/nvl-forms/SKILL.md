@@ -7,6 +7,10 @@ description: Implement, integrate, test, or review nvl/forms in Laravel 13. Use 
 
 Keep definitions, public rendering, submissions, and entry operations behind package Actions. Forms is headless and must install without `nvl/activity`.
 
+In tenant deployments, resolve the public site/token before Form lookup and
+derive every entry-side record from the canonical Form. Never accept tenant
+identity in submission DTOs or restore it from ambient callback state.
+
 ## Manage definitions
 
 - Validate `MutateFormPayload`.

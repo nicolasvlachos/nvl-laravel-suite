@@ -49,7 +49,7 @@ final readonly class CreateTemplateVersionAction
                 $currentVersion = $template->versions()->max('version');
                 $nextVersion = is_numeric($currentVersion) ? ((int) $currentVersion) + 1 : 1;
                 $version = $template->versions()->create([
-                    'tenant_id' => $template->tenant_id,
+                    ...(config('tenancy.enabled') === true ? ['tenant_id' => $template->tenant_id] : []),
                     'version' => $nextVersion,
                     'metadata' => $data->metadata,
                 ]);

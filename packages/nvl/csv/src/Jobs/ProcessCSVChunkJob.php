@@ -288,6 +288,7 @@ final class ProcessCSVChunkJob implements ShouldQueue, TenantQueuedJob
      * Process a single row with field mappings and validation.
      *
      * @param  array{row_number:int, data: array<string, mixed>}  $rowInfo  Row data payload
+     * @param  array<string, CSVFieldMapping>  $fieldMappings
      * @return array<string, mixed> Processed row data
      *
      * @throws Exception If row processing fails
@@ -439,7 +440,10 @@ final class ProcessCSVChunkJob implements ShouldQueue, TenantQueuedJob
         ];
     }
 
-    /** @param array<int,mixed> $rows @return list<array{row_number:int,data:array<string,mixed>}> */
+    /**
+     * @param  array<int|string, mixed>  $rows
+     * @return list<array{row_number: int, data: array<string, mixed>}>
+     */
     private function normalizeRows(array $rows): array
     {
         $normalized = [];
@@ -459,26 +463,45 @@ final class ProcessCSVChunkJob implements ShouldQueue, TenantQueuedJob
         return $normalized;
     }
 
-    /** @param array<int|string,mixed> $rows @return array<string,CSVFieldMapping> */
+    /**
+     * @param  array<int|string, mixed>  $rows
+     * @return array<string, CSVFieldMapping>
+     */
     private function restoreMappings(array $rows): array
     {
         $restored = [];
         foreach ($rows as $row) {
             if (! is_array($row) || ! is_string($row['source_field'] ?? null) || ! is_string($row['target_field'] ?? null)
-                || ($row['has_transformer'] ?? false) !== false || ($row['validators_count'] ?? 0) !== 0) {
+                || ($row['has_transformer'] ?? false) !== false || ($row['validators_count'] ?? 0) !== 0
+                || ! is_bool($row['required'] ?? null) || ! is_bool($row['unique'] ?? null)
+                || ! is_bool($row['nullable'] ?? null)
+                || (! is_string($row['format'] ?? null) && ($row['format'] ?? null) !== null)
+                || ! is_array($row['metadata'] ?? null)) {
                 throw new TenantBoundaryViolation('Tenant CSV field mapping is invalid.');
             }
-            $type = is_string($row['type'] ?? null) ? CSVTypeEnum::tryFrom($row['type']) : null;
+            $typeValue = $row['type'] ?? null;
+            $type = is_string($typeValue) ? CSVTypeEnum::tryFrom($typeValue) : null;
+            if ($typeValue !== null && $type === null) {
+                throw new TenantBoundaryViolation('Tenant CSV field mapping type is invalid.');
+            }
+            $format = $row['format'] ?? null;
+            $metadata = [];
+            foreach ($row['metadata'] as $key => $value) {
+                if (! is_string($key)) {
+                    throw new TenantBoundaryViolation('Tenant CSV field mapping metadata is invalid.');
+                }
+                $metadata[$key] = $value;
+            }
             $mapping = new CSVFieldMapping(
                 sourceField: $row['source_field'],
                 targetField: $row['target_field'],
                 type: $type,
-                required: (bool) ($row['required'] ?? false),
+                required: $row['required'],
                 defaultValue: $row['default_value'] ?? null,
-                unique: (bool) ($row['unique'] ?? false),
-                nullable: (bool) ($row['nullable'] ?? true),
-                format: is_string($row['format'] ?? null) ? $row['format'] : null,
-                metadata: is_array($row['metadata'] ?? null) ? $row['metadata'] : [],
+                unique: $row['unique'],
+                nullable: $row['nullable'],
+                format: $format,
+                metadata: $metadata,
             );
             $restored[$mapping->sourceField] = $mapping;
         }

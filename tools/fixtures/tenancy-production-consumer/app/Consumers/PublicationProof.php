@@ -6,6 +6,7 @@ namespace App\Consumers;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Nvl\Activity\Enums\ActivityEvent;
@@ -30,8 +31,8 @@ use Nvl\Forms\Enums\FormType;
 use Nvl\Forms\Enums\Resolvement;
 use Nvl\MailNotifications\Services\ScheduledMailScheduler;
 use Nvl\MailNotifications\ValueObjects\Recipient;
-use Nvl\MailNotifications\ValueObjects\ScheduleMailData;
 use Nvl\MailNotifications\ValueObjects\ScheduledRecipients;
+use Nvl\MailNotifications\ValueObjects\ScheduleMailData;
 use Nvl\Media\Models\Media;
 use Nvl\Metafields\Actions\MetafieldDefinitions\CreateMetafieldDefinitionAction;
 use Nvl\Metafields\Actions\Metafields\SetMetafieldAction;
@@ -47,11 +48,13 @@ use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Taxonomy\Actions\AttachTermsAction;
 use Nvl\Taxonomy\Actions\CreateTermAction;
 use Nvl\Taxonomy\Data\MutateTermPayload;
+use Nvl\Templates\Actions\AssignTemplateAction;
 use Nvl\Templates\Actions\CreateTemplateAction;
 use Nvl\Templates\Actions\CreateTemplateVersionAction;
 use Nvl\Templates\Actions\PublishTemplateVersionAction;
 use Nvl\Templates\Actions\RenderStoredTemplateAction;
 use Nvl\Templates\Actions\SyncTemplateDefinitionsAction;
+use Nvl\Templates\Data\Mutations\AssignTemplateData;
 use Nvl\Templates\Data\Mutations\CreateTemplateData;
 use Nvl\Templates\Data\Mutations\CreateTemplateVersionData;
 use Nvl\Templates\Data\Mutations\RenderTemplateData;
@@ -74,6 +77,7 @@ final readonly class PublicationProof
         private CreateFormAction $createForm,
         private CreateFormEntryAction $createEntry,
         private SyncTemplateDefinitionsAction $syncTemplates,
+        private AssignTemplateAction $assignTemplate,
         private CreateTemplateAction $createTemplate,
         private CreateTemplateVersionAction $createVersion,
         private PublishTemplateVersionAction $publishVersion,
@@ -179,6 +183,11 @@ final readonly class PublicationProof
         $templateBlock = Content::publishBlock($templateBlock, $templateBlock->revision, $templateActor->contentActor());
         Content::place($templateBlock, $version, TemplateVersion::CONTENT_GROUP, new PlaceContentBlockData('body'), $templateActor->contentActor());
         $version = $this->publishVersion->execute($version, $version->revision, $templateActor);
+        $this->assignTemplate->execute($template, new AssignTemplateData(
+            ownerType: 'page',
+            ownerId: $page->id,
+            versionId: $version->id,
+        ), $templateActor);
         $render = $this->renderTemplate->execute($template, new RenderTemplateData(
             locale: 'en',
             payload: ['tenant' => $label],
@@ -194,7 +203,7 @@ final readonly class PublicationProof
                 'type' => 'paragraph',
                 'children' => [
                     ['type' => 'text', 'text' => "Review tenant {$label} with "],
-                    ['type' => 'mention', 'tokenId' => (string) Str::uuid(), 'resource' => 'principal', 'id' => (string) $principal->getKey()],
+                    ['type' => 'mention', 'tokenId' => (string) Str::uuid(), 'resource' => 'principal', 'id' => $principal->id],
                 ],
             ]])),
             CommentActorData::fromAuthenticatable($principal),
@@ -218,7 +227,7 @@ final readonly class PublicationProof
             ->fromArray([['tenant' => $label, 'page_id' => $page->id, 'form_entry_id' => $entry->id]]);
         $sitemap = $this->sitemaps->generate('default');
         $publicUrl = $this->pageUrls->url($page, 'en');
-        $signedUrl = $media->buildPrivateUrl(expiration: now()->addMinutes(5));
+        $signedUrl = $media->getTemporaryUrl(now()->addMinutes(5));
         $exportHash = hash_file('sha256', $csv->path);
         if (! is_string($exportHash)) {
             throw new RuntimeException('Unable to hash the tenant export.');
@@ -242,7 +251,7 @@ final readonly class PublicationProof
             'render_content' => $render->content,
             'comment_id' => $comment->id,
             'comment_revision' => $comment->revision,
-            'activity_id' => (string) $activity?->getKey(),
+            'activity_id' => $activity instanceof Model ? $this->modelId($activity) : '',
             'scheduled_mail_id' => $scheduled->id,
             'export_path' => $csv->path,
             'export_hash' => $exportHash,
@@ -252,7 +261,11 @@ final readonly class PublicationProof
         ];
     }
 
-    /** @param array<string, mixed> $a @param array<string, mixed> $b @return array<string, bool> */
+    /**
+     * @param  array<string, mixed>  $a
+     * @param  array<string, mixed>  $b
+     * @return array<string, bool>
+     */
     public function compare(array $a, array $b): array
     {
         return [
@@ -269,5 +282,13 @@ final readonly class PublicationProof
             'publication_rows_are_tenant_owned' => DB::table('pages')->whereIn('id', [$a['page_id'], $b['page_id']])->distinct()->count('tenant_id') === 2,
             'mail_is_queued_per_tenant' => $a['scheduled_mail_id'] !== $b['scheduled_mail_id'],
         ];
+    }
+
+    /** Resolve a persisted model's string identifier. */
+    private function modelId(Model $model): string
+    {
+        $key = $model->getKey();
+
+        return is_string($key) ? $key : throw new RuntimeException('The fixture model identifier is invalid.');
     }
 }

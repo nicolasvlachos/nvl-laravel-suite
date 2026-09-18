@@ -26,7 +26,7 @@ final class GetFormAnalyticsSummaryAction
      */
     public function execute(Form|string $form, int $days = 30): array
     {
-        $formId = $form instanceof Form ? (string) $form->getKey() : $form;
+        $formId = $form instanceof Form ? $form->identifier() : $form;
         $formModel = $this->boundary->query(Form::query(), 'forms.forms')->findOrFail($formId);
         $startDate = now()->subDays($days);
 

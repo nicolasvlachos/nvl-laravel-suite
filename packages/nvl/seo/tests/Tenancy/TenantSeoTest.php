@@ -6,8 +6,8 @@ use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Actions\SyncSeoRedirectAction;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
-use Nvl\Seo\Services\SeoRedirectResolver;
 use Nvl\Seo\Services\SeoMetadataResolver;
+use Nvl\Seo\Services\SeoRedirectResolver;
 use Nvl\Seo\Tests\Fixtures\TenantScenario;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 

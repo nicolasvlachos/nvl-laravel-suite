@@ -12,8 +12,8 @@ use Nvl\Translations\Events\TranslationEntryUpdated;
 use Nvl\Translations\Exceptions\InvalidTranslationInputException;
 use Nvl\Translations\Exceptions\StaleTranslationWorkspaceException;
 use Nvl\Translations\Models\TranslationEntry;
-use Nvl\Translations\Services\TranslationProcessLock;
 use Nvl\Translations\Services\SourceTranslationWorkspace;
+use Nvl\Translations\Services\TranslationProcessLock;
 use Nvl\Translations\Support\TranslationValueHash;
 
 /**

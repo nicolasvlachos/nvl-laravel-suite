@@ -6,7 +6,11 @@ use Illuminate\Support\Facades\DB;
 use Nvl\Tenancy\Exceptions\TenantConfigurationInvalid;
 use Nvl\Tenancy\Exceptions\TenantSchemaNotReady;
 use Nvl\Tenancy\Services\TenantAdoptionCoordinator;
+use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantRunner;
 use Nvl\Tenancy\ValueObjects\PlatformOperation;
+use Nvl\Tenancy\ValueObjects\TenantId;
+use Tests\Fixtures\TenantResourceCompositionTestCase;
 
 /** Prepare one real, intentionally interrupted resource adoption. */
 function prepareInterruptedTenantResourceAdoption(): array
@@ -40,7 +44,7 @@ it('rejects a changed mapping and requires restore or a new reviewed prepare', f
         'run_id' => $plan->id,
         'resource' => 'test.resource-owners',
         'record_id' => 'changed-reviewed-input',
-        'tenant_id' => Tests\Fixtures\TenantResourceCompositionTestCase::A,
+        'tenant_id' => TenantResourceCompositionTestCase::A,
         'metadata' => '[]',
     ]);
 
@@ -56,8 +60,8 @@ it('rejects a changed mapping and requires restore or a new reviewed prepare', f
 it('keeps prepared resources closed instead of manufacturing readiness markers', function (): void {
     prepareInterruptedTenantResourceAdoption();
 
-    expect(fn () => app(Nvl\Tenancy\Services\TenantRunner::class)->run(
-        new Nvl\Tenancy\ValueObjects\TenantId(Tests\Fixtures\TenantResourceCompositionTestCase::A),
-        static fn (): array => app(Nvl\Tenancy\Services\TenantBoundary::class)->attributes('test.resource-owners'),
+    expect(fn () => app(TenantRunner::class)->run(
+        new TenantId(TenantResourceCompositionTestCase::A),
+        static fn (): array => app(TenantBoundary::class)->attributes('test.resource-owners'),
     ))->toThrow(TenantSchemaNotReady::class);
 });

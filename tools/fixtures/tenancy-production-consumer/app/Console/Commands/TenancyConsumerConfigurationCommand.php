@@ -20,7 +20,7 @@ final class TenancyConsumerConfigurationCommand extends Command
     protected $description = 'Verify a fresh-process tenancy configuration profile';
 
     /** @var list<string> */
-    private const array INVALID = [
+    private const array INVALID_PROFILES = [
         'conflicting-platform-family',
         'invalid-classes',
         'invalid-families',
@@ -30,7 +30,10 @@ final class TenancyConsumerConfigurationCommand extends Command
 
     public function handle(TenantOwnershipConfiguration $ownership, TenantContext $context): int
     {
-        $profile = (string) $this->argument('profile');
+        $profile = $this->argument('profile');
+        if (! is_string($profile)) {
+            throw new \InvalidArgumentException('The configuration profile must be a string.');
+        }
         $error = null;
         try {
             if (config('tenancy.enabled') === true) {
@@ -39,7 +42,7 @@ final class TenancyConsumerConfigurationCommand extends Command
         } catch (Throwable $throwable) {
             $error = $throwable::class;
         }
-        $expectsFailure = in_array($profile, self::INVALID, true);
+        $expectsFailure = in_array($profile, self::INVALID_PROFILES, true);
         $passed = $expectsFailure ? $error !== null : $error === null;
         $result = [
             'profile' => $profile,

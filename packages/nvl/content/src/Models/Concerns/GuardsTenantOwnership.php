@@ -41,7 +41,10 @@ trait GuardsTenantOwnership
                 return;
             }
 
-            $relation = Relation::noConstraints(static fn () => $model->{$definition->parentRelation}());
+            $relation = $model->{$definition->parentRelation}();
+            if (! $relation instanceof Relation) {
+                throw new TenantBoundaryViolation('Content child ownership requires a canonical relation.');
+            }
             $parent = $relation->getResults();
             if (! $parent instanceof Model) {
                 throw new TenantBoundaryViolation('Content child ownership requires a canonical parent.');

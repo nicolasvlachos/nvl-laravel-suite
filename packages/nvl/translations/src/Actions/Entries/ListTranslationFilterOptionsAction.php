@@ -23,6 +23,7 @@ final class ListTranslationFilterOptionsAction
     public function execute(): array
     {
         $this->workspace->authorize();
+
         return [
             'scopeTypes' => $this->values('scope_type'),
             'scopeNames' => $this->values('scope_name'),
