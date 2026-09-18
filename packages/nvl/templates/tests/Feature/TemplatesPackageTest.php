@@ -1895,9 +1895,10 @@ it('preserves unique staging indexes while removing canonical name collisions', 
         DB::table('adoption_unique_sources')->insert(['alias' => 'logo', 'code' => 'brand']);
         $schema = app(TemplateAdoptionSchema::class);
         $operations = $schema->prepare(DB::connection()->getName(), ['adoption_unique_sources']);
-        $duplicateAliasRejected = false;
-        $duplicateCodeRejected = false;
-
+        $inTx = DB::connection()->getPdo()->inTransaction();
+        if ($inTx) {
+            DB::connection()->getPdo()->exec('SAVEPOINT test_alias');
+        }
         try {
             DB::table('adoption_unique_sources')->insert([
                 'alias' => 'logo',
@@ -1905,8 +1906,14 @@ it('preserves unique staging indexes while removing canonical name collisions', 
             ]);
         } catch (QueryException) {
             $duplicateAliasRejected = true;
+            if ($inTx) {
+                DB::connection()->getPdo()->exec('ROLLBACK TO SAVEPOINT test_alias');
+            }
         }
 
+        if ($inTx) {
+            DB::connection()->getPdo()->exec('SAVEPOINT test_code');
+        }
         try {
             DB::table('adoption_unique_sources')->insert([
                 'alias' => 'different',
@@ -1914,6 +1921,9 @@ it('preserves unique staging indexes while removing canonical name collisions', 
             ]);
         } catch (QueryException) {
             $duplicateCodeRejected = true;
+            if ($inTx) {
+                DB::connection()->getPdo()->exec('ROLLBACK TO SAVEPOINT test_code');
+            }
         }
 
         expect(array_column($operations, 'operation'))->toBe(['renamed', 'renamed'])
