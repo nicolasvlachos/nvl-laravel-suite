@@ -17,7 +17,6 @@ use Nvl\Seo\Console\WarmSeoSitemapCommand;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
-use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
 use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Http\Controllers\RobotsController;
@@ -37,6 +36,7 @@ use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Tenancy\Http\Middleware\ResolvePublicTenant;
 use Nvl\Tenancy\Providers\TenancyServiceProvider;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
+use Nvl\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
@@ -61,20 +61,17 @@ final class SeoServiceProvider extends ServiceProvider
 
         $imageResolver = config('seo.image_resolver', DirectSeoImageResolver::class);
 
-        if (
-            ! is_string($imageResolver)
-            || ! is_a($imageResolver, SeoImageResolver::class, true)
-        ) {
+        if (! is_string($imageResolver)) {
             throw new InvalidArgumentException(
                 'seo.image_resolver must implement SeoImageResolver.',
             );
         }
-        if (config('tenancy.enabled') === true
-            && ! is_a($imageResolver, TenantSafeSeoImageResolver::class, true)) {
-            throw new InvalidArgumentException(
-                'An adopted SEO image resolver must implement TenantSafeSeoImageResolver.',
-            );
-        }
+        $imageResolver = $this->app->make(TenantExtensionGuard::class)->assertCompatible(
+            extension: $imageResolver,
+            baseContract: SeoImageResolver::class,
+            tenantContract: TenantSafeSeoImageResolver::class,
+            label: 'seo.image_resolver',
+        );
 
         $this->app->bind(SeoImageResolver::class, $imageResolver);
         $artifactStore = config(
@@ -163,8 +160,7 @@ final class SeoServiceProvider extends ServiceProvider
         }
 
         foreach ($sources as $index => $source) {
-            if (! is_string($source)
-                || ! is_a($source, SitemapSource::class, true)) {
+            if (! is_string($source)) {
                 throw new InvalidArgumentException(
                     "Configured sitemap source [{$index}] must implement SitemapSource.",
                 );

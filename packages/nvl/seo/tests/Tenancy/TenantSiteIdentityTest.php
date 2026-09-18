@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Services\AbsoluteUrl;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Seo\Services\SitemapRegistry;
@@ -67,4 +68,20 @@ it('resolves sitemap source objects freshly inside each tenant scope', function 
     );
 
     expect($a)->not->toBe($b);
+});
+
+it('rejects incompatible sitemap declarations when they are registered', function (): void {
+    $source = new class implements SitemapSource
+    {
+        public function entries(string $scope): iterable
+        {
+            return [];
+        }
+    };
+    $registry = app(SitemapRegistry::class);
+
+    expect(fn () => $registry->register($source, 'test.legacy'))
+        ->toThrow(InvalidArgumentException::class, 'is not tenant compatible')
+        ->and(fn () => $registry->registerType(stdClass::class, 'test.invalid'))
+        ->toThrow(InvalidArgumentException::class, 'must implement');
 });

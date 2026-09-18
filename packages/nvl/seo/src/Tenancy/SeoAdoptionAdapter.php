@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Tenancy;
 
-use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Migrations\Migrator;
 use Nvl\Seo\Definitions\Tables\SeoTables;
@@ -14,7 +13,7 @@ use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantAdoptionMappings;
+use Nvl\Tenancy\Services\TenantAdoptionSupport;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
@@ -25,7 +24,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
 {
     public function __construct(
         private Migrator $migrator,
-        private TenantAdoptionMappings $mappings,
+        private TenantAdoptionSupport $adoption,
         private SeoOwnerRegistry $owners,
         private TenantResourceRegistry $resources,
     ) {}
@@ -38,7 +37,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
 
     public function prepare(TenantAdoptionPlan $plan): void
     {
-        $this->connection($plan);
+        $this->adoption->connection($plan, 'seo.redirects');
         $this->migrator->usingConnection(
             $plan->connection,
             fn () => $this->migrator->run([dirname(__DIR__, 2).'/database/tenancy-migrations'], ['force' => true]),
@@ -47,9 +46,9 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
 
     public function backfill(TenantAdoptionPlan $plan, ?string $cursor, int $limit): TenantBackfillResult
     {
-        $connection = $this->connection($plan);
+        $connection = $this->adoption->connection($plan, 'seo.redirects');
         $profilePhase = is_string($cursor) && str_starts_with($cursor, 'profiles:');
-        $redirects = $profilePhase ? [] : $this->mappings->assignments($plan, 'seo.redirects', $cursor, $limit);
+        $redirects = $profilePhase ? [] : $this->adoption->assignments($plan, 'seo.redirects', $cursor, $limit);
 
         $connection->transaction(function () use ($connection, $redirects): void {
             foreach ($redirects as $assignment) {
@@ -61,7 +60,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
                     throw new TenantBoundaryViolation('An SEO redirect has invalid canonical source identity.');
                 }
                 $connection->table((new SeoRedirect)->getTable())->where('id', $assignment->recordId)->update([
-                    'tenant_id' => $assignment->tenantId->value,
+                    ...$this->adoption->ownership($assignment, 'seo.redirects'),
                     'source_hash' => SeoRedirect::sourceHashForTenant(
                         $assignment->tenantId->value,
                         $row->scope,
@@ -73,9 +72,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
         });
 
         if ($redirects !== []) {
-            $last = $redirects[array_key_last($redirects)];
-
-            return new TenantBackfillResult($last->recordId, count($redirects));
+            return $this->adoption->result($redirects);
         }
 
         $profileCursor = $profilePhase ? substr((string) $cursor, strlen('profiles:')) : null;
@@ -121,7 +118,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
     /** @phpstan-impure */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
-        $connection = $this->connection($plan);
+        $connection = $this->adoption->connection($plan, 'seo.redirects');
         $profiles = (new SeoProfile)->getTable();
         $translations = (new SeoProfileTranslation)->getTable();
         $redirects = (new SeoRedirect)->getTable();
@@ -195,15 +192,5 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
         if ($this->verify($plan)->errors !== []) {
             throw new TenantBoundaryViolation($message);
         }
-    }
-
-    private function connection(TenantAdoptionPlan $plan): Connection
-    {
-        $connection = (new SeoProfile)->setConnection($plan->connection)->getConnection();
-        if ($connection->getName() !== $plan->connection) {
-            throw new TenantBoundaryViolation('SEO adoption requires its canonical connection.');
-        }
-
-        return $connection;
     }
 }

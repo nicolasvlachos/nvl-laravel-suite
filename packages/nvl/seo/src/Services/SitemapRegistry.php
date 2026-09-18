@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\TenantSafeSitemapSource;
+use Nvl\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
@@ -27,6 +28,7 @@ final class SitemapRegistry
 
     public function __construct(
         private readonly Container $container,
+        private readonly TenantExtensionGuard $extensions,
         private readonly TenantResourceRegistry $tenantResources,
     ) {}
 
@@ -37,27 +39,9 @@ final class SitemapRegistry
      */
     public function register(SitemapSource $source, ?string $key = null, array $ownerTypes = []): self
     {
-        $key ??= $source::class;
-        $key = trim($key);
-
-        if ($key === '' || isset($this->sources[$key])) {
-            throw new InvalidArgumentException(
-                "Sitemap source key [{$key}] is empty or already registered.",
-            );
-        }
-
-        foreach ($ownerTypes as $ownerType) {
-            if (! is_a($ownerType, Model::class, true)
-                || isset($this->profileOwners[$ownerType])) {
-                throw new InvalidArgumentException(
-                    "Sitemap SEO owner type [{$ownerType}] is invalid or already assigned.",
-                );
-            }
-        }
-
-        foreach ($ownerTypes as $ownerType) {
-            $this->profileOwners[$ownerType] = $key;
-        }
+        $this->compatibleClass($source);
+        $key = $this->key($source::class, $key);
+        $this->registerOwners($ownerTypes, $key);
 
         $this->sources[$key] = ['class' => null, 'instance' => $source];
 
@@ -67,33 +51,13 @@ final class SitemapRegistry
     /**
      * Register an immutable source declaration resolved freshly in each active tenant scope.
      *
-     * @param  class-string<SitemapSource>  $sourceClass
      * @param  list<class-string<Model>>  $ownerTypes
      */
     public function registerType(string $sourceClass, ?string $key = null, array $ownerTypes = []): self
     {
-        if ($this->container->make('config')->get('tenancy.enabled') === true
-            && ! is_a($sourceClass, TenantSafeSitemapSource::class, true)) {
-            throw new InvalidArgumentException(
-                "Tenant sitemap source [{$sourceClass}] must declare its tenant-safe resource capability.",
-            );
-        }
-
-        $key ??= $sourceClass;
-        $key = trim($key);
-        if ($key === '' || isset($this->sources[$key])) {
-            throw new InvalidArgumentException("Sitemap source key [{$key}] is empty or already registered.");
-        }
-
-        foreach ($ownerTypes as $ownerType) {
-            if (isset($this->profileOwners[$ownerType])) {
-                throw new InvalidArgumentException("Sitemap SEO owner type [{$ownerType}] is invalid or already assigned.");
-            }
-        }
-
-        foreach ($ownerTypes as $ownerType) {
-            $this->profileOwners[$ownerType] = $key;
-        }
+        $sourceClass = $this->compatibleClass($sourceClass);
+        $key = $this->key($sourceClass, $key);
+        $this->registerOwners($ownerTypes, $key);
 
         $this->sources[$key] = ['class' => $sourceClass, 'instance' => null];
 
@@ -159,5 +123,55 @@ final class SitemapRegistry
         }
 
         return $resolved;
+    }
+
+    /**
+     * Require the base Sitemap contract and enabled tenant capability.
+     *
+     * @return class-string<SitemapSource>
+     */
+    private function compatibleClass(SitemapSource|string $source): string
+    {
+        return $this->extensions->assertCompatible(
+            extension: $source,
+            baseContract: SitemapSource::class,
+            tenantContract: TenantSafeSitemapSource::class,
+            label: 'Sitemap source',
+        );
+    }
+
+    /** Resolve and reserve one non-empty source key. */
+    private function key(string $default, ?string $key): string
+    {
+        $key = trim($key ?? $default);
+
+        if ($key === '' || isset($this->sources[$key])) {
+            throw new InvalidArgumentException(
+                "Sitemap source key [{$key}] is empty or already registered.",
+            );
+        }
+
+        return $key;
+    }
+
+    /**
+     * Validate and reserve the source's exclusive SEO owner types.
+     *
+     * @param  list<string>  $ownerTypes
+     */
+    private function registerOwners(array $ownerTypes, string $key): void
+    {
+        foreach ($ownerTypes as $ownerType) {
+            if (! is_a($ownerType, Model::class, true)
+                || isset($this->profileOwners[$ownerType])) {
+                throw new InvalidArgumentException(
+                    "Sitemap SEO owner type [{$ownerType}] is invalid or already assigned.",
+                );
+            }
+        }
+
+        foreach ($ownerTypes as $ownerType) {
+            $this->profileOwners[$ownerType] = $key;
+        }
     }
 }

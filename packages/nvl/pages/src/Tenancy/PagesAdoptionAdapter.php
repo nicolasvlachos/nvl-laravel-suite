@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nvl\Pages\Tenancy;
 
-use Illuminate\Database\Connection;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Database\Query\Builder;
 use Nvl\Pages\Definitions\Tables\PagesTables;
@@ -13,7 +12,7 @@ use Nvl\Pages\Models\PageTranslation;
 use Nvl\Pages\Support\PagesConfiguration;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantAdoptionMappings;
+use Nvl\Tenancy\Services\TenantAdoptionSupport;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
 use Nvl\Tenancy\ValueObjects\TenantVerification;
@@ -22,7 +21,7 @@ use Nvl\Tenancy\ValueObjects\TenantVerification;
 final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
 {
     /** Create the package adoption boundary. */
-    public function __construct(private Migrator $migrator, private TenantAdoptionMappings $mappings) {}
+    public function __construct(private Migrator $migrator, private TenantAdoptionSupport $adoption) {}
 
     /** @return list<string> */
     public function resources(): array
@@ -33,19 +32,20 @@ final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
     /** Apply nullable Page ownership and tenant-local key/path indexes. */
     public function prepare(TenantAdoptionPlan $plan): void
     {
-        $this->connection($plan);
+        $this->adoption->connection($plan, 'pages.pages');
         $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([dirname(__DIR__, 2).'/database/tenancy-migrations'], ['force' => true]));
     }
 
     /** Backfill reviewed Page roots and derive translation/lock ownership. */
     public function backfill(TenantAdoptionPlan $plan, ?string $cursor, int $limit): TenantBackfillResult
     {
-        $connection = $this->connection($plan);
-        $batch = $this->mappings->assignments($plan, 'pages.pages', $cursor, $limit);
+        $connection = $this->adoption->connection($plan, 'pages.pages');
+        $batch = $this->adoption->assignments($plan, 'pages.pages', $cursor, $limit);
         $connection->transaction(function () use ($batch, $connection): void {
             foreach ($batch as $assignment) {
-                $connection->table((new Page)->getTable())->where('id', $assignment->recordId)->update(['tenant_id' => $assignment->tenantId->value]);
-                $connection->table((new PageTranslation)->getTable())->where('page_id', $assignment->recordId)->update(['tenant_id' => $assignment->tenantId->value]);
+                $ownership = $this->adoption->ownership($assignment, 'pages.pages');
+                $connection->table((new Page)->getTable())->where('id', $assignment->recordId)->update($ownership);
+                $connection->table((new PageTranslation)->getTable())->where('page_id', $assignment->recordId)->update(['tenant_id' => $ownership['tenant_id']]);
             }
         });
         if ($batch === []) {
@@ -61,9 +61,8 @@ final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
 
             return new TenantBackfillResult(null, 0);
         }
-        $last = $batch[array_key_last($batch)];
 
-        return new TenantBackfillResult($last->recordId, count($batch));
+        return $this->adoption->result($batch);
     }
 
     /**
@@ -73,7 +72,7 @@ final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
      */
     public function verify(TenantAdoptionPlan $plan): TenantVerification
     {
-        $connection = $this->connection($plan);
+        $connection = $this->adoption->connection($plan, 'pages.pages');
         $pages = (new Page)->getTable();
         $translations = (new PageTranslation)->getTable();
         $errors = [];
@@ -107,16 +106,5 @@ final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
         if ($this->verify($plan)->errors !== []) {
             throw new TenantBoundaryViolation($message);
         }
-    }
-
-    /** Resolve the exact configured Pages connection. */
-    private function connection(TenantAdoptionPlan $plan): Connection
-    {
-        $connection = (new Page)->setConnection($plan->connection)->getConnection();
-        if ($connection->getName() !== $plan->connection) {
-            throw new TenantBoundaryViolation('Pages adoption requires its canonical connection.');
-        }
-
-        return $connection;
     }
 }
