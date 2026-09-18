@@ -265,6 +265,31 @@ it('keeps committed profile writes successful when sitemap invalidation fails', 
         ->assertFailed();
 });
 
+it('accepts string-encoded integer versions from string-backed cache stores like redis', function (): void {
+    $store = new ArrayStore;
+    $cacheRepository = new CacheRepository($store);
+    $cache = new SitemapCache($cacheRepository, app(SitemapArtifactStore::class));
+
+    $identity = $cache->capture('default');
+    expect($identity->version)->toBe(1);
+
+    $baseKey = config('seo.sitemap.cache_key', 'nvl-seo:sitemap');
+    $facts = [
+        'connection' => $identity->connection,
+        'tenant' => $identity->tenantId,
+        'site' => $identity->site,
+        'origin' => $identity->origin,
+        'scope' => $identity->scope,
+    ];
+    $versionKey = $baseKey.':'.hash('sha256', json_encode($facts, JSON_THROW_ON_ERROR)).':version';
+    $cacheRepository->forever($versionKey, '3');
+
+    $updated = $cache->capture('default');
+    expect($updated->version)->toBe(3);
+
+    expect($cache->forgetCaptured($updated))->toBeTrue();
+});
+
 it('keeps non-default sitemap index and chunk requests in the requested scope', function (): void {
     config()->set([
         'seo.routes.sitemap_scopes' => ['wholesale'],

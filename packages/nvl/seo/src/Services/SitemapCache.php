@@ -91,6 +91,10 @@ final readonly class SitemapCache
             $this->cache->add($versionKey, 1);
             $version = $this->cache->increment($versionKey);
 
+            if (is_string($version) && ctype_digit($version)) {
+                $version = (int) $version;
+            }
+
             if (! is_int($version) || $version < 2) {
                 throw new LogicException(
                     'The sitemap cache store cannot atomically advance its version.',
@@ -156,12 +160,16 @@ final readonly class SitemapCache
             return 1;
         }
 
-        if (! is_int($version) || $version < 1) {
-            throw new LogicException(
-                'The sitemap cache version contains an invalid value.',
-            );
+        if (is_int($version) && $version >= 1) {
+            return $version;
         }
 
-        return $version;
+        if (is_string($version) && ctype_digit($version) && (int) $version >= 1) {
+            return (int) $version;
+        }
+
+        throw new LogicException(
+            'The sitemap cache version contains an invalid value.',
+        );
     }
 }
