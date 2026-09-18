@@ -91,10 +91,6 @@ final readonly class SitemapCache
             $this->cache->add($versionKey, 1);
             $version = $this->cache->increment($versionKey);
 
-            if (is_string($version) && preg_match('/^[1-9][0-9]*$/', $version) === 1) {
-                $version = (int) $version;
-            }
-
             if (! is_int($version) || $version < 2) {
                 throw new LogicException(
                     'The sitemap cache store cannot atomically advance its version.',
