@@ -87,16 +87,16 @@ final readonly class TaxonomyOnlyConsumerWorkflow implements TenancyConsumerWork
             $tenantA,
             fn (): TenantTaxonomyRecord => $this->boundary
                 ->query(TenantTaxonomyRecord::query(), 'consumer.taxonomy-records')
-                ->findOrFail($a['owner_id']),
+                ->findOrFail($this->string($a, 'owner_id')),
         );
         $ownerB = $this->tenants->run(
             $tenantB,
             fn (): TenantTaxonomyRecord => $this->boundary
                 ->query(TenantTaxonomyRecord::query(), 'consumer.taxonomy-records')
-                ->findOrFail($b['owner_id']),
+                ->findOrFail($this->string($b, 'owner_id')),
         );
-        $termA = $this->tenants->run($tenantA, fn (): Term => Term::query()->findOrFail($a['term_id']));
-        $termB = $this->tenants->run($tenantB, fn (): Term => Term::query()->findOrFail($b['term_id']));
+        $termA = $this->tenants->run($tenantA, fn (): Term => Term::query()->findOrFail($this->string($a, 'term_id')));
+        $termB = $this->tenants->run($tenantB, fn (): Term => Term::query()->findOrFail($this->string($b, 'term_id')));
         $checks = [
             'equal_keys_distinct_ids' => $ownerA->id !== $ownerB->id && $termA->id !== $termB->id,
             'foreign_owner_denied' => $this->denied(fn (): TenantTaxonomyRecord => $this->tenants->run(
@@ -141,5 +141,16 @@ final readonly class TaxonomyOnlyConsumerWorkflow implements TenancyConsumerWork
         }
 
         return $record;
+    }
+
+    /** @param array<string, mixed> $report */
+    private function string(array $report, string $key): string
+    {
+        $value = $report[$key] ?? null;
+        if (! is_string($value) || $value === '') {
+            throw new RuntimeException("The report field [{$key}] is invalid.");
+        }
+
+        return $value;
     }
 }

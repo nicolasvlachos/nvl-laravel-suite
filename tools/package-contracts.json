@@ -32641,7 +32641,7 @@
                 "database/migrations/2026_01_01_000001_create_termables_table.php": "5362f1803ffb5734a61e2f052a26f4fd72838cecbd9f3a6482d4baa1f4111cf2",
                 "database/migrations/2026_07_26_083129_create_terms_i18n_table.php": "415ecb0718b0976487c57cb1cee3459398b1db0d2aa1ff0f86a61624b1243436",
                 "database/tenancy/2026_09_16_120001_expand_taxonomy_tenant_ownership.php": "5c44635d3229b4ac78c034e1ad2754a4d1e0f655d2c61b4e7f769a93080481bd",
-                "database/tenancy/2026_09_16_120002_constrain_taxonomy_tenant_ownership.php": "50836d04775d8e10b0611bb8b1977250af3731028edd534861912fbe5b41b606"
+                "database/tenancy/2026_09_16_120002_constrain_taxonomy_tenant_ownership.php": "b60fcdd6c9a8cf07dc61eb47d56b928311f14070b95e43b693ad5c3e757f50c4"
             }
         },
         "templates": {

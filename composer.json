@@ -52,7 +52,7 @@
         "laravel/serializable-closure": "^2.0.10",
         "league/flysystem": "^3.25",
         "league/flysystem-aws-s3-v3": "^3.0",
-        "mpdf/mpdf": "^8.2.5",
+        "mpdf/mpdf": "^8.3.0",
         "nesbot/carbon": "^3.8",
         "opis/json-schema": "^2.6",
         "paragonie/constant_time_encoding": "^2.6 || ^3.0",
