@@ -251,7 +251,7 @@ jobs:
             --publish 9000:9000 \
             --env MINIO_ROOT_USER=nvl-tenancy \
             --env MINIO_ROOT_PASSWORD=nvl-tenancy-proof \
-            minio/minio:RELEASE.2025-10-15T17-29-55Z \
+            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z \
             server /data
           for attempt in {1..30}; do
             if curl --fail --silent http://127.0.0.1:9000/minio/health/ready >/dev/null; then
@@ -266,7 +266,7 @@ jobs:
           docker run --rm \
             --network host \
             --entrypoint /bin/sh \
-            minio/mc:RELEASE.2025-08-13T08-35-41Z \
+            quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z \
             -c 'mc alias set proof http://127.0.0.1:9000 nvl-tenancy nvl-tenancy-proof && mc mb --ignore-existing proof/nvl-tenancy'
 
       - name: Sealed tenancy consumer on PostgreSQL, Redis and S3

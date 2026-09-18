@@ -173,7 +173,7 @@ it('defines sealed full and standalone media runner phases with restart and down
         )
         ->not->toContain('--ignore-platform-reqs', 'sleep ')
         ->and($qualityWorkflow)->toContain(
-            'minio/minio:RELEASE.2025-10-15T17-29-55Z',
+            'quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z',
             'TENANCY_CONSUMER_DB_CONNECTION: pgsql',
             'TENANCY_CONSUMER_CACHE_STORE: redis',
             'TENANCY_CONSUMER_MEDIA_DRIVER: s3',
