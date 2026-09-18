@@ -201,6 +201,9 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
+          sudo install -d /etc/apt/keyrings
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-client-17
           bash tools/retry-composer.sh install --no-interaction --prefer-dist
