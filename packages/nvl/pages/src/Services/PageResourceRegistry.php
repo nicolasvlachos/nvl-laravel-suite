@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Nvl\Pages\Contracts\PageResourceHandler;
 use Nvl\Pages\Contracts\TenantSafePageResourceHandler;
 use Nvl\Pages\Support\PagesConfiguration;
+use Nvl\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
@@ -28,6 +29,7 @@ final class PageResourceRegistry
         private readonly Container $container,
         private readonly Repository $configuration,
         private readonly TenantResourceRegistry $tenantResources,
+        private readonly TenantExtensionGuard $extensions,
     ) {}
 
     /**
@@ -43,15 +45,16 @@ final class PageResourceRegistry
             throw new InvalidArgumentException("Page resource [{$alias}] is already registered.");
         }
 
-        if (! is_a($handler, PageResourceHandler::class, true)) {
-            throw new InvalidArgumentException(
-                "Page resource handler [{$handler}] must implement PageResourceHandler.",
-            );
-        }
+        $handler = $this->extensions->assertCompatible(
+            extension: $handler,
+            baseContract: PageResourceHandler::class,
+            tenantContract: TenantSafePageResourceHandler::class,
+            label: "Page resource [{$alias}]",
+        );
 
+        $this->validate($this->make($handler), $alias);
         $this->handlers[$alias] = $handler;
         ksort($this->handlers);
-        $this->validate($this->resolve($alias), $alias);
     }
 
     /**
@@ -94,6 +97,18 @@ final class PageResourceRegistry
     {
         $class = $this->handlers[$alias]
             ?? throw new InvalidArgumentException("Page resource [{$alias}] is not registered.");
+
+        return $this->make($class);
+    }
+
+    /**
+     * Resolve one declared handler class from the container.
+     *
+     * @param  class-string<PageResourceHandler<Model>>  $class
+     * @return PageResourceHandler<Model>
+     */
+    private function make(string $class): PageResourceHandler
+    {
         $handler = $this->container->make($class);
 
         if (! $handler instanceof PageResourceHandler) {
@@ -110,12 +125,15 @@ final class PageResourceRegistry
      */
     private function validate(PageResourceHandler $handler, string $alias): void
     {
+        $this->extensions->assertCompatible(
+            extension: $handler,
+            baseContract: PageResourceHandler::class,
+            tenantContract: TenantSafePageResourceHandler::class,
+            label: "Page resource [{$alias}]",
+        );
+
         if ($this->configuration->get('tenancy.enabled') === true) {
-            if (! $handler instanceof TenantSafePageResourceHandler) {
-                throw new InvalidArgumentException(
-                    "Page resource [{$alias}] must declare a tenant-safe model capability.",
-                );
-            }
+            /** @var TenantSafePageResourceHandler<Model> $handler */
             $model = $handler->tenantResourceModel();
             $this->tenantResources->forModel(new $model);
         }

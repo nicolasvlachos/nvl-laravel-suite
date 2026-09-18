@@ -9,7 +9,7 @@ use Nvl\Templates\Definitions\Tables\TemplatesTables;
 use Nvl\Templates\Support\TemplatesConfiguration;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantAdoptionSupport;
+use Nvl\Tenancy\Services\TenantAdoptionBoundary;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
 use Nvl\Tenancy\ValueObjects\TenantVerification;
@@ -17,7 +17,7 @@ use Nvl\Tenancy\ValueObjects\TenantVerification;
 /** Applies reviewed Template ownership and derives every template child partition. */
 final readonly class TemplatesAdoptionAdapter implements TenantAdoptionAdapter
 {
-    public function __construct(private Migrator $migrator, private TenantAdoptionSupport $adoption) {}
+    public function __construct(private Migrator $migrator, private TenantAdoptionBoundary $adoption) {}
 
     public function resources(): array
     {

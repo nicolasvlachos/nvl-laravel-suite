@@ -75,6 +75,7 @@ use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaPathResolver;
 use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 beforeEach(function (): void {
@@ -1589,6 +1590,7 @@ it('fails closed for invalid route middleware unsafe URLs and unbounded definiti
         app(Repository::class),
         app(TenantBoundary::class),
         app(TenantResourceRegistry::class),
+        app(TenantExtensionGuard::class),
     );
     $references->register('unsafe', UnsafeReferenceResolver::class);
     expect(fn () => $references->display(

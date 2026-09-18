@@ -13,7 +13,7 @@ use Nvl\Content\Models\ContentRevision;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantAdoptionSupport;
+use Nvl\Tenancy\Services\TenantAdoptionBoundary;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
@@ -25,7 +25,7 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
     /** Create the package adoption boundary. */
     public function __construct(
         private Migrator $migrator,
-        private TenantAdoptionSupport $adoption,
+        private TenantAdoptionBoundary $adoption,
         private ContentOwnerRegistry $owners,
         private TenantResourceRegistry $resources,
     ) {}

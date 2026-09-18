@@ -12,7 +12,7 @@ use Nvl\Pages\Models\PageTranslation;
 use Nvl\Pages\Support\PagesConfiguration;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantAdoptionSupport;
+use Nvl\Tenancy\Services\TenantAdoptionBoundary;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
 use Nvl\Tenancy\ValueObjects\TenantVerification;
@@ -21,7 +21,7 @@ use Nvl\Tenancy\ValueObjects\TenantVerification;
 final readonly class PagesAdoptionAdapter implements TenantAdoptionAdapter
 {
     /** Create the package adoption boundary. */
-    public function __construct(private Migrator $migrator, private TenantAdoptionSupport $adoption) {}
+    public function __construct(private Migrator $migrator, private TenantAdoptionBoundary $adoption) {}
 
     /** @return list<string> */
     public function resources(): array

@@ -13,6 +13,7 @@ use Nvl\Content\Contracts\TenantSafeContentReferenceResolver;
 use Nvl\Content\Validation\ContentValidationContext;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 /**
@@ -23,14 +24,17 @@ final class ContentReferenceRegistry
     /** @var array<string, class-string<ContentReferenceResolver>> */
     private array $resolvers = [];
 
+    /** Create the reference allowlist and its tenant-safety boundary. */
     public function __construct(
         private readonly Container $container,
         private readonly ContentPayloadGuard $guard,
         private readonly Repository $configuration,
         private readonly TenantBoundary $tenancy,
         private readonly TenantResourceRegistry $tenantResources,
+        private readonly TenantExtensionGuard $extensions,
     ) {}
 
+    /** Register one stable reference alias and compatible resolver class. */
     public function register(string $alias, string $resolver): void
     {
         if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
@@ -41,11 +45,12 @@ final class ContentReferenceRegistry
             throw new InvalidArgumentException("Content reference [{$alias}] is already registered.");
         }
 
-        if (! is_a($resolver, ContentReferenceResolver::class, true)) {
-            throw new InvalidArgumentException(
-                "Content reference resolver [{$resolver}] must implement ContentReferenceResolver.",
-            );
-        }
+        $resolver = $this->extensions->assertCompatible(
+            extension: $resolver,
+            baseContract: ContentReferenceResolver::class,
+            tenantContract: TenantSafeContentReferenceResolver::class,
+            label: 'Content reference resolver',
+        );
 
         $this->resolvers[$alias] = $resolver;
         ksort($this->resolvers);

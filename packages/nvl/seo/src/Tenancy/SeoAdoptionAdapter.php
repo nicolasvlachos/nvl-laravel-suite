@@ -13,7 +13,7 @@ use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantAdoptionSupport;
+use Nvl\Tenancy\Services\TenantAdoptionBoundary;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
@@ -24,7 +24,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
 {
     public function __construct(
         private Migrator $migrator,
-        private TenantAdoptionSupport $adoption,
+        private TenantAdoptionBoundary $adoption,
         private SeoOwnerRegistry $owners,
         private TenantResourceRegistry $resources,
     ) {}

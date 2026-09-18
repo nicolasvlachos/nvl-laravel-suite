@@ -6,7 +6,9 @@ use Nvl\Content\Actions\SyncContentDefinitionsAction;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Facades\Content;
+use Nvl\Content\Services\ContentReferenceRegistry;
 use Nvl\Content\Tests\Fixtures\TenantScenario;
+use Nvl\Content\Tests\Fixtures\UnsafeReferenceResolver;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Exceptions\TenantContextMissing;
 
@@ -47,4 +49,11 @@ it('keeps definition synchronization behind explicit platform execution', functi
             ContentActorData::system(),
         ))->toThrow(TenantBoundaryViolation::class);
     });
+});
+
+it('rejects tenant-unsafe reference resolvers during registration', function (): void {
+    expect(fn () => app(ContentReferenceRegistry::class)->register(
+        'unsafe',
+        UnsafeReferenceResolver::class,
+    ))->toThrow(InvalidArgumentException::class, 'not tenant compatible');
 });

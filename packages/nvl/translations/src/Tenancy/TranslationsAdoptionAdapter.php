@@ -7,7 +7,7 @@ namespace Nvl\Translations\Tenancy;
 use Illuminate\Database\Migrations\Migrator;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantAdoptionSupport;
+use Nvl\Tenancy\Services\TenantAdoptionBoundary;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
 use Nvl\Tenancy\ValueObjects\TenantVerification;
@@ -16,7 +16,7 @@ use Nvl\Translations\Definitions\Tables\TranslationsTables;
 /** Adopts isolated tenant overrides while platform translation catalogs remain fixed. */
 final readonly class TranslationsAdoptionAdapter implements TenantAdoptionAdapter
 {
-    public function __construct(private Migrator $migrator, private TenantAdoptionSupport $adoption) {}
+    public function __construct(private Migrator $migrator, private TenantAdoptionBoundary $adoption) {}
 
     public function resources(): array
     {

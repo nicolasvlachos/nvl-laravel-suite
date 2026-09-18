@@ -9,7 +9,9 @@ use Nvl\Pages\Data\PageActorData;
 use Nvl\Pages\Enums\PageKind;
 use Nvl\Pages\Enums\PageStatus;
 use Nvl\Pages\Exceptions\PageHierarchyException;
+use Nvl\Pages\Services\PageResourceRegistry;
 use Nvl\Pages\Tests\Fixtures\TenantScenario;
+use Nvl\Pages\Tests\Fixtures\TestPageResourceHandler;
 
 beforeEach(function (): void {
     $this->scenario = TenantScenario::install();
@@ -72,4 +74,12 @@ it('rejects a foreign canonical parent before changing a tree', function (): voi
             PageActorData::system(),
         ))->toThrow(PageHierarchyException::class);
     });
+});
+
+it('does not retain a tenant-unsafe handler after rejected registration', function (): void {
+    $registry = app(PageResourceRegistry::class);
+
+    expect(fn () => $registry->register('unsafe.detail', TestPageResourceHandler::class))
+        ->toThrow(InvalidArgumentException::class, 'not tenant compatible');
+    expect($registry->has('unsafe.detail'))->toBeFalse();
 });

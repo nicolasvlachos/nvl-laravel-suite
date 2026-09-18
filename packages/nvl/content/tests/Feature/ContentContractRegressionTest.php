@@ -80,6 +80,7 @@ use Nvl\Filterable\Data\FilterCriterion;
 use Nvl\Filterable\Data\FilterSet;
 use Nvl\Filterable\Enums\FilterOperator;
 use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 beforeEach(function (): void {
@@ -2587,6 +2588,7 @@ it('exposes the registered reference aliases without resolving them', function (
         app(ConfigRepository::class),
         app(TenantBoundary::class),
         app(TenantResourceRegistry::class),
+        app(TenantExtensionGuard::class),
     );
 
     expect($registry->has('missing'))->toBeFalse();
