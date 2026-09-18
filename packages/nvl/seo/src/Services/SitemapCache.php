@@ -91,7 +91,7 @@ final readonly class SitemapCache
             $this->cache->add($versionKey, 1);
             $version = $this->cache->increment($versionKey);
 
-            if (is_string($version) && ctype_digit($version)) {
+            if (is_string($version) && preg_match('/^[1-9][0-9]*$/', $version) === 1) {
                 $version = (int) $version;
             }
 
@@ -164,7 +164,7 @@ final readonly class SitemapCache
             return $version;
         }
 
-        if (is_string($version) && ctype_digit($version) && (int) $version >= 1) {
+        if (is_string($version) && preg_match('/^[1-9][0-9]*$/', $version) === 1) {
             return (int) $version;
         }
 

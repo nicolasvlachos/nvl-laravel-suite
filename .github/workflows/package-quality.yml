@@ -468,6 +468,7 @@ jobs:
               media) minimum_line=82 ;;
               metafields) minimum_line=67 ;;
               pages) minimum_line=80 ;;
+              seo) minimum_line=89 ;;
               tenancy) minimum_line=89 ;;
             esac
 
